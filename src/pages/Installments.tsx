@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Plus, Trash2, X, Check, CreditCard, DollarSign, Search, Printer, Calendar } from 'lucide-react';
+import { Plus, Trash2, X, Check, CreditCard, DollarSign, Search, Printer, Calendar, Smartphone, Monitor, Tv, Car, Layers } from 'lucide-react';
 import { InstallmentContract } from '@/domain/types';
 import { getContracts, addContract, addPaymentToContract, deleteContract } from '@/data/installmentsData';
 import { getAllInventoryProducts, updateProductQuantity } from '@/repositories/productRepository';
@@ -35,8 +35,31 @@ export default function Installments() {
     const [form, setForm] = useState(emptyForm);
     const [payment, setPayment] = useState({ amount: 0, date: new Date().toISOString().slice(0, 10), note: '' });
     const [search, setSearch] = useState('');
+    const [productCategory, setProductCategory] = useState('all');
 
-    const inventory = useMemo(() => getAllInventoryProducts(), [showForm]);
+    // Product category filter
+    const productCategories = [
+        { id: 'all', label: 'الكل', icon: Layers },
+        { id: 'mobiles', label: 'موبيلات', icon: Smartphone },
+        { id: 'computers', label: 'كمبيوترات', icon: Monitor },
+        { id: 'devices', label: 'أجهزة', icon: Tv },
+        { id: 'cars', label: 'سيارات', icon: Car },
+    ];
+
+    const inventory = useMemo(() => getAllInventoryProducts(), [showForm, contracts]);
+
+    // Filter products by category
+    const filteredInventory = useMemo(() => {
+        if (productCategory === 'all') return inventory;
+        return inventory.filter(p => {
+            const cat = (p.category || '').toLowerCase();
+            if (productCategory === 'mobiles') return cat.includes('موبيل') || cat.includes('موبايل') || cat.includes('mobile') || cat.includes('phone') || cat.includes('تبل') || cat.includes('tablet');
+            if (productCategory === 'computers') return cat.includes('لابتوب') || cat.includes('كمبير') || cat.includes('computer') || cat.includes('laptop') || cat.includes('desktop');
+            if (productCategory === 'devices') return cat.includes('شاشة') || cat.includes('screen') || cat.includes('device') || cat.includes('gaming') || cat.includes('لعب');
+            if (productCategory === 'cars') return cat.includes('سيارة') || cat.includes('car');
+            return true;
+        });
+    }, [inventory, productCategory]);
 
     const refresh = () => setContracts(getContracts());
 
@@ -174,6 +197,26 @@ export default function Installments() {
                             </div>
                             <div className="col-span-2">
                                 <label className="mb-1 block text-xs font-semibold text-muted-foreground">المنتج (من المخزون) *</label>
+                                {/* Category Tabs */}
+                                <div className="flex gap-1 mb-2 overflow-x-auto pb-1">
+                                    {productCategories.map(cat => {
+                                        const Icon = cat.icon;
+                                        return (
+                                            <button
+                                                key={cat.id}
+                                                type="button"
+                                                onClick={() => setProductCategory(cat.id)}
+                                                className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-all ${productCategory === cat.id
+                                                        ? 'bg-primary text-primary-foreground'
+                                                        : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+                                                    }`}
+                                            >
+                                                <Icon className="h-3 w-3" />
+                                                {cat.label}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
                                 <select
                                     value={form.productId || ''}
                                     onChange={e => {
@@ -190,7 +233,7 @@ export default function Installments() {
                                     className={IC}
                                 >
                                     <option value="">-- اختر منتج للصرف من المخزون --</option>
-                                    {inventory.map(p => (
+                                    {filteredInventory.map(p => (
                                         <option key={p.id} value={p.id} disabled={p.quantity === 0}>
                                             {p.name} {p.quantity === 0 ? '(نفد المخزون)' : `(${p.sellingPrice} ج.م - ${p.quantity} قطعة)`}
                                         </option>
