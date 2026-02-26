@@ -481,10 +481,10 @@ export default function Dashboard() {
               { icon: Smartphone, label: 'الموبيلات', count: totalMobiles, acc: totalMobAcc, value: mobileInvValue, color: 'text-cyan-600 bg-cyan-100/80', to: '/mobiles' },
               { icon: Monitor, label: 'الكمبيوترات', count: totalComputers, acc: totalCompAcc, value: computerInvValue, color: 'text-indigo-600 bg-indigo-100/80', to: '/computers' },
               { icon: Tv, label: 'الأجهزة', count: totalDevices, acc: totalDevAcc, value: deviceInvValue, color: 'text-amber-600 bg-amber-100/80', to: '/devices' },
-              { icon: Archive, label: 'كل المستعمل', count: totalUsedCount, acc: null, value: usedInvValue, color: 'text-violet-600 bg-violet-100/80', to: '/mobiles' },
+              { icon: Smartphone, label: 'مستعمل', count: totalUsedCount, acc: null, value: usedInvValue, color: 'text-orange-600 bg-orange-100/80', to: '/mobiles', filter: 'used' },
               { icon: Car, label: 'السيارات', count: cars.length, acc: null, value: carsInvValue, color: 'text-emerald-600 bg-emerald-100/80', to: '/cars' },
-            ] as const).map(({ icon: Icon, label, count, acc, value, color, to }) => (
-              <Link key={to} to={to} className="flex items-center gap-4 px-5 py-4 hover:bg-muted/60 transition-colors group relative overflow-hidden">
+            ] as const).map(({ icon: Icon, label, count, acc, value, color, to, filter }) => (
+              <Link key={to + (filter || '')} to={to} state={filter ? { filter } : undefined} className="flex items-center gap-4 px-5 py-4 hover:bg-muted/60 transition-colors group relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-l from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 <div className={`p-3 rounded-2xl ${color} shadow-inner bg-gradient-to-br from-white/40 to-transparent backdrop-blur-md relative z-10`}><Icon className="h-5 w-5" /></div>
                 <div className="flex-1 min-w-0 relative z-10">
