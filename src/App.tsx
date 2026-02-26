@@ -93,8 +93,13 @@ function DataMigrationRunner() {
 
   useEffect(() => {
     if (!isAuthenticated) return;
-    migrateLegacyDataToBatches();
-    migrateUsedMerge();
+    try {
+      migrateLegacyDataToBatches();
+    } catch (e) { console.error(e) }
+
+    try {
+      migrateUsedMerge();
+    } catch (e) { console.error(e) }
   }, [isAuthenticated]);
 
   return null;
