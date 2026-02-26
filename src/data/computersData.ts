@@ -3,6 +3,7 @@
 // ============================================================
 
 import { ComputerItem, ComputerAccessory } from '@/domain/types';
+import { generateBarcode } from '@/domain/product';
 
 const COMPUTERS_KEY = 'gx_computers_v2';
 const ACCESSORIES_KEY = 'gx_computer_accessories';
@@ -25,6 +26,7 @@ export function addComputer(item: Omit<ComputerItem, 'id' | 'createdAt' | 'updat
     const newItem: ComputerItem = {
         ...item,
         id: crypto.randomUUID(),
+        barcode: item.barcode || generateBarcode(),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
     };
@@ -60,6 +62,7 @@ export function addComputerAccessory(item: Omit<ComputerAccessory, 'id' | 'creat
     const newItem: ComputerAccessory = {
         ...item,
         id: crypto.randomUUID(),
+        barcode: item.barcode || generateBarcode(),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
     };

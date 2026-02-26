@@ -38,7 +38,7 @@ export function addContract(
     contract: Omit<InstallmentContract, 'id' | 'contractNumber' | 'monthlyInstallment' | 'schedule' | 'payments' | 'paidTotal' | 'remaining' | 'status' | 'createdAt' | 'updatedAt'>
 ): InstallmentContract {
     const all = getContracts();
-    const remaining = contract.totalPrice - contract.downPayment;
+    const remaining = contract.installmentPrice - contract.downPayment;
     const monthly = contract.months > 0 ? Math.ceil(remaining / contract.months) : remaining;
     const schedule = generateSchedule(remaining, contract.months);
 
@@ -65,7 +65,7 @@ export function addPaymentToContract(contractId: string, payment: Omit<Installme
         if (c.id !== contractId) return c;
         const newPayment: InstallmentPayment = { ...payment, id: crypto.randomUUID() };
         const paidTotal = c.paidTotal + payment.amount;
-        const remaining = Math.max(0, c.totalPrice - paidTotal);
+        const remaining = Math.max(0, c.installmentPrice - paidTotal);
         return {
             ...c,
             payments: [...c.payments, newPayment],

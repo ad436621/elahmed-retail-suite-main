@@ -11,7 +11,7 @@ import { Product } from '@/domain/types';
 import { getCategories } from '@/data/mockData';
 import { generateBarcode } from '@/domain/product';
 import { validatePricing } from '@/domain/product';
-import { saveProduct } from '@/repositories/productRepository';
+import { saveProduct, isBarcodeDuplicate } from '@/repositories/productRepository';
 import { createAuditEntry } from '@/domain/audit';
 import { saveAuditEntries } from '@/repositories/auditRepository';
 import { useToast } from '@/hooks/use-toast';
@@ -97,7 +97,11 @@ export function ProductFormDialog({ open, onOpenChange, product, onSuccess }: Pr
       validatePricing(data.costPrice, data.sellingPrice);
 
       const now = new Date().toISOString();
-      const barcode = data.barcode || generateBarcode();
+      let barcode = data.barcode || generateBarcode();
+
+      if (isBarcodeDuplicate(barcode, product?.id)) {
+        throw new Error('الباركود المدخل (' + barcode + ') موجود مسبقاً في النظام. يرجى التأكد من عدم تكرار الباركود.');
+      }
 
       const newProduct: Product = {
         id: product?.id || crypto.randomUUID(),

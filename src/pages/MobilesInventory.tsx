@@ -9,17 +9,19 @@ import {
     getMobiles, addMobile, updateMobile, deleteMobile,
     getMobileAccessories, addMobileAccessory, updateMobileAccessory, deleteMobileAccessory,
 } from '@/data/mobilesData';
+import { isBarcodeDuplicate } from '@/repositories/productRepository';
 import { useToast } from '@/hooks/use-toast';
+import { useInventoryData } from '@/hooks/useInventoryData';
 
 /* ─── Defaults ─── */
 const emptyMobile: Omit<MobileItem, 'id' | 'createdAt' | 'updatedAt'> = {
-    name: '', quantity: 1, storage: '', ram: '', color: '', supplier: '',
+    name: '', barcode: '', deviceType: 'mobile', quantity: 1, storage: '', ram: '', color: '', supplier: '',
     oldCostPrice: 0, newCostPrice: 0, salePrice: 0, serialNumber: '',
     notes: '', description: '', image: undefined,
 };
 const emptyAccessory: Omit<MobileAccessory, 'id' | 'createdAt' | 'updatedAt'> = {
-    name: '', model: '', quantity: 1, color: '',
-    oldCostPrice: 0, newCostPrice: 0, salePrice: 0,
+    name: '', model: '', barcode: '', quantity: 1, color: '',
+    oldCostPrice: 0, newCostPrice: 0, salePrice: 0, subcategory: '',
     notes: '', description: '', image: undefined,
 };
 
@@ -140,17 +142,18 @@ export default function MobilesInventory() {
     const initTab = (location.state as { tab?: string })?.tab === 'accessories' ? 'accessories' : 'main';
 
     const [tab, setTab] = useState<'main' | 'accessories'>(initTab as 'main' | 'accessories');
-    const [mobiles, setMobiles] = useState<MobileItem[]>(() => getMobiles());
+    const mobiles = useInventoryData(getMobiles, ['gx_mobiles_v2']);
     const [showMobileForm, setShowMobileForm] = useState(false);
     const [editMobileId, setEditMobileId] = useState<string | null>(null);
     const [mF, setMF] = useState(emptyMobile);  // mobile form state
 
-    const [accessories, setAccessories] = useState<MobileAccessory[]>(() => getMobileAccessories());
+    const accessories = useInventoryData(getMobileAccessories, ['gx_mobile_accessories']);
     const [showAccForm, setShowAccForm] = useState(false);
     const [editAccId, setEditAccId] = useState<string | null>(null);
     const [aF, setAF] = useState(emptyAccessory);  // accessory form state
 
     const [search, setSearch] = useState('');
+    const [accCategoryFilter, setAccCategoryFilter] = useState<string>('all');
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
 
     useEffect(() => {
@@ -158,19 +161,22 @@ export default function MobilesInventory() {
         setTab(s === 'accessories' ? 'accessories' : 'main');
     }, [location.state]);
 
-    const refreshMobiles = () => setMobiles(getMobiles());
-    const refreshAccessories = () => setAccessories(getMobileAccessories());
+    const refreshMobiles = () => { };
+    const refreshAccessories = () => { };
 
     /* ── Mobile CRUD ── */
     const handleMobileSubmit = () => {
         if (!mF.name.trim()) { toast({ title: 'خطأ', description: 'اسم الموبايل مطلوب', variant: 'destructive' }); return; }
+        if (mF.barcode && isBarcodeDuplicate(mF.barcode, editMobileId || undefined)) {
+            toast({ title: 'خطأ', description: 'الباركود المدخل (' + mF.barcode + ') موجود مسبقاً', variant: 'destructive' }); return;
+        }
         if (editMobileId) { updateMobile(editMobileId, mF); toast({ title: '✅ تم التعديل', description: mF.name }); }
         else { addMobile(mF); toast({ title: '✅ تمت الإضافة', description: mF.name }); }
         setMF(emptyMobile); setEditMobileId(null); setShowMobileForm(false); refreshMobiles();
     };
     const openAddMobile = () => { setMF(emptyMobile); setEditMobileId(null); setShowMobileForm(true); };
     const openEditMobile = (m: MobileItem) => {
-        setMF({ name: m.name, quantity: m.quantity, storage: m.storage, ram: m.ram, color: m.color, supplier: m.supplier, oldCostPrice: m.oldCostPrice, newCostPrice: m.newCostPrice, salePrice: m.salePrice, serialNumber: m.serialNumber, notes: m.notes, description: m.description ?? '', image: m.image });
+        setMF({ name: m.name, barcode: m.barcode || '', deviceType: m.deviceType || 'mobile', quantity: m.quantity, storage: m.storage, ram: m.ram, color: m.color, supplier: m.supplier, oldCostPrice: m.oldCostPrice, newCostPrice: m.newCostPrice, salePrice: m.salePrice, serialNumber: m.serialNumber, notes: m.notes, description: m.description ?? '', image: m.image });
         setEditMobileId(m.id); setShowMobileForm(true);
     };
     const closeMobileForm = () => { setShowMobileForm(false); setEditMobileId(null); };
@@ -178,13 +184,16 @@ export default function MobilesInventory() {
     /* ── Accessory CRUD ── */
     const handleAccSubmit = () => {
         if (!aF.name.trim()) { toast({ title: 'خطأ', description: 'اسم الإكسسوار مطلوب', variant: 'destructive' }); return; }
+        if (aF.barcode && isBarcodeDuplicate(aF.barcode, editAccId || undefined)) {
+            toast({ title: 'خطأ', description: 'الباركود المدخل (' + aF.barcode + ') موجود مسبقاً', variant: 'destructive' }); return;
+        }
         if (editAccId) { updateMobileAccessory(editAccId, aF); toast({ title: '✅ تم التعديل', description: aF.name }); }
         else { addMobileAccessory(aF); toast({ title: '✅ تمت الإضافة', description: aF.name }); }
         setAF(emptyAccessory); setEditAccId(null); setShowAccForm(false); refreshAccessories();
     };
     const openAddAcc = () => { setAF(emptyAccessory); setEditAccId(null); setShowAccForm(true); };
     const openEditAcc = (a: MobileAccessory) => {
-        setAF({ name: a.name, model: a.model, quantity: a.quantity, color: a.color, oldCostPrice: a.oldCostPrice, newCostPrice: a.newCostPrice, salePrice: a.salePrice, notes: a.notes, description: a.description ?? '', image: a.image });
+        setAF({ name: a.name, model: a.model, barcode: a.barcode || '', subcategory: a.subcategory, quantity: a.quantity, color: a.color, oldCostPrice: a.oldCostPrice, newCostPrice: a.newCostPrice, salePrice: a.salePrice, notes: a.notes, description: a.description ?? '', image: a.image });
         setEditAccId(a.id); setShowAccForm(true);
     };
     const closeAccForm = () => { setShowAccForm(false); setEditAccId(null); };
@@ -196,8 +205,9 @@ export default function MobilesInventory() {
         m.serialNumber.includes(search)
     );
     const filteredAcc = accessories.filter(a =>
-        a.name.toLowerCase().includes(search.toLowerCase()) ||
-        a.model.toLowerCase().includes(search.toLowerCase())
+        (accCategoryFilter === 'all' || a.subcategory === accCategoryFilter) &&
+        (a.name.toLowerCase().includes(search.toLowerCase()) ||
+            a.model.toLowerCase().includes(search.toLowerCase()))
     );
 
     return (
@@ -249,6 +259,28 @@ export default function MobilesInventory() {
                 </button>
             </div>
 
+            {tab === 'accessories' && (
+                <div className="flex gap-2 w-full overflow-x-auto hide-scrollbar pb-1">
+                    {([
+                        { id: 'all', label: 'الكل' },
+                        { id: 'charger', label: 'شواحن' },
+                        { id: 'cable', label: 'كابلات' },
+                        { id: 'earphone', label: 'سماعات' },
+                        { id: 'case', label: 'جرابات' },
+                        { id: 'protector', label: 'سكرينات' },
+                        { id: 'other', label: 'أخرى' },
+                    ] as const).map(c => (
+                        <button
+                            key={c.id}
+                            onClick={() => setAccCategoryFilter(c.id)}
+                            className={`shrink-0 rounded-xl px-4 py-1.5 text-xs font-semibold border transition-all ${accCategoryFilter === c.id ? 'bg-primary/10 text-primary border-primary/30' : 'bg-card border-border text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
+                        >
+                            {c.label}
+                        </button>
+                    ))}
+                </div>
+            )}
+
             {/* ── Search ── */}
             <div className="relative max-w-md">
                 <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60 pointer-events-none" />
@@ -282,16 +314,42 @@ export default function MobilesInventory() {
                             {/* Divider */}
                             <div className="border-t border-border/50" />
 
-                            {/* Name — full width */}
+                            {/* Name and Barcode */}
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="mb-1.5 block text-xs font-semibold text-muted-foreground uppercase tracking-wide">اسم الموبايل *</label>
+                                    <input
+                                        value={mF.name}
+                                        onChange={e => setMF(f => ({ ...f, name: e.target.value }))}
+                                        placeholder="مثال: iPhone 15 Pro Max"
+                                        className={IC}
+                                        autoFocus
+                                    />
+                                </div>
+                                <div>
+                                    <label className="mb-1.5 block text-xs font-semibold text-muted-foreground uppercase tracking-wide">الباركود</label>
+                                    <input
+                                        value={mF.barcode}
+                                        onChange={e => setMF(f => ({ ...f, barcode: e.target.value }))}
+                                        placeholder="تلقائي إن تُرك فارغاً"
+                                        className={IC}
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Device Type */}
                             <div>
-                                <label className="mb-1.5 block text-xs font-semibold text-muted-foreground uppercase tracking-wide">اسم الموبايل *</label>
-                                <input
-                                    value={mF.name}
-                                    onChange={e => setMF(f => ({ ...f, name: e.target.value }))}
-                                    placeholder="مثال: iPhone 15 Pro Max"
-                                    className={IC}
-                                    autoFocus
-                                />
+                                <label className="mb-1.5 block text-xs font-semibold text-muted-foreground uppercase tracking-wide">نوع الجهاز</label>
+                                <div className="flex gap-2">
+                                    <button type="button" onClick={() => setMF(f => ({ ...f, deviceType: 'mobile' }))}
+                                        className={`flex-1 rounded-xl border-2 py-2.5 text-sm font-semibold transition-all flex items-center justify-center gap-2 ${mF.deviceType === 'mobile' ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:border-primary/50'}`}>
+                                        <Smartphone className="h-4 w-4" /> موبايل
+                                    </button>
+                                    <button type="button" onClick={() => setMF(f => ({ ...f, deviceType: 'tablet' }))}
+                                        className={`flex-1 rounded-xl border-2 py-2.5 text-sm font-semibold transition-all flex items-center justify-center gap-2 ${mF.deviceType === 'tablet' ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:border-primary/50'}`}>
+                                        <LayoutGrid className="h-4 w-4" /> تابلت
+                                    </button>
+                                </div>
                             </div>
 
                             {/* Description — full width */}
@@ -401,9 +459,30 @@ export default function MobilesInventory() {
                         <div className="p-4 space-y-3">
                             <ImageUpload value={aF.image} onChange={v => setAF(f => ({ ...f, image: v }))} />
                             <div className="border-t border-border/50" />
-                            <div>
-                                <label className="mb-1.5 block text-xs font-semibold text-muted-foreground uppercase tracking-wide">اسم الإكسسوار *</label>
-                                <input value={aF.name} onChange={e => setAF(f => ({ ...f, name: e.target.value }))} placeholder="مثال: سماعة بلوتوث" className={IC} autoFocus />
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="mb-1.5 block text-xs font-semibold text-muted-foreground uppercase tracking-wide">اسم الإكسسوار *</label>
+                                    <input value={aF.name} onChange={e => setAF(f => ({ ...f, name: e.target.value }))} placeholder="مثال: سماعة بلوتوث" className={IC} autoFocus />
+                                </div>
+                                <div>
+                                    <label className="mb-1.5 block text-xs font-semibold text-muted-foreground uppercase tracking-wide">الباركود</label>
+                                    <input value={aF.barcode} onChange={e => setAF(f => ({ ...f, barcode: e.target.value }))} placeholder="تلقائي إن تُرك فارغاً" className={IC} />
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase tracking-wide">التصنيف</label>
+                                    <select value={aF.subcategory} onChange={e => setAF(f => ({ ...f, subcategory: e.target.value }))} className={IC}>
+                                        <option value="">اختار التصنيف</option>
+                                        <option value="charger">شاحن</option>
+                                        <option value="cable">كابل</option>
+                                        <option value="earphone">سماعة</option>
+                                        <option value="case">جراب</option>
+                                        <option value="protector">سكرينة</option>
+                                        <option value="other">أخرى</option>
+                                    </select>
+                                </div>
+                                <div><label className="mb-1 block text-xs font-medium text-muted-foreground">الموديل</label><input value={aF.model} onChange={e => setAF(f => ({ ...f, model: e.target.value }))} className={IC} /></div>
                             </div>
                             <div>
                                 <label className="mb-1.5 block text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
@@ -411,11 +490,9 @@ export default function MobilesInventory() {
                                 </label>
                                 <textarea value={aF.description} onChange={e => setAF(f => ({ ...f, description: e.target.value }))} rows={2} placeholder="وصف تفصيلي للمنتج..." className={`${IC} resize-none`} />
                             </div>
-                            <div className="grid grid-cols-2 gap-3">
-                                <div><label className="mb-1 block text-xs font-medium text-muted-foreground">الموديل</label><input value={aF.model} onChange={e => setAF(f => ({ ...f, model: e.target.value }))} className={IC} /></div>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                 <div><label className="mb-1 block text-xs font-medium text-muted-foreground">العدد</label><input type="number" min={0} value={aF.quantity} onChange={e => setAF(f => ({ ...f, quantity: +e.target.value }))} className={IC} /></div>
                                 <div><label className="mb-1 block text-xs font-medium text-muted-foreground">اللون</label><input value={aF.color} onChange={e => setAF(f => ({ ...f, color: e.target.value }))} className={IC} /></div>
-                                <div><label className="mb-1 block text-xs font-medium text-muted-foreground">س.شراء قديم</label><input type="number" min={0} value={aF.oldCostPrice} onChange={e => setAF(f => ({ ...f, oldCostPrice: +e.target.value }))} className={IC} /></div>
                                 <div><label className="mb-1 block text-xs font-medium text-muted-foreground">س.شراء جديد</label><input type="number" min={0} value={aF.newCostPrice} onChange={e => setAF(f => ({ ...f, newCostPrice: +e.target.value }))} className={IC} /></div>
                                 <div><label className="mb-1 block text-xs font-medium text-muted-foreground">سعر البيع</label><input type="number" min={0} value={aF.salePrice} onChange={e => setAF(f => ({ ...f, salePrice: +e.target.value }))} className={IC} /></div>
                             </div>

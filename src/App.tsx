@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useEffect } from 'react';
 import { executeAutoBackupIfDue } from '@/data/backupData';
+import { migrateLegacyDataToBatches } from '@/domain/batchMigration';
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
@@ -29,6 +30,10 @@ import UsersManagement from "@/pages/UsersManagement";
 import BarcodePrintPage from "@/pages/BarcodePrintPage";
 import UnauthorizedPage from "@/pages/UnauthorizedPage";
 import UsedInventory from "@/pages/UsedInventory";
+import DamagedItemsPage from "@/pages/DamagedItemsPage";
+import CarsInventory from "@/pages/CarsInventory";
+import WarehousePage from "@/pages/WarehousePage";
+import OtherRevenuePage from "@/pages/OtherRevenuePage";
 
 const queryClient = new QueryClient();
 
@@ -82,6 +87,18 @@ function AutoBackupRunner() {
   return null;
 }
 
+// Background task to run data migration to batches system
+function DataMigrationRunner() {
+  const { isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    migrateLegacyDataToBatches();
+  }, [isAuthenticated]);
+
+  return null;
+}
+
 const AppRoutes = () => (
   <Routes>
     <Route path="/login" element={<AuthRedirect><LoginPage /></AuthRedirect>} />
@@ -96,11 +113,15 @@ const AppRoutes = () => (
       <Route path="/mobiles" element={<PermGuard perm="mobiles"><MobilesInventory /></PermGuard>} />
       <Route path="/computers" element={<PermGuard perm="computers"><ComputersInventory /></PermGuard>} />
       <Route path="/devices" element={<PermGuard perm="devices"><DevicesInventory /></PermGuard>} />
-      <Route path="/used" element={<UsedInventory />} />
+      <Route path="/used" element={<PermGuard perm="used"><UsedInventory /></PermGuard>} />
+      <Route path="/cars" element={<PermGuard perm="cars"><CarsInventory /></PermGuard>} />
+      <Route path="/warehouse" element={<PermGuard perm="warehouse"><WarehousePage /></PermGuard>} />
       {/* Services */}
       <Route path="/maintenance" element={<PermGuard perm="maintenance"><Maintenance /></PermGuard>} />
       <Route path="/installments" element={<PermGuard perm="installments"><Installments /></PermGuard>} />
       <Route path="/expenses" element={<PermGuard perm="expenses"><Expenses /></PermGuard>} />
+      <Route path="/damaged" element={<PermGuard perm="damaged"><DamagedItemsPage /></PermGuard>} />
+      <Route path="/other-revenue" element={<PermGuard perm="otherRevenue"><OtherRevenuePage /></PermGuard>} />
       {/* System */}
       <Route path="/settings" element={<PermGuard perm="settings"><SettingsPage /></PermGuard>} />
       <Route path="/users" element={<OwnerGuard><UsersManagement /></OwnerGuard>} />
@@ -121,6 +142,7 @@ const App = () => (
               <Sonner />
               <BrowserRouter>
                 <AutoBackupRunner />
+                <DataMigrationRunner />
                 <AppRoutes />
               </BrowserRouter>
             </TooltipProvider>

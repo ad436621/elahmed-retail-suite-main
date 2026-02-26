@@ -71,6 +71,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [user]);
 
+  useEffect(() => {
+    const checkSession = () => {
+      if (!user) return;
+      const live = getUserById(user.id);
+      if (!live || !live.active) {
+        logout();
+      } else {
+        if (JSON.stringify(live.permissions) !== JSON.stringify(user.permissions) || live.role !== user.role) {
+          setUser({ ...user, permissions: live.permissions, role: live.role, fullName: live.fullName });
+        }
+      }
+    };
+
+    const handleStorage = (e: StorageEvent | CustomEvent) => {
+      const key = 'key' in e ? e.key : e.detail?.key;
+      if (key === 'gx_users') {
+        checkSession();
+        setAllUsers(getUsers());
+      }
+    };
+
+    window.addEventListener('storage', handleStorage as EventListener);
+    window.addEventListener('local-storage', handleStorage as EventListener);
+
+    return () => {
+      window.removeEventListener('storage', handleStorage as EventListener);
+      window.removeEventListener('local-storage', handleStorage as EventListener);
+    };
+  }, [user]);
+
   const login = (username: string, password: string) => {
     const found = findUserByUsername(username);
     if (!found || found.password !== password) {

@@ -11,7 +11,7 @@ interface LanguageContextType {
 
 const translations: Record<Language, Record<string, string>> = {
   en: {
-    'app.name': 'ELAHMED RETAIL OS',
+    'app.name': 'GLEAMEX RETAIL SUITE',
     'nav.dashboard': 'Dashboard',
     'nav.pos': 'Point of Sale',
     'nav.inventory': 'Inventory',
@@ -59,6 +59,9 @@ const translations: Record<Language, Record<string, string>> = {
     'sales.employee': 'Employee',
     'settings.title': 'Settings',
     'settings.storeName': 'Store Name',
+    'settings.companyName': 'Company Name',
+    'settings.companySuffix': 'Legal Suffix',
+    'settings.logo': 'Company Logo',
     'settings.currency': 'Currency',
     'settings.theme': 'Theme',
     'settings.language': 'Language',
@@ -69,9 +72,14 @@ const translations: Record<Language, Record<string, string>> = {
     'common.inStock': 'In Stock',
     'common.lowStock': 'Low Stock',
     'common.outOfStock': 'Out of Stock',
+    'common.used': 'Used',
+    'common.mobile': 'Mobile',
+    'common.tablet': 'Tablet',
+    'common.computer': 'Computer',
+    'common.laptop': 'Laptop',
   },
   ar: {
-    'app.name': 'نظام الأحمد للبيع بالتجزئة',
+    'app.name': 'نظام جليمكس للبيع بالتجزئة',
     'nav.dashboard': 'لوحة التحكم',
     'nav.pos': 'نقطة البيع',
     'nav.inventory': 'المخزون',
@@ -119,6 +127,9 @@ const translations: Record<Language, Record<string, string>> = {
     'sales.employee': 'الموظف',
     'settings.title': 'الإعدادات',
     'settings.storeName': 'اسم المتجر',
+    'settings.companyName': 'اسم الشركة',
+    'settings.companySuffix': 'اللاحقة القانونية',
+    'settings.logo': 'شعار الشركة',
     'settings.currency': 'العملة',
     'settings.theme': 'المظهر',
     'settings.language': 'اللغة',
@@ -129,6 +140,11 @@ const translations: Record<Language, Record<string, string>> = {
     'common.inStock': 'متوفر',
     'common.lowStock': 'مخزون منخفض',
     'common.outOfStock': 'غير متوفر',
+    'common.used': 'مستعمل',
+    'common.mobile': 'موبايل',
+    'common.tablet': 'تابلت',
+    'common.computer': 'كمبيوتر',
+    'common.laptop': 'لاب توب',
   },
 };
 

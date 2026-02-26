@@ -2,8 +2,8 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useToast } from '@/hooks/use-toast';
-import { Sun, Moon, Globe, Plus, X, Trash2, RotateCcw, CalendarClock, Archive, AlertTriangle, FileDown, FileUp, Save, FolderOpen, HardDriveDownload } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { Sun, Moon, Globe, Plus, X, Trash2, RotateCcw, CalendarClock, Archive, AlertTriangle, FileDown, FileUp, Save, FolderOpen, HardDriveDownload, Image, Upload } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { getCategories, saveCategories } from '@/data/mockData';
 import {
@@ -23,18 +23,27 @@ const SettingsPage = () => {
   const { theme, setTheme } = useTheme();
   const { settings, updateSettings } = useSettings();
   const { toast } = useToast();
+  const logoInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     companyName: settings.companyName,
+    companySuffix: settings.companySuffix,
     branchName: settings.branchName,
     branchAddress: settings.branchAddress,
+    shopPhone: settings.shopPhone,
+    printerName: settings.printerName,
+    logoUrl: settings.logoUrl,
   });
 
   useEffect(() => {
     setFormData({
       companyName: settings.companyName,
+      companySuffix: settings.companySuffix,
       branchName: settings.branchName,
       branchAddress: settings.branchAddress,
+      shopPhone: settings.shopPhone,
+      printerName: settings.printerName,
+      logoUrl: settings.logoUrl,
     });
   }, [settings]);
 
@@ -149,6 +158,33 @@ const SettingsPage = () => {
     toast({ title: '🗑️ تم مسح جميع البيانات', description: 'تم حذف كل البيانات. الإعدادات محفوظة.' });
   };
 
+  // Handle logo upload
+  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({ title: 'خطأ', description: 'يرجى اختيار ملف صورة صالح', variant: 'destructive' });
+      return;
+    }
+
+    // Validate file size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: 'خطأ', description: 'حجم الصورة يجب أن يكون أقل من 2 ميجابايت', variant: 'destructive' });
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target?.result as string;
+      setFormData(f => ({ ...f, logoUrl: dataUrl }));
+      toast({ title: 'تم رفع الشعار', description: 'اضغط حفظ لتطبيق التغييرات' });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
   return (
     <div className="mx-auto max-w-2xl space-y-6" dir="rtl">
       <h1 className="text-2xl font-bold text-foreground">الإعدادات</h1>
@@ -157,9 +193,52 @@ const SettingsPage = () => {
       <div className="rounded-xl border border-border bg-card p-6 shadow-sm space-y-4">
         <h2 className="text-sm font-semibold text-foreground">بيانات المحل</h2>
         <div className="space-y-4">
+          {/* Logo Upload */}
+          <div>
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">شعار الشركة</label>
+            <div className="flex items-center gap-4">
+              <div className="h-16 w-16 rounded-xl overflow-hidden border-2 border-border bg-muted flex items-center justify-center">
+                {formData.logoUrl ? (
+                  <img src={formData.logoUrl} alt="Logo" className="h-full w-full object-contain" />
+                ) : (
+                  <Image className="h-8 w-8 text-muted-foreground" />
+                )}
+              </div>
+              <div className="flex-1">
+                <input
+                  ref={logoInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleLogoUpload}
+                />
+                <button
+                  onClick={() => logoInputRef.current?.click()}
+                  className="flex items-center gap-2 rounded-lg border border-dashed border-primary/50 bg-primary/5 px-4 py-2 text-sm font-medium text-primary hover:bg-primary/10 transition-colors"
+                >
+                  <Upload className="h-4 w-4" /> تغيير الشعار
+                </button>
+                <p className="text-[10px] text-muted-foreground mt-1">PNG, JPG بحد أقصى 2MB</p>
+              </div>
+            </div>
+          </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-muted-foreground">اسم الشركة</label>
-            <input value="GX GLEAMEX" disabled className="w-full rounded-lg border border-input bg-muted px-3 py-2 text-sm text-muted-foreground cursor-not-allowed" />
+            <input
+              value={formData.companyName}
+              onChange={e => setFormData(f => ({ ...f, companyName: e.target.value }))}
+              placeholder="اسم الشركة"
+              className={IC}
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">اللاحقة القانونية</label>
+            <input
+              value={formData.companySuffix}
+              onChange={e => setFormData(f => ({ ...f, companySuffix: e.target.value }))}
+              placeholder="ش. ذ. م.م"
+              className={IC}
+            />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-muted-foreground">اسم الفرع</label>
@@ -168,6 +247,14 @@ const SettingsPage = () => {
           <div>
             <label className="mb-1 block text-xs font-medium text-muted-foreground">عنوان الفرع</label>
             <textarea value={formData.branchAddress} onChange={e => setFormData(f => ({ ...f, branchAddress: e.target.value }))} rows={2} className={`${IC} resize-none`} />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">رقم هاتف المحل (للفاتورة)</label>
+            <input value={formData.shopPhone} onChange={e => setFormData(f => ({ ...f, shopPhone: e.target.value }))} placeholder="مثال: 010xxxxxxxx" className={IC} dir="ltr" />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs font-medium text-muted-foreground">اسم طابعة الفواتير (للعرض فقط)</label>
+            <input value={formData.printerName} onChange={e => setFormData(f => ({ ...f, printerName: e.target.value }))} placeholder="Thermal Printer 80mm" className={IC} dir="ltr" />
           </div>
           <div>
             <label className="mb-1 block text-xs font-medium text-muted-foreground">العملة</label>

@@ -83,7 +83,13 @@ export function shouldAutoReset(): boolean {
     if (!settings.resetDay) return false; // disabled
 
     const now = new Date();
-    if (now.getDate() !== settings.resetDay) return false;
+    const currentDay = now.getDate();
+    const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+
+    // Target day is either the setting or the last day if the month is shorter (e.g., Feb)
+    const targetDay = Math.min(settings.resetDay, lastDayOfMonth);
+
+    if (currentDay !== targetDay) return false;
 
     // Check if we already ran today
     if (settings.lastResetDate === now.toISOString().slice(0, 10)) return false;

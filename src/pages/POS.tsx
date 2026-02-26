@@ -9,7 +9,8 @@ import { validateStock } from '@/domain/stock';
 import { StockError } from '@/domain/stock';
 import { getCartTotals, processSale } from '@/services/saleService';
 import { searchProducts, lookupBarcode } from '@/services/productService';
-import { getAllProducts } from '@/repositories/productRepository';
+import { getActiveSalePrice, getAvailableBatchesCount } from '@/domain/batchLogic';
+import { getAllInventoryProducts } from '@/repositories/productRepository';
 import { saveSale } from '@/repositories/saleRepository';
 import { saveMovements } from '@/repositories/stockRepository';
 import { saveAuditEntries } from '@/repositories/auditRepository';
@@ -82,7 +83,22 @@ const POS = () => {
     scannerTimer.current = setTimeout(() => setScannerActive(false), 1200);
   }, []);
 
-  const allProducts = useMemo(() => getAllProducts(), [refreshKey]);
+  const allProducts = useMemo(() => getAllInventoryProducts(), [refreshKey]);
+
+  useEffect(() => {
+    const handleStorage = (e: StorageEvent | CustomEvent) => {
+      const key = 'key' in e ? e.key : e.detail?.key;
+      if (key && key.startsWith('gx_')) {
+        setRefreshKey(k => k + 1);
+      }
+    };
+    window.addEventListener('storage', handleStorage as EventListener);
+    window.addEventListener('local-storage', handleStorage as EventListener);
+    return () => {
+      window.removeEventListener('storage', handleStorage as EventListener);
+      window.removeEventListener('local-storage', handleStorage as EventListener);
+    };
+  }, []);
 
   // Auto-focus search on mount
   useEffect(() => { searchRef.current?.focus(); }, []);
@@ -177,6 +193,14 @@ const POS = () => {
   const handleCheckout = useCallback(() => {
     if (cart.length === 0) return;
 
+    // Minimum discount limit warning (cost + profit * 0.5) => Max discount = profit / 2
+    const maxDiscount = totals.grossProfit / 2;
+    if (invoiceDiscount > maxDiscount && invoiceDiscount > 0) {
+      if (!window.confirm(`⚠️ تحذير: الخصم المدخل (${invoiceDiscount} EGP) يتجاوز الحد الآمن (نصف الربح: ${maxDiscount} EGP). هل تريد الاستمرار وإتمام عملية الدفع بأي حال؟`)) {
+        return;
+      }
+    }
+
     try {
       const userId = user?.id || 'user-1';
       const userName = user?.fullName || 'Ahmed';
@@ -198,8 +222,8 @@ const POS = () => {
       }
 
       toast({
-        title: 'Sale completed!',
-        description: `${result.sale.invoiceNumber} — ${result.sale.total.toFixed(2)} EGP | الربح: ${result.sale.grossProfit.toFixed(2)} EGP`,
+        title: 'تمت العملية بنجاح!',
+        description: `فاتورة: ${result.sale.invoiceNumber} — الإجمالي: ${result.sale.total.toFixed(2)} EGP | الربح: ${result.sale.grossProfit.toFixed(2)} EGP`,
       });
 
       setCart([]);
@@ -207,9 +231,9 @@ const POS = () => {
       setRefreshKey(k => k + 1);
       searchRef.current?.focus();
     } catch (err: any) {
-      toast({ title: 'Sale failed', description: err.message, variant: 'destructive' });
+      toast({ title: 'فشلت العملية', description: err.message, variant: 'destructive' });
     }
-  }, [cart, invoiceDiscount, selectedPayment, toast, user]);
+  }, [cart, invoiceDiscount, selectedPayment, toast, user, totals.grossProfit]);
 
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
@@ -286,8 +310,13 @@ const POS = () => {
                   </div>
                 </div>
                 <div className="text-end">
-                  <p className="text-base font-bold text-primary">{p.sellingPrice.toLocaleString('ar-EG')} EGP</p>
-                  <p className="text-xs text-muted-foreground">{p.quantity} متوفر</p>
+                  <p className="text-base font-bold text-primary">{(getActiveSalePrice(p.id) ?? p.sellingPrice).toLocaleString('ar-EG')} EGP</p>
+                  <div className="flex items-center justify-end gap-1 mt-0.5">
+                    <span className="text-[10px] font-medium bg-primary/10 text-primary px-1.5 py-0.5 rounded">
+                      {getAvailableBatchesCount(p.id)} {t('pos.batches' || 'دفعات')}
+                    </span>
+                    <p className="text-xs text-muted-foreground">{p.quantity} متوفر</p>
+                  </div>
                 </div>
               </button>
             ))}
@@ -334,22 +363,40 @@ const POS = () => {
                 <div className="my-3 h-px w-full bg-gradient-to-l from-transparent via-border/60 to-transparent" />
 
                 {/* Price + Stock */}
-                <div className="flex w-full items-end justify-between">
-                  <div>
-                    <p className="text-[10px] text-muted-foreground mb-0.5">سعر البيع</p>
-                    <p className="text-lg font-extrabold text-primary leading-none">
-                      {p.sellingPrice.toLocaleString('ar-EG')}
-                      <span className="text-[10px] font-medium text-muted-foreground ms-1">EGP</span>
-                    </p>
+                <div className="flex w-full flex-col gap-1.5">
+                  <div className="flex w-full items-end justify-between">
+                    <div>
+                      <p className="text-[10px] text-muted-foreground mb-0.5">سعر الكاش</p>
+                      <p className="text-lg font-extrabold text-primary leading-none">
+                        {(getActiveSalePrice(p.id) ?? p.sellingPrice).toLocaleString('ar-EG')}
+                        <span className="text-[10px] font-medium text-muted-foreground ms-1">EGP</span>
+                      </p>
+                    </div>
+                    <div className="flex flex-col items-end gap-1">
+                      <span className={cn(
+                        'rounded-lg px-2.5 py-1 text-[10px] font-bold',
+                        isOut ? 'bg-destructive/10 text-destructive' :
+                          isLow ? 'bg-warning/10 text-warning' :
+                            'bg-chart-3/10 text-chart-3'
+                      )}>
+                        {isOut ? 'نفذ' : `${p.quantity} قطعة`}
+                      </span>
+                      {!isOut && getAvailableBatchesCount(p.id) > 1 && (
+                        <span className="text-[9px] font-black bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full border border-blue-200">
+                          {getAvailableBatchesCount(p.id)} دفعات
+                        </span>
+                      )}
+                    </div>
                   </div>
-                  <span className={cn(
-                    'rounded-lg px-2.5 py-1 text-[10px] font-bold',
-                    isOut ? 'bg-destructive/10 text-destructive' :
-                      isLow ? 'bg-warning/10 text-warning' :
-                        'bg-chart-3/10 text-chart-3'
-                  )}>
-                    {isOut ? 'نفذ' : `${p.quantity} قطعة`}
-                  </span>
+                  <div className="flex w-full items-end justify-between">
+                    <div>
+                      <p className="text-[10px] text-muted-foreground mb-0.5">سعر التقسيط</p>
+                      <p className="text-sm font-bold text-muted-foreground leading-none">
+                        {((p as any).installmentPrice || p.sellingPrice * 1.3).toLocaleString('ar-EG')}
+                        <span className="text-[10px] font-medium text-muted-foreground ms-1">EGP</span>
+                      </p>
+                    </div>
+                  </div>
                 </div>
 
                 {/* Hover overlay */}
@@ -378,7 +425,11 @@ const POS = () => {
             </div>
             {cart.length > 0 && (
               <button
-                onClick={() => setCart([])}
+                onClick={() => {
+                  if (window.confirm('هل أنت متأكد من مسح جميع عناصر السلة؟')) {
+                    setCart([]);
+                  }
+                }}
                 className="text-xs text-destructive hover:text-destructive/80 hover:bg-destructive/10 rounded-lg px-3 py-1.5 transition-all duration-200"
               >
                 {t('pos.clearCart')}

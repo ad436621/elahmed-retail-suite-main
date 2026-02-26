@@ -5,15 +5,32 @@
 
 import { AuditEntry } from '@/domain/types';
 
-let auditStore: AuditEntry[] = [];
+const AUDIT_STORAGE_KEY = 'elahmed_audit_logs';
+
+function loadAuditLogs(): AuditEntry[] {
+  try {
+    const data = localStorage.getItem(AUDIT_STORAGE_KEY);
+    return data ? JSON.parse(data) : [];
+  } catch {
+    return [];
+  }
+}
+
+let auditStore: AuditEntry[] = loadAuditLogs();
+
+function saveToStorage() {
+  localStorage.setItem(AUDIT_STORAGE_KEY, JSON.stringify(auditStore));
+}
 
 /** Append-only: no update or delete operations */
 export function saveAuditEntry(entry: AuditEntry): void {
-  auditStore.push(Object.freeze(entry));
+  auditStore.push(Object.freeze({ ...entry }));
+  saveToStorage();
 }
 
 export function saveAuditEntries(entries: AuditEntry[]): void {
-  entries.forEach(e => saveAuditEntry(e));
+  entries.forEach(e => auditStore.push(Object.freeze({ ...e })));
+  saveToStorage();
 }
 
 export function getAllAuditEntries(): readonly AuditEntry[] {

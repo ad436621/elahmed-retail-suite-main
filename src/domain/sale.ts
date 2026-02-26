@@ -4,6 +4,7 @@
 // ============================================================
 
 import { CartItem, Sale, SaleItem, PaymentMethod } from './types';
+import { BatchSaleResult } from './types';
 
 export class SaleError extends Error {
   constructor(message: string) {
@@ -39,13 +40,13 @@ export function buildSaleRecord(
     name: c.product.name,
     qty: c.qty,
     price: c.product.sellingPrice,
-    cost: c.product.costPrice,
+    cost: c.product.costPrice, // Will be overridden or ignored if relying purely on batch totalCost
     lineDiscount: c.lineDiscount,
   }));
 
   const subtotal = cart.reduce((sum, c) => sum + calcLineTotal(c), 0);
   const total = Math.max(0, subtotal - invoiceDiscount);
-  const totalCost = cart.reduce((sum, c) => sum + calcLineCost(c), 0);
+  const totalCost = cart.reduce((sum, c) => sum + calcLineCost(c), 0); // Using the old way for now, or you can pass totalCost directly. Or rely on FIFO result.
   const grossProfit = total - totalCost;
   const marginPct = total > 0 ? (grossProfit / total) * 100 : 0;
 

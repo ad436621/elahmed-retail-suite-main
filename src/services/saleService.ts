@@ -7,6 +7,7 @@ import { CartItem, PaymentMethod, Sale, StockMovement } from '@/domain/types';
 import { buildSaleRecord, calcCartTotals } from '@/domain/sale';
 import { validateStock, createStockMovement } from '@/domain/stock';
 import { createAuditEntry, createVoidAudit } from '@/domain/audit';
+import { calculateFIFOSale, bulkCommitFIFOSales, BatchSaleResult } from '@/domain/batchLogic';
 
 let invoiceCounter = 5; // Start after mock data
 
@@ -35,11 +36,30 @@ export function processSale(
     validateStock(item.product, item.qty);
   }
 
+  // Calculate FIFO for all items
+  const fifoResults: BatchSaleResult[] = [];
+  let totalFifoCost = 0;
+
+  for (const item of cart) {
+    // Pass sellingPrice so FIFO knows what revenue to calculate profit against
+    const result = calculateFIFOSale(item.product.id, item.qty, item.product.sellingPrice);
+    fifoResults.push(result);
+    totalFifoCost += result.totalCost;
+  }
+
   // 2. Build sale record with profit calculations
   const invoiceNumber = generateInvoiceNumber();
   const sale = buildSaleRecord(cart, invoiceDiscount, paymentMethod, employeeName, invoiceNumber);
 
-  // 3. Create stock movements for each item
+  // Override the simplistic cost with the accurate FIFO cost
+  sale.totalCost = totalFifoCost;
+  sale.grossProfit = sale.total - sale.totalCost;
+  sale.marginPct = sale.total > 0 ? Math.round((sale.grossProfit / sale.total) * 1000) / 10 : 0;
+
+  // 3. Commit FIFO changes to batches
+  bulkCommitFIFOSales(fifoResults);
+
+  // 4. Create stock movements for each item
   const stockMovements = cart.map(item =>
     createStockMovement(
       item.product.id,
@@ -52,7 +72,7 @@ export function processSale(
     )
   );
 
-  // 4. Create audit entry
+  // 5. Create audit entry
   const auditEntries = [
     createAuditEntry(
       employeeId,

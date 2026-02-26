@@ -16,7 +16,7 @@ const statusColors: Record<MaintenanceOrder['status'], string> = {
 
 const emptyOrder = {
     customerName: '', customerPhone: '', date: new Date().toISOString().slice(0, 10),
-    deviceName: '', issueDescription: '', spareParts: [] as SparePart[],
+    deviceName: '', deviceCategory: 'mobile' as MaintenanceOrder['deviceCategory'], issueDescription: '', spareParts: [] as SparePart[],
     status: 'pending' as MaintenanceOrder['status'],
     description: '', image: undefined as string | undefined,
 };
@@ -31,6 +31,7 @@ export default function Maintenance() {
     const [form, setForm] = useState(emptyOrder);
     const [newPart, setNewPart] = useState({ name: '', costPrice: 0, salePrice: 0 });
     const [search, setSearch] = useState('');
+    const [categoryFilter, setCategoryFilter] = useState<'all' | MaintenanceOrder['deviceCategory']>('all');
     const [showReport, setShowReport] = useState<MaintenanceOrder | null>(null);
 
     const refresh = () => setOrders(getMaintenanceOrders());
@@ -53,7 +54,7 @@ export default function Maintenance() {
     };
 
     const startEdit = (o: MaintenanceOrder) => {
-        setForm({ customerName: o.customerName, customerPhone: o.customerPhone, date: o.date, deviceName: o.deviceName, issueDescription: o.issueDescription, spareParts: o.spareParts, status: o.status, description: o.description ?? '', image: o.image });
+        setForm({ customerName: o.customerName, customerPhone: o.customerPhone, date: o.date, deviceName: o.deviceName, deviceCategory: o.deviceCategory || 'mobile', issueDescription: o.issueDescription, spareParts: o.spareParts, status: o.status, description: o.description ?? '', image: o.image });
         setEditId(o.id); setShowForm(true);
     };
 
@@ -124,7 +125,8 @@ export default function Maintenance() {
     };
 
     const filtered = orders.filter(o =>
-        o.customerName.includes(search) || o.deviceName.includes(search) || o.customerPhone.includes(search) || o.orderNumber.includes(search)
+        (categoryFilter === 'all' || o.deviceCategory === categoryFilter) &&
+        (o.customerName.includes(search) || o.deviceName.includes(search) || o.customerPhone.includes(search) || o.orderNumber.includes(search))
     );
 
     return (
@@ -145,9 +147,29 @@ export default function Maintenance() {
                 </button>
             </div>
 
-            <div className="relative">
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <input value={search} onChange={e => setSearch(e.target.value)} placeholder="بحث بالاسم أو الجهاز أو رقم الطلب..." className={`${IC} pr-9`} />
+            <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+                <div className="flex gap-2 rounded-2xl bg-muted/40 p-1 w-full sm:w-auto overflow-x-auto border border-border/50 shadow-sm hide-scrollbar">
+                    {([
+                        { id: 'all', label: 'الكل' },
+                        { id: 'mobile', label: 'موبيلات' },
+                        { id: 'tablet', label: 'تابلت' },
+                        { id: 'laptop', label: 'لابتوبات' },
+                        { id: 'computer', label: 'كمبيوترات' },
+                        { id: 'other', label: 'أخرى' },
+                    ] as const).map(c => (
+                        <button
+                            key={c.id}
+                            onClick={() => setCategoryFilter(c.id as typeof categoryFilter)}
+                            className={`whitespace-nowrap rounded-xl px-4 py-2 text-sm font-semibold transition-all ${categoryFilter === c.id ? 'bg-card shadow-sm text-primary border border-border' : 'text-muted-foreground hover:text-foreground'}`}
+                        >
+                            {c.label}
+                        </button>
+                    ))}
+                </div>
+                <div className="relative w-full sm:max-w-xs shrink-0">
+                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <input value={search} onChange={e => setSearch(e.target.value)} placeholder="بحث بالاسم أو الجهاز..." className={`${IC} pr-9 transition-all hover:border-primary/50 focus:border-primary`} />
+                </div>
             </div>
 
             {/* Form Modal */}
@@ -182,9 +204,19 @@ export default function Maintenance() {
                                     {Object.entries(statusLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                                 </select>
                             </div>
-                            <div className="col-span-2">
+                            <div className="col-span-2 md:col-span-1">
                                 <label className="mb-1 block text-xs font-semibold text-muted-foreground">اسم الجهاز *</label>
                                 <input value={form.deviceName} onChange={e => setForm(f => ({ ...f, deviceName: e.target.value }))} className={IC} />
+                            </div>
+                            <div className="col-span-2 md:col-span-1">
+                                <label className="mb-1 block text-xs font-semibold text-muted-foreground">التصنيف</label>
+                                <select value={form.deviceCategory} onChange={e => setForm(f => ({ ...f, deviceCategory: e.target.value as MaintenanceOrder['deviceCategory'] }))} className={IC}>
+                                    <option value="mobile">موبايل</option>
+                                    <option value="tablet">تابلت</option>
+                                    <option value="laptop">لابتوب</option>
+                                    <option value="computer">كمبيوتر</option>
+                                    <option value="other">أخرى</option>
+                                </select>
                             </div>
                             <div className="col-span-2">
                                 <label className="mb-1 block text-xs font-semibold text-muted-foreground">وصف المشكلة</label>

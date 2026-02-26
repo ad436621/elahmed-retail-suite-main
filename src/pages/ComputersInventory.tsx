@@ -9,16 +9,18 @@ import {
     getComputers, addComputer, updateComputer, deleteComputer,
     getComputerAccessories, addComputerAccessory, updateComputerAccessory, deleteComputerAccessory,
 } from '@/data/computersData';
+import { isBarcodeDuplicate } from '@/repositories/productRepository';
 import { useToast } from '@/hooks/use-toast';
+import { useInventoryData } from '@/hooks/useInventoryData';
 
 const emptyComputer: Omit<ComputerItem, 'id' | 'createdAt' | 'updatedAt'> = {
-    name: '', model: '', color: '', quantity: 1,
+    name: '', model: '', barcode: '', deviceType: 'laptop', color: '', quantity: 1, processor: '',
     oldCostPrice: 0, newCostPrice: 0, salePrice: 0,
     notes: '', description: '', image: undefined,
 };
 const emptyAcc: Omit<ComputerAccessory, 'id' | 'createdAt' | 'updatedAt'> = {
-    name: '', model: '', quantity: 1, color: '',
-    oldCostPrice: 0, newCostPrice: 0, salePrice: 0,
+    name: '', model: '', barcode: '', quantity: 1, color: '',
+    oldCostPrice: 0, newCostPrice: 0, salePrice: 0, subcategory: '',
     notes: '', description: '', image: undefined,
 };
 
@@ -114,11 +116,11 @@ export default function ComputersInventory() {
     const initTab = (location.state as { tab?: string })?.tab === 'accessories' ? 'accessories' : 'main';
     const [tab, setTab] = useState<'main' | 'accessories'>(initTab as 'main' | 'accessories');
 
-    const [computers, setComputers] = useState<ComputerItem[]>(() => getComputers());
-    const [accessories, setAccessories] = useState<ComputerAccessory[]>(() => getComputerAccessories());
+    const computers = useInventoryData(getComputers, ['gx_computers_v2']);
+    const accessories = useInventoryData(getComputerAccessories, ['gx_computer_accessories']);
 
-    const [showComputerForm, setShowComputerForm] = useState(false);
-    const [editComputerId, setEditComputerId] = useState<string | null>(null);
+    const [showCompForm, setShowCompForm] = useState(false);
+    const [editCompId, setEditCompId] = useState<string | null>(null);
     const [cF, setCF] = useState(emptyComputer);
 
     const [showAccForm, setShowAccForm] = useState(false);
@@ -126,6 +128,7 @@ export default function ComputersInventory() {
     const [aF, setAF] = useState(emptyAcc);
 
     const [search, setSearch] = useState('');
+    const [accCategoryFilter, setAccCategoryFilter] = useState<string>('all');
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
 
     useEffect(() => {
@@ -133,34 +136,46 @@ export default function ComputersInventory() {
         setTab(s === 'accessories' ? 'accessories' : 'main');
     }, [location.state]);
 
+    const refreshComputers = () => { };
+    const refreshAccessories = () => { };
+
     /* ── Computer CRUD ── */
-    const handleComputerSubmit = () => {
-        if (!cF.name.trim()) { toast({ title: 'خطأ', description: 'الاسم مطلوب', variant: 'destructive' }); return; }
-        if (editComputerId) { updateComputer(editComputerId, cF); toast({ title: '✅ تم التعديل' }); }
+    const handleCompSubmit = () => {
+        if (!cF.name.trim()) { toast({ title: 'خطأ', description: 'اسم الجهاز مطلوب', variant: 'destructive' }); return; }
+        if (cF.barcode && isBarcodeDuplicate(cF.barcode, editCompId || undefined)) {
+            toast({ title: 'خطأ', description: 'الباركود المدخل (' + cF.barcode + ') موجود مسبقاً', variant: 'destructive' }); return;
+        }
+        if (editCompId) { updateComputer(editCompId, cF); toast({ title: '✅ تم التعديل', description: cF.name }); }
         else { addComputer(cF); toast({ title: '✅ تمت الإضافة', description: cF.name }); }
-        setCF(emptyComputer); setEditComputerId(null); setShowComputerForm(false); setComputers(getComputers());
+        setCF(emptyComputer); setEditCompId(null); setShowCompForm(false); refreshComputers();
     };
-    const openAddComputer = () => { setCF(emptyComputer); setEditComputerId(null); setShowComputerForm(true); };
-    const openEditComputer = (c: ComputerItem) => {
-        setCF({ name: c.name, model: c.model, color: c.color, quantity: c.quantity, oldCostPrice: c.oldCostPrice, newCostPrice: c.newCostPrice, salePrice: c.salePrice, notes: c.notes, description: c.description ?? '', image: c.image });
-        setEditComputerId(c.id); setShowComputerForm(true);
+    const openAddComp = () => { setCF(emptyComputer); setEditCompId(null); setShowCompForm(true); };
+    const openEditComp = (c: ComputerItem) => {
+        setCF({ name: c.name, model: c.model, barcode: c.barcode || '', deviceType: c.deviceType, color: c.color, quantity: c.quantity, processor: c.processor, oldCostPrice: c.oldCostPrice, newCostPrice: c.newCostPrice, salePrice: c.salePrice, notes: c.notes, description: c.description ?? '', image: c.image });
+        setEditCompId(c.id); setShowCompForm(true);
     };
 
     /* ── Accessory CRUD ── */
     const handleAccSubmit = () => {
-        if (!aF.name.trim()) { toast({ title: 'خطأ', description: 'الاسم مطلوب', variant: 'destructive' }); return; }
-        if (editAccId) { updateComputerAccessory(editAccId, aF); toast({ title: '✅ تم التعديل' }); }
+        if (!aF.name.trim()) { toast({ title: 'خطأ', description: 'اسم الإكسسوار مطلوب', variant: 'destructive' }); return; }
+        if (aF.barcode && isBarcodeDuplicate(aF.barcode, editAccId || undefined)) {
+            toast({ title: 'خطأ', description: 'الباركود المدخل (' + aF.barcode + ') موجود مسبقاً', variant: 'destructive' }); return;
+        }
+        if (editAccId) { updateComputerAccessory(editAccId, aF); toast({ title: '✅ تم التعديل', description: aF.name }); }
         else { addComputerAccessory(aF); toast({ title: '✅ تمت الإضافة', description: aF.name }); }
-        setAF(emptyAcc); setEditAccId(null); setShowAccForm(false); setAccessories(getComputerAccessories());
+        setAF(emptyAcc); setEditAccId(null); setShowAccForm(false); refreshAccessories();
     };
     const openAddAcc = () => { setAF(emptyAcc); setEditAccId(null); setShowAccForm(true); };
     const openEditAcc = (a: ComputerAccessory) => {
-        setAF({ name: a.name, model: a.model, quantity: a.quantity, color: a.color, oldCostPrice: a.oldCostPrice, newCostPrice: a.newCostPrice, salePrice: a.salePrice, notes: a.notes, description: a.description ?? '', image: a.image });
+        setAF({ name: a.name, model: a.model, barcode: a.barcode || '', subcategory: a.subcategory, quantity: a.quantity, color: a.color, oldCostPrice: a.oldCostPrice, newCostPrice: a.newCostPrice, salePrice: a.salePrice, notes: a.notes, description: a.description ?? '', image: a.image });
         setEditAccId(a.id); setShowAccForm(true);
     };
 
     const filteredComputers = computers.filter(c => c.name.toLowerCase().includes(search.toLowerCase()) || c.model.toLowerCase().includes(search.toLowerCase()));
-    const filteredAcc = accessories.filter(a => a.name.toLowerCase().includes(search.toLowerCase()) || a.model.toLowerCase().includes(search.toLowerCase()));
+    const filteredAcc = accessories.filter(a =>
+        (accCategoryFilter === 'all' || a.subcategory === accCategoryFilter) &&
+        (a.name.toLowerCase().includes(search.toLowerCase()) || a.model.toLowerCase().includes(search.toLowerCase()))
+    );
 
     const ProfitBadge = ({ sale, cost }: { sale: number; cost: number }) => sale > 0 && cost > 0 ? (
         <div className={`mt-3 rounded-xl border px-4 py-3 flex items-center justify-between ${(sale - cost) >= 0 ? 'bg-emerald-50 border-emerald-200' : 'bg-red-50 border-red-200'}`}>
@@ -188,18 +203,39 @@ export default function ComputersInventory() {
                         <button onClick={() => setViewMode('grid')} className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all flex items-center gap-1.5 ${viewMode === 'grid' ? 'bg-card shadow text-primary border border-border' : 'text-muted-foreground hover:text-foreground'}`}><LayoutGrid className="h-3.5 w-3.5" /> شبكة</button>
                         <button onClick={() => setViewMode('table')} className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all flex items-center gap-1.5 ${viewMode === 'table' ? 'bg-card shadow text-primary border border-border' : 'text-muted-foreground hover:text-foreground'}`}><List className="h-3.5 w-3.5" /> جدول</button>
                     </div>
-                    <button onClick={tab === 'main' ? openAddComputer : openAddAcc}
+                    <button onClick={tab === 'main' ? openAddComp : openAddAcc}
                         className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 active:scale-95 transition-all shadow-md">
                         <Plus className="h-4 w-4" /> {tab === 'main' ? 'إضافة كمبيوتر' : 'إضافة إكسسوار'}
                     </button>
                 </div>
             </div>
 
-            {/* Tabs */}
             <div className="flex gap-2 rounded-2xl bg-muted/50 p-1 w-fit border border-border/50">
                 <button onClick={() => { setTab('main'); setSearch(''); }} className={`rounded-xl px-5 py-2 text-sm font-semibold transition-all flex items-center gap-2 ${tab === 'main' ? 'bg-card shadow-sm text-primary border border-border' : 'text-muted-foreground hover:text-foreground'}`}><Laptop className="h-4 w-4" /> كمبيوترات</button>
                 <button onClick={() => { setTab('accessories'); setSearch(''); }} className={`rounded-xl px-5 py-2 text-sm font-semibold transition-all flex items-center gap-2 ${tab === 'accessories' ? 'bg-card shadow-sm text-primary border border-border' : 'text-muted-foreground hover:text-foreground'}`}><Headphones className="h-4 w-4" /> إكسسوارات</button>
             </div>
+
+            {tab === 'accessories' && (
+                <div className="flex gap-2 w-full overflow-x-auto hide-scrollbar pb-1">
+                    {([
+                        { id: 'all', label: 'الكل' },
+                        { id: 'mouse', label: 'ماوسات' },
+                        { id: 'keyboard', label: 'كيبوردات' },
+                        { id: 'storage', label: 'وسائط تخزين' },
+                        { id: 'bag', label: 'حقائب' },
+                        { id: 'cable', label: 'كابلات' },
+                        { id: 'other', label: 'أخرى' },
+                    ] as const).map(c => (
+                        <button
+                            key={c.id}
+                            onClick={() => setAccCategoryFilter(c.id)}
+                            className={`shrink-0 rounded-xl px-4 py-1.5 text-xs font-semibold border transition-all ${accCategoryFilter === c.id ? 'bg-primary/10 text-primary border-primary/30' : 'bg-card border-border text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
+                        >
+                            {c.label}
+                        </button>
+                    ))}
+                </div>
+            )}
 
             {/* Search */}
             <div className="relative max-w-md">
@@ -208,12 +244,12 @@ export default function ComputersInventory() {
             </div>
 
             {/* ── Computer Form Modal — INLINE JSX ── */}
-            {showComputerForm && (
+            {showCompForm && (
                 <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-sm overflow-y-auto py-4 px-4">
                     <div className="w-full max-w-lg rounded-2xl border border-border bg-card shadow-2xl animate-scale-in">
                         <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-border">
-                            <h2 className="text-base font-bold text-foreground">{editComputerId ? '✏️ تعديل كمبيوتر' : '➕ إضافة كمبيوتر'}</h2>
-                            <button onClick={() => { setShowComputerForm(false); setEditComputerId(null); }} className="rounded-xl p-2 hover:bg-muted transition-colors text-muted-foreground"><X className="h-5 w-5" /></button>
+                            <h2 className="text-base font-bold text-foreground">{editCompId ? '✏️ تعديل كمبيوتر' : '➕ إضافة كمبيوتر'}</h2>
+                            <button onClick={() => { setShowCompForm(false); setEditCompId(null); }} className="rounded-xl p-2 hover:bg-muted transition-colors text-muted-foreground"><X className="h-5 w-5" /></button>
                         </div>
                         <div className="p-4 space-y-3">
                             <ImageUpload value={cF.image} onChange={v => setCF(f => ({ ...f, image: v }))} />
@@ -221,6 +257,26 @@ export default function ComputersInventory() {
                             <div>
                                 <label className="mb-1.5 block text-xs font-semibold text-muted-foreground uppercase tracking-wide">اسم المنتج *</label>
                                 <input value={cF.name} onChange={e => setCF(f => ({ ...f, name: e.target.value }))} placeholder="مثال: Lenovo ThinkPad X1 Carbon" className={IC} autoFocus />
+                            </div>
+                            {/* Device Type & Barcode */}
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="mb-1.5 block text-xs font-semibold text-muted-foreground uppercase tracking-wide">نوع الجهاز</label>
+                                    <div className="flex gap-2">
+                                        <button type="button" onClick={() => setCF(f => ({ ...f, deviceType: 'laptop' }))}
+                                            className={`flex-1 rounded-xl border-2 py-2.5 text-sm font-semibold transition-all flex items-center justify-center gap-2 ${cF.deviceType === 'laptop' ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:border-primary/50'}`}>
+                                            لابتوب
+                                        </button>
+                                        <button type="button" onClick={() => setCF(f => ({ ...f, deviceType: 'computer' }))}
+                                            className={`flex-1 rounded-xl border-2 py-2.5 text-sm font-semibold transition-all flex items-center justify-center gap-2 ${cF.deviceType === 'computer' ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:border-primary/50'}`}>
+                                            PC
+                                        </button>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="mb-1.5 block text-xs font-semibold text-muted-foreground uppercase tracking-wide">الباركود</label>
+                                    <input value={cF.barcode} onChange={e => setCF(f => ({ ...f, barcode: e.target.value }))} placeholder="تلقائي إن تُرك فارغاً" className={IC} />
+                                </div>
                             </div>
                             <div>
                                 <label className="mb-1.5 block text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5"><AlignLeft className="h-3.5 w-3.5 text-primary" /> الوصف التفصيلي</label>
@@ -242,10 +298,10 @@ export default function ComputersInventory() {
                             </div>
                         </div>
                         <div className="flex gap-2 px-4 pb-4 pt-1">
-                            <button onClick={handleComputerSubmit} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary/90 active:scale-95 transition-all shadow-md">
-                                <Check className="h-4 w-4" /> {editComputerId ? 'حفظ التعديلات' : 'إضافة الكمبيوتر'}
+                            <button onClick={handleCompSubmit} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary/90 active:scale-95 transition-all shadow-md">
+                                <Check className="h-4 w-4" /> {editCompId ? 'حفظ التعديلات' : 'إضافة الكمبيوتر'}
                             </button>
-                            <button onClick={() => { setShowComputerForm(false); setEditComputerId(null); }} className="flex-none rounded-xl border border-border px-5 py-2.5 text-sm font-medium hover:bg-muted transition-colors">إلغاء</button>
+                            <button onClick={() => { setShowCompForm(false); setEditCompId(null); }} className="flex-none rounded-xl border border-border px-5 py-2.5 text-sm font-medium hover:bg-muted transition-colors">إلغاء</button>
                         </div>
                     </div>
                 </div>
@@ -262,19 +318,38 @@ export default function ComputersInventory() {
                         <div className="p-6 space-y-4">
                             <ImageUpload value={aF.image} onChange={v => setAF(f => ({ ...f, image: v }))} />
                             <div className="border-t border-border/50" />
-                            <div>
-                                <label className="mb-1.5 block text-xs font-semibold text-muted-foreground uppercase tracking-wide">اسم الإكسسوار *</label>
-                                <input value={aF.name} onChange={e => setAF(f => ({ ...f, name: e.target.value }))} placeholder="مثال: ماوس لاسلكي" className={IC} autoFocus />
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="mb-1.5 block text-xs font-semibold text-muted-foreground uppercase tracking-wide">اسم الإكسسوار *</label>
+                                    <input value={aF.name} onChange={e => setAF(f => ({ ...f, name: e.target.value }))} placeholder="مثال: ماوس جيمنج" className={IC} autoFocus />
+                                </div>
+                                <div>
+                                    <label className="mb-1.5 block text-xs font-semibold text-muted-foreground uppercase tracking-wide">الباركود</label>
+                                    <input value={aF.barcode} onChange={e => setAF(f => ({ ...f, barcode: e.target.value }))} placeholder="تلقائي إن تُرك فارغاً" className={IC} />
+                                </div>
                             </div>
                             <div>
                                 <label className="mb-1.5 block text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5"><AlignLeft className="h-3.5 w-3.5 text-primary" /> الوصف</label>
                                 <textarea value={aF.description} onChange={e => setAF(f => ({ ...f, description: e.target.value }))} rows={3} placeholder="وصف تفصيلي..." className={`${IC} resize-none`} />
                             </div>
-                            <div className="grid grid-cols-3 gap-3">
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase tracking-wide">التصنيف</label>
+                                    <select value={aF.subcategory} onChange={e => setAF(f => ({ ...f, subcategory: e.target.value }))} className={IC}>
+                                        <option value="">اختار التصنيف</option>
+                                        <option value="mouse">ماوس</option>
+                                        <option value="keyboard">كيبورد</option>
+                                        <option value="storage">وحدة تخزين / فلاشة</option>
+                                        <option value="bag">شنطة / حقيبة</option>
+                                        <option value="cable">كابل</option>
+                                        <option value="other">أخرى</option>
+                                    </select>
+                                </div>
                                 <div><label className="mb-1 block text-xs font-medium text-muted-foreground">الموديل</label><input value={aF.model} onChange={e => setAF(f => ({ ...f, model: e.target.value }))} className={IC} /></div>
+                            </div>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                 <div><label className="mb-1 block text-xs font-medium text-muted-foreground">اللون</label><input value={aF.color} onChange={e => setAF(f => ({ ...f, color: e.target.value }))} className={IC} /></div>
                                 <div><label className="mb-1 block text-xs font-medium text-muted-foreground">العدد</label><input type="number" min={0} value={aF.quantity} onChange={e => setAF(f => ({ ...f, quantity: +e.target.value }))} className={IC} /></div>
-                                <div><label className="mb-1 block text-xs font-medium text-muted-foreground">س.شراء قديم</label><input type="number" min={0} value={aF.oldCostPrice} onChange={e => setAF(f => ({ ...f, oldCostPrice: +e.target.value }))} className={IC} /></div>
                                 <div><label className="mb-1 block text-xs font-medium text-muted-foreground">س.شراء جديد</label><input type="number" min={0} value={aF.newCostPrice} onChange={e => setAF(f => ({ ...f, newCostPrice: +e.target.value }))} className={IC} /></div>
                                 <div><label className="mb-1 block text-xs font-medium text-muted-foreground">سعر البيع</label><input type="number" min={0} value={aF.salePrice} onChange={e => setAF(f => ({ ...f, salePrice: +e.target.value }))} className={IC} /></div>
                             </div>
@@ -296,10 +371,10 @@ export default function ComputersInventory() {
                 const isEmpty = items.length === 0;
                 const EmptyIcon = tab === 'main' ? Laptop : Headphones;
                 const emptyText = tab === 'main' ? 'لا توجد كمبيوترات' : 'لا توجد إكسسوارات';
-                const onEdit = (it: ComputerItem | ComputerAccessory) => tab === 'main' ? openEditComputer(it as ComputerItem) : openEditAcc(it as ComputerAccessory);
+                const onEdit = (it: ComputerItem | ComputerAccessory) => tab === 'main' ? openEditComp(it as ComputerItem) : openEditAcc(it as ComputerAccessory);
                 const onDel = (it: ComputerItem | ComputerAccessory) => {
-                    if (tab === 'main') { deleteComputer(it.id); setComputers(getComputers()); }
-                    else { deleteComputerAccessory(it.id); setAccessories(getComputerAccessories()); }
+                    if (tab === 'main') { deleteComputer(it.id); }
+                    else { deleteComputerAccessory(it.id); }
                     toast({ title: 'تم الحذف', description: it.name });
                 };
 

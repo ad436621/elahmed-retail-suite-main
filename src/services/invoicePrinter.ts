@@ -19,7 +19,16 @@ const DEFAULT_SHOP_INFO: ShopInfo = {
   phone: '',
 };
 
-export function printInvoice(sale: Sale, shopInfo: ShopInfo = DEFAULT_SHOP_INFO) {
+export function printInvoice(sale: Sale) {
+  const settingsRaw = localStorage.getItem('app_settings');
+  const settings = settingsRaw ? JSON.parse(settingsRaw) : {};
+
+  const shopInfo: ShopInfo = {
+    nameAr: settings.companyName || DEFAULT_SHOP_INFO.nameAr,
+    nameEn: settings.companySuffix || DEFAULT_SHOP_INFO.nameEn,
+    address: settings.branchAddress || DEFAULT_SHOP_INFO.address,
+    phone: settings.shopPhone || DEFAULT_SHOP_INFO.phone,
+  };
   const date = new Date(sale.date);
   const dateStr = date.toLocaleDateString('ar-EG');
   const timeStr = date.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });

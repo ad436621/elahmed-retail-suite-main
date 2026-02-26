@@ -35,13 +35,9 @@ export function isBelowMinMargin(product: Product): boolean {
 
 /** Generate an internal barcode if none provided */
 export function generateBarcode(): string {
-  const prefix = '2';
-  const timestamp = Date.now().toString().slice(-9);
-  const random = Math.floor(Math.random() * 100).toString().padStart(2, '0');
-  const code = prefix + timestamp + random;
-  // Simple checksum digit
-  const sum = code.split('').reduce((s, d) => s + parseInt(d), 0);
-  return code + (sum % 10).toString();
+  const timestamp = Date.now().toString(36).toUpperCase();
+  const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+  return `AUTO-${timestamp}-${random}`;
 }
 
 /** Search products by term (name, barcode) — memoize-friendly pure function */

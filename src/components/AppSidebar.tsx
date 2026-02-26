@@ -18,6 +18,10 @@ import {
   Users,
   Barcode,
   Archive,
+  Car,
+  AlertTriangle,
+  Warehouse,
+  DollarSign,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -55,7 +59,9 @@ const AppSidebar = () => {
     { to: '/mobiles', icon: Smartphone, label: 'الموبيلات وإكسسوارات', gradient: 'from-cyan-500/20 to-sky-500/20', iconColor: 'text-cyan-400', perm: 'mobiles' },
     { to: '/computers', icon: Monitor, label: 'الكمبيوتر وإكسسوارات', gradient: 'from-indigo-500/20 to-blue-500/20', iconColor: 'text-indigo-400', perm: 'computers' },
     { to: '/devices', icon: Tv, label: 'الأجهزة وإكسسوارات', gradient: 'from-amber-500/20 to-orange-500/20', iconColor: 'text-amber-400', perm: 'devices' },
-    { to: '/used', icon: Archive, label: 'المستعمل', gradient: 'from-violet-500/20 to-purple-500/20', iconColor: 'text-violet-400' },
+    { to: '/used', icon: Archive, label: 'المستعمل', gradient: 'from-violet-500/20 to-purple-500/20', iconColor: 'text-violet-400', perm: 'used' },
+    { to: '/cars', icon: Car, label: 'السيارات', gradient: 'from-emerald-500/20 to-teal-500/20', iconColor: 'text-emerald-400', perm: 'cars' },
+    { to: '/warehouse', icon: Warehouse, label: 'المستودع', gradient: 'from-teal-500/20 to-cyan-500/20', iconColor: 'text-teal-400', perm: 'warehouse' },
     { to: '/barcodes', icon: Barcode, label: 'طباعة الباركود', gradient: 'from-violet-500/20 to-purple-500/20', iconColor: 'text-violet-400', perm: 'inventory' },
   ];
 
@@ -64,6 +70,8 @@ const AppSidebar = () => {
     { to: '/maintenance', icon: Wrench, label: 'الصيانة', gradient: 'from-amber-500/20 to-yellow-500/20', iconColor: 'text-amber-400', perm: 'maintenance' },
     { to: '/installments', icon: FileText, label: 'التقسيط', gradient: 'from-blue-500/20 to-sky-500/20', iconColor: 'text-blue-400', perm: 'installments' },
     { to: '/expenses', icon: TrendingDown, label: 'المصروفات', gradient: 'from-rose-500/20 to-red-500/20', iconColor: 'text-rose-400', perm: 'expenses' },
+    { to: '/damaged', icon: AlertTriangle, label: 'الهالك', gradient: 'from-red-500/20 to-orange-500/20', iconColor: 'text-red-400', perm: 'damaged' },
+    { to: '/other-revenue', icon: DollarSign, label: 'أرباح أخرى', gradient: 'from-green-500/20 to-emerald-500/20', iconColor: 'text-green-400', perm: 'otherRevenue' },
   ];
 
   const handleLogout = () => {
@@ -126,8 +134,8 @@ const AppSidebar = () => {
             <div className="absolute inset-0 bg-primary/20 rounded-xl blur-lg opacity-50 animate-pulse" />
             <div className="relative h-12 w-12 rounded-xl overflow-hidden bg-[#111] shadow-lg shadow-primary/30 border border-primary/20 flex items-center justify-center">
               <img
-                src="/logo.png"
-                alt="GX GLEAMEX"
+                src={settings.logoUrl || '/logo.png'}
+                alt={settings.companyName || 'GLEAMEX'}
                 className="h-full w-full object-contain"
                 onError={(e) => {
                   e.currentTarget.style.display = 'none';
@@ -142,9 +150,9 @@ const AppSidebar = () => {
           </div>
           <div className="min-w-0">
             <h1 className="text-base font-black tracking-wider text-sidebar-foreground uppercase">
-              {settings.companyName || 'GX GLEAMEX'}
+              {settings.companyName || 'GLEAMEX'}
             </h1>
-            <p className="text-[10px] text-primary font-bold tracking-widest uppercase">للتجارة و التوزيع</p>
+            <p className="text-[10px] text-primary font-bold tracking-widest uppercase">{settings.companySuffix || 'ش. ذ. م.م'}</p>
           </div>
         </div>
         <div className="w-full p-2 rounded-lg bg-sidebar-accent/50 border border-sidebar-border/50">

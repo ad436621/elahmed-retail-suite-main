@@ -1,13 +1,17 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Plus, Trash2, X, Check, CreditCard, DollarSign, Search, Printer, Calendar } from 'lucide-react';
 import { InstallmentContract } from '@/domain/types';
 import { getContracts, addContract, addPaymentToContract, deleteContract } from '@/data/installmentsData';
+import { getAllInventoryProducts, updateProductQuantity } from '@/repositories/productRepository';
+import { saveMovements } from '@/repositories/stockRepository';
+import { validateStock } from '@/domain/stock';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 
 const emptyForm = {
     customerName: '', customerIdCard: '', guarantorName: '', guarantorIdCard: '',
-    customerPhone: '', customerAddress: '', productName: '',
-    totalPrice: 0, downPayment: 0, months: 12,
+    customerPhone: '', customerAddress: '', productId: '', productName: '',
+    cashPrice: 0, installmentPrice: 0, downPayment: 0, months: 12,
 };
 
 const IC = "w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all";
@@ -23,6 +27,7 @@ const statusLabels: Record<InstallmentContract['status'], string> = {
 
 export default function Installments() {
     const { toast } = useToast();
+    const { user } = useAuth();
     const [contracts, setContracts] = useState<InstallmentContract[]>(() => getContracts());
     const [showForm, setShowForm] = useState(false);
     const [showPayment, setShowPayment] = useState<string | null>(null);
@@ -31,9 +36,11 @@ export default function Installments() {
     const [payment, setPayment] = useState({ amount: 0, date: new Date().toISOString().slice(0, 10), note: '' });
     const [search, setSearch] = useState('');
 
+    const inventory = useMemo(() => getAllInventoryProducts(), [showForm]);
+
     const refresh = () => setContracts(getContracts());
 
-    const remaining = form.totalPrice - form.downPayment;
+    const remaining = form.installmentPrice - form.downPayment;
     const monthly = form.months > 0 ? Math.ceil(remaining / form.months) : 0;
 
     const handleSubmit = () => {
@@ -41,8 +48,37 @@ export default function Installments() {
             toast({ title: 'خطأ', description: 'اسم العميل والمنتج مطلوبان', variant: 'destructive' });
             return;
         }
-        addContract(form);
-        toast({ title: '✅ تم إنشاء العقد', description: form.customerName });
+
+        const selectedProduct = inventory.find(p => p.id === form.productId);
+        if (selectedProduct) {
+            try {
+                validateStock(selectedProduct, 1);
+            } catch (err: any) {
+                toast({ title: 'خطأ في المخزون', description: err.message || 'الكمية غير متوفرة', variant: 'destructive' });
+                return;
+            }
+        }
+
+        const { productId, ...contractData } = form;
+        const newContract = addContract(contractData as any);
+
+        if (selectedProduct) {
+            updateProductQuantity(selectedProduct.id, selectedProduct.quantity - 1);
+            saveMovements([{
+                id: crypto.randomUUID(),
+                productId: selectedProduct.id,
+                type: 'sale', // Treating installment item as sold
+                quantityChange: -1,
+                previousQuantity: selectedProduct.quantity,
+                newQuantity: selectedProduct.quantity - 1,
+                reason: `عقد تقسيط: ${newContract.contractNumber} (${newContract.customerName})`,
+                referenceId: newContract.id,
+                userId: user?.id || 'system',
+                timestamp: new Date().toISOString()
+            }]);
+        }
+
+        toast({ title: '✅ تم إنشاء العقد بنجاح وتم خصم المنتج من المخزون', description: form.customerName });
         setForm(emptyForm); setShowForm(false); refresh();
     };
 
@@ -66,7 +102,8 @@ export default function Installments() {
         <p><b>الضامن:</b> ${c.guarantorName} &nbsp; <b>بطاقة الضامن:</b> ${c.guarantorIdCard}</p>
         <p><b>الموبايل:</b> ${c.customerPhone} &nbsp; <b>العنوان:</b> ${c.customerAddress}</p>
         <p><b>المنتج:</b> ${c.productName}</p>
-        <p><b>إجمالي السعر:</b> ${c.totalPrice.toLocaleString()} ج.م &nbsp; <b>المقدم:</b> ${c.downPayment.toLocaleString()} ج.م &nbsp; <b>الباقي:</b> ${c.remaining.toLocaleString()} ج.م</p>
+        <p><b>إجمالي سعر التقسيط:</b> ${c.installmentPrice?.toLocaleString() || (c as any).totalPrice?.toLocaleString()} ج.م &nbsp; <b>سعر الكاش:</b> ${c.cashPrice?.toLocaleString() || '—'} ج.م</p>
+        <p><b>المقدم:</b> ${c.downPayment.toLocaleString()} ج.م &nbsp; <b>الباقي:</b> ${c.remaining.toLocaleString()} ج.م</p>
         <p><b>عدد الأشهر:</b> ${c.months} شهر &nbsp; <b>القسط الشهري:</b> ${c.monthlyInstallment.toLocaleString()} ج.م</p>
         <table><thead><tr><th>الشهر</th><th>تاريخ الاستحقاق</th><th>المبلغ</th><th>الحالة</th></tr></thead>
         <tbody>${scheduleRows}</tbody></table>
@@ -136,12 +173,41 @@ export default function Installments() {
                                 <input value={form.customerAddress} onChange={e => setForm(f => ({ ...f, customerAddress: e.target.value }))} className={IC} />
                             </div>
                             <div className="col-span-2">
-                                <label className="mb-1 block text-xs font-semibold text-muted-foreground">المنتج *</label>
-                                <input value={form.productName} onChange={e => setForm(f => ({ ...f, productName: e.target.value }))} placeholder="اسم المنتج..." className={IC} />
+                                <label className="mb-1 block text-xs font-semibold text-muted-foreground">المنتج (من المخزون) *</label>
+                                <select
+                                    value={form.productId || ''}
+                                    onChange={e => {
+                                        if (!e.target.value) {
+                                            setForm(f => ({ ...f, productId: '', productName: '', cashPrice: 0, installmentPrice: 0 }));
+                                            return;
+                                        }
+                                        const p = inventory.find(x => x.id === e.target.value);
+                                        if (p) {
+                                            const installP = Math.ceil(p.sellingPrice * 1.3); // Default 30% increase
+                                            setForm(f => ({ ...f, productId: p.id, productName: p.name, cashPrice: p.sellingPrice, installmentPrice: installP }));
+                                        }
+                                    }}
+                                    className={IC}
+                                >
+                                    <option value="">-- اختر منتج للصرف من المخزون --</option>
+                                    {inventory.map(p => (
+                                        <option key={p.id} value={p.id} disabled={p.quantity === 0}>
+                                            {p.name} {p.quantity === 0 ? '(نفد المخزون)' : `(${p.sellingPrice} ج.م - ${p.quantity} قطعة)`}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div className="col-span-2">
+                                <label className="mb-1 block text-xs font-semibold text-muted-foreground">أو أدخل اسم المنتج يدوياً (بدون خصم من المخزون)</label>
+                                <input value={form.productName} onChange={e => setForm(f => ({ ...f, productName: e.target.value, productId: '' }))} placeholder="اسم المنتج..." className={IC} />
                             </div>
                             <div>
-                                <label className="mb-1 block text-xs font-semibold text-muted-foreground">السعر الإجمالي (ج.م)</label>
-                                <input type="number" min={0} value={form.totalPrice} onChange={e => setForm(f => ({ ...f, totalPrice: +e.target.value }))} className={IC} />
+                                <label className="mb-1 block text-xs font-semibold text-muted-foreground">سعر الكاش (ج.م)</label>
+                                <input type="number" min={0} value={form.cashPrice} onChange={e => setForm(f => ({ ...f, cashPrice: +e.target.value }))} className={IC} />
+                            </div>
+                            <div>
+                                <label className="mb-1 block text-xs font-semibold text-muted-foreground">إجمالي التقسيط (ج.م)</label>
+                                <input type="number" min={0} value={form.installmentPrice} onChange={e => setForm(f => ({ ...f, installmentPrice: +e.target.value }))} className={IC} />
                             </div>
                             <div>
                                 <label className="mb-1 block text-xs font-semibold text-muted-foreground">المقدم (ج.م)</label>
@@ -152,7 +218,7 @@ export default function Installments() {
                                 <input type="number" min={1} value={form.months} onChange={e => setForm(f => ({ ...f, months: +e.target.value }))} className={IC} />
                             </div>
                         </div>
-                        {form.totalPrice > 0 && (
+                        {form.installmentPrice > 0 && (
                             <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 grid grid-cols-3 gap-2 text-center text-xs">
                                 <div><p className="text-muted-foreground">الباقي</p><p className="font-bold text-blue-700 text-base">{remaining.toLocaleString()} ج.م</p></div>
                                 <div><p className="text-muted-foreground">القسط الشهري</p><p className="font-bold text-primary text-base">{monthly.toLocaleString()} ج.م</p></div>
@@ -241,13 +307,18 @@ export default function Installments() {
                                 <span>تم السداد: <span className="font-semibold text-emerald-600">{c.paidTotal.toLocaleString()} ج.م</span></span>
                                 <span>الباقي: <span className="font-semibold text-primary">{c.remaining.toLocaleString()} ج.م</span></span>
                             </div>
+                            {c.status !== 'completed' && c.schedule.length > 0 && (
+                                <div className="text-[11px] text-muted-foreground mb-1.5">
+                                    تاريخ الانتهاء المتوقع: <span className="font-semibold">{c.schedule[c.schedule.length - 1].dueDate}</span>
+                                </div>
+                            )}
                             <div className="h-2.5 w-full rounded-full bg-muted overflow-hidden">
                                 <div className="h-full rounded-full bg-gradient-to-l from-primary to-amber-400 transition-all duration-500"
-                                    style={{ width: `${Math.min(100, (c.paidTotal / c.totalPrice) * 100)}%` }} />
+                                    style={{ width: `${Math.min(100, (c.paidTotal / (c.installmentPrice || (c as any).totalPrice)) * 100)}%` }} />
                             </div>
                             <div className="flex justify-between text-xs mt-1">
-                                <span className="text-emerald-600">{Math.round((c.paidTotal / c.totalPrice) * 100)}% مسدد</span>
-                                <span className="text-muted-foreground">إجمالي: {c.totalPrice.toLocaleString()} ج.م</span>
+                                <span className="text-emerald-600">{Math.round((c.paidTotal / (c.installmentPrice || (c as any).totalPrice)) * 100)}% مسدد</span>
+                                <span className="text-muted-foreground">إجمالي التقسيط: {(c.installmentPrice || (c as any).totalPrice).toLocaleString()} ج.م</span>
                             </div>
                         </div>
 

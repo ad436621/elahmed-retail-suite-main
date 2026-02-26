@@ -3,6 +3,7 @@
 // ============================================================
 
 import { MobileItem, MobileAccessory } from '@/domain/types';
+import { generateBarcode } from '@/domain/product';
 
 const MOBILES_KEY = 'gx_mobiles_v2';
 const ACCESSORIES_KEY = 'gx_mobile_accessories';
@@ -25,6 +26,7 @@ export function addMobile(item: Omit<MobileItem, 'id' | 'createdAt' | 'updatedAt
     const newItem: MobileItem = {
         ...item,
         id: crypto.randomUUID(),
+        barcode: item.barcode || generateBarcode(),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
     };
@@ -60,6 +62,7 @@ export function addMobileAccessory(item: Omit<MobileAccessory, 'id' | 'createdAt
     const newItem: MobileAccessory = {
         ...item,
         id: crypto.randomUUID(),
+        barcode: item.barcode || generateBarcode(),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
     };

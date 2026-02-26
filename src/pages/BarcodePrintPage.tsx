@@ -1,6 +1,6 @@
 import { useState, useMemo, useRef } from 'react';
 import { Printer, Search, Check, X, SlidersHorizontal, Tag, Barcode } from 'lucide-react';
-import { getAllProducts } from '@/repositories/productRepository';
+import { getAllInventoryProducts } from '@/repositories/productRepository';
 import { getMobiles } from '@/data/mobilesData';
 import { getComputers } from '@/data/computersData';
 import { getDevices } from '@/data/devicesData';
@@ -83,7 +83,7 @@ export default function BarcodePrintPage() {
         const items: PrintItem[] = [];
 
         // 1. Main inventory products (have dedicated barcode field)
-        getAllProducts().filter(p => p.barcode).forEach(p => items.push({
+        getAllInventoryProducts().filter(p => p.barcode).forEach(p => items.push({
             id: p.id,
             name: p.name,
             barcode: p.barcode,

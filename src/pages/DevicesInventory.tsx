@@ -9,16 +9,18 @@ import {
     getDevices, addDevice, updateDevice, deleteDevice,
     getDeviceAccessories, addDeviceAccessory, updateDeviceAccessory, deleteDeviceAccessory,
 } from '@/data/devicesData';
+import { isBarcodeDuplicate } from '@/repositories/productRepository';
 import { useToast } from '@/hooks/use-toast';
+import { useInventoryData } from '@/hooks/useInventoryData';
 
 const emptyDevice: Omit<DeviceItem, 'id' | 'createdAt' | 'updatedAt'> = {
-    name: '', model: '', color: '', quantity: 1,
+    name: '', model: '', barcode: '', color: '', quantity: 1,
     oldCostPrice: 0, newCostPrice: 0, salePrice: 0,
     notes: '', description: '', image: undefined,
 };
 const emptyAcc: Omit<DeviceAccessory, 'id' | 'createdAt' | 'updatedAt'> = {
-    name: '', model: '', quantity: 1, color: '',
-    oldCostPrice: 0, newCostPrice: 0, salePrice: 0,
+    name: '', model: '', barcode: '', quantity: 1, color: '',
+    oldCostPrice: 0, newCostPrice: 0, salePrice: 0, subcategory: '',
     notes: '', description: '', image: undefined,
 };
 
@@ -122,8 +124,8 @@ export default function DevicesInventory() {
     const initTab = (location.state as { tab?: string })?.tab === 'accessories' ? 'accessories' : 'main';
     const [tab, setTab] = useState<'main' | 'accessories'>(initTab as 'main' | 'accessories');
 
-    const [devices, setDevices] = useState<DeviceItem[]>(() => getDevices());
-    const [accessories, setAccessories] = useState<DeviceAccessory[]>(() => getDeviceAccessories());
+    const devices = useInventoryData(getDevices, ['gx_devices_v2']);
+    const accessories = useInventoryData(getDeviceAccessories, ['gx_device_accessories']);
 
     const [showDeviceForm, setShowDeviceForm] = useState(false);
     const [editDeviceId, setEditDeviceId] = useState<string | null>(null);
@@ -134,6 +136,7 @@ export default function DevicesInventory() {
     const [aF, setAF] = useState<AccForm>(emptyAcc);
 
     const [search, setSearch] = useState('');
+    const [accCategoryFilter, setAccCategoryFilter] = useState<string>('all');
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
 
     useEffect(() => {
@@ -144,31 +147,40 @@ export default function DevicesInventory() {
     /* ── Device CRUD ── */
     const handleDeviceSubmit = () => {
         if (!dF.name.trim()) { toast({ title: 'خطأ', description: 'الاسم مطلوب', variant: 'destructive' }); return; }
+        if (dF.barcode && isBarcodeDuplicate(dF.barcode, editDeviceId || undefined)) {
+            toast({ title: 'خطأ', description: 'الباركود المدخل (' + dF.barcode + ') موجود مسبقاً', variant: 'destructive' }); return;
+        }
         if (editDeviceId) { updateDevice(editDeviceId, dF); toast({ title: '✅ تم التعديل' }); }
         else { addDevice(dF); toast({ title: '✅ تمت الإضافة', description: dF.name }); }
-        setDF(emptyDevice); setEditDeviceId(null); setShowDeviceForm(false); setDevices(getDevices());
+        setDF(emptyDevice); setEditDeviceId(null); setShowDeviceForm(false);
     };
     const openAddDevice = () => { setDF(emptyDevice); setEditDeviceId(null); setShowDeviceForm(true); };
     const openEditDevice = (d: DeviceItem) => {
-        setDF({ name: d.name, model: d.model, color: d.color, quantity: d.quantity, oldCostPrice: d.oldCostPrice, newCostPrice: d.newCostPrice, salePrice: d.salePrice, notes: d.notes, description: d.description ?? '', image: d.image });
+        setDF({ name: d.name, model: d.model, barcode: d.barcode || '', color: d.color, quantity: d.quantity, oldCostPrice: d.oldCostPrice, newCostPrice: d.newCostPrice, salePrice: d.salePrice, notes: d.notes, description: d.description ?? '', image: d.image });
         setEditDeviceId(d.id); setShowDeviceForm(true);
     };
 
     /* ── Accessory CRUD ── */
     const handleAccSubmit = () => {
         if (!aF.name.trim()) { toast({ title: 'خطأ', description: 'الاسم مطلوب', variant: 'destructive' }); return; }
+        if (aF.barcode && isBarcodeDuplicate(aF.barcode, editAccId || undefined)) {
+            toast({ title: 'خطأ', description: 'الباركود المدخل (' + aF.barcode + ') موجود مسبقاً', variant: 'destructive' }); return;
+        }
         if (editAccId) { updateDeviceAccessory(editAccId, aF); toast({ title: '✅ تم التعديل' }); }
         else { addDeviceAccessory(aF); toast({ title: '✅ تمت الإضافة', description: aF.name }); }
-        setAF(emptyAcc); setEditAccId(null); setShowAccForm(false); setAccessories(getDeviceAccessories());
+        setAF(emptyAcc); setEditAccId(null); setShowAccForm(false);
     };
     const openAddAcc = () => { setAF(emptyAcc); setEditAccId(null); setShowAccForm(true); };
     const openEditAcc = (a: DeviceAccessory) => {
-        setAF({ name: a.name, model: a.model, quantity: a.quantity, color: a.color, oldCostPrice: a.oldCostPrice, newCostPrice: a.newCostPrice, salePrice: a.salePrice, notes: a.notes, description: a.description ?? '', image: a.image });
+        setAF({ name: a.name, model: a.model, barcode: a.barcode || '', subcategory: a.subcategory, quantity: a.quantity, color: a.color, oldCostPrice: a.oldCostPrice, newCostPrice: a.newCostPrice, salePrice: a.salePrice, notes: a.notes, description: a.description ?? '', image: a.image });
         setEditAccId(a.id); setShowAccForm(true);
     };
 
     const filteredDevices = devices.filter(d => d.name.toLowerCase().includes(search.toLowerCase()) || d.model.toLowerCase().includes(search.toLowerCase()));
-    const filteredAcc = accessories.filter(a => a.name.toLowerCase().includes(search.toLowerCase()) || a.model.toLowerCase().includes(search.toLowerCase()));
+    const filteredAcc = accessories.filter(a =>
+        (accCategoryFilter === 'all' || a.subcategory === accCategoryFilter) &&
+        (a.name.toLowerCase().includes(search.toLowerCase()) || a.model.toLowerCase().includes(search.toLowerCase()))
+    );
 
     /* ─── Reusable price section ─── */
     const ProfitBadge = ({ sale, cost }: { sale: number; cost: number }) => sale > 0 && cost > 0 ? (
@@ -204,11 +216,30 @@ export default function DevicesInventory() {
                 </div>
             </div>
 
-            {/* Tabs */}
             <div className="flex gap-2 rounded-2xl bg-muted/50 p-1 w-fit border border-border/50">
                 <button onClick={() => { setTab('main'); setSearch(''); }} className={`rounded-xl px-5 py-2 text-sm font-semibold transition-all flex items-center gap-2 ${tab === 'main' ? 'bg-card shadow-sm text-primary border border-border' : 'text-muted-foreground hover:text-foreground'}`}><Tv className="h-4 w-4" /> أجهزة</button>
                 <button onClick={() => { setTab('accessories'); setSearch(''); }} className={`rounded-xl px-5 py-2 text-sm font-semibold transition-all flex items-center gap-2 ${tab === 'accessories' ? 'bg-card shadow-sm text-primary border border-border' : 'text-muted-foreground hover:text-foreground'}`}><Headphones className="h-4 w-4" /> إكسسوارات</button>
             </div>
+
+            {tab === 'accessories' && (
+                <div className="flex gap-2 w-full overflow-x-auto hide-scrollbar pb-1">
+                    {([
+                        { id: 'all', label: 'الكل' },
+                        { id: 'cable', label: 'كابلات' },
+                        { id: 'adapter', label: 'مشتركات / محولات' },
+                        { id: 'mount', label: 'حوامل' },
+                        { id: 'other', label: 'أخرى' },
+                    ] as const).map(c => (
+                        <button
+                            key={c.id}
+                            onClick={() => setAccCategoryFilter(c.id)}
+                            className={`shrink-0 rounded-xl px-4 py-1.5 text-xs font-semibold border transition-all ${accCategoryFilter === c.id ? 'bg-primary/10 text-primary border-primary/30' : 'bg-card border-border text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
+                        >
+                            {c.label}
+                        </button>
+                    ))}
+                </div>
+            )}
 
             {/* Search */}
             <div className="relative max-w-md">
@@ -227,9 +258,15 @@ export default function DevicesInventory() {
                         <div className="p-4 space-y-3">
                             <ImageUpload value={dF.image} onChange={v => setDF(f => ({ ...f, image: v }))} />
                             <div className="border-t border-border/50" />
-                            <div>
-                                <label className="mb-1.5 block text-xs font-semibold text-muted-foreground uppercase tracking-wide">اسم المنتج *</label>
-                                <input value={dF.name} onChange={e => setDF(f => ({ ...f, name: e.target.value }))} placeholder="مثال: تلفزيون Samsung 55 بوصة" className={IC} autoFocus />
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="mb-1.5 block text-xs font-semibold text-muted-foreground uppercase tracking-wide">اسم المنتج *</label>
+                                    <input value={dF.name} onChange={e => setDF(f => ({ ...f, name: e.target.value }))} placeholder="مثال: تلفزيون Samsung 55 بوصة" className={IC} autoFocus />
+                                </div>
+                                <div>
+                                    <label className="mb-1.5 block text-xs font-semibold text-muted-foreground uppercase tracking-wide">الباركود</label>
+                                    <input value={dF.barcode} onChange={e => setDF(f => ({ ...f, barcode: e.target.value }))} placeholder="تلقائي إن تُرك فارغاً" className={IC} />
+                                </div>
                             </div>
                             <div>
                                 <label className="mb-1.5 block text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5"><AlignLeft className="h-3.5 w-3.5 text-primary" /> الوصف التفصيلي</label>
@@ -271,19 +308,36 @@ export default function DevicesInventory() {
                         <div className="p-6 space-y-4">
                             <ImageUpload value={aF.image} onChange={v => setAF(f => ({ ...f, image: v }))} />
                             <div className="border-t border-border/50" />
-                            <div>
-                                <label className="mb-1.5 block text-xs font-semibold text-muted-foreground uppercase tracking-wide">اسم الإكسسوار *</label>
-                                <input value={aF.name} onChange={e => setAF(f => ({ ...f, name: e.target.value }))} placeholder="مثال: ريموت كنترول" className={IC} autoFocus />
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="mb-1.5 block text-xs font-semibold text-muted-foreground uppercase tracking-wide">اسم الإكسسوار *</label>
+                                    <input value={aF.name} onChange={e => setAF(f => ({ ...f, name: e.target.value }))} placeholder="مثال: ريموت كنترول" className={IC} autoFocus />
+                                </div>
+                                <div>
+                                    <label className="mb-1.5 block text-xs font-semibold text-muted-foreground uppercase tracking-wide">الباركود</label>
+                                    <input value={aF.barcode} onChange={e => setAF(f => ({ ...f, barcode: e.target.value }))} placeholder="تلقائي إن تُرك فارغاً" className={IC} />
+                                </div>
                             </div>
                             <div>
                                 <label className="mb-1.5 block text-xs font-semibold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5"><AlignLeft className="h-3.5 w-3.5 text-primary" /> الوصف</label>
                                 <textarea value={aF.description} onChange={e => setAF(f => ({ ...f, description: e.target.value }))} rows={3} placeholder="وصف تفصيلي..." className={`${IC} resize-none`} />
                             </div>
-                            <div className="grid grid-cols-3 gap-3">
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase tracking-wide">التصنيف</label>
+                                    <select value={aF.subcategory} onChange={e => setAF(f => ({ ...f, subcategory: e.target.value }))} className={IC}>
+                                        <option value="">اختار التصنيف</option>
+                                        <option value="cable">كابل</option>
+                                        <option value="adapter">مشترك / محول</option>
+                                        <option value="mount">حامل</option>
+                                        <option value="other">أخرى</option>
+                                    </select>
+                                </div>
                                 <div><label className="mb-1 block text-xs font-medium text-muted-foreground">الموديل</label><input value={aF.model} onChange={e => setAF(f => ({ ...f, model: e.target.value }))} className={IC} /></div>
+                            </div>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                 <div><label className="mb-1 block text-xs font-medium text-muted-foreground">اللون</label><input value={aF.color} onChange={e => setAF(f => ({ ...f, color: e.target.value }))} className={IC} /></div>
                                 <div><label className="mb-1 block text-xs font-medium text-muted-foreground">العدد</label><input type="number" min={0} value={aF.quantity} onChange={e => setAF(f => ({ ...f, quantity: +e.target.value }))} className={IC} /></div>
-                                <div><label className="mb-1 block text-xs font-medium text-muted-foreground">س.شراء قديم</label><input type="number" min={0} value={aF.oldCostPrice} onChange={e => setAF(f => ({ ...f, oldCostPrice: +e.target.value }))} className={IC} /></div>
                                 <div><label className="mb-1 block text-xs font-medium text-muted-foreground">س.شراء جديد</label><input type="number" min={0} value={aF.newCostPrice} onChange={e => setAF(f => ({ ...f, newCostPrice: +e.target.value }))} className={IC} /></div>
                                 <div><label className="mb-1 block text-xs font-medium text-muted-foreground">سعر البيع</label><input type="number" min={0} value={aF.salePrice} onChange={e => setAF(f => ({ ...f, salePrice: +e.target.value }))} className={IC} /></div>
                             </div>
@@ -307,8 +361,8 @@ export default function DevicesInventory() {
                 const emptyText = tab === 'main' ? 'لا توجد أجهزة' : 'لا توجد إكسسوارات';
                 const onEdit = (item: DeviceItem | DeviceAccessory) => tab === 'main' ? openEditDevice(item as DeviceItem) : openEditAcc(item as DeviceAccessory);
                 const onDel = (item: DeviceItem | DeviceAccessory) => {
-                    if (tab === 'main') { deleteDevice(item.id); setDevices(getDevices()); }
-                    else { deleteDeviceAccessory(item.id); setAccessories(getDeviceAccessories()); }
+                    if (tab === 'main') { deleteDevice(item.id); }
+                    else { deleteDeviceAccessory(item.id); }
                     toast({ title: 'تم الحذف', description: item.name });
                 };
 

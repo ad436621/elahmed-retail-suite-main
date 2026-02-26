@@ -3,6 +3,7 @@
 // ============================================================
 
 import { DeviceItem, DeviceAccessory } from '@/domain/types';
+import { generateBarcode } from '@/domain/product';
 
 const DEVICES_KEY = 'gx_devices_v2';
 const ACCESSORIES_KEY = 'gx_device_accessories';
@@ -25,6 +26,7 @@ export function addDevice(item: Omit<DeviceItem, 'id' | 'createdAt' | 'updatedAt
     const newItem: DeviceItem = {
         ...item,
         id: crypto.randomUUID(),
+        barcode: item.barcode || generateBarcode(),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
     };

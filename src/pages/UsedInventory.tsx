@@ -1,11 +1,12 @@
 import { useState, useRef } from 'react';
-import { Plus, Trash2, Pencil, X, Check, Archive, Search, ImagePlus, ImageOff, AlignLeft } from 'lucide-react';
-import { UsedDevice } from '@/domain/types';
+import { Plus, Trash2, Pencil, X, Check, Archive, Search, ImagePlus, ImageOff, AlignLeft, Smartphone, Laptop, Monitor, Layers } from 'lucide-react';
+import { UsedDevice, UsedDeviceType } from '@/domain/types';
 import { getUsedDevices, addUsedDevice, updateUsedDevice, deleteUsedDevice } from '@/data/usedDevicesData';
 import { useToast } from '@/hooks/use-toast';
+import { useInventoryData } from '@/hooks/useInventoryData';
 
 const emptyForm: Omit<UsedDevice, 'id' | 'createdAt' | 'updatedAt'> = {
-    name: '', model: '', serialNumber: '', color: '', storage: '', ram: '',
+    name: '', model: '', deviceType: 'mobile', serialNumber: '', color: '', storage: '', ram: '',
     condition: '', purchasePrice: 0, salePrice: 0, description: '', image: undefined,
 };
 
@@ -52,14 +53,14 @@ function ImageUpload({ value, onChange }: { value?: string; onChange: (v: string
 
 export default function UsedInventory() {
     const { toast } = useToast();
-    const [items, setItems] = useState<UsedDevice[]>(() => getUsedDevices());
+    const items = useInventoryData(getUsedDevices, ['gx_used_devices']);
     const [showForm, setShowForm] = useState(false);
     const [editId, setEditId] = useState<string | null>(null);
     const [form, setForm] = useState(emptyForm);
     const [search, setSearch] = useState('');
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
 
-    const refresh = () => setItems(getUsedDevices());
+    const refresh = () => { };
 
     const handleSubmit = () => {
         if (!form.name.trim()) { toast({ title: 'خطأ', description: 'اسم الجهاز مطلوب', variant: 'destructive' }); return; }
@@ -69,7 +70,7 @@ export default function UsedInventory() {
     };
 
     const startEdit = (item: UsedDevice) => {
-        setForm({ name: item.name, model: item.model, serialNumber: item.serialNumber, color: item.color, storage: item.storage, ram: item.ram, condition: item.condition, purchasePrice: item.purchasePrice, salePrice: item.salePrice, description: item.description ?? '', image: item.image });
+        setForm({ name: item.name, model: item.model, deviceType: item.deviceType || 'mobile', serialNumber: item.serialNumber, color: item.color, storage: item.storage, ram: item.ram, condition: item.condition, purchasePrice: item.purchasePrice, salePrice: item.salePrice, description: item.description ?? '', image: item.image });
         setEditId(item.id); setShowForm(true);
     };
 
@@ -123,6 +124,24 @@ export default function UsedInventory() {
                             <div className="col-span-2">
                                 <label className="mb-1 block text-xs font-semibold text-muted-foreground">اسم الجهاز *</label>
                                 <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="مثال: iPhone 13" className={IC} />
+                            </div>
+                            {/* Device Type */}
+                            <div className="col-span-2">
+                                <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">نوع الجهاز</label>
+                                <div className="flex flex-wrap gap-2">
+                                    {[
+                                        { type: 'mobile', label: 'موبايل', icon: Smartphone },
+                                        { type: 'tablet', label: 'تابلت', icon: Monitor },
+                                        { type: 'laptop', label: 'لاب توب', icon: Laptop },
+                                        { type: 'computer', label: 'كمبيوتر', icon: Monitor },
+                                        { type: 'other', label: 'أخرى', icon: Layers },
+                                    ].map(({ type, label, icon: Icon }) => (
+                                        <button key={type} type="button" onClick={() => setForm(f => ({ ...f, deviceType: type as UsedDeviceType }))}
+                                            className={`flex-1 min-w-[80px] rounded-xl border-2 py-2 text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${form.deviceType === type ? 'border-primary bg-primary/10 text-primary' : 'border-border text-muted-foreground hover:border-primary/50'}`}>
+                                            <Icon className="h-3.5 w-3.5" /> {label}
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
                             <div className="col-span-2">
                                 <label className="mb-1 block text-xs font-semibold text-muted-foreground flex items-center gap-1"><AlignLeft className="h-3.5 w-3.5 text-primary" /> وصف الجهاز</label>
