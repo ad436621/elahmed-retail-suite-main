@@ -306,13 +306,25 @@ export default function Dashboard() {
   const totalRemainingDebt = useMemo(() => currentContracts.reduce((s, c) => s + c.remaining, 0), [currentContracts]);
 
   /* Inventory counts */
-  const totalMobiles = mobiles.reduce((s, m) => s + (m.quantity || 1), 0);
+  // Mobiles
+  const newMobiles = useMemo(() => mobiles.filter(m => m.condition !== 'used').reduce((s, m) => s + (m.quantity || 1), 0), [mobiles]);
+  const usedMobiles = useMemo(() => mobiles.filter(m => m.condition === 'used').reduce((s, m) => s + (m.quantity || 1), 0), [mobiles]);
   const totalMobAcc = mobileAcc.reduce((s, a) => s + (a.quantity || 1), 0);
-  const totalComputers = computers.reduce((s, c) => s + (c.quantity || 1), 0);
+  const totalMobiles = newMobiles + usedMobiles;
+
+  // Computers
+  const newComputers = useMemo(() => computers.filter(c => c.condition !== 'used').reduce((s, c) => s + (c.quantity || 1), 0), [computers]);
+  const usedComputers = useMemo(() => computers.filter(c => c.condition === 'used').reduce((s, c) => s + (c.quantity || 1), 0), [computers]);
   const totalCompAcc = computerAcc.reduce((s, a) => s + (a.quantity || 1), 0);
-  const totalDevices = devices.reduce((s, d) => s + (d.quantity || 1), 0);
+  const totalComputers = newComputers + usedComputers;
+
+  // Devices
+  const newDevices = useMemo(() => devices.filter(d => d.condition !== 'used').reduce((s, d) => s + (d.quantity || 1), 0), [devices]);
+  const usedDevicesCount = useMemo(() => devices.filter(d => d.condition === 'used').reduce((s, d) => s + (d.quantity || 1), 0), [devices]);
   const totalDevAcc = deviceAcc.reduce((s, a) => s + (a.quantity || 1), 0);
-  const newCarsCount = cars.filter(c => c.condition === 'new').length;
+  const totalDevices = newDevices + usedDevicesCount;
+
+  // Cars
   const usedCarsCount = cars.filter(c => c.condition === 'used').length;
   const totalUsedCount = useMemo(() => mobiles.filter(m => m.condition === 'used').length + computers.filter(c => c.condition === 'used').length + devices.filter(d => d.condition === 'used').length, [mobiles, computers, devices]);
 
@@ -371,7 +383,7 @@ export default function Dashboard() {
           icon={Smartphone} iconBg="bg-cyan-500"
           gradient="from-cyan-50 to-sky-50"
           label="الموبيلات"
-          sub={`${totalMobiles} وحدة • ${totalMobAcc} إكسسوار`}
+          sub={`${newMobiles} جديد • ${usedMobiles} مستعمل • ${totalMobAcc} إكسسوار`}
           to="/mobiles"
           items={[
             { label: 'إدارة الموبيلات', route: '/mobiles#mobiles' },
@@ -382,7 +394,7 @@ export default function Dashboard() {
           icon={Monitor} iconBg="bg-indigo-500"
           gradient="from-indigo-50 to-blue-50"
           label="الكمبيوترات"
-          sub={`${totalComputers} وحدة • ${totalCompAcc} إكسسوار`}
+          sub={`${newComputers} جديد • ${usedComputers} مستعمل • ${totalCompAcc} إكسسوار`}
           to="/computers"
           items={[
             { label: 'إدارة الكمبيوترات', route: '/computers#computers' },
@@ -393,7 +405,7 @@ export default function Dashboard() {
           icon={Tv} iconBg="bg-amber-500"
           gradient="from-amber-50 to-orange-50"
           label="الأجهزة"
-          sub={`${totalDevices} وحدة • ${totalDevAcc} إكسسوار`}
+          sub={`${newDevices} جديد • ${usedDevicesCount} مستعمل • ${totalDevAcc} إكسسوار`}
           to="/devices"
           items={[
             { label: 'إدارة الأجهزة', route: '/devices#devices' },
