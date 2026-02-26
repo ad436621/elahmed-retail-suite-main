@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
-    Plus, Trash2, Pencil, X, Check, Smartphone, Search,
+    Plus, Trash2, Pencil, X, Check, Smartphone, Headphones, Search,
     ImagePlus, ImageOff, AlignLeft, LayoutGrid, List, Tag
 } from 'lucide-react';
 import { MobileItem, MobileAccessory } from '@/domain/types';
