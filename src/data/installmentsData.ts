@@ -19,18 +19,28 @@ export function saveContracts(contracts: InstallmentContract[]): void {
 
 /** Generate monthly schedule starting from next month */
 function generateSchedule(remaining: number, months: number): InstallmentScheduleItem[] {
-    const monthly = months > 0 ? Math.ceil(remaining / months) : remaining;
+    if (months <= 0 || remaining <= 0) return [];
+
+    // Calculate base monthly payment (floor to avoid overcharging)
+    const baseMonthly = Math.floor(remaining / months);
+    // Calculate remainder that needs to be distributed
+    const remainder = remaining - (baseMonthly * months);
+
     const items: InstallmentScheduleItem[] = [];
     const now = new Date();
+
     for (let i = 1; i <= months; i++) {
         const due = new Date(now.getFullYear(), now.getMonth() + i, 1);
+        // First 'remainder' months get +1 to handle the rounding difference
+        const monthAmount = baseMonthly + (i <= remainder ? 1 : 0);
         items.push({
             month: i,
             dueDate: due.toISOString().slice(0, 10),
-            amount: i === months ? remaining - monthly * (months - 1) : monthly,
+            amount: monthAmount,
             paid: false,
         });
     }
+
     return items;
 }
 
@@ -38,8 +48,14 @@ export function addContract(
     contract: Omit<InstallmentContract, 'id' | 'contractNumber' | 'monthlyInstallment' | 'schedule' | 'payments' | 'paidTotal' | 'remaining' | 'status' | 'createdAt' | 'updatedAt'>
 ): InstallmentContract {
     const all = getContracts();
+
+    // Calculate remaining after down payment
     const remaining = contract.installmentPrice - contract.downPayment;
-    const monthly = contract.months > 0 ? Math.ceil(remaining / contract.months) : remaining;
+
+    // Calculate monthly installment (floor to avoid overcharging)
+    const monthly = contract.months > 0 ? Math.floor(remaining / contract.months) : remaining;
+
+    // Generate schedule with accurate distribution
     const schedule = generateSchedule(remaining, contract.months);
 
     const newContract: InstallmentContract = {

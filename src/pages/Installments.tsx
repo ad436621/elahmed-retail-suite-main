@@ -41,7 +41,7 @@ export default function Installments() {
     const refresh = () => setContracts(getContracts());
 
     const remaining = form.installmentPrice - form.downPayment;
-    const monthly = form.months > 0 ? Math.ceil(remaining / form.months) : 0;
+    const monthly = form.months > 0 ? Math.floor(remaining / form.months) : 0;
 
     const handleSubmit = () => {
         if (!form.customerName.trim() || !form.productName.trim()) {
