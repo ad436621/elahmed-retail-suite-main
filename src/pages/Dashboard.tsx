@@ -202,7 +202,7 @@ function BarRow({ label, value, total, color }: { label: string; value: number; 
 /* ─── Category Card ─── */
 function CategoryCard({ icon: Icon, iconBg, label, sub, gradient, to, items }: {
   icon: React.ElementType; iconBg: string; label: string; sub: string;
-  gradient: string; to: string; items: { label: string; route: string }[];
+  gradient: string; to: string; items: { label: string; route: string; state?: object }[];
 }) {
   const [open, setOpen] = useState(false);
   return (
@@ -219,7 +219,7 @@ function CategoryCard({ icon: Icon, iconBg, label, sub, gradient, to, items }: {
       {open && (
         <div className="absolute top-full mt-2 right-0 left-0 z-40 rounded-2xl border border-border bg-card shadow-2xl overflow-hidden animate-scale-in">
           {items.map(it => (
-            <Link key={it.route} to={it.route} onClick={() => setOpen(false)}
+            <Link key={it.route} to={it.route} state={it.state} onClick={() => setOpen(false)}
               className="flex items-center gap-3 px-4 py-3 hover:bg-muted/40 border-b border-border/40 last:border-0 transition-colors text-sm font-medium text-foreground">
               <Layers className="h-4 w-4 text-primary shrink-0" />
               {it.label}
@@ -388,6 +388,7 @@ export default function Dashboard() {
           to="/mobiles"
           items={[
             { label: 'إدارة الموبيلات', route: '/mobiles#mobiles' },
+            { label: 'المستعملة', route: '/mobiles', state: { filter: 'used' } },
             { label: 'إكسسوارات الموبيلات', route: '/mobiles#accessories' },
           ]}
         />
@@ -399,6 +400,7 @@ export default function Dashboard() {
           to="/computers"
           items={[
             { label: 'إدارة الكمبيوترات', route: '/computers#computers' },
+            { label: 'المستعملة', route: '/computers', state: { filter: 'used' } },
             { label: 'إكسسوارات الكمبيوترات', route: '/computers#accessories' },
           ]}
         />
@@ -410,6 +412,7 @@ export default function Dashboard() {
           to="/devices"
           items={[
             { label: 'إدارة الأجهزة', route: '/devices#devices' },
+            { label: 'المستعملة', route: '/devices', state: { filter: 'used' } },
             { label: 'إكسسوارات الأجهزة', route: '/devices#accessories' },
           ]}
         />
@@ -483,7 +486,7 @@ export default function Dashboard() {
               { icon: Tv, label: 'الأجهزة', count: totalDevices, acc: totalDevAcc, value: deviceInvValue, color: 'text-amber-600 bg-amber-100/80', to: '/devices' },
               { icon: Smartphone, label: 'مستعمل', count: totalUsedCount, acc: null, value: usedInvValue, color: 'text-orange-600 bg-orange-100/80', to: '/mobiles', filter: 'used' },
               { icon: Car, label: 'السيارات', count: cars.length, acc: null, value: carsInvValue, color: 'text-emerald-600 bg-emerald-100/80', to: '/cars' },
-            ] as const).map(({ icon: Icon, label, count, acc, value, color, to, filter }) => (
+            ] as const).map(({ icon: Icon, label, count, acc, value, color, to, filter }: { icon: React.ElementType; label: string; count: number; acc: number | null; value: number; color: string; to: string; filter?: string }) => (
               <Link key={to + (filter || '')} to={to} state={filter ? { filter } : undefined} className="flex items-center gap-4 px-5 py-4 hover:bg-muted/60 transition-colors group relative overflow-hidden">
                 <div className="absolute inset-0 bg-gradient-to-l from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                 <div className={`p-3 rounded-2xl ${color} shadow-inner bg-gradient-to-br from-white/40 to-transparent backdrop-blur-md relative z-10`}><Icon className="h-5 w-5" /></div>
