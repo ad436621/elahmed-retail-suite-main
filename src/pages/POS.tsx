@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Search, Plus, Minus, Trash2, CreditCard, Banknote, ArrowLeftRight, Printer, ShoppingCart, Sparkles, Package, Tag, Percent, Keyboard, Scan } from 'lucide-react';
+import { Search, Plus, Minus, Trash2, CreditCard, Banknote, ArrowLeftRight, Printer, ShoppingCart, Sparkles, Package, Tag, Percent, Keyboard, Scan, Smartphone, Monitor, Tv, Car, Layers, X } from 'lucide-react';
 import { useBarcodeScanner } from '@/hooks/useBarcodeScanner';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
@@ -71,10 +71,58 @@ const POS = () => {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [invoiceDiscount, setInvoiceDiscount] = useState(0);
   const [selectedPayment, setSelectedPayment] = useState<PaymentMethod>('cash');
+  const [selectedMainCategory, setSelectedMainCategory] = useState<string>('all');
+  const [selectedSubCategory, setSelectedSubCategory] = useState<string>('all');
   const searchRef = useRef<HTMLInputElement>(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [scannerActive, setScannerActive] = useState(false);
   const scannerTimer = useRef<ReturnType<typeof setTimeout>>();
+
+  // Main categories configuration
+  const mainCategories = [
+    { id: 'all', label: 'الكل', icon: Layers },
+    { id: 'mobiles', label: 'موبيلات', icon: Smartphone },
+    { id: 'computers', label: 'كمبيوترات', icon: Monitor },
+    { id: 'devices', label: 'أجهزة', icon: Tv },
+    { id: 'cars', label: 'سيارات', icon: Car },
+  ];
+
+  // Subcategories based on main category
+  const getSubCategories = (mainCat: string) => {
+    const subs: Record<string, { id: string; label: string }[]> = {
+      all: [
+        { id: 'all', label: 'الكل' },
+        { id: 'new', label: 'جديد' },
+        { id: 'used', label: 'مستعمل' },
+        { id: 'accessory', label: 'إكسسوار' },
+      ],
+      mobiles: [
+        { id: 'all', label: 'الكل' },
+        { id: 'mobile-new', label: 'موبايلات جديد' },
+        { id: 'mobile-used', label: 'موبايلات مستعمل' },
+        { id: 'tablet', label: 'تابلت' },
+        { id: 'maccessory', label: 'إكسسوارات' },
+      ],
+      computers: [
+        { id: 'all', label: 'الكل' },
+        { id: 'laptop', label: 'لابتوب' },
+        { id: 'desktop', label: 'كمبيوتر مكتبى' },
+        { id: 'caccessory', label: 'إكسسوارات' },
+      ],
+      devices: [
+        { id: 'all', label: 'الكل' },
+        { id: 'screen', label: 'شاشات' },
+        { id: 'gaming', label: 'أجهزة ألعاب' },
+        { id: 'daccessory', label: 'إكسسوارات' },
+      ],
+      cars: [
+        { id: 'all', label: 'الكل' },
+        { id: 'car-new', label: 'جديد' },
+        { id: 'car-used', label: 'مستعمل' },
+      ],
+    };
+    return subs[mainCat] || subs.all;
+  };
 
   // Flash scanner indicator on scan
   const flashScanner = useCallback(() => {
@@ -175,6 +223,121 @@ const POS = () => {
 
   // Real-time totals via service layer
   const totals = useMemo(() => getCartTotals(cart, invoiceDiscount), [cart, invoiceDiscount]);
+
+  // Filter products by category selection
+  const categoryFilteredProducts = useMemo(() => {
+    if (selectedMainCategory === 'all' && selectedSubCategory === 'all') {
+      return allProducts;
+    }
+
+    return allProducts.filter(p => {
+      const category = p.category?.toLowerCase() || '';
+      const isUsed = false; // Product type doesn't have isUsed field
+
+      // Main category filter
+      if (selectedMainCategory !== 'all') {
+        switch (selectedMainCategory) {
+          case 'mobiles':
+            if (!category.includes('موبيل') && !category.includes('موبايل') && !category.includes('تبل') && !category.includes('سماع') && !category.includes('شاحن') && !category.includes('كفر') && !category.includes(' aux') && category !== 'mobile accessory' && category !== 'mobile') {
+              // Check for car products - exclude
+              if (category.includes('سيارة') || category.includes('car')) return false;
+              // Check for computer products - exclude
+              if (category.includes('لابتوب') || category.includes('كمبيوتر') || category.includes('ماوس') || category.includes('كيبورد') || category.includes('شاشة') || category.includes('computer') || category.includes('laptop') || category.includes('desktop') || category.includes('mouse') || category.includes('keyboard') || category.includes('monitor')) return false;
+              // Check for devices
+              if (category.includes('شاشة') || category.includes('جهاز') || category.includes('ألعاب') || category.includes('device') || category.includes('gaming')) return false;
+              return true; // Allow if no specific match (might be mobile related)
+            }
+            break;
+          case 'computers':
+            if (!category.includes('لابتوب') && !category.includes('كمبيوتر') && !category.includes('ماوس') && !category.includes('كيبورد') && !category.includes('computer') && !category.includes('laptop') && !category.includes('desktop') && !category.includes('mouse') && !category.includes('keyboard')) {
+              // Check for car products - exclude
+              if (category.includes('سيارة') || category.includes('car')) return false;
+              // Check for mobile products - exclude
+              if (category.includes('موبيل') || category.includes('موبايل') || category.includes('تبل') || category.includes('سماع') || category.includes('شاحن') || category.includes('mobile') || category.includes('phone')) return false;
+              // Check for devices
+              if (category.includes('شاشة') || category.includes('جهاز') || category.includes('ألعاب') || category.includes('device') || category.includes('gaming')) return false;
+              return true;
+            }
+            break;
+          case 'devices':
+            if (!category.includes('شاشة') && !category.includes('جهاز') && !category.includes('ألعاب') && !category.includes('device') && !category.includes('gaming') && !category.includes('شاش') && !category.includes('تلفزيون') && !category.includes('tv')) {
+              // Check for car products - exclude
+              if (category.includes('سيارة') || category.includes('car')) return false;
+              // Check for mobile products - exclude
+              if (category.includes('موبيل') || category.includes('موبايل') || category.includes('تبل') || category.includes('mobile') || category.includes('phone')) return false;
+              // Check for computer products - exclude
+              if (category.includes('لابتوب') || category.includes('كمبيوتر') || category.includes('computer') || category.includes('laptop') || category.includes('desktop')) return false;
+              return true;
+            }
+            break;
+          case 'cars':
+            if (!category.includes('سيارة') && !category.includes('car')) {
+              // Exclude non-car products
+              if (category.includes('موبيل') || category.includes('موبايل') || category.includes('لابتوب') || category.includes('كمبيوتر') || category.includes('شاشة') || category.includes('device') || category.includes('mobile') || category.includes('computer') || category.includes('laptop')) return false;
+              return true;
+            }
+            break;
+        }
+      }
+
+      // Subcategory filter
+      if (selectedSubCategory !== 'all') {
+        switch (selectedSubCategory) {
+          case 'new':
+            if (isUsed) return false;
+            break;
+          case 'used':
+            if (!isUsed) return false;
+            break;
+          case 'accessory':
+            if (!category.includes('إكسسوار') && !category.includes('accessory') && !category.includes('سماع') && !category.includes('شاحن') && !category.includes('كفر') && !category.includes('ماوس') && !category.includes('كيبورد') && !category.includes('mouse') && !category.includes('keyboard')) return false;
+            break;
+          case 'mobile-new':
+            if (isUsed) return false;
+            if (!category.includes('موبيل') && !category.includes('موبايل') && category !== 'mobile') return false;
+            break;
+          case 'mobile-used':
+            if (!isUsed) return false;
+            if (!category.includes('موبيل') && !category.includes('موبايل') && category !== 'mobile') return false;
+            break;
+          case 'tablet':
+            if (!category.includes('تبل') && !category.includes('tablet')) return false;
+            break;
+          case 'maccessory':
+            if (!category.includes('إكسسوار') && !category.includes('accessory') && !category.includes('سماع') && !category.includes('شاحن') && !category.includes('كفر') && category !== 'mobile accessory') return false;
+            break;
+          case 'laptop':
+            if (!category.includes('لابتوب') && !category.includes('laptop')) return false;
+            break;
+          case 'desktop':
+            if (!category.includes('مكتبى') && !category.includes('desktop') && !category.includes('كمبيوتر')) return false;
+            break;
+          case 'caccessory':
+            if (!category.includes('إكسسوار') && !category.includes('accessory') && !category.includes('ماوس') && !category.includes('كيبورد') && !category.includes('mouse') && !category.includes('keyboard') && category !== 'computer accessory') return false;
+            break;
+          case 'screen':
+            if (!category.includes('شاشة') && !category.includes('screen') && !category.includes('monitor') && !category.includes('تلفزيون') && !category.includes('tv')) return false;
+            break;
+          case 'gaming':
+            if (!category.includes('لعب') && !category.includes('gaming') && !category.includes('جهاز')) return false;
+            break;
+          case 'daccessory':
+            if (!category.includes('إكسسوار') && !category.includes('accessory') && !category.includes('تحكم') && !category.includes('controller')) return false;
+            break;
+          case 'car-new':
+            if (isUsed) return false;
+            if (!category.includes('سيارة') && !category.includes('car')) return false;
+            break;
+          case 'car-used':
+            if (!isUsed) return false;
+            if (!category.includes('سيارة') && !category.includes('car')) return false;
+            break;
+        }
+      }
+
+      return true;
+    });
+  }, [allProducts, selectedMainCategory, selectedSubCategory]);
 
   // Search results via service layer
   const filteredProducts = useMemo(
@@ -323,9 +486,70 @@ const POS = () => {
           </div>
         )}
 
+        {/* Category Tabs */}
+        <div className="mb-4 flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+          {/* Main Categories */}
+          <div className="flex gap-1.5">
+            {mainCategories.map(cat => {
+              const Icon = cat.icon;
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => { setSelectedMainCategory(cat.id); setSelectedSubCategory('all'); }}
+                  className={cn(
+                    'flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200',
+                    selectedMainCategory === cat.id
+                      ? 'bg-primary text-primary-foreground shadow-lg'
+                      : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
+                  )}
+                >
+                  <Icon className="h-4 w-4" />
+                  {cat.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Subcategory Tabs */}
+        {selectedMainCategory !== 'all' && (
+          <div className="mb-4 flex gap-1.5 overflow-x-auto pb-2 scrollbar-hide">
+            {getSubCategories(selectedMainCategory).map(sub => (
+              <button
+                key={sub.id}
+                onClick={() => setSelectedSubCategory(sub.id)}
+                className={cn(
+                  'px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 whitespace-nowrap',
+                  selectedSubCategory === sub.id
+                    ? 'bg-primary/20 text-primary border border-primary/30'
+                    : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
+                )}
+              >
+                {sub.label}
+              </button>
+            ))}
+            <button
+              onClick={() => setSelectedSubCategory('all')}
+              className={cn(
+                'px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200',
+                selectedSubCategory === 'all'
+                  ? 'bg-primary/20 text-primary border border-primary/30'
+                  : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
+              )}
+            >
+              الكل
+            </button>
+          </div>
+        )}
+
+        {/* Product count */}
+        <div className="mb-3 text-xs text-muted-foreground">
+          {categoryFilteredProducts.length} منتج
+        </div>
+
         {/* Product grid */}
         <div className="grid flex-1 grid-cols-2 gap-4 overflow-y-auto sm:grid-cols-3 lg:grid-cols-4 content-start pr-1 pb-4">
-          {allProducts.map((p, i) => {
+          {categoryFilteredProducts.map((p, i) => {
             const isLow = p.quantity <= 5;
             const isOut = p.quantity === 0;
             return (
