@@ -113,7 +113,6 @@ export default function MobileNavBar() {
                                 <h3 className="px-4 text-xs font-bold text-muted-foreground/50 uppercase tracking-widest mb-2">أقسام المخزون الإضافية</h3>
                                 {hasPermission('computers') && <DrawerLink to="/computers" icon={Monitor} label="الكمبيوترات" onClick={() => setMenuOpen(false)} />}
                                 {hasPermission('devices') && <DrawerLink to="/devices" icon={Tv} label="الأجهزة" onClick={() => setMenuOpen(false)} />}
-                                <DrawerLink to="/used" icon={Archive} label="المستعمل" onClick={() => setMenuOpen(false)} />
                                 {hasPermission('inventory') && <DrawerLink to="/barcodes" icon={Barcode} label="طباعة الباركود" onClick={() => setMenuOpen(false)} />}
                             </div>
 

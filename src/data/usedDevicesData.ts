@@ -3,6 +3,7 @@
 // ============================================================
 
 import { UsedDevice } from '@/domain/types';
+import { addBatch } from './batchesData';
 
 const KEY = 'gx_used_devices';
 
@@ -26,6 +27,21 @@ export function addUsedDevice(item: Omit<UsedDevice, 'id' | 'createdAt' | 'updat
         updatedAt: new Date().toISOString(),
     };
     saveUsedDevices([...all, newItem]);
+
+    // Add batch for the used device
+    addBatch({
+        productId: newItem.id,
+        inventoryType: 'used_device',
+        productName: newItem.name,
+        costPrice: newItem.purchasePrice,
+        salePrice: newItem.salePrice,
+        quantity: 1, // Used devices are tracked individually (qty 1 per entry)
+        remainingQty: 1,
+        purchaseDate: newItem.createdAt,
+        supplier: '',
+        notes: `مُرحَّل - سيريال ${newItem.serialNumber}`,
+    });
+
     return newItem;
 }
 

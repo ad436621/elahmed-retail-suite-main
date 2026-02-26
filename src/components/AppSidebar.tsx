@@ -58,9 +58,8 @@ const AppSidebar = () => {
   const inventoryNav: NavItem[] = [
     { to: '/mobiles', icon: Smartphone, label: 'الموبيلات وإكسسوارات', gradient: 'from-cyan-500/20 to-sky-500/20', iconColor: 'text-cyan-400', perm: 'mobiles' },
     { to: '/computers', icon: Monitor, label: 'الكمبيوتر وإكسسوارات', gradient: 'from-indigo-500/20 to-blue-500/20', iconColor: 'text-indigo-400', perm: 'computers' },
-    { to: '/devices', icon: Tv, label: 'الأجهزة وإكسسوارات', gradient: 'from-amber-500/20 to-orange-500/20', iconColor: 'text-amber-400', perm: 'devices' },
-    { to: '/used', icon: Archive, label: 'المستعمل', gradient: 'from-violet-500/20 to-purple-500/20', iconColor: 'text-violet-400', perm: 'used' },
-    { to: '/cars', icon: Car, label: 'السيارات', gradient: 'from-emerald-500/20 to-teal-500/20', iconColor: 'text-emerald-400', perm: 'cars' },
+    { to: '/devices', icon: Tv, label: 'الأجهزة', gradient: 'from-amber-500/20 to-orange-500/20', iconColor: 'text-amber-400', perm: 'devices' },
+    { to: '/maintenance', icon: Wrench, label: 'صيانة', gradient: 'from-orange-500/20 to-red-500/20', iconColor: 'text-orange-400', perm: 'maintenance' },
     { to: '/warehouse', icon: Warehouse, label: 'المستودع', gradient: 'from-teal-500/20 to-cyan-500/20', iconColor: 'text-teal-400', perm: 'warehouse' },
     { to: '/barcodes', icon: Barcode, label: 'طباعة الباركود', gradient: 'from-violet-500/20 to-purple-500/20', iconColor: 'text-violet-400', perm: 'inventory' },
   ];

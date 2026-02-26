@@ -29,24 +29,32 @@ export function buildSaleRecord(
   invoiceDiscount: number,
   paymentMethod: PaymentMethod,
   employee: string,
-  invoiceNumber: string
+  invoiceNumber: string,
+  fifoResults?: BatchSaleResult[]
 ): Sale {
   if (cart.length === 0) {
     throw new SaleError('Cannot create sale with empty cart');
   }
 
-  const items: SaleItem[] = cart.map(c => ({
-    productId: c.product.id,
-    name: c.product.name,
-    qty: c.qty,
-    price: c.product.sellingPrice,
-    cost: c.product.costPrice, // Will be overridden or ignored if relying purely on batch totalCost
-    lineDiscount: c.lineDiscount,
-  }));
+  const items: SaleItem[] = cart.map((c, index) => {
+    const fifoResult = fifoResults?.[index];
+    return {
+      productId: c.product.id,
+      name: c.product.name,
+      qty: c.qty,
+      price: c.product.sellingPrice,
+      cost: fifoResult ? (fifoResult.totalCost / c.qty) : c.product.costPrice, // Store averaged out real cost
+      lineDiscount: c.lineDiscount,
+      batches: fifoResult?.batches,
+    };
+  });
 
   const subtotal = cart.reduce((sum, c) => sum + calcLineTotal(c), 0);
   const total = Math.max(0, subtotal - invoiceDiscount);
-  const totalCost = cart.reduce((sum, c) => sum + calcLineCost(c), 0); // Using the old way for now, or you can pass totalCost directly. Or rely on FIFO result.
+  // Use FIFO costs if provided, otherwise fallback to old product schema costs
+  const totalCost = fifoResults
+    ? fifoResults.reduce((sum, r) => sum + r.totalCost, 0)
+    : cart.reduce((sum, c) => sum + calcLineCost(c), 0);
   const grossProfit = total - totalCost;
   const marginPct = total > 0 ? (grossProfit / total) * 100 : 0;
 

@@ -42,6 +42,7 @@ export interface SaleItem {
   price: number;
   cost: number;
   lineDiscount: number;
+  batches?: BatchSaleResult['batches']; // To track exact FIFO deductions for returns/profits
 }
 
 export interface Sale {
@@ -174,6 +175,8 @@ export interface MobileItem {
   name: string;
   barcode?: string;
   deviceType: MobileDeviceType; // mobile or tablet
+  category?: string;
+  condition?: 'new' | 'used';
   quantity: number;
   storage: string;
   ram: string;
@@ -195,6 +198,7 @@ export interface MobileAccessory {
   name: string;
   model: string;
   barcode?: string;
+  category?: string;
   subcategory: string;
   quantity: number;
   color: string;
@@ -217,6 +221,8 @@ export interface DeviceItem {
   name: string;
   model: string;
   barcode?: string;
+  category?: string;
+  condition?: 'new' | 'used';
   color: string;
   quantity: number;
   oldCostPrice: number;
@@ -234,6 +240,7 @@ export interface DeviceAccessory {
   name: string;
   model: string;
   barcode?: string;
+  category?: string;
   subcategory: string;
   quantity: number;
   color: string;
@@ -259,6 +266,8 @@ export interface ComputerItem {
   model: string;
   barcode?: string;
   deviceType: ComputerDeviceType; // computer or laptop
+  category?: string;
+  condition?: 'new' | 'used';
   color: string;
   quantity: number;
   processor?: string;
@@ -277,6 +286,7 @@ export interface ComputerAccessory {
   name: string;
   model: string;
   barcode?: string;
+  category?: string;
   subcategory: string;
   quantity: number;
   color: string;

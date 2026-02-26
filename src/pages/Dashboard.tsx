@@ -9,7 +9,6 @@ import {
 import { getMobiles, getMobileAccessories } from '@/data/mobilesData';
 import { getDevices, getDeviceAccessories } from '@/data/devicesData';
 import { getComputers, getComputerAccessories } from '@/data/computersData';
-import { getUsedDevices } from '@/data/usedDevicesData';
 import { getMaintenanceOrders } from '@/data/maintenanceData';
 import { getContracts } from '@/data/installmentsData';
 import { getExpenses } from '@/data/expensesData';
@@ -18,6 +17,7 @@ import { getMonthlyResetSettings, shouldAutoReset, archiveCurrentPeriod } from '
 import { downloadManualBackup } from '@/data/backupData';
 import { getCars, getCarsCapital } from '@/data/carsData';
 import { getDamagedItems, getTotalLossesThisMonth } from '@/data/damagedData';
+import { getWeightedAvgCost } from '@/data/batchesData';
 import { getWarehouseCapital } from '@/data/warehouseData';
 import { getOtherRevenues, getTotalOtherRevenueThisMonth } from '@/data/otherRevenueData';
 
@@ -38,7 +38,7 @@ interface SearchResult {
 /* ─── Global Search Bar ─── */
 function GlobalSearch({
   mobiles, mobileAcc, devices, deviceAcc, computers, computerAcc,
-  usedDevices, maintenance, contracts, sales,
+  maintenance, contracts, sales,
 }: {
   mobiles: ReturnType<typeof getMobiles>;
   mobileAcc: ReturnType<typeof getMobileAccessories>;
@@ -46,7 +46,6 @@ function GlobalSearch({
   deviceAcc: ReturnType<typeof getDeviceAccessories>;
   computers: ReturnType<typeof getComputers>;
   computerAcc: ReturnType<typeof getComputerAccessories>;
-  usedDevices: ReturnType<typeof getUsedDevices>;
   maintenance: ReturnType<typeof getMaintenanceOrders>;
   contracts: ReturnType<typeof getContracts>;
   sales: ReturnType<typeof getAllSales>;
@@ -71,8 +70,8 @@ function GlobalSearch({
     mobiles.filter(m => m.name?.toLowerCase().includes(ql) || m.serialNumber?.toLowerCase().includes(ql) || m.color?.toLowerCase().includes(ql))
       .slice(0, 4).forEach(m => res.push({ id: `mob-${m.id}`, label: m.name, sub: `${m.color || ''} ${m.storage || ''} | سيريال: ${m.serialNumber || '—'}`, route: '/mobiles', badge: 'موبايل', badgeColor: 'bg-cyan-100 text-cyan-700' }));
 
-    mobileAcc.filter(a => a.name?.toLowerCase().includes(ql) || a.type?.toLowerCase().includes(ql))
-      .slice(0, 3).forEach(a => res.push({ id: `macc-${a.id}`, label: a.name, sub: `إكسسوار موبايل | ${a.type || ''}`, route: '/mobiles', badge: 'إكسسوار', badgeColor: 'bg-cyan-50 text-cyan-600' }));
+    mobileAcc.filter(a => a.name?.toLowerCase().includes(ql) || a.subcategory?.toLowerCase().includes(ql))
+      .slice(0, 3).forEach(a => res.push({ id: `macc-${a.id}`, label: a.name, sub: `إكسسوار موبايل | ${a.subcategory || ''}`, route: '/mobiles', badge: 'إكسسوار', badgeColor: 'bg-cyan-50 text-cyan-600' }));
 
     devices.filter(d => d.name?.toLowerCase().includes(ql) || d.model?.toLowerCase().includes(ql))
       .slice(0, 4).forEach(d => res.push({ id: `dev-${d.id}`, label: d.name, sub: `${d.model || ''} | ${d.color || ''}`, route: '/devices', badge: 'جهاز', badgeColor: 'bg-amber-100 text-amber-700' }));
@@ -86,9 +85,6 @@ function GlobalSearch({
     computerAcc.filter(a => a.name?.toLowerCase().includes(ql))
       .slice(0, 3).forEach(a => res.push({ id: `cacc-${a.id}`, label: a.name, sub: `إكسسوار كمبيوترات`, route: '/computers', badge: 'إكسسوار', badgeColor: 'bg-indigo-50 text-indigo-600' }));
 
-    usedDevices.filter(u => u.name?.toLowerCase().includes(ql) || u.model?.toLowerCase().includes(ql) || u.serialNumber?.toLowerCase().includes(ql))
-      .slice(0, 4).forEach(u => res.push({ id: `used-${u.id}`, label: u.name, sub: `مستعمل | ${u.model || ''} | سيريال: ${u.serialNumber || '—'}`, route: '/used', badge: 'مستعمل', badgeColor: 'bg-violet-100 text-violet-700' }));
-
     maintenance.filter(m => m.customerName?.toLowerCase().includes(ql) || m.deviceName?.toLowerCase().includes(ql) || m.orderNumber?.toLowerCase().includes(ql))
       .slice(0, 4).forEach(m => res.push({ id: `mnt-${m.id}`, label: m.customerName, sub: `صيانة: ${m.deviceName} | ${m.orderNumber}`, route: '/maintenance', badge: 'صيانة', badgeColor: 'bg-orange-100 text-orange-700' }));
 
@@ -99,7 +95,7 @@ function GlobalSearch({
       .slice(0, 3).forEach(s => res.push({ id: `sale-${s.id}`, label: `فاتورة ${s.invoiceNumber}`, sub: `${s.date?.slice(0, 10) || ''} | ${fmt(s.total ?? 0)} ج.م`, route: '/sales', badge: 'مبيعات', badgeColor: 'bg-emerald-100 text-emerald-700' }));
 
     return res.slice(0, 12);
-  }, [q, mobiles, mobileAcc, devices, deviceAcc, computers, computerAcc, usedDevices, maintenance, contracts, sales]);
+  }, [q, mobiles, mobileAcc, devices, deviceAcc, computers, computerAcc, maintenance, contracts, sales]);
 
   const handleSelect = (route: string) => {
     setOpen(false);
@@ -247,7 +243,6 @@ export default function Dashboard() {
   const deviceAcc = useMemo(() => getDeviceAccessories(), []);
   const computers = useMemo(() => getComputers(), []);
   const computerAcc = useMemo(() => getComputerAccessories(), []);
-  const usedDevices = useMemo(() => getUsedDevices(), []);
   const maintenance = useMemo(() => getMaintenanceOrders(), []);
   const contracts = useMemo(() => getContracts(), []);
   const expenses = useMemo(() => getExpenses(), []);
@@ -319,14 +314,19 @@ export default function Dashboard() {
   const totalDevAcc = deviceAcc.reduce((s, a) => s + (a.quantity || 1), 0);
   const newCarsCount = cars.filter(c => c.condition === 'new').length;
   const usedCarsCount = cars.filter(c => c.condition === 'used').length;
+  const totalUsedCount = useMemo(() => mobiles.filter(m => m.condition === 'used').length + computers.filter(c => c.condition === 'used').length + devices.filter(d => d.condition === 'used').length, [mobiles, computers, devices]);
 
   /* Inventory values */
-  const mobileInvValue = useMemo(() => mobiles.reduce((s, m) => s + m.newCostPrice * (m.quantity || 1), 0), [mobiles]);
-  const deviceInvValue = useMemo(() => devices.reduce((s, d) => s + d.newCostPrice * (d.quantity || 1), 0), [devices]);
-  const computerInvValue = useMemo(() => computers.reduce((s, c) => s + c.newCostPrice * (c.quantity || 1), 0), [computers]);
-  const usedInvValue = useMemo(() => usedDevices.reduce((s, u) => s + u.purchasePrice, 0), [usedDevices]);
+  const mobileInvValue = useMemo(() => mobiles.reduce((s, m) => s + (getWeightedAvgCost(m.id) || m.newCostPrice) * (m.quantity || 1), 0), [mobiles]);
+  const deviceInvValue = useMemo(() => devices.reduce((s, d) => s + (getWeightedAvgCost(d.id) || d.newCostPrice) * (d.quantity || 1), 0), [devices]);
+  const computerInvValue = useMemo(() => computers.reduce((s, c) => s + (getWeightedAvgCost(c.id) || c.newCostPrice) * (c.quantity || 1), 0), [computers]);
+  const usedInvValue = useMemo(() => {
+    return mobiles.filter(m => m.condition === 'used').reduce((s, m) => s + (getWeightedAvgCost(m.id) || m.newCostPrice) * (m.quantity || 1), 0)
+      + computers.filter(c => c.condition === 'used').reduce((s, c) => s + (getWeightedAvgCost(c.id) || c.newCostPrice) * (c.quantity || 1), 0)
+      + devices.filter(d => d.condition === 'used').reduce((s, d) => s + (getWeightedAvgCost(d.id) || d.newCostPrice) * (d.quantity || 1), 0);
+  }, [mobiles, computers, devices]);
   const carsInvValue = useMemo(() => cars.reduce((s, c) => s + c.purchasePrice, 0), [cars]);
-  const totalInvValue = mobileInvValue + deviceInvValue + computerInvValue + usedInvValue + carsInvValue;
+  const totalInvValue = mobileInvValue + deviceInvValue + computerInvValue + carsInvValue;
 
   /* Expense by category */
   const expenseByCategory = useMemo(() => {
@@ -360,7 +360,7 @@ export default function Dashboard() {
           mobiles={mobiles} mobileAcc={mobileAcc}
           devices={devices} deviceAcc={deviceAcc}
           computers={computers} computerAcc={computerAcc}
-          usedDevices={usedDevices} maintenance={maintenance}
+          maintenance={maintenance}
           contracts={contracts} sales={sales}
         />
       </div>
@@ -468,7 +468,7 @@ export default function Dashboard() {
               { icon: Smartphone, label: 'الموبيلات', count: totalMobiles, acc: totalMobAcc, value: mobileInvValue, color: 'text-cyan-600 bg-cyan-100/80', to: '/mobiles' },
               { icon: Monitor, label: 'الكمبيوترات', count: totalComputers, acc: totalCompAcc, value: computerInvValue, color: 'text-indigo-600 bg-indigo-100/80', to: '/computers' },
               { icon: Tv, label: 'الأجهزة', count: totalDevices, acc: totalDevAcc, value: deviceInvValue, color: 'text-amber-600 bg-amber-100/80', to: '/devices' },
-              { icon: Archive, label: 'المستعمل', count: usedDevices.length, acc: null, value: usedInvValue, color: 'text-violet-600 bg-violet-100/80', to: '/used' },
+              { icon: Archive, label: 'كل المستعمل', count: totalUsedCount, acc: null, value: usedInvValue, color: 'text-violet-600 bg-violet-100/80', to: '/mobiles' },
               { icon: Car, label: 'السيارات', count: cars.length, acc: null, value: carsInvValue, color: 'text-emerald-600 bg-emerald-100/80', to: '/cars' },
             ] as const).map(({ icon: Icon, label, count, acc, value, color, to }) => (
               <Link key={to} to={to} className="flex items-center gap-4 px-5 py-4 hover:bg-muted/60 transition-colors group relative overflow-hidden">

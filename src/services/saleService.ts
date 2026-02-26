@@ -47,13 +47,12 @@ export function processSale(
     totalFifoCost += result.totalCost;
   }
 
-  // 2. Build sale record with profit calculations
+  // 2. Build sale record with profit calculations using FIFO data
   const invoiceNumber = generateInvoiceNumber();
-  const sale = buildSaleRecord(cart, invoiceDiscount, paymentMethod, employeeName, invoiceNumber);
+  const sale = buildSaleRecord(cart, invoiceDiscount, paymentMethod, employeeName, invoiceNumber, fifoResults);
 
-  // Override the simplistic cost with the accurate FIFO cost
-  sale.totalCost = totalFifoCost;
-  sale.grossProfit = sale.total - sale.totalCost;
+  // Profit/cost is inherently generated inside buildSaleRecord via fifoResults now,
+  // but we can ensure marginPct is neat.
   sale.marginPct = sale.total > 0 ? Math.round((sale.grossProfit / sale.total) * 1000) / 10 : 0;
 
   // 3. Commit FIFO changes to batches

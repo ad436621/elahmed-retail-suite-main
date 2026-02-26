@@ -4,6 +4,7 @@
 
 import { MobileItem, MobileAccessory } from '@/domain/types';
 import { generateBarcode } from '@/domain/product';
+import { addBatch } from './batchesData';
 
 const MOBILES_KEY = 'gx_mobiles_v2';
 const ACCESSORIES_KEY = 'gx_mobile_accessories';
@@ -31,6 +32,23 @@ export function addMobile(item: Omit<MobileItem, 'id' | 'createdAt' | 'updatedAt
         updatedAt: new Date().toISOString(),
     };
     saveMobiles([...all, newItem]);
+
+    // Register initial stock as a new FIFO batch
+    if (newItem.quantity > 0) {
+        addBatch({
+            productId: newItem.id,
+            inventoryType: 'mobile',
+            productName: newItem.name,
+            costPrice: newItem.newCostPrice || newItem.oldCostPrice || 0,
+            salePrice: newItem.salePrice,
+            quantity: newItem.quantity,
+            remainingQty: newItem.quantity,
+            purchaseDate: newItem.createdAt,
+            supplier: newItem.supplier || '',
+            notes: 'رصيد افتتاحي (إضافة جديدة)',
+        });
+    }
+
     return newItem;
 }
 
@@ -67,6 +85,22 @@ export function addMobileAccessory(item: Omit<MobileAccessory, 'id' | 'createdAt
         updatedAt: new Date().toISOString(),
     };
     saveMobileAccessories([...all, newItem]);
+
+    if (newItem.quantity > 0) {
+        addBatch({
+            productId: newItem.id,
+            inventoryType: 'mobile_accessory',
+            productName: newItem.name,
+            costPrice: newItem.newCostPrice || newItem.oldCostPrice || 0,
+            salePrice: newItem.salePrice,
+            quantity: newItem.quantity,
+            remainingQty: newItem.quantity,
+            purchaseDate: newItem.createdAt,
+            supplier: '',
+            notes: 'رصيد افتتاحي (إضافة جديدة)',
+        });
+    }
+
     return newItem;
 }
 

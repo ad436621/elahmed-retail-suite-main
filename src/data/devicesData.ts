@@ -4,6 +4,7 @@
 
 import { DeviceItem, DeviceAccessory } from '@/domain/types';
 import { generateBarcode } from '@/domain/product';
+import { addBatch } from './batchesData';
 
 const DEVICES_KEY = 'gx_devices_v2';
 const ACCESSORIES_KEY = 'gx_device_accessories';
@@ -31,6 +32,22 @@ export function addDevice(item: Omit<DeviceItem, 'id' | 'createdAt' | 'updatedAt
         updatedAt: new Date().toISOString(),
     };
     saveDevices([...all, newItem]);
+
+    if (newItem.quantity > 0) {
+        addBatch({
+            productId: newItem.id,
+            inventoryType: 'device',
+            productName: newItem.name,
+            costPrice: newItem.newCostPrice || newItem.oldCostPrice || 0,
+            salePrice: newItem.salePrice,
+            quantity: newItem.quantity,
+            remainingQty: newItem.quantity,
+            purchaseDate: newItem.createdAt,
+            supplier: '',
+            notes: 'رصيد افتتاحي (إضافة جديدة)',
+        });
+    }
+
     return newItem;
 }
 
@@ -66,6 +83,22 @@ export function addDeviceAccessory(item: Omit<DeviceAccessory, 'id' | 'createdAt
         updatedAt: new Date().toISOString(),
     };
     saveDeviceAccessories([...all, newItem]);
+
+    if (newItem.quantity > 0) {
+        addBatch({
+            productId: newItem.id,
+            inventoryType: 'device_accessory',
+            productName: newItem.name,
+            costPrice: newItem.newCostPrice || newItem.oldCostPrice || 0,
+            salePrice: newItem.salePrice,
+            quantity: newItem.quantity,
+            remainingQty: newItem.quantity,
+            purchaseDate: newItem.createdAt,
+            supplier: '',
+            notes: 'رصيد افتتاحي (إضافة جديدة)',
+        });
+    }
+
     return newItem;
 }
 

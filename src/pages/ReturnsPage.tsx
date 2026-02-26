@@ -4,6 +4,8 @@ import { Sale } from '@/domain/types';
 import { getActiveSales } from '@/repositories/saleRepository';
 import { useToast } from '@/hooks/use-toast';
 import { getMobiles, saveMobiles } from '@/data/mobilesData';
+import { restoreBatchQty } from '@/data/batchesData';
+import { BatchSaleResult } from '@/domain/types';
 
 interface ReturnedItem {
   productId: string;
@@ -12,6 +14,7 @@ interface ReturnedItem {
   price: number;
   returnQty: number;
   reason: string;
+  batches?: BatchSaleResult['batches']; // Stored original batches to restore
 }
 
 const RETURNS_KEY = 'gx_returns_v2';
@@ -58,6 +61,7 @@ export default function ReturnsPage() {
         price: item.price,
         returnQty: 0,
         reason: '',
+        batches: item.batches,
       })));
     } else {
       setNotFound(true);
@@ -83,8 +87,8 @@ export default function ReturnsPage() {
 
     const totalRefund = itemsToReturn.reduce((s, i) => s + i.returnQty * i.price, 0);
 
-    // Attempt to restock — if product exists in main inventory, restore qty
     itemsToReturn.forEach(item => {
+      // 1. Restore the item in Mobiles inventory (if it exists)
       try {
         const mobiles = getMobiles();
         const mobileIdx = mobiles.findIndex(m => m.id === item.productId);
@@ -93,6 +97,22 @@ export default function ReturnsPage() {
           saveMobiles(mobiles);
         }
       } catch { /* ignore */ }
+
+      // 2. Restore FIFO Batches
+      if (item.batches && item.batches.length > 0) {
+        let qtyToRestore = item.returnQty;
+
+        // Restore newer batches first (often latest purchased is returned first logically in FIFO reverse)
+        // or just restore exactly from where it was deducted based on original quantities
+        const reversedBatches = [...item.batches].reverse();
+        for (const batch of reversedBatches) {
+          if (qtyToRestore <= 0) break;
+
+          const restoreAmount = Math.min(qtyToRestore, batch.qtyFromBatch);
+          restoreBatchQty(batch.batchId, restoreAmount);
+          qtyToRestore -= restoreAmount;
+        }
+      }
     });
 
     saveReturn({

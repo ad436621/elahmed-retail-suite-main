@@ -9,9 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Product } from '@/domain/types';
 import { getCategories } from '@/data/mockData';
-import { generateBarcode } from '@/domain/product';
-import { validatePricing } from '@/domain/product';
+import { generateBarcode, validatePricing } from '@/domain/product';
 import { saveProduct, isBarcodeDuplicate } from '@/repositories/productRepository';
+import { addBatch } from '@/data/batchesData';
 import { createAuditEntry } from '@/domain/audit';
 import { saveAuditEntries } from '@/repositories/auditRepository';
 import { useToast } from '@/hooks/use-toast';
@@ -120,6 +120,22 @@ export function ProductFormDialog({ open, onOpenChange, product, onSuccess }: Pr
       };
 
       saveProduct(newProduct);
+
+      // Add batch for initial stock if it's a new product and has quantity
+      if (!product && newProduct.quantity > 0) {
+        addBatch({
+          productId: newProduct.id,
+          inventoryType: 'warehouse',
+          productName: newProduct.name,
+          costPrice: newProduct.costPrice,
+          salePrice: newProduct.sellingPrice,
+          quantity: newProduct.quantity,
+          remainingQty: newProduct.quantity,
+          purchaseDate: newProduct.createdAt,
+          supplier: newProduct.supplier || '',
+          notes: 'رصيد افتتاحي (إضافة جديدة)',
+        });
+      }
 
       const audit = createAuditEntry(
         'user-1',

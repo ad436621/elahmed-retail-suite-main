@@ -4,6 +4,7 @@
 
 import { ComputerItem, ComputerAccessory } from '@/domain/types';
 import { generateBarcode } from '@/domain/product';
+import { addBatch } from './batchesData';
 
 const COMPUTERS_KEY = 'gx_computers_v2';
 const ACCESSORIES_KEY = 'gx_computer_accessories';
@@ -31,6 +32,22 @@ export function addComputer(item: Omit<ComputerItem, 'id' | 'createdAt' | 'updat
         updatedAt: new Date().toISOString(),
     };
     saveComputers([...all, newItem]);
+
+    if (newItem.quantity > 0) {
+        addBatch({
+            productId: newItem.id,
+            inventoryType: 'computer',
+            productName: newItem.name,
+            costPrice: newItem.newCostPrice || newItem.oldCostPrice || 0,
+            salePrice: newItem.salePrice,
+            quantity: newItem.quantity,
+            remainingQty: newItem.quantity,
+            purchaseDate: newItem.createdAt,
+            supplier: '',
+            notes: 'رصيد افتتاحي (إضافة جديدة)',
+        });
+    }
+
     return newItem;
 }
 
@@ -67,6 +84,22 @@ export function addComputerAccessory(item: Omit<ComputerAccessory, 'id' | 'creat
         updatedAt: new Date().toISOString(),
     };
     saveComputerAccessories([...all, newItem]);
+
+    if (newItem.quantity > 0) {
+        addBatch({
+            productId: newItem.id,
+            inventoryType: 'computer_accessory',
+            productName: newItem.name,
+            costPrice: newItem.newCostPrice || newItem.oldCostPrice || 0,
+            salePrice: newItem.salePrice,
+            quantity: newItem.quantity,
+            remainingQty: newItem.quantity,
+            purchaseDate: newItem.createdAt,
+            supplier: '',
+            notes: 'رصيد افتتاحي (إضافة جديدة)',
+        });
+    }
+
     return newItem;
 }
 

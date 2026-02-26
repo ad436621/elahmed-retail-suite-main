@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-route
 import { useEffect } from 'react';
 import { executeAutoBackupIfDue } from '@/data/backupData';
 import { migrateLegacyDataToBatches } from '@/domain/batchMigration';
+import { migrateUsedMerge } from "@/domain/migrationUsedMerge";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
@@ -29,7 +30,6 @@ import Expenses from "@/pages/Expenses";
 import UsersManagement from "@/pages/UsersManagement";
 import BarcodePrintPage from "@/pages/BarcodePrintPage";
 import UnauthorizedPage from "@/pages/UnauthorizedPage";
-import UsedInventory from "@/pages/UsedInventory";
 import DamagedItemsPage from "@/pages/DamagedItemsPage";
 import CarsInventory from "@/pages/CarsInventory";
 import WarehousePage from "@/pages/WarehousePage";
@@ -94,6 +94,7 @@ function DataMigrationRunner() {
   useEffect(() => {
     if (!isAuthenticated) return;
     migrateLegacyDataToBatches();
+    migrateUsedMerge();
   }, [isAuthenticated]);
 
   return null;
@@ -113,7 +114,6 @@ const AppRoutes = () => (
       <Route path="/mobiles" element={<PermGuard perm="mobiles"><MobilesInventory /></PermGuard>} />
       <Route path="/computers" element={<PermGuard perm="computers"><ComputersInventory /></PermGuard>} />
       <Route path="/devices" element={<PermGuard perm="devices"><DevicesInventory /></PermGuard>} />
-      <Route path="/used" element={<PermGuard perm="used"><UsedInventory /></PermGuard>} />
       <Route path="/cars" element={<PermGuard perm="cars"><CarsInventory /></PermGuard>} />
       <Route path="/warehouse" element={<PermGuard perm="warehouse"><WarehousePage /></PermGuard>} />
       {/* Services */}
