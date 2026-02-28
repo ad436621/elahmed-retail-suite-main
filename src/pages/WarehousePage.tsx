@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Plus, Trash2, Pencil, X, Check, Warehouse, Search, LayoutGrid, List } from 'lucide-react';
+import { Plus, Trash2, Pencil, X, Check, Warehouse, Search, LayoutGrid, List, FileSpreadsheet } from 'lucide-react';
 import { WarehouseItem } from '@/domain/types';
-import { getWarehouseItems, addWarehouseItem, updateWarehouseItem, deleteWarehouseItem, getWarehouseCategories, getWarehouseCapital } from '@/data/warehouseData';
+import { getWarehouseItems, addWarehouseItem, updateWarehouseItem, deleteWarehouseItem, getWarehouseCategories, getWarehouseCapital, saveWarehouseItems } from '@/data/warehouseData';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { ExcelColumnMappingDialog } from '@/components/ExcelColumnMappingDialog';
 
 const emptyForm: Omit<WarehouseItem, 'id' | 'createdAt' | 'updatedAt'> = {
     name: '', category: '', quantity: 1, costPrice: 0, notes: '', addedBy: '',
@@ -23,6 +24,7 @@ export default function WarehousePage() {
     const [selectedCategory, setSelectedCategory] = useState<string>('');
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
     const [newCategory, setNewCategory] = useState('');
+    const [showExcelRestore, setShowExcelRestore] = useState(false);
 
     const refresh = () => {
         setItems(getWarehouseItems());
@@ -101,6 +103,9 @@ export default function WarehousePage() {
                     </div>
                     <button onClick={() => { setShowForm(true); setEditId(null); setForm(emptyForm); }} className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-all shadow-md">
                         <Plus className="h-4 w-4" /> إضافة عنصر
+                    </button>
+                    <button onClick={() => setShowExcelRestore(true)} className="flex items-center gap-2 rounded-xl bg-teal-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-teal-700 transition-all shadow-md">
+                        <FileSpreadsheet className="h-4 w-4" /> استرداد من Excel
                     </button>
                 </div>
             </div>
@@ -235,6 +240,32 @@ export default function WarehousePage() {
                     </table>
                 </div>
             )}
+
+            {/* Excel Restore Dialog */}
+            <ExcelColumnMappingDialog
+                open={showExcelRestore}
+                onOpenChange={setShowExcelRestore}
+                inventoryType="warehouse"
+                onSuccess={() => {
+                    refresh();
+                }}
+                onDataSave={(data) => {
+                    const now = new Date().toISOString();
+                    const existing = getWarehouseItems();
+                    const newItems: WarehouseItem[] = data.map((row) => ({
+                        id: crypto.randomUUID(),
+                        name: row.name || '',
+                        category: row.category || '',
+                        quantity: Number(row.quantity) || 0,
+                        costPrice: Number(row.costPrice) || 0,
+                        notes: row.notes || '',
+                        addedBy: user?.fullName || 'استرداد Excel',
+                        createdAt: now,
+                        updatedAt: now,
+                    }));
+                    saveWarehouseItems([...existing, ...newItems]);
+                }}
+            />
         </div>
     );
 }

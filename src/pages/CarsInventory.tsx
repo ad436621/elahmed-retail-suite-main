@@ -1,8 +1,10 @@
 import { useState, useRef } from 'react';
-import { Plus, Trash2, Pencil, X, Check, Car, Search, ImagePlus, ImageOff, AlignLeft, LayoutGrid, List } from 'lucide-react';
+import { Plus, Trash2, Pencil, X, Check, Car, Search, ImagePlus, ImageOff, AlignLeft, LayoutGrid, List, FileSpreadsheet } from 'lucide-react';
 import { CarItem } from '@/domain/types';
 import { getCars, addCar, updateCar, deleteCar, getNewCars, getUsedCars, getCarsCapital, getCarsProfit } from '@/data/carsData';
 import { useToast } from '@/hooks/use-toast';
+import { ExcelColumnMappingDialog } from '@/components/ExcelColumnMappingDialog';
+import { useAuth } from '@/contexts/AuthContext';
 
 const emptyForm: Omit<CarItem, 'id' | 'createdAt' | 'updatedAt'> = {
     name: '', model: '', year: new Date().getFullYear(), color: '',
@@ -61,6 +63,8 @@ export default function CarsInventory() {
     const [form, setForm] = useState(emptyForm);
     const [search, setSearch] = useState('');
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+    const [showExcelRestore, setShowExcelRestore] = useState(false);
+    const { user } = useAuth();
 
     const refresh = () => setItems(getCars());
 
@@ -131,6 +135,9 @@ export default function CarsInventory() {
                     </div>
                     <button onClick={() => { setShowForm(true); setEditId(null); setForm({ ...emptyForm, condition: tab }); }} className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-all shadow-md">
                         <Plus className="h-4 w-4" /> إضافة سيارة
+                    </button>
+                    <button onClick={() => setShowExcelRestore(true)} className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition-all shadow-md">
+                        <FileSpreadsheet className="h-4 w-4" /> استرداد من Excel
                     </button>
                 </div>
             </div>
@@ -302,6 +309,33 @@ export default function CarsInventory() {
                     </table>
                 </div>
             )}
+
+            {/* Excel Restore Dialog */}
+            <ExcelColumnMappingDialog
+                open={showExcelRestore}
+                onOpenChange={setShowExcelRestore}
+                inventoryType="car"
+                onSuccess={() => {
+                    refresh();
+                }}
+                onDataSave={(data) => {
+                    data.forEach(row => {
+                        const car: Omit<CarItem, 'id' | 'createdAt' | 'updatedAt'> = {
+                            name: row.name || '',
+                            model: row.model || '',
+                            year: Number(row.year) || new Date().getFullYear(),
+                            color: row.color || '',
+                            plateNumber: row.plateNumber || '',
+                            licenseExpiry: row.licenseExpiry || '',
+                            condition: row.condition || 'new',
+                            purchasePrice: Number(row.purchasePrice) || 0,
+                            salePrice: Number(row.salePrice) || 0,
+                            notes: row.notes || '',
+                        };
+                        addCar(car);
+                    });
+                }}
+            />
         </div>
     );
 }

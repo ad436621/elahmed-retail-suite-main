@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
     Plus, Trash2, Pencil, X, Check, Smartphone, Headphones, Search,
-    ImagePlus, ImageOff, AlignLeft, LayoutGrid, List, Tag
+    ImagePlus, ImageOff, AlignLeft, LayoutGrid, List, Tag, FileSpreadsheet
 } from 'lucide-react';
 import { MobileItem, MobileAccessory } from '@/domain/types';
 import {
@@ -15,6 +15,8 @@ import { useInventoryData } from '@/hooks/useInventoryData';
 import { getWeightedAvgCost } from '@/data/batchesData';
 import { ProductBatchesModal } from '@/components/ProductBatchesModal';
 import { getCategoriesBySection, addCategory, DynamicCategory } from '@/data/categoriesData';
+import { ExcelColumnMappingDialog } from '@/components/ExcelColumnMappingDialog';
+import { useAuth } from '@/contexts/AuthContext';
 
 const emptyForm = {
     name: '', barcode: '', category: '', condition: 'new' as 'new' | 'used',
@@ -147,6 +149,8 @@ export default function MobilesInventory() {
     const [newCatName, setNewCatName] = useState('');
     const [newCatType, setNewCatType] = useState<'device' | 'accessory'>('device');
     const [activeBatchesModal, setActiveBatchesModal] = useState<{ id: string; name: string } | null>(null);
+    const [showExcelRestore, setShowExcelRestore] = useState(false);
+    const { user } = useAuth();
 
     // Initial Filter set if passed from Dashboard (e.g. used)
     useEffect(() => {
@@ -304,6 +308,9 @@ export default function MobilesInventory() {
                     </div>
                     <button onClick={openAdd} className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 active:scale-95 transition-all shadow-md">
                         <Plus className="h-4 w-4" /> إضافة منتج
+                    </button>
+                    <button onClick={() => setShowExcelRestore(true)} className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition-all shadow-md">
+                        <FileSpreadsheet className="h-4 w-4" /> استرداد من Excel
                     </button>
                 </div>
             </div>
@@ -543,6 +550,40 @@ export default function MobilesInventory() {
                     onClose={() => setActiveBatchesModal(null)}
                 />
             )}
+
+            {/* Excel Restore Dialog */}
+            <ExcelColumnMappingDialog
+                open={showExcelRestore}
+                onOpenChange={setShowExcelRestore}
+                inventoryType="mobile"
+                onSuccess={() => {
+                    window.dispatchEvent(new Event('local-storage-sync'));
+                }}
+                onDataSave={(data) => {
+                    const now = new Date().toISOString();
+                    data.forEach(row => {
+                        const mobile: Omit<MobileItem, 'id' | 'createdAt' | 'updatedAt'> = {
+                            name: row.name || '',
+                            barcode: row.barcode || '',
+                            deviceType: row.deviceType || 'mobile',
+                            category: row.category || '',
+                            condition: row.condition || 'new',
+                            quantity: Number(row.quantity) || 0,
+                            storage: row.storage || '',
+                            ram: row.ram || '',
+                            color: row.color || '',
+                            supplier: row.supplier || '',
+                            oldCostPrice: Number(row.oldCostPrice) || 0,
+                            newCostPrice: Number(row.newCostPrice) || 0,
+                            salePrice: Number(row.salePrice) || 0,
+                            serialNumber: row.serialNumber || '',
+                            notes: row.notes || '',
+                            description: row.description || '',
+                        };
+                        addMobile(mobile);
+                    });
+                }}
+            />
         </div>
     );
 }

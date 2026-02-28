@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
     Plus, Trash2, Pencil, X, Check, Tv, Headphones, Search,
-    ImagePlus, ImageOff, AlignLeft, LayoutGrid, List, Tag
+    ImagePlus, ImageOff, AlignLeft, LayoutGrid, List, Tag, FileSpreadsheet
 } from 'lucide-react';
 import { DeviceItem, DeviceAccessory } from '@/domain/types';
 import {
@@ -15,6 +15,8 @@ import { useInventoryData } from '@/hooks/useInventoryData';
 import { getWeightedAvgCost } from '@/data/batchesData';
 import { ProductBatchesModal } from '@/components/ProductBatchesModal';
 import { getCategoriesBySection, addCategory, DynamicCategory } from '@/data/categoriesData';
+import { ExcelColumnMappingDialog } from '@/components/ExcelColumnMappingDialog';
+import { useAuth } from '@/contexts/AuthContext';
 
 const emptyForm = {
     name: '', barcode: '', category: '', condition: 'new' as 'new' | 'used',
@@ -146,6 +148,8 @@ export default function DevicesInventory() {
     const [newCatName, setNewCatName] = useState('');
     const [newCatType, setNewCatType] = useState<'device' | 'accessory'>('device');
     const [activeBatchesModal, setActiveBatchesModal] = useState<{ id: string; name: string } | null>(null);
+    const [showExcelRestore, setShowExcelRestore] = useState(false);
+    const { user } = useAuth();
 
     useEffect(() => {
         const s = (location.state as { filter?: string })?.filter;
@@ -286,6 +290,9 @@ export default function DevicesInventory() {
                     </div>
                     <button onClick={openAdd} className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 active:scale-95 transition-all shadow-md">
                         <Plus className="h-4 w-4" /> إضافة منتج
+                    </button>
+                    <button onClick={() => setShowExcelRestore(true)} className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition-all shadow-md">
+                        <FileSpreadsheet className="h-4 w-4" /> استرداد من Excel
                     </button>
                 </div>
             </div>
@@ -514,6 +521,35 @@ export default function DevicesInventory() {
                     onClose={() => setActiveBatchesModal(null)}
                 />
             )}
+
+            {/* Excel Restore Dialog */}
+            <ExcelColumnMappingDialog
+                open={showExcelRestore}
+                onOpenChange={setShowExcelRestore}
+                inventoryType="device"
+                onSuccess={() => {
+                    window.dispatchEvent(new Event('local-storage-sync'));
+                }}
+                onDataSave={(data) => {
+                    data.forEach(row => {
+                        const device: Omit<DeviceItem, 'id' | 'createdAt' | 'updatedAt'> = {
+                            name: row.name || '',
+                            model: row.model || '',
+                            barcode: row.barcode || '',
+                            category: row.category || '',
+                            condition: row.condition || 'new',
+                            color: row.color || '',
+                            quantity: Number(row.quantity) || 0,
+                            oldCostPrice: Number(row.oldCostPrice) || 0,
+                            newCostPrice: Number(row.newCostPrice) || 0,
+                            salePrice: Number(row.salePrice) || 0,
+                            notes: row.notes || '',
+                            description: row.description || '',
+                        };
+                        addDevice(device);
+                    });
+                }}
+            />
         </div>
     );
 }
