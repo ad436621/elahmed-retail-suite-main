@@ -145,12 +145,22 @@ const LoginPage = () => {
 
   const isLocked = !!lockoutEnd && Date.now() < lockoutEnd;
 
-  const handleLogin = useCallback((e: React.FormEvent) => {
+  const handleLogin = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     if (isLocked) return;
     setError(''); setLoading(true);
     try {
-      login(username, password);
+      const result = await login(username, password);
+      if (!result.success) {
+        const n = attempts + 1;
+        setAttempts(n);
+        if (n >= MAX_ATTEMPTS) {
+          setLockoutEnd(Date.now() + LOCKOUT_SEC * 1000);
+          setError(`تم قفل الحساب مؤقتاً. حاول بعد ${LOCKOUT_SEC} ثانية`);
+        } else {
+          setError(result.error || 'بيانات غير صحيحة');
+        }
+      }
     } catch (err) {
       const n = attempts + 1;
       setAttempts(n);

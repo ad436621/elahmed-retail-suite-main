@@ -3,9 +3,26 @@
 // All users stored in localStorage (localStorage key: gx_users)
 // ============================================================
 
-// ⚠️ MASTER RECOVERY CODE — keep this secret!
-// Share this code with the user when they need to reset their password.
-export const MASTER_RECOVERY_CODE = 'GX-2025-RESET';
+const STORAGE_KEY = 'gx_users';
+const RECOVERY_CODE_KEY = 'gx_recovery_code';
+
+// Generate a secure recovery code and store in localStorage if not exists
+function getOrCreateRecoveryCode(): string {
+    try {
+        const existing = localStorage.getItem(RECOVERY_CODE_KEY);
+        if (existing && existing.length >= 8) return existing;
+
+        // Generate a new secure code
+        const newCode = 'GX-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+        localStorage.setItem(RECOVERY_CODE_KEY, newCode);
+        return newCode;
+    } catch (e) {
+        console.error('Failed to manage recovery code:', e);
+        return 'GX-RECOVERY';
+    }
+}
+
+export const MASTER_RECOVERY_CODE = getOrCreateRecoveryCode();
 
 export type UserRole = 'owner' | 'user';
 
@@ -63,8 +80,6 @@ export interface AppUser {
     active: boolean;
     createdAt: string;
 }
-
-const STORAGE_KEY = 'gx_users';
 
 const DEFAULT_OWNER: AppUser = {
     id: 'owner-1',

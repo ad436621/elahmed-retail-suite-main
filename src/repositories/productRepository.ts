@@ -8,6 +8,9 @@ import { getMobiles, getMobileAccessories, updateMobile, updateMobileAccessory }
 import { getComputers, getComputerAccessories, updateComputer, updateComputerAccessory } from '@/data/computersData';
 import { getDevices, getDeviceAccessories, updateDevice, updateDeviceAccessory } from '@/data/devicesData';
 
+// Union type for all inventory item types
+type InventoryItem = MobileItem | MobileAccessory | DeviceItem | DeviceAccessory | ComputerItem | ComputerAccessory;
+
 const STORAGE_KEY = 'elahmed-products';
 
 /** Load products from localStorage */
@@ -38,22 +41,60 @@ export function isBarcodeDuplicate(barcode: string, excludeId?: string): boolean
   return allProds.some(p => p.barcode === barcode && p.id !== excludeId && p.deletedAt === null);
 }
 
+// Type-safe field access with fallbacks
+function getBarcode(item: InventoryItem): string {
+  return 'barcode' in item ? (item as { barcode: string }).barcode : item.id;
+}
+
+function getSupplier(item: InventoryItem): string {
+  return 'supplier' in item ? (item as { supplier: string }).supplier : '';
+}
+
+function getCostPrice(item: InventoryItem): number {
+  if ('oldCostPrice' in item) {
+    const oldCost = (item as { oldCostPrice: number }).oldCostPrice;
+    if (oldCost && oldCost > 0) return oldCost;
+  }
+  if ('newCostPrice' in item) {
+    const newCost = (item as { newCostPrice: number }).newCostPrice;
+    return newCost || 0;
+  }
+  if ('costPrice' in item) {
+    return (item as { costPrice: number }).costPrice || 0;
+  }
+  return 0;
+}
+
+function getSellingPrice(item: InventoryItem): number {
+  if ('salePrice' in item) return (item as { salePrice: number }).salePrice || 0;
+  if ('sellingPrice' in item) return (item as { sellingPrice: number }).sellingPrice || 0;
+  return 0;
+}
+
+function getCreatedAt(item: InventoryItem): string {
+  return 'createdAt' in item ? (item as { createdAt: string }).createdAt : new Date().toISOString();
+}
+
+function getUpdatedAt(item: InventoryItem): string {
+  return 'updatedAt' in item ? (item as { updatedAt: string }).updatedAt : new Date().toISOString();
+}
+
 const mapToProduct = (
-  item: MobileItem | MobileAccessory | DeviceItem | DeviceAccessory | ComputerItem | ComputerAccessory,
+  item: InventoryItem,
   categoryLabel: string
 ): Product => ({
   id: item.id,
   name: item.name,
   model: 'model' in item ? item.model : '',
-  barcode: (item as any).barcode || item.id, // Fallback to ID if no barcode
+  barcode: getBarcode(item),
   category: categoryLabel,
-  supplier: (item as any).supplier || '',
-  costPrice: ((item as any).oldCostPrice && (item as any).oldCostPrice > 0) ? (item as any).oldCostPrice : ((item as any).newCostPrice || 0),
-  sellingPrice: (item as any).salePrice || 0,
+  supplier: getSupplier(item),
+  costPrice: getCostPrice(item),
+  sellingPrice: getSellingPrice(item),
   quantity: item.quantity,
   minimumMarginPct: 0,
-  createdAt: (item as any).createdAt || new Date().toISOString(),
-  updatedAt: (item as any).updatedAt || new Date().toISOString(),
+  createdAt: getCreatedAt(item),
+  updatedAt: getUpdatedAt(item),
   deletedAt: null,
 });
 

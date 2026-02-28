@@ -1,0 +1,30 @@
+{
+    "name": "ElAhmed Retail Suite",
+    "short_name": "ElAhmed POS",
+    "description": "Retail management system with POS, inventory, and analytics",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#ffffff",
+    "theme_color": "#2563eb",
+    "orientation": "any",
+    "icons": [
+        {
+            "src": "/logo.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/logo.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    "categories": [
+        "business",
+        "productivity"
+    ],
+    "lang": "ar",
+    "dir": "rtl"
+}

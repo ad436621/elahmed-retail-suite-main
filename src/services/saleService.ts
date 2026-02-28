@@ -9,10 +9,34 @@ import { validateStock, createStockMovement } from '@/domain/stock';
 import { createAuditEntry, createVoidAudit } from '@/domain/audit';
 import { calculateFIFOSale, bulkCommitFIFOSales, BatchSaleResult } from '@/domain/batchLogic';
 
-let invoiceCounter = 5; // Start after mock data
+const INVOICE_COUNTER_KEY = 'gx_invoice_counter';
+
+function getStoredInvoiceCounter(): number {
+  try {
+    const stored = localStorage.getItem(INVOICE_COUNTER_KEY);
+    if (stored) {
+      const parsed = parseInt(stored, 10);
+      if (!isNaN(parsed) && parsed > 0) return parsed;
+    }
+  } catch (e) {
+    console.error('Failed to read invoice counter:', e);
+  }
+  return 5; // Default starting value
+}
+
+function saveInvoiceCounter(counter: number): void {
+  try {
+    localStorage.setItem(INVOICE_COUNTER_KEY, String(counter));
+  } catch (e) {
+    console.error('Failed to save invoice counter:', e);
+  }
+}
+
+let invoiceCounter = getStoredInvoiceCounter();
 
 function generateInvoiceNumber(): string {
   invoiceCounter++;
+  saveInvoiceCounter(invoiceCounter);
   const year = new Date().getFullYear();
   return `INV-${year}-${invoiceCounter.toString().padStart(4, '0')}`;
 }

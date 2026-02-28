@@ -1,11 +1,15 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import {
   AppUser, Permission, getUsers, updateUser, changePassword, findUserByUsername,
   getUserById,
 } from '@/data/usersData';
+import api from '@/lib/api';
 
 export type { AppUser, Permission };
 export { ALL_PERMISSIONS, PERMISSION_LABELS } from '@/data/usersData';
+
+// Check if backend is available
+const USE_BACKEND = import.meta.env.VITE_USE_BACKEND === 'true';
 
 // ---------- types ----------
 export interface AuthUser {
@@ -20,7 +24,7 @@ export interface AuthUser {
 interface AuthContextType {
   user: AuthUser | null;
   isAuthenticated: boolean;
-  login: (username: string, password: string) => void;
+  login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   hasPermission: (page: Permission) => boolean;
   isOwner: () => boolean;
@@ -36,17 +40,25 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(() => {
+    // Try backend first if enabled
+    if (USE_BACKEND) {
+      const token = localStorage.getItem('gx_auth_token');
+      if (token) {
+        // Will verify on mount
+        return null;
+      }
+    }
+
+    // Fallback to localStorage
     try {
       const stored = localStorage.getItem(SESSION_KEY);
       if (!stored) return null;
       const parsed = JSON.parse(stored) as AuthUser;
-      // Validate session against live user data
       const live = getUserById(parsed.id);
       if (!live || !live.active) {
         localStorage.removeItem(SESSION_KEY);
         return null;
       }
-      // Return fresh data from storage (in case permissions changed)
       return {
         id: live.id,
         username: live.username,
@@ -63,51 +75,63 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const [allUsers, setAllUsers] = useState<AppUser[]>(() => getUsers());
 
+  // Verify token with backend on mount
+  useEffect(() => {
+    if (USE_BACKEND && !user) {
+      const verifyBackendAuth = async () => {
+        const result = await api.verifyToken();
+        if (result.data) {
+          setUser({
+            id: result.data.id,
+            username: result.data.username,
+            role: result.data.role,
+            fullName: result.data.fullName,
+            permissions: result.data.permissions,
+          });
+        }
+      };
+      verifyBackendAuth();
+    }
+  }, []);
+
   useEffect(() => {
     if (user) {
-      localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+      if (USE_BACKEND) {
+        // Token is handled by api client
+      } else {
+        localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+      }
     } else {
       localStorage.removeItem(SESSION_KEY);
     }
   }, [user]);
 
-  useEffect(() => {
-    const checkSession = () => {
-      if (!user) return;
-      const live = getUserById(user.id);
-      if (!live || !live.active) {
-        logout();
-      } else {
-        if (JSON.stringify(live.permissions) !== JSON.stringify(user.permissions) || live.role !== user.role) {
-          setUser({ ...user, permissions: live.permissions, role: live.role, fullName: live.fullName });
-        }
+  const login = useCallback(async (username: string, password: string) => {
+    if (USE_BACKEND) {
+      const result = await api.login(username, password);
+      if (result.error) {
+        return { success: false, error: result.error };
       }
-    };
-
-    const handleStorage = (e: StorageEvent | CustomEvent) => {
-      const key = 'key' in e ? e.key : e.detail?.key;
-      if (key === 'gx_users') {
-        checkSession();
-        setAllUsers(getUsers());
+      if (result.data) {
+        setUser({
+          id: result.data.user.id,
+          username: result.data.user.username,
+          role: result.data.user.role,
+          fullName: result.data.user.fullName,
+          permissions: result.data.user.permissions,
+          lastLogin: new Date().toISOString(),
+        });
+        return { success: true };
       }
-    };
-
-    window.addEventListener('storage', handleStorage as EventListener);
-    window.addEventListener('local-storage', handleStorage as EventListener);
-
-    return () => {
-      window.removeEventListener('storage', handleStorage as EventListener);
-      window.removeEventListener('local-storage', handleStorage as EventListener);
-    };
-  }, [user]);
-
-  const login = (username: string, password: string) => {
-    const found = findUserByUsername(username);
-    if (!found || found.password !== password) {
-      throw new Error('اسم المستخدم أو كلمة المرور غير صحيحة');
     }
-    if (!found.active) {
-      throw new Error('هذا الحساب معطل. تواصل مع صاحب النظام');
+
+    // Fallback to localStorage
+    const found = findUserByUsername(username);
+    if (!found || !found.active) {
+      return { success: false, error: 'اسم المستخدم أو كلمة المرور غير صحيحة' };
+    }
+    if (found.password !== password) {
+      return { success: false, error: 'اسم المستخدم أو كلمة المرور غير صحيحة' };
     }
 
     const authUser: AuthUser = {
@@ -118,59 +142,76 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       permissions: found.permissions,
       lastLogin: new Date().toISOString(),
     };
-
-    // Persist last login timestamp in storage
-    updateUser(found.id, {});
     setUser(authUser);
-  };
 
-  const logout = () => setUser(null);
+    // Refresh users list
+    setAllUsers(getUsers());
 
-  const hasPermission = (page: Permission): boolean => {
+    return { success: true };
+  }, []);
+
+  const logout = useCallback(() => {
+    if (USE_BACKEND) {
+      api.setToken(null);
+    }
+    setUser(null);
+  }, []);
+
+  const hasPermission = useCallback((page: Permission) => {
     if (!user) return false;
-    if (user.role === 'owner') return true; // owner has all permissions
+    if (user.role === 'owner') return true;
     return user.permissions.includes(page);
-  };
+  }, [user]);
 
-  const isOwner = () => user?.role === 'owner';
+  const isOwner = useCallback(() => {
+    return user?.role === 'owner';
+  }, [user]);
 
-  const refreshUsers = () => setAllUsers(getUsers());
+  const refreshUsers = useCallback(() => {
+    setAllUsers(getUsers());
+  }, []);
 
-  const updateAppUser = (id: string, updates: Partial<Omit<AppUser, 'id' | 'createdAt'>>) => {
+  const updateAppUser = useCallback((id: string, updates: Partial<Omit<AppUser, 'id' | 'createdAt'>>) => {
     updateUser(id, updates);
     refreshUsers();
+  }, [refreshUsers]);
 
-    // If user updated their own info, refresh the session
-    if (user && user.id === id) {
-      const live = getUserById(id);
-      if (live) {
-        setUser(prev => prev ? {
-          ...prev,
-          fullName: live.fullName,
-          permissions: live.permissions,
-          role: live.role,
-        } : null);
-      }
+  const resetUserPassword = useCallback((username: string, newPassword: string) => {
+    if (USE_BACKEND) {
+      // Handle via API - would need endpoint
+      return false;
     }
-  };
-
-  const resetUserPassword = (username: string, newPassword: string): boolean => {
-    return changePassword(username, newPassword);
-  };
+    const found = findUserByUsername(username);
+    if (!found) return false;
+    updateUser(found.id, { password: newPassword });
+    refreshUsers();
+    return true;
+  }, [refreshUsers]);
 
   return (
-    <AuthContext.Provider value={{
-      user, isAuthenticated: !!user, login, logout,
-      hasPermission, isOwner,
-      allUsers, refreshUsers, updateAppUser, resetUserPassword,
-    }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isAuthenticated: !!user,
+        login,
+        logout,
+        hasPermission,
+        isOwner,
+        allUsers,
+        refreshUsers,
+        updateAppUser,
+        resetUserPassword,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );
 }
 
 export function useAuth() {
-  const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within AuthProvider');
-  return ctx;
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within AuthProvider');
+  }
+  return context;
 }

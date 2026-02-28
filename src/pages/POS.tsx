@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Search, Plus, Minus, Trash2, CreditCard, Banknote, ArrowLeftRight, Printer, ShoppingCart, Sparkles, Package, Tag, Percent, Keyboard, Scan, Smartphone, Monitor, Tv, Car, Layers, X } from 'lucide-react';
+import { Search, Plus, Minus, Trash2, CreditCard, Banknote, ArrowLeftRight, Printer, ShoppingCart, Sparkles, Package, Tag, Percent, Keyboard, Scan, Smartphone, Monitor, Tv, Car, Layers, X, Loader2 } from 'lucide-react';
 import { useBarcodeScanner } from '@/hooks/useBarcodeScanner';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
@@ -70,6 +70,7 @@ const POS = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [invoiceDiscount, setInvoiceDiscount] = useState(0);
+  const [isProcessing, setIsProcessing] = useState(false); // Prevent double-click during checkout
   const [selectedPayment, setSelectedPayment] = useState<PaymentMethod>('cash');
   const [selectedMainCategory, setSelectedMainCategory] = useState<string>('all');
   const [selectedSubCategory, setSelectedSubCategory] = useState<string>('all');
@@ -354,7 +355,10 @@ const POS = () => {
   }, [searchTerm, addToCart, allProducts]);
 
   const handleCheckout = useCallback(() => {
-    if (cart.length === 0) return;
+    // Prevent double-click
+    if (isProcessing || cart.length === 0) return;
+
+    setIsProcessing(true);
 
     // Minimum discount limit warning (cost + profit * 0.5) => Max discount = profit / 2
     const maxDiscount = totals.grossProfit / 2;
@@ -391,9 +395,11 @@ const POS = () => {
 
       setCart([]);
       setInvoiceDiscount(0);
+      setIsProcessing(false); // Reset loading state
       setRefreshKey(k => k + 1);
       searchRef.current?.focus();
     } catch (err: any) {
+      setIsProcessing(false); // Reset on error
       toast({ title: 'فشلت العملية', description: err.message, variant: 'destructive' });
     }
   }, [cart, invoiceDiscount, selectedPayment, toast, user, totals.grossProfit]);
@@ -746,13 +752,22 @@ const POS = () => {
           {/* Checkout Button */}
           <button
             onClick={handleCheckout}
-            disabled={cart.length === 0}
+            disabled={cart.length === 0 || isProcessing}
             className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-l from-primary to-secondary py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 disabled:opacity-50 disabled:shadow-none transition-all duration-300"
           >
             <span className="relative z-10 flex items-center justify-center gap-2">
-              <Printer className="h-5 w-5" />
-              {t('pos.checkout')} — {totals.total.toLocaleString('ar-EG')} EGP
-              <span className="rounded-lg bg-white/20 px-2 py-0.5 text-[10px] font-mono">F9</span>
+              {isProcessing ? (
+                <>
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  جاري المعالجة...
+                </>
+              ) : (
+                <>
+                  <Printer className="h-5 w-5" />
+                  {t('pos.checkout')} — {totals.total.toLocaleString('ar-EG')} EGP
+                  <span className="rounded-lg bg-white/20 px-2 py-0.5 text-[10px] font-mono">F9</span>
+                </>
+              )}
             </span>
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
           </button>

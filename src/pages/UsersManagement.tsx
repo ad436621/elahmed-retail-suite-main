@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Plus, Trash2, Pencil, X, Check, Users, ShieldCheck, Eye, EyeOff, ToggleLeft, ToggleRight, Activity, Clock } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { addUser, deleteUser, updateUser, AppUser, ALL_PERMISSIONS, PERMISSION_LABELS, Permission } from '@/data/usersData';
+import { addUser, deleteUser, updateUser, AppUser, ALL_PERMISSIONS, PERMISSION_LABELS, Permission, MASTER_RECOVERY_CODE } from '@/data/usersData';
 import { getAllAuditEntries } from '@/repositories/auditRepository';
 import { useToast } from '@/hooks/use-toast';
 
@@ -324,9 +324,11 @@ export default function UsersManagement() {
                         <div>
                             <p className="text-sm font-semibold text-amber-500">كود الاسترداد الخاص بك</p>
                             <p className="text-xs text-muted-foreground mt-1">
-                                عندما ينسى أي مستخدم كلمة مروره، أعطه الكود الموجود في الملف:
-                                <code className="mx-1 rounded bg-muted px-1 py-0.5 text-xs font-mono">src/data/usersData.ts</code>
-                                في المتغير <code className="mx-1 rounded bg-muted px-1 py-0.5 text-xs font-mono">MASTER_RECOVERY_CODE</code>
+                                استخدم هذا الكود لاستعادة حسابك في حالة نسيان كلمة المرور:
+                                <code className="mx-1 rounded bg-muted px-2 py-1 text-sm font-mono font-bold">{MASTER_RECOVERY_CODE}</code>
+                            </p>
+                            <p className="text-xs text-amber-600/70 mt-2">
+                                ⚠️ احتفظ بهذا الكود في مكان آمن - لا تشاركه مع الآخرين
                             </p>
                         </div>
                     </div>
