@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Search, Plus, Minus, Trash2, CreditCard, Banknote, ArrowLeftRight, Printer, ShoppingCart, Sparkles, Package, Tag, Percent, Keyboard, Scan, Smartphone, Monitor, Tv, Car, Layers, X, Loader2 } from 'lucide-react';
+import { Search, Plus, Minus, Trash2, CreditCard, Banknote, ArrowLeftRight, Printer, ShoppingCart, Sparkles, Package, Tag, Percent, Keyboard, Scan, Smartphone, Monitor, Tv, Car, Layers, X, Loader2, User, FileText, PauseCircle, Clock, ChevronDown, ChevronUp, StickyNote, Receipt, Headphones, Wrench, Send, HelpCircle, RotateCcw, Calculator } from 'lucide-react';
+import { getCustomers, Customer } from '@/data/customersData';
+import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
 import { useBarcodeScanner } from '@/hooks/useBarcodeScanner';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
@@ -20,48 +22,62 @@ import { useAuth } from '@/contexts/AuthContext';
 
 // ── Sub-components ──────────────────────────────────────────
 
-const CartItemRow = ({ item, onUpdateQty, onRemove }: {
+const CartItemRow = ({ item, onUpdateQty, onRemove, onLineDiscount }: {
   item: CartItem;
   onUpdateQty: (id: string, delta: number) => void;
   onRemove: (id: string) => void;
-}) => (
-  <div className="group rounded-xl bg-gradient-to-l from-muted/40 to-transparent border border-border/30 p-3 transition-all duration-300 hover:from-muted/60">
-    <div className="flex items-start justify-between gap-2">
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-card-foreground truncate">{item.product.name}</p>
-        <p className="text-xs text-muted-foreground mt-0.5">{item.product.sellingPrice.toLocaleString('ar-EG')} EGP</p>
+  onLineDiscount: (id: string, discount: number) => void;
+}) => {
+  const [showDiscount, setShowDiscount] = useState(false);
+  const lineTotal = item.product.sellingPrice * item.qty - item.lineDiscount;
+  return (
+    <div className="group rounded-xl bg-gradient-to-l from-muted/40 to-transparent border border-border/30 p-3 transition-all duration-300 hover:from-muted/60">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-card-foreground truncate">{item.product.name}</p>
+          <p className="text-xs text-muted-foreground mt-0.5">{item.product.sellingPrice.toLocaleString('ar-EG')} EGP × {item.qty}</p>
+        </div>
+        <div className="flex gap-1">
+          <button onClick={() => setShowDiscount(!showDiscount)} title="خصم" className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:text-amber-500 hover:bg-amber-500/10 transition-all">
+            <Percent className="h-3.5 w-3.5" />
+          </button>
+          <button onClick={() => onRemove(item.product.id)} className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all opacity-0 group-hover:opacity-100">
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
+        </div>
       </div>
-      <button
-        onClick={() => onRemove(item.product.id)}
-        className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all duration-200 opacity-0 group-hover:opacity-100"
-      >
-        <Trash2 className="h-3.5 w-3.5" />
-      </button>
+      {showDiscount && (
+        <div className="mt-2 flex items-center gap-2">
+          <Percent className="h-3 w-3 text-amber-500" />
+          <input type="number" min={0} value={item.lineDiscount || ''} onChange={e => onLineDiscount(item.product.id, +e.target.value)}
+            placeholder="0" className="w-20 rounded-lg border border-border/50 bg-background/50 px-2 py-1 text-xs text-end focus:outline-none focus:ring-1 focus:ring-primary/30" />
+          <span className="text-[10px] text-muted-foreground">ج.م خصم</span>
+        </div>
+      )}
+      <div className="mt-2 flex items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          <button onClick={() => onUpdateQty(item.product.id, -1)} className="flex h-7 w-7 items-center justify-center rounded-lg bg-muted/50 text-card-foreground hover:bg-primary hover:text-primary-foreground transition-all shadow-sm">
+            <Minus className="h-3 w-3" />
+          </button>
+          <span className="w-8 text-center text-sm font-bold text-card-foreground">{item.qty}</span>
+          <button onClick={() => onUpdateQty(item.product.id, 1)} className="flex h-7 w-7 items-center justify-center rounded-lg bg-muted/50 text-card-foreground hover:bg-primary hover:text-primary-foreground transition-all shadow-sm">
+            <Plus className="h-3 w-3" />
+          </button>
+        </div>
+        <div className="text-end">
+          <span className="text-sm font-bold text-primary">{lineTotal.toLocaleString('ar-EG')} EGP</span>
+          {item.lineDiscount > 0 && <p className="text-[9px] text-amber-500">-{item.lineDiscount} خصم</p>}
+        </div>
+      </div>
     </div>
-    <div className="mt-3 flex items-center justify-between">
-      <div className="flex items-center gap-1.5">
-        <button
-          onClick={() => onUpdateQty(item.product.id, -1)}
-          className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted/50 text-card-foreground hover:bg-primary hover:text-primary-foreground transition-all duration-200 shadow-sm hover:shadow-md"
-        >
-          <Minus className="h-3.5 w-3.5" />
-        </button>
-        <span className="w-10 text-center text-base font-bold text-card-foreground">{item.qty}</span>
-        <button
-          onClick={() => onUpdateQty(item.product.id, 1)}
-          className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted/50 text-card-foreground hover:bg-primary hover:text-primary-foreground transition-all duration-200 shadow-sm hover:shadow-md"
-        >
-          <Plus className="h-3.5 w-3.5" />
-        </button>
-      </div>
-      <div className="text-end">
-        <span className="text-base font-bold text-primary">{(item.product.sellingPrice * item.qty).toLocaleString('ar-EG')} EGP</span>
-      </div>
-    </div>
-  </div>
-);
+  );
+};
 
 // ── Main POS Component ──────────────────────────────────────
+
+// Held invoices storage
+const HELD_KEY = 'elos_held_invoices';
+interface HeldInvoice { id: string; cart: CartItem[]; customer: string; notes: string; discount: number; heldAt: string; }
 
 const POS = () => {
   const { t } = useLanguage();
@@ -70,7 +86,7 @@ const POS = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [cart, setCart] = useState<CartItem[]>([]);
   const [invoiceDiscount, setInvoiceDiscount] = useState(0);
-  const [isProcessing, setIsProcessing] = useState(false); // Prevent double-click during checkout
+  const [isProcessing, setIsProcessing] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<PaymentMethod>('cash');
   const [selectedMainCategory, setSelectedMainCategory] = useState<string>('all');
   const [selectedSubCategory, setSelectedSubCategory] = useState<string>('all');
@@ -78,6 +94,86 @@ const POS = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [scannerActive, setScannerActive] = useState(false);
   const scannerTimer = useRef<ReturnType<typeof setTimeout>>();
+
+  // ── New POS Features State ──
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [selectedCustomer, setSelectedCustomer] = useState('');
+  const [showCustomerPicker, setShowCustomerPicker] = useState(false);
+  const [invoiceNotes, setInvoiceNotes] = useState('');
+  const [amountPaid, setAmountPaid] = useState(0);
+  const [showHeld, setShowHeld] = useState(false);
+  const [showRecent, setShowRecent] = useState(false);
+  const [heldInvoices, setHeldInvoices] = useState<HeldInvoice[]>(() => getStorageItem<HeldInvoice[]>(HELD_KEY, []));
+  const customers = useMemo(() => getCustomers(), [refreshKey]);
+  const filteredCustomers = useMemo(() => {
+    if (!customerSearch) return customers.slice(0, 5);
+    const q = customerSearch.toLowerCase();
+    return customers.filter(c => c.name.toLowerCase().includes(q) || c.phone?.includes(q)).slice(0, 8);
+  }, [customers, customerSearch]);
+  const recentSales = useMemo(() => getStorageItem<any[]>('gx_sales', []).slice(-8).reverse(), [refreshKey]);
+
+  // ── Transfers State ──
+  const TRANSFER_KEY = 'elos_transfers';
+  interface Transfer { id: string; customer: string; phone: string; type: string; amount: number; commission: number; date: string; }
+  const [transferCustomer, setTransferCustomer] = useState('');
+  const [transferPhone, setTransferPhone] = useState('');
+  const [transferType, setTransferType] = useState('فودافون كاش');
+  const [transferAmount, setTransferAmount] = useState(0);
+  const [transferCommission, setTransferCommission] = useState(0);
+  const [shiftTransfers, setShiftTransfers] = useState<Transfer[]>(() => {
+    const saved = getStorageItem<Transfer[]>(TRANSFER_KEY, []);
+    // Only keep today's transfers
+    const today = new Date().toDateString();
+    return saved.filter(t => new Date(t.date).toDateString() === today);
+  });
+  const transferTypes = ['فودافون كاش', 'اتصالات كاش', 'اورنج كاش', 'ويي', 'انستاباي', 'تحويل بنكي'];
+
+  const registerTransfer = () => {
+    if (transferAmount <= 0) { toast({ title: 'أدخل مبلغ التحويل', variant: 'destructive' }); return; }
+    const t: Transfer = { id: Date.now().toString(), customer: transferCustomer, phone: transferPhone, type: transferType, amount: transferAmount, commission: transferCommission, date: new Date().toISOString() };
+    const updated = [...shiftTransfers, t];
+    setShiftTransfers(updated); setStorageItem(TRANSFER_KEY, updated);
+    setTransferCustomer(''); setTransferPhone(''); setTransferAmount(0); setTransferCommission(0);
+    toast({ title: '✅ تم تسجيل التحويل', description: `${transferType} — ${transferAmount} ج.م` });
+  };
+  const totalTransferCommissions = useMemo(() => shiftTransfers.reduce((s, t) => s + t.commission, 0), [shiftTransfers]);
+
+  // ── Brand filter for products ──
+  const [selectedBrand, setSelectedBrand] = useState('الكل');
+  const brands = ['الكل', 'Apple', 'Samsung', 'Xiaomi', 'Realme', 'Vivo', 'Huawei', 'Nokia', 'أخرى'];
+
+  // Stats
+  const todaySales = useMemo(() => {
+    const today = new Date().toDateString();
+    return getStorageItem<any[]>('gx_sales', []).filter((s: any) => new Date(s.date).toDateString() === today);
+  }, [refreshKey]);
+  const todayTotal = useMemo(() => todaySales.reduce((s: number, sale: any) => s + (sale.total || 0), 0), [todaySales]);
+
+  // Hold invoice
+  const holdInvoice = () => {
+    if (cart.length === 0) return;
+    const h: HeldInvoice = { id: Date.now().toString(), cart: [...cart], customer: selectedCustomer, notes: invoiceNotes, discount: invoiceDiscount, heldAt: new Date().toISOString() };
+    const updated = [...heldInvoices, h];
+    setHeldInvoices(updated); setStorageItem(HELD_KEY, updated);
+    setCart([]); setInvoiceDiscount(0); setInvoiceNotes(''); setSelectedCustomer('');
+    toast({ title: '✉️ تم تعليق الفاتورة', description: `عدد المعلقات: ${updated.length}` });
+  };
+  const resumeInvoice = (id: string) => {
+    const h = heldInvoices.find(x => x.id === id);
+    if (!h) return;
+    setCart(h.cart); setInvoiceDiscount(h.discount); setInvoiceNotes(h.notes); setSelectedCustomer(h.customer);
+    const updated = heldInvoices.filter(x => x.id !== id);
+    setHeldInvoices(updated); setStorageItem(HELD_KEY, updated);
+    setShowHeld(false);
+    toast({ title: '✅ تم استرجاع الفاتورة' });
+  };
+  const deleteHeld = (id: string) => {
+    const updated = heldInvoices.filter(x => x.id !== id);
+    setHeldInvoices(updated); setStorageItem(HELD_KEY, updated);
+  };
+  const updateLineDiscount = useCallback((id: string, discount: number) => {
+    setCart(prev => prev.map(c => c.product.id === id ? { ...c, lineDiscount: Math.max(0, discount) } : c));
+  }, []);
 
   // Main categories configuration
   const mainCategories = [
@@ -650,47 +746,129 @@ const POS = () => {
       {/* Right: Cart */}
       <div className="flex w-full md:w-[400px] flex-col rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm shadow-elevated overflow-hidden mt-4 md:mt-0">
         {/* Cart Header */}
-        <div className="border-b border-border/30 px-5 py-4 bg-gradient-to-l from-primary/5 to-transparent">
+        <div className="border-b border-border/30 px-4 py-3 bg-gradient-to-l from-primary/5 to-transparent">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
                 <ShoppingCart className="h-4 w-4 text-primary" />
               </div>
               <div>
-                <h2 className="text-base font-bold text-card-foreground">{t('pos.cart')}</h2>
-                <p className="text-xs text-muted-foreground">{cart.length} {cart.length === 1 ? 'منتج' : 'منتجات'}</p>
+                <h2 className="text-sm font-bold text-card-foreground">{t('pos.cart')} <span className="text-xs font-normal text-muted-foreground">({cart.length})</span></h2>
               </div>
             </div>
-            {cart.length > 0 && (
-              <button
-                onClick={() => {
-                  if (window.confirm('هل أنت متأكد من مسح جميع عناصر السلة؟')) {
-                    setCart([]);
-                  }
-                }}
-                className="text-xs text-destructive hover:text-destructive/80 hover:bg-destructive/10 rounded-lg px-3 py-1.5 transition-all duration-200"
-              >
-                {t('pos.clearCart')}
-              </button>
+            <div className="flex items-center gap-1">
+              {cart.length > 0 && (
+                <button onClick={() => { if (window.confirm('مسح السلة؟')) setCart([]); }}
+                  className="text-[10px] text-destructive hover:bg-destructive/10 rounded-lg px-2 py-1 transition-all">
+                  مسح
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Quick Action Buttons */}
+          <div className="flex items-center gap-1.5 mt-2">
+            <button onClick={holdInvoice} disabled={cart.length === 0} title="تعليق الفاتورة"
+              className="flex items-center gap-1 rounded-lg bg-amber-500/10 text-amber-600 px-2.5 py-1.5 text-[10px] font-medium hover:bg-amber-500/20 transition-all disabled:opacity-40">
+              <PauseCircle className="h-3 w-3" /> تعليق
+              {heldInvoices.length > 0 && <span className="bg-amber-500 text-white text-[8px] rounded-full px-1">{heldInvoices.length}</span>}
+            </button>
+            <button onClick={() => setShowHeld(!showHeld)} title="الفواتير المعلقة"
+              className={cn('flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[10px] font-medium transition-all', showHeld ? 'bg-primary/20 text-primary' : 'bg-muted/50 text-muted-foreground hover:bg-muted')}>
+              <FileText className="h-3 w-3" /> معلقة
+            </button>
+            <button onClick={() => setShowRecent(!showRecent)} title="آخر الفواتير"
+              className={cn('flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[10px] font-medium transition-all', showRecent ? 'bg-primary/20 text-primary' : 'bg-muted/50 text-muted-foreground hover:bg-muted')}>
+              <Clock className="h-3 w-3" /> سجل
+            </button>
+          </div>
+        </div>
+
+        {/* Customer Picker */}
+        <div className="px-4 py-2 border-b border-border/20">
+          <div className="relative">
+            <button onClick={() => setShowCustomerPicker(!showCustomerPicker)}
+              className="w-full flex items-center justify-between rounded-lg bg-muted/30 px-3 py-2 text-xs hover:bg-muted/50 transition-all">
+              <div className="flex items-center gap-2">
+                <User className="h-3.5 w-3.5 text-primary" />
+                <span className="text-card-foreground font-medium">{selectedCustomer || 'عميل نقدي (اختياري)'}</span>
+              </div>
+              {showCustomerPicker ? <ChevronUp className="h-3 w-3 text-muted-foreground" /> : <ChevronDown className="h-3 w-3 text-muted-foreground" />}
+            </button>
+            {showCustomerPicker && (
+              <div className="absolute z-20 top-full left-0 right-0 mt-1 rounded-xl border border-border bg-card shadow-xl p-2 animate-slide-down">
+                <input value={customerSearch} onChange={e => setCustomerSearch(e.target.value)} placeholder="بحث عن عميل..." autoFocus
+                  className="w-full rounded-lg border border-border/50 bg-background px-3 py-1.5 text-xs mb-1 focus:outline-none focus:ring-1 focus:ring-primary/30" />
+                <div className="max-h-32 overflow-y-auto space-y-0.5">
+                  <button onClick={() => { setSelectedCustomer(''); setShowCustomerPicker(false); setCustomerSearch(''); }}
+                    className="w-full text-start rounded-lg px-2 py-1.5 text-xs hover:bg-muted/50 transition-colors text-muted-foreground">عميل نقدي</button>
+                  {filteredCustomers.map(c => (
+                    <button key={c.id} onClick={() => { setSelectedCustomer(c.name); setShowCustomerPicker(false); setCustomerSearch(''); }}
+                      className="w-full text-start rounded-lg px-2 py-1.5 text-xs hover:bg-primary/5 transition-colors flex items-center justify-between">
+                      <span className="font-medium text-card-foreground">{c.name}</span>
+                      {c.phone && <span className="text-[10px] text-muted-foreground font-mono">{c.phone}</span>}
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
         </div>
 
+        {/* Held Invoices Panel */}
+        {showHeld && heldInvoices.length > 0 && (
+          <div className="px-4 py-2 border-b border-border/20 bg-amber-500/5 animate-slide-down">
+            <p className="text-[10px] font-bold text-amber-600 mb-1.5">الفواتير المعلقة ({heldInvoices.length})</p>
+            <div className="space-y-1 max-h-28 overflow-y-auto">
+              {heldInvoices.map(h => (
+                <div key={h.id} className="flex items-center justify-between rounded-lg bg-white/50 dark:bg-white/5 px-2 py-1.5">
+                  <div>
+                    <p className="text-[10px] font-bold text-card-foreground">{h.cart.length} منتج • {h.customer || 'نقدي'}</p>
+                    <p className="text-[9px] text-muted-foreground">{new Date(h.heldAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</p>
+                  </div>
+                  <div className="flex gap-1">
+                    <button onClick={() => resumeInvoice(h.id)} className="text-[9px] bg-primary/10 text-primary px-2 py-0.5 rounded font-medium hover:bg-primary/20">استرجاع</button>
+                    <button onClick={() => deleteHeld(h.id)} className="text-[9px] bg-destructive/10 text-destructive px-1.5 py-0.5 rounded hover:bg-destructive/20"><X className="h-2.5 w-2.5" /></button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Recent Sales Panel */}
+        {showRecent && recentSales.length > 0 && (
+          <div className="px-4 py-2 border-b border-border/20 bg-blue-500/5 animate-slide-down">
+            <p className="text-[10px] font-bold text-blue-600 mb-1.5">آخر الفواتير</p>
+            <div className="space-y-1 max-h-28 overflow-y-auto">
+              {recentSales.map((s: any) => (
+                <div key={s.id} className="flex items-center justify-between rounded-lg bg-white/50 dark:bg-white/5 px-2 py-1">
+                  <div>
+                    <p className="text-[10px] font-bold text-card-foreground">#{s.invoiceNumber} <span className="text-muted-foreground font-normal">• {s.paymentMethod}</span></p>
+                    <p className="text-[9px] text-muted-foreground">{new Date(s.date).toLocaleDateString('ar-EG')}</p>
+                  </div>
+                  <span className="text-[10px] font-bold text-primary">{s.total?.toLocaleString('ar-EG')} EGP</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Cart Items */}
-        <div className="flex-1 overflow-y-auto px-4 py-4">
+        <div className="flex-1 overflow-y-auto px-4 py-3">
           {cart.length === 0 ? (
             <div className="flex h-full flex-col items-center justify-center text-center">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-muted/30 mb-4">
-                <ShoppingCart className="h-8 w-8 text-muted-foreground/40" />
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted/30 mb-3">
+                <ShoppingCart className="h-7 w-7 text-muted-foreground/40" />
               </div>
               <p className="text-sm text-muted-foreground">{t('pos.noItems')}</p>
               <p className="text-xs text-muted-foreground/60 mt-1">اضغط على المنتجات لإضافتها</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {cart.map((item, i) => (
-                <div key={item.product.id} className="animate-slide-up" style={{ animationDelay: `${i * 50}ms` }}>
-                  <CartItemRow item={item} onUpdateQty={updateQty} onRemove={removeFromCart} />
+                <div key={item.product.id} className="animate-slide-up" style={{ animationDelay: `${i * 30}ms` }}>
+                  <CartItemRow item={item} onUpdateQty={updateQty} onRemove={removeFromCart} onLineDiscount={updateLineDiscount} />
                 </div>
               ))}
             </div>
@@ -698,84 +876,90 @@ const POS = () => {
         </div>
 
         {/* Totals & Payment */}
-        <div className="border-t border-border/30 bg-gradient-to-t from-muted/20 to-transparent px-5 py-5 space-y-4">
+        <div className="border-t border-border/30 bg-gradient-to-t from-muted/20 to-transparent px-4 py-4 space-y-3">
+          {/* Notes */}
+          <div className="flex items-center gap-2">
+            <StickyNote className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+            <input value={invoiceNotes} onChange={e => setInvoiceNotes(e.target.value)} placeholder="ملاحظات الفاتورة (اختياري)"
+              className="flex-1 rounded-lg border border-border/40 bg-background/50 px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/20" />
+          </div>
+
           {/* Subtotal & Discount */}
-          <div className="space-y-2.5">
-            <div className="flex justify-between text-sm">
+          <div className="space-y-1.5 text-xs">
+            <div className="flex justify-between">
               <span className="text-muted-foreground">{t('pos.subtotal')}</span>
               <span className="font-medium text-card-foreground">{totals.subtotal.toLocaleString('ar-EG')} EGP</span>
             </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Percent className="h-4 w-4" />
-                <span>{t('pos.discount')}</span>
+            {cart.reduce((sum, c) => sum + c.lineDiscount, 0) > 0 && (
+              <div className="flex justify-between text-amber-500">
+                <span>خصم الأصناف</span>
+                <span className="font-medium">-{cart.reduce((sum, c) => sum + c.lineDiscount, 0).toLocaleString('ar-EG')} EGP</span>
               </div>
-              <input
-                type="number"
-                value={invoiceDiscount || ''}
-                onChange={(e) => setInvoiceDiscount(Number(e.target.value))}
-                className="w-24 rounded-xl border border-border/50 bg-background/50 px-3 py-2 text-end text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary/30 transition-all"
-                min={0}
-                placeholder="0"
-              />
+            )}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 text-muted-foreground">
+                <Percent className="h-3 w-3" />
+                <span>خصم الفاتورة</span>
+              </div>
+              <input type="number" value={invoiceDiscount || ''} onChange={(e) => setInvoiceDiscount(Number(e.target.value))}
+                className="w-20 rounded-lg border border-border/50 bg-background/50 px-2 py-1 text-end text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary/20" min={0} placeholder="0" />
             </div>
           </div>
 
           {/* Total */}
-          <div className="flex justify-between items-end border-t border-border/30 pt-3">
+          <div className="flex justify-between items-end border-t border-border/30 pt-2">
             <div>
-              <p className="text-xs text-muted-foreground mb-1">{t('pos.total')}</p>
-              <p className="text-2xl font-extrabold text-card-foreground">{totals.total.toLocaleString('ar-EG')} EGP</p>
+              <p className="text-[10px] text-muted-foreground">{t('pos.total')}</p>
+              <p className="text-xl font-extrabold text-card-foreground">{totals.total.toLocaleString('ar-EG')} EGP</p>
             </div>
             <div className="text-end">
-              <p className="text-xs text-muted-foreground">{t('pos.profit')}</p>
-              <p className="text-base font-bold text-chart-3">{totals.grossProfit.toLocaleString('ar-EG')} EGP</p>
-              <p className="text-[10px] text-muted-foreground">هامش {totals.marginPct}%</p>
+              <p className="text-[10px] text-muted-foreground">{t('pos.profit')}</p>
+              <p className="text-sm font-bold text-chart-3">{totals.grossProfit.toLocaleString('ar-EG')} EGP</p>
+              <p className="text-[9px] text-muted-foreground">هامش {totals.marginPct}%</p>
             </div>
           </div>
 
+          {/* Change Calculation */}
+          {selectedPayment === 'cash' && cart.length > 0 && (
+            <div className="flex items-center gap-2 rounded-lg bg-emerald-500/5 border border-emerald-500/20 px-3 py-2">
+              <div className="flex-1">
+                <p className="text-[10px] text-emerald-600 font-medium mb-0.5">المبلغ المدفوع</p>
+                <input type="number" value={amountPaid || ''} onChange={e => setAmountPaid(+e.target.value)} placeholder={totals.total.toString()}
+                  className="w-full bg-transparent text-sm font-bold text-emerald-700 focus:outline-none placeholder:text-emerald-400/40" min={0} />
+              </div>
+              {amountPaid > 0 && (
+                <div className="text-end border-r border-emerald-500/20 pr-3">
+                  <p className="text-[10px] text-emerald-600">الباقي</p>
+                  <p className={cn('text-base font-extrabold', amountPaid >= totals.total ? 'text-emerald-600' : 'text-destructive')}>
+                    {(amountPaid - totals.total).toLocaleString('ar-EG')} EGP
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Payment method */}
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-1.5">
             {([
               { key: 'cash' as const, icon: Banknote, label: t('pos.cash'), color: 'from-emerald-500/20 to-teal-500/20', iconColor: 'text-emerald-500' },
               { key: 'card' as const, icon: CreditCard, label: t('pos.card'), color: 'from-blue-500/20 to-indigo-500/20', iconColor: 'text-blue-500' },
               { key: 'split' as const, icon: ArrowLeftRight, label: t('pos.split'), color: 'from-violet-500/20 to-purple-500/20', iconColor: 'text-violet-500' },
             ]).map(pm => (
-              <button
-                key={pm.key}
-                onClick={() => setSelectedPayment(pm.key)}
-                className={cn(
-                  'flex flex-col items-center justify-center gap-1.5 rounded-xl py-3 text-xs font-medium transition-all duration-300',
-                  selectedPayment === pm.key
-                    ? `bg-gradient-to-br ${pm.color} border-2 border-primary/30 shadow-lg`
-                    : 'bg-muted/30 border-2 border-transparent text-muted-foreground hover:bg-muted/50'
-                )}
-              >
-                <pm.icon className={cn('h-5 w-5', selectedPayment === pm.key ? pm.iconColor : '')} />
+              <button key={pm.key} onClick={() => setSelectedPayment(pm.key)}
+                className={cn('flex flex-col items-center justify-center gap-1 rounded-xl py-2.5 text-[10px] font-medium transition-all',
+                  selectedPayment === pm.key ? `bg-gradient-to-br ${pm.color} border-2 border-primary/30 shadow-lg` : 'bg-muted/30 border-2 border-transparent text-muted-foreground hover:bg-muted/50')}>
+                <pm.icon className={cn('h-4 w-4', selectedPayment === pm.key ? pm.iconColor : '')} />
                 {pm.label}
               </button>
             ))}
           </div>
 
           {/* Checkout Button */}
-          <button
-            onClick={handleCheckout}
-            disabled={cart.length === 0 || isProcessing}
-            className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-l from-primary to-secondary py-4 text-base font-bold text-primary-foreground shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 disabled:opacity-50 disabled:shadow-none transition-all duration-300"
-          >
+          <button onClick={handleCheckout} disabled={cart.length === 0 || isProcessing}
+            className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-l from-primary to-secondary py-3.5 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/20 hover:shadow-xl disabled:opacity-50 disabled:shadow-none transition-all">
             <span className="relative z-10 flex items-center justify-center gap-2">
-              {isProcessing ? (
-                <>
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  جاري المعالجة...
-                </>
-              ) : (
-                <>
-                  <Printer className="h-5 w-5" />
-                  {t('pos.checkout')} — {totals.total.toLocaleString('ar-EG')} EGP
-                  <span className="rounded-lg bg-white/20 px-2 py-0.5 text-[10px] font-mono">F9</span>
-                </>
-              )}
+              {isProcessing ? (<><Loader2 className="h-4 w-4 animate-spin" /> جاري المعالجة...</>) :
+                (<><Printer className="h-4 w-4" /> {t('pos.checkout')} — {totals.total.toLocaleString('ar-EG')} EGP <span className="rounded bg-white/20 px-1.5 py-0.5 text-[9px] font-mono">F9</span></>)}
             </span>
             <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
           </button>
