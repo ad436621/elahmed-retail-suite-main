@@ -3,18 +3,16 @@
 // ============================================================
 
 import { MaintenanceOrder } from '@/domain/types';
+import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
 
 const KEY = 'gx_maintenance_v2';
 
 export function getMaintenanceOrders(): MaintenanceOrder[] {
-    try {
-        const raw = localStorage.getItem(KEY);
-        return raw ? JSON.parse(raw) : [];
-    } catch { return []; }
+    return getStorageItem<MaintenanceOrder[]>(KEY, []);
 }
 
 export function saveMaintenanceOrders(orders: MaintenanceOrder[]): void {
-    localStorage.setItem(KEY, JSON.stringify(orders));
+    setStorageItem(KEY, orders);
 }
 
 export function addMaintenanceOrder(

@@ -4,18 +4,16 @@
 
 import { UsedDevice } from '@/domain/types';
 import { addBatch } from './batchesData';
+import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
 
 const KEY = 'gx_used_devices';
 
 export function getUsedDevices(): UsedDevice[] {
-    try {
-        const raw = localStorage.getItem(KEY);
-        return raw ? JSON.parse(raw) : [];
-    } catch { return []; }
+    return getStorageItem<UsedDevice[]>(KEY, []);
 }
 
 export function saveUsedDevices(items: UsedDevice[]): void {
-    localStorage.setItem(KEY, JSON.stringify(items));
+    setStorageItem(KEY, items);
 }
 
 export function addUsedDevice(item: Omit<UsedDevice, 'id' | 'createdAt' | 'updatedAt'>): UsedDevice {

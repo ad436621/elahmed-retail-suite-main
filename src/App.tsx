@@ -39,6 +39,10 @@ const DamagedItemsPage = lazy(() => import("@/pages/DamagedItemsPage"));
 const CarsInventory = lazy(() => import("@/pages/CarsInventory"));
 const WarehousePage = lazy(() => import("@/pages/WarehousePage"));
 const OtherRevenuePage = lazy(() => import("@/pages/OtherRevenuePage"));
+const CustomersPage = lazy(() => import("@/pages/CustomersPage"));
+const WalletsPage = lazy(() => import("@/pages/WalletsPage"));
+const EmployeesPage = lazy(() => import("@/pages/EmployeesPage"));
+const HelpPage = lazy(() => import("@/pages/HelpPage"));
 
 // Loading fallback
 
@@ -145,6 +149,11 @@ const AppRoutes = () => (
         <Route path="/settings" element={<PermGuard perm="settings"><SettingsPage /></PermGuard>} />
         <Route path="/users" element={<OwnerGuard><UsersManagement /></OwnerGuard>} />
         <Route path="/barcodes" element={<PermGuard perm="inventory"><BarcodePrintPage /></PermGuard>} />
+        {/* New features */}
+        <Route path="/customers" element={<PermGuard perm="customers"><CustomersPage /></PermGuard>} />
+        <Route path="/wallets" element={<PermGuard perm="wallets"><WalletsPage /></PermGuard>} />
+        <Route path="/employees" element={<PermGuard perm="employees"><EmployeesPage /></PermGuard>} />
+        <Route path="/help" element={<HelpPage />} />
       </Route>
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
       <Route path="*" element={<NotFound />} />

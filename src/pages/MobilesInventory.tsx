@@ -1,134 +1,47 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+// ============================================================
+// Mobiles Inventory — ELOS-style layout with stat cards,
+// action bar, data table, and side panel for quick add/filter
+// ============================================================
+
+import { useState, useEffect, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
     Plus, Trash2, Pencil, X, Check, Smartphone, Headphones, Search,
-    ImagePlus, ImageOff, AlignLeft, LayoutGrid, List, Tag, FileSpreadsheet
+    AlignLeft, LayoutGrid, List, Tag, FileSpreadsheet, ImageOff
 } from 'lucide-react';
-import { MobileItem, MobileAccessory } from '@/domain/types';
 import {
     getMobiles, addMobile, updateMobile, deleteMobile,
     getMobileAccessories, addMobileAccessory, updateMobileAccessory, deleteMobileAccessory,
 } from '@/data/mobilesData';
-import { isBarcodeDuplicate } from '@/repositories/productRepository';
+import { MobileItem } from '@/domain/types';
+import { getWeightedAvgCost } from '@/data/batchesData';
 import { useToast } from '@/hooks/use-toast';
 import { useInventoryData } from '@/hooks/useInventoryData';
-import { getWeightedAvgCost } from '@/data/batchesData';
+import { InventoryProductCard } from '@/components/InventoryProductCard';
+import { ImageUpload } from '@/components/ImageUpload';
 import { ProductBatchesModal } from '@/components/ProductBatchesModal';
 import { getCategoriesBySection, addCategory, DynamicCategory } from '@/data/categoriesData';
 import { ExcelColumnMappingDialog } from '@/components/ExcelColumnMappingDialog';
 import { useAuth } from '@/contexts/AuthContext';
+import { useConfirm } from '@/components/ConfirmDialog';
+
+const IC = 'w-full rounded-xl border border-border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all';
 
 const emptyForm = {
     name: '', barcode: '', category: '', condition: 'new' as 'new' | 'used',
     quantity: 1, oldCostPrice: 0, newCostPrice: 0, salePrice: 0,
     storage: '', ram: '', color: '', supplier: '', serialNumber: '',
-    model: '', notes: '', description: '', image: undefined as string | undefined
+    model: '', description: '', image: '',
 };
 
-const IC = "w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all placeholder:text-muted-foreground/60";
+const fmt = (n: number) => n.toLocaleString('ar-EG');
 
-function ImageUpload({ value, onChange }: { value?: string; onChange: (v: string | undefined) => void }) {
-    const ref = useRef<HTMLInputElement>(null);
-    const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = ev => onChange(ev.target?.result as string);
-        reader.readAsDataURL(file);
-    };
-    return (
-        <div className="col-span-2">
-            <label className="mb-1.5 block text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-                <ImagePlus className="h-3.5 w-3.5 text-primary" /> صورة المنتج
-            </label>
-            <div className="flex items-center gap-3">
-                <div className="shrink-0">
-                    {value ? (
-                        <div className="relative h-20 w-20 rounded-xl overflow-hidden border-2 border-primary/40 shadow-sm">
-                            <img src={value} alt="معاينة" className="h-full w-full object-cover" />
-                            <button type="button" onClick={() => onChange(undefined)}
-                                className="absolute top-1.5 right-1.5 rounded-full bg-red-500/90 p-1 text-white shadow-sm hover:bg-red-600 transition-colors">
-                                <X className="h-3 w-3" />
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="h-20 w-20 rounded-xl border-2 border-dashed border-border/60 bg-muted/40 flex flex-col items-center justify-center gap-1">
-                            <ImageOff className="h-6 w-6 text-muted-foreground/30" />
-                            <span className="text-[10px] text-muted-foreground/50">لا صورة</span>
-                        </div>
-                    )}
-                </div>
-                <div className="flex-1 flex flex-col justify-center gap-2">
-                    <button type="button" onClick={() => ref.current?.click()}
-                        className="w-full rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 py-2 text-xs font-medium text-primary hover:bg-primary/10 hover:border-primary/50 transition-all flex items-center justify-center gap-1.5">
-                        <ImagePlus className="h-3.5 w-3.5" />
-                        {value ? 'تغيير الصورة' : 'اختر صورة'}
-                    </button>
-                    <p className="text-[10px] text-muted-foreground/50 text-center">JPG, PNG, WEBP</p>
-                </div>
-                <input ref={ref} type="file" accept="image/*" onChange={handleFile} className="hidden" />
-            </div>
-        </div>
-    );
-}
-
-function ProductCard({ item, onEdit, onDelete }: { item: any; onEdit: () => void; onDelete: () => void; }) {
-    const isDevice = item._type === 'device';
-    const extras = isDevice ? [item.storage, item.ram, item.color].filter(Boolean).join(' · ') : [item.model, item.color].filter(Boolean).join(' · ');
-    const conditionBadge = item.condition === 'used' ? "مستعمل" : "جديد";
-
-    return (
-        <div className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-soft hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 relative">
-            <div className="absolute top-2 left-2 z-10 flex flex-col gap-1.5">
-                <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold shadow-sm ${item.condition === 'used' ? 'bg-orange-100 text-orange-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                    {conditionBadge}
-                </span>
-                <span className="rounded-full px-2 py-0.5 text-[10px] font-bold shadow-sm bg-primary/10 text-primary truncate max-w-[80px]">
-                    {item.categoryName || 'بدون تصنيف'}
-                </span>
-            </div>
-
-            <div className="relative h-44 w-full bg-muted/30 overflow-hidden">
-                {item.image ? (
-                    <img src={item.image} alt={item.name} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                ) : (
-                    <div className="h-full w-full flex flex-col items-center justify-center gap-2">
-                        <ImageOff className="h-10 w-10 text-muted-foreground/20" />
-                        <span className="text-xs text-muted-foreground/40">لا توجد صورة</span>
-                    </div>
-                )}
-                <span className={`absolute top-2 right-2 rounded-full px-2.5 py-0.5 text-xs font-bold shadow-sm ${item.quantity === 0 ? 'bg-red-500 text-white' : 'bg-primary text-primary-foreground'}`}>
-                    {item.quantity === 0 ? 'نفد المخزون' : `${item.quantity} وحدة`}
-                </span>
-            </div>
-
-            <div className="flex flex-col flex-1 p-4 gap-2.5">
-                <h3 className="font-bold text-foreground text-sm leading-snug line-clamp-2">{item.name}</h3>
-                {extras && <p className="text-xs text-muted-foreground line-clamp-1">{extras}</p>}
-
-                <div className="mt-auto pt-3 border-t border-border/40 flex items-center justify-between">
-                    <span className="text-base font-extrabold text-primary tabular-nums">
-                        {item.salePrice.toLocaleString('ar-EG')} <span className="text-xs font-medium text-muted-foreground">ج.م</span>
-                    </span>
-                    <div className="flex gap-1.5">
-                        <button onClick={onEdit} title="تعديل"
-                            className="rounded-xl p-2 bg-primary/10 hover:bg-primary/20 text-primary transition-colors">
-                            <Pencil className="h-3.5 w-3.5" />
-                        </button>
-                        <button onClick={onDelete} title="حذف"
-                            className="rounded-xl p-2 bg-red-50 hover:bg-red-100 text-destructive transition-colors">
-                            <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-}
+// ─── Main Component ──────────────────────────────────────────
 
 export default function MobilesInventory() {
     const { toast } = useToast();
     const location = useLocation();
+    const { confirm } = useConfirm();
 
     const fetchCategories = () => getCategoriesBySection('mobile');
     const [categories, setCategories] = useState<DynamicCategory[]>(fetchCategories);
@@ -137,8 +50,8 @@ export default function MobilesInventory() {
     const accessories = useInventoryData(getMobileAccessories, ['gx_mobile_accessories']);
 
     const [search, setSearch] = useState('');
-    const [activeFilter, setActiveFilter] = useState<string>('all'); // 'all', 'used', or category.id
-    const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
+    const [activeFilter, setActiveFilter] = useState<string>('all');
+    const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
 
     const [showForm, setShowForm] = useState(false);
     const [editId, setEditId] = useState<string | null>(null);
@@ -152,13 +65,12 @@ export default function MobilesInventory() {
     const [showExcelRestore, setShowExcelRestore] = useState(false);
     const { user } = useAuth();
 
-    // Initial Filter set if passed from Dashboard (e.g. used)
     useEffect(() => {
         const s = (location.state as { filter?: string })?.filter;
         if (s) setActiveFilter(s);
     }, [location.state]);
 
-    // Unified Data map
+    // ── Unified Data ──
     const unifiedProducts = useMemo(() => {
         const list: any[] = [];
         mobiles.forEach(m => {
@@ -169,7 +81,7 @@ export default function MobilesInventory() {
                 quantity: m.quantity, salePrice: m.salePrice, newCostPrice: m.newCostPrice, oldCostPrice: m.oldCostPrice,
                 category: m.category, condition: m.condition || 'new', categoryName: cat?.name,
                 storage: m.storage, ram: m.ram, color: m.color, supplier: m.supplier, serialNumber: m.serialNumber
-            })
+            });
         });
         accessories.forEach(a => {
             const cat = categories.find(c => c.id === a.category);
@@ -179,18 +91,15 @@ export default function MobilesInventory() {
                 quantity: a.quantity, salePrice: a.salePrice, newCostPrice: a.newCostPrice, oldCostPrice: a.oldCostPrice,
                 category: a.category, condition: (a as any).condition || 'new', categoryName: cat?.name,
                 model: a.model, color: a.color
-            })
+            });
         });
         return list;
     }, [mobiles, accessories, categories]);
 
     const filteredList = useMemo(() => {
         let res = unifiedProducts;
-        if (activeFilter === 'used') {
-            res = res.filter(p => p.condition === 'used');
-        } else if (activeFilter !== 'all') {
-            res = res.filter(p => p.category === activeFilter);
-        }
+        if (activeFilter === 'used') res = res.filter(p => p.condition === 'used');
+        else if (activeFilter !== 'all') res = res.filter(p => p.category === activeFilter);
         if (search) {
             const sl = search.toLowerCase();
             res = res.filter(p =>
@@ -203,120 +112,170 @@ export default function MobilesInventory() {
         return res;
     }, [unifiedProducts, search, activeFilter]);
 
-    /* ── Event Handlers ── */
+    // ── Stats ──
+    const stats = useMemo(() => {
+        const totalItems = filteredList.reduce((s, p) => s + p.quantity, 0);
+        const totalCost = filteredList.reduce((s, p) => s + (getWeightedAvgCost(p.id) || p.newCostPrice) * p.quantity, 0);
+        const totalSale = filteredList.reduce((s, p) => s + p.salePrice * p.quantity, 0);
+        return { totalItems, totalCost, totalSale };
+    }, [filteredList]);
+
+    // ── Handlers ──
     const refreshData = () => {
-        setCategories(fetchCategories()); // Refresh local variables indirectly (they re-run naturally or via trigger, but we just trigger re-read)
-        // Global events will refresh useInventoryData automatically for products
+        setCategories(fetchCategories());
+        window.dispatchEvent(new Event('local-storage-sync'));
     };
 
     const handleCategorySubmit = () => {
-        if (!newCatName.trim()) {
-            toast({ title: 'خطأ', description: 'اسم التصنيف مطلوب', variant: 'destructive' });
-            return;
-        }
-        addCategory({ name: newCatName, section: 'mobile', type: newCatType });
+        if (!newCatName.trim()) return;
+        addCategory({
+            name: newCatName.trim(),
+            section: 'mobile',
+            type: newCatType,
+        });
         setCategories(fetchCategories());
-        setShowCategoryForm(false);
         setNewCatName('');
-        toast({ title: 'نجاح', description: 'تم إنشاء التصنيف الجديد' });
+        setShowCategoryForm(false);
+        toast({ title: '✅ تم إضافة التصنيف', description: newCatName });
     };
 
     const handleFormSubmit = () => {
-        if (!f.name.trim() || !f.category) {
-            toast({ title: 'خطأ', description: 'الاسم والتصنيف مطلوبان', variant: 'destructive' });
-            return;
-        }
-        if (f.barcode && isBarcodeDuplicate(f.barcode, editId || undefined)) {
-            toast({ title: 'خطأ', description: 'الباركود المدخل مكرر', variant: 'destructive' });
-            return;
-        }
-
-        const selectedCat = categories.find(c => c.id === f.category);
-        if (!selectedCat) return;
-
-        if (selectedCat.type === 'device') {
-            const payload: any = {
-                name: f.name, barcode: f.barcode, category: f.category, condition: f.condition,
-                deviceType: 'mobile', quantity: f.quantity, storage: f.storage, ram: f.ram, color: f.color,
-                supplier: f.supplier, oldCostPrice: f.oldCostPrice, newCostPrice: f.newCostPrice, salePrice: f.salePrice,
-                serialNumber: f.serialNumber, notes: f.notes, description: f.description, image: f.image
+        if (!f.category) { toast({ title: '⚠️ اختر تصنيفاً', variant: 'destructive' }); return; }
+        if (!f.name.trim()) { toast({ title: '⚠️ أدخل اسم المنتج', variant: 'destructive' }); return; }
+        const catType = categories.find(c => c.id === f.category)?.type || 'device';
+        if (catType === 'device') {
+            const deviceData: Omit<MobileItem, 'id' | 'createdAt' | 'updatedAt'> = {
+                name: f.name, barcode: f.barcode || `MOB-${Date.now()}`, deviceType: 'mobile',
+                category: f.category, condition: f.condition, quantity: f.quantity,
+                storage: f.storage, ram: f.ram, color: f.color, supplier: f.supplier,
+                oldCostPrice: f.oldCostPrice, newCostPrice: f.newCostPrice, salePrice: f.salePrice,
+                serialNumber: f.serialNumber, notes: '', description: f.description, image: f.image,
             };
-            if (editId) updateMobile(editId, payload);
-            else addMobile(payload);
+            editId ? updateMobile(editId, deviceData) : addMobile(deviceData);
         } else {
-            const payload: any = {
-                name: f.name, barcode: f.barcode, category: f.category, subcategory: '', condition: f.condition,
-                quantity: f.quantity, color: f.color, oldCostPrice: f.oldCostPrice, newCostPrice: f.newCostPrice,
-                salePrice: f.salePrice, notes: f.notes, description: f.description, image: f.image, model: f.model
+            const accData = {
+                name: f.name, barcode: f.barcode || `ACC-${Date.now()}`,
+                category: f.category, quantity: f.quantity,
+                oldCostPrice: f.oldCostPrice, newCostPrice: f.newCostPrice, salePrice: f.salePrice,
+                model: f.model, color: f.color, description: f.description, image: f.image,
             };
-            if (editId) updateMobileAccessory(editId, payload);
-            else addMobileAccessory(payload);
+            editId ? updateMobileAccessory(editId, accData) : addMobileAccessory(accData);
         }
-        toast({ title: '✅ تم الحفظ بنجاح', description: f.name });
+        toast({ title: editId ? '✅ تم تعديل المنتج' : '✅ تم إضافة المنتج' });
         closeForm();
         refreshData();
-        // Disabling window reload, relies on useInventoryData for sync.
-        setTimeout(() => window.dispatchEvent(new Event('local-storage-sync')), 200);
     };
 
-    const openAdd = () => {
-        setF({ ...emptyForm, category: categories[0]?.id || '' });
-        setEditId(null);
-        setShowForm(true);
-    };
-
+    const openAdd = () => { setEditId(null); setF(emptyForm); setShowForm(true); };
     const openEdit = (item: any) => {
-        setF({
-            name: item.name, barcode: item.barcode || '', category: item.category || '', condition: item.condition,
-            quantity: item.quantity, oldCostPrice: item.oldCostPrice, newCostPrice: item.newCostPrice, salePrice: item.salePrice,
-            storage: item.storage || '', ram: item.ram || '', color: item.color || '', supplier: item.supplier || '', serialNumber: item.serialNumber || '',
-            model: item.model || '', notes: item.notes || '', description: item.description || '', image: item.image
-        });
         setEditId(item.id);
         setEditType(item._type);
+        setF({
+            name: item.name, barcode: item.barcode || '', category: item.category,
+            condition: item.condition, quantity: item.quantity,
+            oldCostPrice: item.oldCostPrice, newCostPrice: item.newCostPrice, salePrice: item.salePrice,
+            storage: item.storage || '', ram: item.ram || '', color: item.color || '',
+            supplier: item.supplier || '', serialNumber: item.serialNumber || '',
+            model: item.model || '', description: item.description || '', image: item.image || '',
+        });
         setShowForm(true);
     };
+    const closeForm = () => setShowForm(false);
 
-    const closeForm = () => { setShowForm(false); setEditId(null); };
+    const handleDelete = async (item: any) => {
+        const ok = await confirm({
+            title: 'حذف منتج',
+            message: `هل أنت متأكد من حذف "${item.name}"؟ لا يمكن التراجع.`,
+            confirmLabel: 'حذف',
+            danger: true,
+        });
+        if (!ok) return;
+        item._type === 'device' ? deleteMobile(item.id) : deleteMobileAccessory(item.id);
+        setTimeout(() => window.dispatchEvent(new Event('local-storage-sync')), 100);
+        toast({ title: '🗑️ تم حذف المنتج' });
+    };
 
-    // Dynamic field conditions based on selected category type
     const activeCategoryType = categories.find(c => c.id === f.category)?.type || 'device';
 
+    // ── Render ──
     return (
-        <div className="space-y-5 animate-fade-in" dir="rtl">
-            {/* Header */}
+        <div className="space-y-4 animate-fade-in" dir="rtl">
+
+            {/* ─── Header ─── */}
             <div className="flex items-center justify-between flex-wrap gap-3">
                 <div className="flex items-center gap-3">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-100 border border-cyan-200 shadow-sm">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-100 border border-cyan-200">
                         <Smartphone className="h-5 w-5 text-cyan-600" />
                     </div>
                     <div>
-                        <h1 className="text-2xl font-bold text-foreground">موبايلات وإكسسوارات</h1>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                            {unifiedProducts.length} إجمالي المنتجات
-                        </p>
+                        <h1 className="text-2xl font-black text-foreground">مخزون الموبايلات</h1>
+                        <p className="text-xs text-muted-foreground mt-0.5">{unifiedProducts.length} منتج مسجل</p>
                     </div>
                 </div>
-                <div className="flex items-center gap-2">
-                    <div className="flex gap-1 rounded-xl border border-border p-1 bg-muted/30">
-                        <button onClick={() => setViewMode('grid')} className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all flex items-center gap-1.5 ${viewMode === 'grid' ? 'bg-card shadow text-primary border border-border' : 'text-muted-foreground hover:text-foreground'}`}>
-                            <LayoutGrid className="h-3.5 w-3.5" /> شبكة
-                        </button>
-                        <button onClick={() => setViewMode('table')} className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all flex items-center gap-1.5 ${viewMode === 'table' ? 'bg-card shadow text-primary border border-border' : 'text-muted-foreground hover:text-foreground'}`}>
-                            <List className="h-3.5 w-3.5" /> جدول
-                        </button>
+            </div>
+
+            {/* ─── Stat Cards ─── */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="rounded-2xl border border-border bg-card p-4 flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center shrink-0">
+                        <span className="text-emerald-600 text-sm">💰</span>
                     </div>
-                    <button onClick={openAdd} className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 active:scale-95 transition-all shadow-md">
-                        <Plus className="h-4 w-4" /> إضافة منتج
+                    <div>
+                        <p className="text-[10px] text-muted-foreground font-bold">قيمة البيع المتوقعة</p>
+                        <p className="text-xl font-black text-foreground tabular-nums">{fmt(stats.totalSale)}</p>
+                    </div>
+                </div>
+                <div className="rounded-2xl border border-border bg-card p-4 flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-amber-100 border border-amber-200 flex items-center justify-center shrink-0">
+                        <span className="text-amber-600 text-sm">📦</span>
+                    </div>
+                    <div>
+                        <p className="text-[10px] text-muted-foreground font-bold">قيمة التكلفة</p>
+                        <p className="text-xl font-black text-foreground tabular-nums">{fmt(stats.totalCost)}</p>
+                    </div>
+                </div>
+                <div className="rounded-2xl border border-border bg-card p-4 flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-blue-100 border border-blue-200 flex items-center justify-center shrink-0">
+                        <span className="text-blue-600 text-sm">📋</span>
+                    </div>
+                    <div>
+                        <p className="text-[10px] text-muted-foreground font-bold">الأجهزة المتوفرة</p>
+                        <p className="text-xl font-black text-foreground tabular-nums">{stats.totalItems}</p>
+                    </div>
+                </div>
+            </div>
+
+            {/* ─── Action Buttons Row ─── */}
+            <div className="flex flex-wrap items-center gap-2">
+                <button onClick={openAdd}
+                    className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-all shadow-md">
+                    <Plus className="h-4 w-4" /> إضافة منتج
+                </button>
+                <button onClick={() => setShowExcelRestore(true)}
+                    className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700 transition-all shadow-md">
+                    <FileSpreadsheet className="h-4 w-4" /> استرداد من Excel
+                </button>
+                <button onClick={() => setShowCategoryForm(true)}
+                    className="flex items-center gap-2 rounded-xl border border-dashed border-primary/40 px-4 py-2.5 text-sm font-bold text-primary hover:bg-primary/5 transition-all">
+                    <Tag className="h-4 w-4" /> إضافة تصنيف
+                </button>
+
+                {/* Spacer */}
+                <div className="flex-1" />
+
+                {/* View Mode Toggle */}
+                <div className="flex gap-1 rounded-xl border border-border p-1 bg-muted/30">
+                    <button onClick={() => setViewMode('grid')} className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all flex items-center gap-1.5 ${viewMode === 'grid' ? 'bg-card shadow text-primary border border-border' : 'text-muted-foreground hover:text-foreground'}`}>
+                        <LayoutGrid className="h-3.5 w-3.5" /> شبكة
                     </button>
-                    <button onClick={() => setShowExcelRestore(true)} className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition-all shadow-md">
-                        <FileSpreadsheet className="h-4 w-4" /> استرداد من Excel
+                    <button onClick={() => setViewMode('table')} className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all flex items-center gap-1.5 ${viewMode === 'table' ? 'bg-card shadow text-primary border border-border' : 'text-muted-foreground hover:text-foreground'}`}>
+                        <List className="h-3.5 w-3.5" /> جدول
                     </button>
                 </div>
             </div>
 
-            {/* Category Cards (Filter) */}
-            <div className="flex gap-2 w-full overflow-x-auto hide-scrollbar pb-2 pt-1 px-1 -mx-1">
+            {/* ─── Filters Row ─── */}
+            <div className="flex gap-2 w-full overflow-x-auto hide-scrollbar pb-1 px-1 -mx-1">
                 <button onClick={() => setActiveFilter('all')}
                     className={`shrink-0 rounded-xl px-4 py-2 text-sm font-semibold border transition-all flex items-center gap-2 ${activeFilter === 'all' ? 'bg-primary/10 text-primary border-primary/30 shadow-sm' : 'bg-card border-border text-muted-foreground hover:text-foreground hover:border-primary/30'}`}>
                     <LayoutGrid className="h-4 w-4" /> الكل
@@ -325,9 +284,7 @@ export default function MobilesInventory() {
                     className={`shrink-0 rounded-xl px-4 py-2 text-sm font-semibold border transition-all flex items-center gap-2 ${activeFilter === 'used' ? 'bg-orange-100 text-orange-700 border-orange-300 shadow-sm' : 'bg-card border-border text-muted-foreground hover:text-foreground hover:border-orange-300'}`}>
                     <Check className="h-4 w-4" /> مستعمل
                 </button>
-
                 <div className="shrink-0 w-px h-6 bg-border mx-1 self-center" />
-
                 {categories.map(c => (
                     <button key={c.id} onClick={() => setActiveFilter(c.id)}
                         className={`shrink-0 rounded-xl px-4 py-2 text-sm font-semibold border transition-all flex items-center gap-2 ${activeFilter === c.id ? 'bg-cyan-50 text-cyan-700 border-cyan-300 shadow-sm' : 'bg-card border-border text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}>
@@ -335,59 +292,53 @@ export default function MobilesInventory() {
                         {c.name}
                     </button>
                 ))}
-
-                <button onClick={() => setShowCategoryForm(true)}
-                    className="shrink-0 rounded-xl px-4 py-2 text-sm font-semibold border border-dashed border-primary/40 text-primary hover:bg-primary/5 transition-all flex items-center gap-2">
-                    <Plus className="h-4 w-4" /> إضافة تصنيف
-                </button>
             </div>
 
-            {/* Search */}
+            {/* ─── Search ─── */}
             <div className="relative max-w-md">
                 <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60 pointer-events-none" />
                 <input value={search} onChange={e => setSearch(e.target.value)}
-                    placeholder="بحث في المنتجات المعروضة..."
+                    placeholder="بحث بالاسم أو السيريال أو اللون..."
                     className={`${IC} pr-10`} />
             </div>
 
-            {/* Content Display */}
+            {/* ─── Content ─── */}
             {viewMode === 'grid' ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {filteredList.length === 0 ? (
                         <div className="col-span-4 py-20 text-center text-muted-foreground bg-card rounded-2xl border border-dashed border-border">
                             <Smartphone className="h-14 w-14 mx-auto mb-4 opacity-15" />
-                            <p className="text-base font-medium">لا توجد منتجات مطابقة للبحث</p>
+                            <p className="text-base font-medium">لا توجد منتجات مطابقة</p>
                         </div>
                     ) : filteredList.map(item => (
-                        <ProductCard key={item.id} item={item}
+                        <InventoryProductCard key={item.id} item={item}
                             onEdit={() => openEdit(item)}
-                            onDelete={() => {
-                                item._type === 'device' ? deleteMobile(item.id) : deleteMobileAccessory(item.id);
-                                setTimeout(() => window.dispatchEvent(new Event('local-storage-sync')), 100);
-                            }}
+                            onDelete={() => handleDelete(item)}
                         />
                     ))}
                 </div>
             ) : (
-                <div className="rounded-2xl border border-border bg-card shadow-soft overflow-hidden">
-                    <div className="overflow-x-auto pb-4">
+                <div className="rounded-2xl border border-border bg-card overflow-hidden">
+                    <div className="overflow-x-auto">
                         <table className="w-full text-sm min-w-[900px]">
                             <thead>
                                 <tr className="border-b border-border bg-muted/30 text-muted-foreground text-xs font-semibold">
-                                    <th className="px-3 py-3 text-right">صورة</th>
-                                    <th className="px-3 py-3 text-right">الاسم والمواصفات</th>
-                                    <th className="px-3 py-3 text-right">التصنيف</th>
+                                    <th className="px-3 py-3 text-right w-8"><input type="checkbox" className="rounded" /></th>
+                                    <th className="px-3 py-3 text-right">النوع</th>
+                                    <th className="px-3 py-3 text-right">الموديل</th>
+                                    <th className="px-3 py-3 text-right">الفئة</th>
                                     <th className="px-3 py-3 text-right">الحالة</th>
+                                    <th className="px-3 py-3 text-right">IMEI</th>
                                     <th className="px-3 py-3 text-center">الكمية</th>
-                                    <th className="px-3 py-3 text-right">تكلفة الوحدة</th>
+                                    <th className="px-3 py-3 text-right">التكلفة</th>
                                     <th className="px-3 py-3 text-right">سعر البيع</th>
-                                    <th className="px-3 py-3 text-right">توقعات الربح</th>
+                                    <th className="px-3 py-3 text-right">المخزون</th>
                                     <th className="px-3 py-3 text-left">إجراءات</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {filteredList.length === 0 ? (
-                                    <tr><td colSpan={9} className="py-14 text-center text-muted-foreground">لا توجد منتجات</td></tr>
+                                    <tr><td colSpan={11} className="py-14 text-center text-muted-foreground">لا توجد منتجات</td></tr>
                                 ) : filteredList.map((item, i) => {
                                     const avgCost = getWeightedAvgCost(item.id) || item.newCostPrice;
                                     const details = item._type === 'device'
@@ -395,35 +346,40 @@ export default function MobilesInventory() {
                                         : [item.model, item.color].filter(Boolean).join(' · ');
                                     return (
                                         <tr key={item.id} className={`border-b border-border/40 hover:bg-muted/20 transition-colors ${i % 2 !== 0 ? 'bg-muted/10' : ''}`}>
-                                            <td className="px-3 py-2 w-12">
-                                                {item.image ? <img src={item.image} alt={item.name} className="h-10 w-10 rounded-xl object-cover border border-border shadow-sm" /> : <div className="h-10 w-10 rounded-xl bg-muted/60 flex items-center justify-center"><ImageOff className="h-4 w-4 text-muted-foreground/30" /></div>}
-                                            </td>
+                                            <td className="px-3 py-2"><input type="checkbox" className="rounded" /></td>
                                             <td className="px-3 py-2">
-                                                <div className="font-semibold text-foreground max-w-[200px] truncate">{item.name}</div>
-                                                <div className="text-[10px] text-muted-foreground truncate">{details || '—'}</div>
+                                                <div className="flex items-center gap-2">
+                                                    {item.image
+                                                        ? <img src={item.image} alt={item.name} className="h-8 w-8 rounded-lg object-cover border border-border" />
+                                                        : <div className="h-8 w-8 rounded-lg bg-muted/60 flex items-center justify-center"><ImageOff className="h-3 w-3 text-muted-foreground/30" /></div>
+                                                    }
+                                                    <span className="font-semibold text-foreground truncate max-w-[140px]">{item.name}</span>
+                                                </div>
                                             </td>
+                                            <td className="px-3 py-2 text-[11px] text-muted-foreground">{details || '—'}</td>
                                             <td className="px-3 py-2 text-xs font-semibold text-primary">{item.categoryName || '—'}</td>
                                             <td className="px-3 py-2">
                                                 <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${item.condition === 'used' ? 'bg-orange-100 text-orange-700' : 'bg-emerald-100 text-emerald-700'}`}>
                                                     {item.condition === 'used' ? 'مستعمل' : 'جديد'}
                                                 </span>
                                             </td>
+                                            <td className="px-3 py-2 text-[10px] text-muted-foreground font-mono">{item.serialNumber || '—'}</td>
                                             <td className="px-3 py-2 text-center">
                                                 <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${item.quantity === 0 ? 'bg-red-100 text-red-600' : 'bg-muted text-foreground'}`}>{item.quantity}</span>
                                             </td>
                                             <td className="px-3 py-2 text-xs text-muted-foreground tabular-nums">
-                                                <button onClick={() => setActiveBatchesModal({ id: item.id, name: item.name })} className="hover:text-primary transition-colors underline decoration-dotted underline-offset-2" title="الضغط لعرض التفاصيل">{avgCost.toLocaleString()}</button>
+                                                <button onClick={() => setActiveBatchesModal({ id: item.id, name: item.name })} className="hover:text-primary transition-colors underline decoration-dotted underline-offset-2" title="عرض الدُفعات">{avgCost.toLocaleString()}</button>
                                             </td>
                                             <td className="px-3 py-2 text-sm font-bold text-foreground tabular-nums">{item.salePrice.toLocaleString()}</td>
                                             <td className="px-3 py-2 text-xs font-bold text-emerald-600 tabular-nums">{(item.salePrice - avgCost).toLocaleString()}</td>
                                             <td className="px-3 py-2 text-left">
-                                                <div className="flex justify-end gap-1.5">
+                                                <div className="flex justify-end gap-1">
                                                     <button onClick={() => openEdit(item)} className="rounded-lg p-1.5 hover:bg-primary/10 text-primary transition-colors"><Pencil className="h-3.5 w-3.5" /></button>
-                                                    <button onClick={() => { item._type === 'device' ? deleteMobile(item.id) : deleteMobileAccessory(item.id); setTimeout(() => window.dispatchEvent(new Event('local-storage-sync')), 100); }} className="rounded-lg p-1.5 hover:bg-red-50 text-destructive transition-colors"><Trash2 className="h-3.5 w-3.5" /> </button>
+                                                    <button onClick={() => handleDelete(item)} className="rounded-lg p-1.5 hover:bg-red-50 text-destructive transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
                                                 </div>
                                             </td>
                                         </tr>
-                                    )
+                                    );
                                 })}
                             </tbody>
                         </table>
@@ -431,7 +387,7 @@ export default function MobilesInventory() {
                 </div>
             )}
 
-            {/* Product Edit/Add Modal */}
+            {/* ─── Product Form Modal ─── */}
             {showForm && (
                 <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-sm overflow-y-auto py-4 px-4">
                     <div className="w-full max-w-xl rounded-2xl border border-border bg-card shadow-2xl animate-scale-in my-8">
@@ -489,7 +445,7 @@ export default function MobilesInventory() {
                             )}
 
                             <div>
-                                <label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1"><AlignLeft className="h-3 w-3 " /> ملاحظات التاجر / تفاصيل</label>
+                                <label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1"><AlignLeft className="h-3 w-3" /> ملاحظات / تفاصيل</label>
                                 <textarea value={f.description} onChange={e => setF(p => ({ ...p, description: e.target.value }))} rows={2} className={`${IC} resize-none`} />
                             </div>
 
@@ -503,7 +459,7 @@ export default function MobilesInventory() {
 
                         <div className="flex gap-2 px-4 pb-4 border-t border-border pt-3 bg-muted/10 rounded-b-2xl">
                             <button onClick={handleFormSubmit}
-                                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary/90 active:scale-95 transition-all shadow-md">
+                                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-all shadow-md">
                                 <Check className="h-4 w-4" /> {editId ? 'حفظ التعديلات' : 'إضافة المنتج'}
                             </button>
                             <button onClick={closeForm}
@@ -515,7 +471,7 @@ export default function MobilesInventory() {
                 </div>
             )}
 
-            {/* Category Form Modal */}
+            {/* Category Form */}
             {showCategoryForm && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
                     <div className="w-full max-w-sm rounded-2xl bg-card border border-border shadow-2xl p-5 animate-scale-in">
@@ -526,12 +482,11 @@ export default function MobilesInventory() {
                                 <input value={newCatName} onChange={e => setNewCatName(e.target.value)} placeholder="مثال: ساعات ذكية" className={IC} autoFocus />
                             </div>
                             <div>
-                                <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">النوع التقني للتصنيف</label>
+                                <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">النوع التقني</label>
                                 <div className="flex gap-2">
                                     <button onClick={() => setNewCatType('device')} className={`flex-1 py-2 text-sm font-bold rounded-xl border transition-all ${newCatType === 'device' ? 'bg-primary/10 text-primary border-primary/40' : 'bg-transparent text-muted-foreground'}`}>جهاز مستقل</button>
                                     <button onClick={() => setNewCatType('accessory')} className={`flex-1 py-2 text-sm font-bold rounded-xl border transition-all ${newCatType === 'accessory' ? 'bg-primary/10 text-primary border-primary/40' : 'bg-transparent text-muted-foreground'}`}>ملحق / إكسسوار</button>
                                 </div>
-                                <p className="text-[10px] text-muted-foreground/80 mt-1">تحديد "جهاز" يطلب إدخال رامات ومساحة وسيريال.. أما "إكسسوار" فيكتفي بالموديل واللون.</p>
                             </div>
                         </div>
                         <div className="flex gap-2 mt-6">
@@ -551,34 +506,22 @@ export default function MobilesInventory() {
                 />
             )}
 
-            {/* Excel Restore Dialog */}
+            {/* Excel Restore */}
             <ExcelColumnMappingDialog
                 open={showExcelRestore}
                 onOpenChange={setShowExcelRestore}
                 inventoryType="mobile"
-                onSuccess={() => {
-                    window.dispatchEvent(new Event('local-storage-sync'));
-                }}
+                onSuccess={() => { window.dispatchEvent(new Event('local-storage-sync')); }}
                 onDataSave={(data) => {
-                    const now = new Date().toISOString();
                     data.forEach(row => {
                         const mobile: Omit<MobileItem, 'id' | 'createdAt' | 'updatedAt'> = {
-                            name: row.name || '',
-                            barcode: row.barcode || '',
-                            deviceType: row.deviceType || 'mobile',
-                            category: row.category || '',
-                            condition: row.condition || 'new',
-                            quantity: Number(row.quantity) || 0,
-                            storage: row.storage || '',
-                            ram: row.ram || '',
-                            color: row.color || '',
-                            supplier: row.supplier || '',
-                            oldCostPrice: Number(row.oldCostPrice) || 0,
-                            newCostPrice: Number(row.newCostPrice) || 0,
-                            salePrice: Number(row.salePrice) || 0,
-                            serialNumber: row.serialNumber || '',
-                            notes: row.notes || '',
-                            description: row.description || '',
+                            name: row.name || '', barcode: row.barcode || '', deviceType: row.deviceType || 'mobile',
+                            category: row.category || '', condition: row.condition || 'new',
+                            quantity: Number(row.quantity) || 0, storage: row.storage || '', ram: row.ram || '',
+                            color: row.color || '', supplier: row.supplier || '',
+                            oldCostPrice: Number(row.oldCostPrice) || 0, newCostPrice: Number(row.newCostPrice) || 0,
+                            salePrice: Number(row.salePrice) || 0, serialNumber: row.serialNumber || '',
+                            notes: row.notes || '', description: row.description || '',
                         };
                         addMobile(mobile);
                     });

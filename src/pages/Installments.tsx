@@ -46,6 +46,7 @@ export default function Installments() {
         { id: 'cars', label: 'سيارات', icon: Car },
     ];
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     const inventory = useMemo(() => getAllInventoryProducts(), [showForm, contracts]);
 
     // Filter products by category
@@ -207,8 +208,8 @@ export default function Installments() {
                                                 type="button"
                                                 onClick={() => setProductCategory(cat.id)}
                                                 className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-all ${productCategory === cat.id
-                                                        ? 'bg-primary text-primary-foreground'
-                                                        : 'bg-muted/50 text-muted-foreground hover:bg-muted'
+                                                    ? 'bg-primary text-primary-foreground'
+                                                    : 'bg-muted/50 text-muted-foreground hover:bg-muted'
                                                     }`}
                                             >
                                                 <Icon className="h-3 w-3" />

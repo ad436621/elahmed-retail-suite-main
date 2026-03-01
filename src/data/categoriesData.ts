@@ -1,3 +1,11 @@
+// ============================================================
+// Categories Data Layer — Dynamic + Legacy categories
+// ============================================================
+
+import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
+
+// ─── Types ──────────────────────────────────────────────────
+
 export type CategorySection = 'mobile' | 'computer' | 'device';
 export type CategoryType = 'device' | 'accessory';
 
@@ -8,9 +16,12 @@ export interface DynamicCategory {
     type: CategoryType;
 }
 
-const CATEGORIES_KEY = 'gx_categories_v1';
+// ─── Constants ──────────────────────────────────────────────
 
-const DEFAULT_CATEGORIES: DynamicCategory[] = [
+const DYNAMIC_CATEGORIES_KEY = 'gx_categories_v1';
+const LEGACY_CATEGORIES_KEY = 'elahmed-categories';
+
+const DEFAULT_DYNAMIC_CATEGORIES: DynamicCategory[] = [
     { id: 'cat-mob-1', section: 'mobile', name: 'موبايلات', type: 'device' },
     { id: 'cat-mob-2', section: 'mobile', name: 'تابلت', type: 'device' },
     { id: 'cat-macc-1', section: 'mobile', name: 'سماعات سلك', type: 'accessory' },
@@ -27,35 +38,54 @@ const DEFAULT_CATEGORIES: DynamicCategory[] = [
     { id: 'cat-dacc-1', section: 'device', name: 'أذرع تحكم', type: 'accessory' },
 ];
 
+const DEFAULT_LEGACY_CATEGORIES: string[] = [
+    'Phones', 'Accessories', 'Cases', 'Chargers',
+    'Cables', 'Headphones', 'Screen Protectors', 'Tablets',
+];
+
+// ─── Dynamic Categories (section-based) ─────────────────────
+
+/** Get all dynamic categories. Initializes defaults on first call. */
 export function getCategories(): DynamicCategory[] {
-    try {
-        const raw = localStorage.getItem(CATEGORIES_KEY);
-        if (!raw) {
-            saveCategories(DEFAULT_CATEGORIES);
-            return DEFAULT_CATEGORIES;
-        }
-        return JSON.parse(raw);
-    } catch {
-        return DEFAULT_CATEGORIES;
+    const stored = getStorageItem<DynamicCategory[] | null>(DYNAMIC_CATEGORIES_KEY, null);
+    if (!stored) {
+        saveCategories(DEFAULT_DYNAMIC_CATEGORIES);
+        return DEFAULT_DYNAMIC_CATEGORIES;
     }
+    return stored;
 }
 
+/** Save dynamic categories. */
 export function saveCategories(categories: DynamicCategory[]): void {
-    localStorage.setItem(CATEGORIES_KEY, JSON.stringify(categories));
+    setStorageItem(DYNAMIC_CATEGORIES_KEY, categories);
 }
 
+/** Get categories filtered by section (mobile/computer/device). */
 export function getCategoriesBySection(section: CategorySection): DynamicCategory[] {
     return getCategories().filter(c => c.section === section);
 }
 
+/** Add a new dynamic category. */
 export function addCategory(category: Omit<DynamicCategory, 'id'>): DynamicCategory {
     const all = getCategories();
-    const newCat = { ...category, id: crypto.randomUUID() };
+    const newCat: DynamicCategory = { ...category, id: crypto.randomUUID() };
     saveCategories([...all, newCat]);
     return newCat;
 }
 
+/** Delete a dynamic category by ID. */
 export function deleteCategory(id: string): void {
-    const all = getCategories();
-    saveCategories(all.filter(c => c.id !== id));
+    saveCategories(getCategories().filter(c => c.id !== id));
+}
+
+// ─── Legacy Categories (simple string list) ─────────────────
+
+/** Get legacy string-based categories (used by Settings & Inventory pages). */
+export function getLegacyCategories(): string[] {
+    return getStorageItem<string[]>(LEGACY_CATEGORIES_KEY, [...DEFAULT_LEGACY_CATEGORIES]);
+}
+
+/** Save legacy string-based categories. */
+export function saveLegacyCategories(cats: string[]): void {
+    setStorageItem(LEGACY_CATEGORIES_KEY, cats);
 }

@@ -92,6 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       };
       verifyBackendAuth();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

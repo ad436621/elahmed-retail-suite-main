@@ -4,6 +4,7 @@
 // ============================================================
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Product, Sale, User } from '@/domain/types';
 
 // API base configuration
 const API_BASE = import.meta.env.VITE_API_URL || '';
@@ -84,7 +85,7 @@ export function useProducts(params: ProductsParams = {}) {
 
     return useQuery({
         queryKey: [...queryKeys.products, params],
-        queryFn: () => fetchApi<any>(`/api/products?${queryString}`),
+        queryFn: () => fetchApi<{ products: Product[]; pagination: Record<string, unknown> }>(`/api/products?${queryString}`),
         staleTime: 5 * 60 * 1000, // 5 minutes
         gcTime: 10 * 60 * 1000, // 10 minutes (formerly cacheTime)
     });
@@ -93,7 +94,7 @@ export function useProducts(params: ProductsParams = {}) {
 export function useProduct(id: string) {
     return useQuery({
         queryKey: queryKeys.product(id),
-        queryFn: () => fetchApi<any>(`/api/products/${id}`),
+        queryFn: () => fetchApi<Product>(`/api/products/${id}`),
         enabled: !!id,
         staleTime: 5 * 60 * 1000,
     });
@@ -103,7 +104,7 @@ export function useCreateProduct() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: (data: any) => fetchApi<any>('/api/products', {
+        mutationFn: (data: Partial<Product>) => fetchApi<Product>('/api/products', {
             method: 'POST',
             body: JSON.stringify(data),
         }),
@@ -117,8 +118,8 @@ export function useUpdateProduct() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: ({ id, data }: { id: string; data: any }) =>
-            fetchApi<any>(`/api/products/${id}`, {
+        mutationFn: ({ id, data }: { id: string; data: Partial<Product> }) =>
+            fetchApi<Product>(`/api/products/${id}`, {
                 method: 'PUT',
                 body: JSON.stringify(data),
             }),
@@ -133,7 +134,7 @@ export function useDeleteProduct() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: (id: string) => fetchApi<any>(`/api/products/${id}`, {
+        mutationFn: (id: string) => fetchApi<{ message: string }>(`/api/products/${id}`, {
             method: 'DELETE',
         }),
         onSuccess: () => {
@@ -164,7 +165,7 @@ export function useSales(params: SalesParams = {}) {
 
     return useQuery({
         queryKey: [...queryKeys.sales, params],
-        queryFn: () => fetchApi<any>(`/api/sales?${queryString}`),
+        queryFn: () => fetchApi<{ sales: Sale[]; pagination: Record<string, unknown> }>(`/api/sales?${queryString}`),
         staleTime: 1 * 60 * 1000, // 1 minute
     });
 }
@@ -172,7 +173,7 @@ export function useSales(params: SalesParams = {}) {
 export function useSale(id: string) {
     return useQuery({
         queryKey: queryKeys.sale(id),
-        queryFn: () => fetchApi<any>(`/api/sales/${id}`),
+        queryFn: () => fetchApi<Sale>(`/api/sales/${id}`),
         enabled: !!id,
     });
 }
@@ -181,7 +182,7 @@ export function useCreateSale() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: (data: any) => fetchApi<any>('/api/sales', {
+        mutationFn: (data: Record<string, unknown>) => fetchApi<Sale>('/api/sales', {
             method: 'POST',
             body: JSON.stringify(data),
         }),
@@ -198,7 +199,7 @@ export function useVoidSale() {
 
     return useMutation({
         mutationFn: ({ id, reason }: { id: string; reason: string }) =>
-            fetchApi<any>(`/api/sales/${id}/void`, {
+            fetchApi<Sale>(`/api/sales/${id}/void`, {
                 method: 'POST',
                 body: JSON.stringify({ reason }),
             }),
@@ -216,7 +217,7 @@ export function useVoidSale() {
 export function useDashboardStats() {
     return useQuery({
         queryKey: queryKeys.dashboardStats,
-        queryFn: () => fetchApi<any>('/api/dashboard/stats'),
+        queryFn: () => fetchApi<Record<string, unknown>>('/api/dashboard/stats'),
         staleTime: 2 * 60 * 1000, // 2 minutes
         refetchInterval: 5 * 60 * 1000, // Refetch every 5 minutes
     });
@@ -225,7 +226,7 @@ export function useDashboardStats() {
 export function useTopProducts(limit = 10) {
     return useQuery({
         queryKey: [...queryKeys.topProducts, limit],
-        queryFn: () => fetchApi<any>(`/api/dashboard/top-products?limit=${limit}`),
+        queryFn: () => fetchApi<Product[]>(`/api/dashboard/top-products?limit=${limit}`),
         staleTime: 5 * 60 * 1000,
     });
 }
@@ -242,7 +243,7 @@ export function useCustomers(params: { search?: string; page?: number; limit?: n
 
     return useQuery({
         queryKey: [...queryKeys.customers, params],
-        queryFn: () => fetchApi<any>(`/api/customers?${queryString}`),
+        queryFn: () => fetchApi<{ customers: Record<string, unknown>[]; pagination: Record<string, unknown> }>(`/api/customers?${queryString}`),
         staleTime: 5 * 60 * 1000,
     });
 }
@@ -250,7 +251,7 @@ export function useCustomers(params: { search?: string; page?: number; limit?: n
 export function useCustomer(id: string) {
     return useQuery({
         queryKey: queryKeys.customer(id),
-        queryFn: () => fetchApi<any>(`/api/customers/${id}`),
+        queryFn: () => fetchApi<Record<string, unknown>>(`/api/customers/${id}`),
         enabled: !!id,
     });
 }
@@ -259,7 +260,7 @@ export function useCreateCustomer() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: (data: any) => fetchApi<any>('/api/customers', {
+        mutationFn: (data: Record<string, unknown>) => fetchApi<Record<string, unknown>>('/api/customers', {
             method: 'POST',
             body: JSON.stringify(data),
         }),
@@ -273,8 +274,8 @@ export function useUpdateCustomer() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: ({ id, data }: { id: string; data: any }) =>
-            fetchApi<any>(`/api/customers/${id}`, {
+        mutationFn: ({ id, data }: { id: string; data: Record<string, unknown> }) =>
+            fetchApi<Record<string, unknown>>(`/api/customers/${id}`, {
                 method: 'PUT',
                 body: JSON.stringify(data),
             }),
@@ -289,7 +290,7 @@ export function useDeleteCustomer() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: (id: string) => fetchApi<any>(`/api/customers/${id}`, {
+        mutationFn: (id: string) => fetchApi<{ message: string }>(`/api/customers/${id}`, {
             method: 'DELETE',
         }),
         onSuccess: () => {
@@ -309,7 +310,7 @@ export function useSuppliers(params: { search?: string; active?: boolean } = {})
 
     return useQuery({
         queryKey: [...queryKeys.suppliers, params],
-        queryFn: () => fetchApi<any>(`/api/suppliers?${queryString}`),
+        queryFn: () => fetchApi<{ suppliers: Record<string, unknown>[]; pagination: Record<string, unknown> }>(`/api/suppliers?${queryString}`),
         staleTime: 5 * 60 * 1000,
     });
 }
@@ -317,7 +318,7 @@ export function useSuppliers(params: { search?: string; active?: boolean } = {})
 export function useSupplier(id: string) {
     return useQuery({
         queryKey: queryKeys.supplier(id),
-        queryFn: () => fetchApi<any>(`/api/suppliers/${id}`),
+        queryFn: () => fetchApi<Record<string, unknown>>(`/api/suppliers/${id}`),
         enabled: !!id,
     });
 }
@@ -329,7 +330,7 @@ export function useSupplier(id: string) {
 export function useInventorySummary() {
     return useQuery({
         queryKey: queryKeys.inventorySummary,
-        queryFn: () => fetchApi<any>('/api/inventory/summary'),
+        queryFn: () => fetchApi<Record<string, unknown>>('/api/inventory/summary'),
         staleTime: 2 * 60 * 1000,
     });
 }
@@ -337,7 +338,7 @@ export function useInventorySummary() {
 export function useLowStock(threshold = 10) {
     return useQuery({
         queryKey: [...queryKeys.lowStock, threshold],
-        queryFn: () => fetchApi<any>(`/api/products/low-stock?threshold=${threshold}`),
+        queryFn: () => fetchApi<Product[]>(`/api/products/low-stock?threshold=${threshold}`),
         staleTime: 5 * 60 * 1000,
     });
 }
@@ -349,7 +350,7 @@ export function useLowStock(threshold = 10) {
 export function useUsers() {
     return useQuery({
         queryKey: queryKeys.users,
-        queryFn: () => fetchApi<any>('/api/users'),
+        queryFn: () => fetchApi<User[]>('/api/users'),
         staleTime: 5 * 60 * 1000,
     });
 }
@@ -357,7 +358,7 @@ export function useUsers() {
 export function useUser(id: string) {
     return useQuery({
         queryKey: queryKeys.user(id),
-        queryFn: () => fetchApi<any>(`/api/users/${id}`),
+        queryFn: () => fetchApi<User>(`/api/users/${id}`),
         enabled: !!id,
     });
 }
@@ -366,7 +367,7 @@ export function useCreateUser() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: (data: any) => fetchApi<any>('/api/users', {
+        mutationFn: (data: Partial<User>) => fetchApi<User>('/api/users', {
             method: 'POST',
             body: JSON.stringify(data),
         }),
@@ -380,8 +381,8 @@ export function useUpdateUser() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: ({ id, data }: { id: string; data: any }) =>
-            fetchApi<any>(`/api/users/${id}`, {
+        mutationFn: ({ id, data }: { id: string; data: Partial<User> }) =>
+            fetchApi<User>(`/api/users/${id}`, {
                 method: 'PUT',
                 body: JSON.stringify(data),
             }),
@@ -395,7 +396,7 @@ export function useDeleteUser() {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: (id: string) => fetchApi<any>(`/api/users/${id}`, {
+        mutationFn: (id: string) => fetchApi<{ message: string }>(`/api/users/${id}`, {
             method: 'DELETE',
         }),
         onSuccess: () => {

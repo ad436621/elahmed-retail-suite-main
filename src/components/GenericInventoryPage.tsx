@@ -37,7 +37,7 @@ import { BarcodeSVG } from '@/components/BarcodeSVG';
 export interface InventoryProduct {
     id: string;
     name: string;
-    model?: string;
+    model: string;
     barcode: string;
     category: string;
     supplier?: string;
@@ -47,6 +47,7 @@ export interface InventoryProduct {
     minimumMarginPct?: number;
     createdAt?: string;
     updatedAt?: string;
+    deletedAt?: string | null;
 }
 
 export interface InventoryCategory {
@@ -186,6 +187,7 @@ export function GenericInventoryPage({
         const urlCategory = searchParams.get('category');
         if (urlSearch) setSearch(urlSearch);
         if (urlCategory) setSelectedCategory(urlCategory);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     return (
@@ -382,15 +384,18 @@ export function GenericInventoryPage({
             <ExcelImportDialog
                 open={isImportDialogOpen}
                 onOpenChange={setIsImportDialogOpen}
-                onImport={onImportProducts}
+                onSuccess={() => {
+                    setIsImportDialogOpen(false);
+                    onImportProducts([]); // trigger parent refresh if necessary
+                }}
             />
 
             {/* Batches Modal */}
-            {selectedProduct && (
+            {selectedProduct && isBatchesOpen && (
                 <ProductBatchesModal
-                    open={isBatchesOpen}
-                    onOpenChange={setIsBatchesOpen}
-                    product={selectedProduct}
+                    productId={selectedProduct.id}
+                    productName={selectedProduct.name}
+                    onClose={() => setIsBatchesOpen(false)}
                 />
             )}
         </div>

@@ -8,10 +8,10 @@ import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // Field types that can be mapped
-export type FieldType = 'text' | 'number' | 'date';
+type FieldType = 'text' | 'number' | 'date';
 
 // Definition of fields available for mapping
-export interface FieldDefinition {
+interface FieldDefinition {
     key: string;
     label: string;
     type: FieldType;
@@ -19,7 +19,7 @@ export interface FieldDefinition {
 }
 
 // Inventory type definitions with their fields
-export const INVENTORY_FIELD_DEFINITIONS: Record<string, FieldDefinition[]> = {
+const INVENTORY_FIELD_DEFINITIONS: Record<string, FieldDefinition[]> = {
     mobile: [
         { key: 'name', label: 'اسم المنتج', type: 'text', required: true },
         { key: 'barcode', label: 'الباركود', type: 'text' },

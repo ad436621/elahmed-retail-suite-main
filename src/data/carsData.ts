@@ -3,21 +3,16 @@
 // ============================================================
 
 import { CarItem } from '@/domain/types';
+import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
 
 const KEY = 'gx_cars';
 
 export function getCars(): CarItem[] {
-    try {
-        const raw = localStorage.getItem(KEY);
-        return raw ? JSON.parse(raw) : [];
-    } catch (e) {
-        console.error('Failed to load cars:', e);
-        return [];
-    }
+    return getStorageItem<CarItem[]>(KEY, []);
 }
 
 export function saveCars(items: CarItem[]): void {
-    localStorage.setItem(KEY, JSON.stringify(items));
+    setStorageItem(KEY, items);
 }
 
 export function addCar(item: Omit<CarItem, 'id' | 'createdAt' | 'updatedAt'>): CarItem {

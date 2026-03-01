@@ -5,6 +5,7 @@
 import { DeviceItem, DeviceAccessory } from '@/domain/types';
 import { generateBarcode } from '@/domain/product';
 import { addBatch } from './batchesData';
+import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
 
 const DEVICES_KEY = 'gx_devices_v2';
 const ACCESSORIES_KEY = 'gx_device_accessories';
@@ -12,14 +13,11 @@ const ACCESSORIES_KEY = 'gx_device_accessories';
 // ─── Devices ─────────────────────────────────────────────────
 
 export function getDevices(): DeviceItem[] {
-    try {
-        const raw = localStorage.getItem(DEVICES_KEY);
-        return raw ? JSON.parse(raw) : [];
-    } catch { return []; }
+    return getStorageItem<DeviceItem[]>(DEVICES_KEY, []);
 }
 
 export function saveDevices(items: DeviceItem[]): void {
-    localStorage.setItem(DEVICES_KEY, JSON.stringify(items));
+    setStorageItem(DEVICES_KEY, items);
 }
 
 export function addDevice(item: Omit<DeviceItem, 'id' | 'createdAt' | 'updatedAt'>): DeviceItem {
@@ -64,14 +62,11 @@ export function deleteDevice(id: string): void {
 // ─── Device Accessories ───────────────────────────────────────
 
 export function getDeviceAccessories(): DeviceAccessory[] {
-    try {
-        const raw = localStorage.getItem(ACCESSORIES_KEY);
-        return raw ? JSON.parse(raw) : [];
-    } catch { return []; }
+    return getStorageItem<DeviceAccessory[]>(ACCESSORIES_KEY, []);
 }
 
 export function saveDeviceAccessories(items: DeviceAccessory[]): void {
-    localStorage.setItem(ACCESSORIES_KEY, JSON.stringify(items));
+    setStorageItem(ACCESSORIES_KEY, items);
 }
 
 export function addDeviceAccessory(item: Omit<DeviceAccessory, 'id' | 'createdAt' | 'updatedAt'>): DeviceAccessory {

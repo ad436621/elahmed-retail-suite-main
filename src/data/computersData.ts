@@ -5,6 +5,7 @@
 import { ComputerItem, ComputerAccessory } from '@/domain/types';
 import { generateBarcode } from '@/domain/product';
 import { addBatch } from './batchesData';
+import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
 
 const COMPUTERS_KEY = 'gx_computers_v2';
 const ACCESSORIES_KEY = 'gx_computer_accessories';
@@ -12,14 +13,11 @@ const ACCESSORIES_KEY = 'gx_computer_accessories';
 // ─── Computers ────────────────────────────────────────────────
 
 export function getComputers(): ComputerItem[] {
-    try {
-        const raw = localStorage.getItem(COMPUTERS_KEY);
-        return raw ? JSON.parse(raw) : [];
-    } catch { return []; }
+    return getStorageItem<ComputerItem[]>(COMPUTERS_KEY, []);
 }
 
 export function saveComputers(items: ComputerItem[]): void {
-    localStorage.setItem(COMPUTERS_KEY, JSON.stringify(items));
+    setStorageItem(COMPUTERS_KEY, items);
 }
 
 export function addComputer(item: Omit<ComputerItem, 'id' | 'createdAt' | 'updatedAt'>): ComputerItem {
@@ -64,14 +62,11 @@ export function deleteComputer(id: string): void {
 // ─── Computer Accessories ─────────────────────────────────────
 
 export function getComputerAccessories(): ComputerAccessory[] {
-    try {
-        const raw = localStorage.getItem(ACCESSORIES_KEY);
-        return raw ? JSON.parse(raw) : [];
-    } catch { return []; }
+    return getStorageItem<ComputerAccessory[]>(ACCESSORIES_KEY, []);
 }
 
 export function saveComputerAccessories(items: ComputerAccessory[]): void {
-    localStorage.setItem(ACCESSORIES_KEY, JSON.stringify(items));
+    setStorageItem(ACCESSORIES_KEY, items);
 }
 
 export function addComputerAccessory(item: Omit<ComputerAccessory, 'id' | 'createdAt' | 'updatedAt'>): ComputerAccessory {

@@ -1,51 +1,14 @@
-export interface Product {
-  id: string;
-  name: string;
-  model: string;
-  barcode: string;
-  category: string;
-  supplier: string;
-  costPrice: number;
-  sellingPrice: number;
-  quantity: number;
-  createdAt: string;
-}
+// ============================================================
+// Mock / Seed Data — Chart defaults & empty collections
+// ============================================================
+//
+// NOTE: Types (Product, Sale) are defined in @/domain/types.
+// Legacy categories are in @/data/categoriesData.
+// ============================================================
 
-export interface Sale {
-  id: string;
-  invoiceNumber: string;
-  date: string;
-  items: { productId: string; name: string; qty: number; price: number; cost: number }[];
-  subtotal: number;
-  discount: number;
-  total: number;
-  paymentMethod: 'cash' | 'card' | 'split';
-  employee: string;
-}
+import type { Sale } from '@/domain/types';
 
-const CATEGORIES_KEY = 'elahmed-categories';
-
-const DEFAULT_CATEGORIES = [
-  'Phones', 'Accessories', 'Cases', 'Chargers', 'Cables', 'Headphones', 'Screen Protectors', 'Tablets',
-];
-
-export function getCategories(): string[] {
-  try {
-    const stored = localStorage.getItem(CATEGORIES_KEY);
-    if (stored) return JSON.parse(stored);
-  } catch (_e) { /* ignore */ }
-  return [...DEFAULT_CATEGORIES];
-}
-
-export function saveCategories(cats: string[]) {
-  localStorage.setItem(CATEGORIES_KEY, JSON.stringify(cats));
-}
-
-// Keep backward-compat export for existing code
-export const categories = getCategories();
-
-export const products: Product[] = [];
-
+/** Default monthly chart data structure. */
 export const monthlySalesData = [
   { month: 'Jan', revenue: 0, profit: 0 },
   { month: 'Feb', revenue: 0, profit: 0 },
@@ -61,4 +24,5 @@ export const monthlySalesData = [
   { month: 'Dec', revenue: 0, profit: 0 },
 ];
 
+/** Empty recent sales placeholder. */
 export const recentSales: Sale[] = [];

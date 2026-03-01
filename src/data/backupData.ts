@@ -10,16 +10,14 @@ export interface BackupSettings {
 
 const BACKUP_SETTINGS_KEY = 'gx_backup_settings';
 
+import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
+
 export function getBackupSettings(): BackupSettings {
-    try {
-        const raw = localStorage.getItem(BACKUP_SETTINGS_KEY);
-        if (raw) return JSON.parse(raw);
-    } catch { /* ignore */ }
-    return { autoBackupEnabled: false, intervalHours: 12, lastBackupDate: null };
+    return getStorageItem<BackupSettings>(BACKUP_SETTINGS_KEY, { autoBackupEnabled: false, intervalHours: 12, lastBackupDate: null });
 }
 
 export function saveBackupSettings(s: BackupSettings): void {
-    localStorage.setItem(BACKUP_SETTINGS_KEY, JSON.stringify(s));
+    setStorageItem(BACKUP_SETTINGS_KEY, s);
 }
 
 // ─── Core Backup Generation & Restoring ──────────────────────

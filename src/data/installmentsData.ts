@@ -3,18 +3,16 @@
 // ============================================================
 
 import { InstallmentContract, InstallmentPayment, InstallmentScheduleItem } from '@/domain/types';
+import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
 
 const KEY = 'gx_installments_v2';
 
 export function getContracts(): InstallmentContract[] {
-    try {
-        const raw = localStorage.getItem(KEY);
-        return raw ? JSON.parse(raw) : [];
-    } catch { return []; }
+    return getStorageItem<InstallmentContract[]>(KEY, []);
 }
 
 export function saveContracts(contracts: InstallmentContract[]): void {
-    localStorage.setItem(KEY, JSON.stringify(contracts));
+    setStorageItem(KEY, contracts);
 }
 
 /** Generate monthly schedule starting from next month */

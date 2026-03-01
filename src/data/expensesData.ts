@@ -3,20 +3,18 @@
 // ============================================================
 
 import { Expense, ExpenseCategory } from '@/domain/types';
+import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
 
 const KEY = 'gx_expenses';
 
+/** Get all expenses from storage. */
 export function getExpenses(): Expense[] {
-    try {
-        const raw = localStorage.getItem(KEY);
-        return raw ? JSON.parse(raw) : [];
-    } catch {
-        return [];
-    }
+    return getStorageItem<Expense[]>(KEY, []);
 }
 
+/** Persist the full expenses list. */
 export function saveExpenses(expenses: Expense[]): void {
-    localStorage.setItem(KEY, JSON.stringify(expenses));
+    setStorageItem(KEY, expenses);
 }
 
 export function addExpense(expense: Omit<Expense, 'id' | 'createdAt'>): Expense {

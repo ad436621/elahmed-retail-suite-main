@@ -3,18 +3,16 @@
 // ============================================================
 
 import { ProductBatch, BatchInventoryType } from '@/domain/types';
+import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
 
 const BATCHES_KEY = 'gx_product_batches_v1';
 
 export function getBatches(): ProductBatch[] {
-    try {
-        const raw = localStorage.getItem(BATCHES_KEY);
-        return raw ? JSON.parse(raw) : [];
-    } catch { return []; }
+    return getStorageItem<ProductBatch[]>(BATCHES_KEY, []);
 }
 
 export function saveBatches(batches: ProductBatch[]): void {
-    localStorage.setItem(BATCHES_KEY, JSON.stringify(batches));
+    setStorageItem(BATCHES_KEY, batches);
 }
 
 /** جلب دفعات منتج معين مرتبة من الأقدم للأحدث (FIFO) */

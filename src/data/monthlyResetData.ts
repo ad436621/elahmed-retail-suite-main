@@ -24,31 +24,26 @@ export interface MonthlyArchiveEntry {
 const RESET_SETTINGS_KEY = 'gx_monthly_reset_settings';
 const MONTHLY_ARCHIVE_KEY = 'gx_monthly_archive';
 
+import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
+
 // ─── Settings ───────────────────────────────────────────────
 
 export function getMonthlyResetSettings(): MonthlyResetSettings {
-    try {
-        const raw = localStorage.getItem(RESET_SETTINGS_KEY);
-        if (raw) return JSON.parse(raw);
-    } catch { /* ignore */ }
-    return { resetDay: 1, lastResetDate: '' };
+    return getStorageItem<MonthlyResetSettings>(RESET_SETTINGS_KEY, { resetDay: 1, lastResetDate: '' });
 }
 
 export function saveMonthlyResetSettings(s: MonthlyResetSettings): void {
-    localStorage.setItem(RESET_SETTINGS_KEY, JSON.stringify(s));
+    setStorageItem(RESET_SETTINGS_KEY, s);
 }
 
 // ─── Archive ────────────────────────────────────────────────
 
 export function getMonthlyArchive(): MonthlyArchiveEntry[] {
-    try {
-        const raw = localStorage.getItem(MONTHLY_ARCHIVE_KEY);
-        return raw ? JSON.parse(raw) : [];
-    } catch { return []; }
+    return getStorageItem<MonthlyArchiveEntry[]>(MONTHLY_ARCHIVE_KEY, []);
 }
 
 function saveMonthlyArchive(entries: MonthlyArchiveEntry[]): void {
-    localStorage.setItem(MONTHLY_ARCHIVE_KEY, JSON.stringify(entries));
+    setStorageItem(MONTHLY_ARCHIVE_KEY, entries);
 }
 
 /** Archive the current period stats and record the new reset date */

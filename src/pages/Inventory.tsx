@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from 'react';
 import { Search, Plus, Filter, FileSpreadsheet, Pencil, Trash2, Package, Sparkles, Tag, Building2, DollarSign, TrendingUp, Boxes, AlertTriangle, CheckCircle } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { getCategories } from '@/data/mockData';
+import { getLegacyCategories } from '@/data/categoriesData';
 import { cn } from '@/lib/utils';
 import { getAllProducts, softDeleteProduct } from '@/repositories/productRepository';
 import { searchProducts, getMargin } from '@/services/productService';
@@ -21,6 +21,7 @@ const Inventory = () => {
   const [editProduct, setEditProduct] = useState<Product | undefined>(undefined);
   const [refreshKey, setRefreshKey] = useState(0);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const allProducts = useMemo(() => getAllProducts(), [refreshKey]);
   const filtered = useMemo(
     () => searchProducts(allProducts, search, categoryFilter),
@@ -160,7 +161,7 @@ const Inventory = () => {
             className="bg-transparent py-3 text-sm text-card-foreground focus:outline-none cursor-pointer"
           >
             <option value="All">جميع الفئات</option>
-            {getCategories().map(c => <option key={c} value={c}>{c}</option>)}
+            {getLegacyCategories().map(c => <option key={c} value={c}>{c}</option>)}
           </select>
         </div>
       </div>

@@ -3,21 +3,16 @@
 // ============================================================
 
 import { DamagedItem, DamagedItemCategory } from '@/domain/types';
+import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
 
 const KEY = 'gx_damaged_items';
 
 export function getDamagedItems(): DamagedItem[] {
-    try {
-        const raw = localStorage.getItem(KEY);
-        return raw ? JSON.parse(raw) : [];
-    } catch (e) {
-        console.error('Failed to load damaged items:', e);
-        return [];
-    }
+    return getStorageItem<DamagedItem[]>(KEY, []);
 }
 
 export function saveDamagedItems(items: DamagedItem[]): void {
-    localStorage.setItem(KEY, JSON.stringify(items));
+    setStorageItem(KEY, items);
 }
 
 export function addDamagedItem(item: Omit<DamagedItem, 'id' | 'createdAt'>): DamagedItem {

@@ -3,6 +3,8 @@
 // All users stored in localStorage (localStorage key: gx_users)
 // ============================================================
 
+import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
+
 const STORAGE_KEY = 'gx_users';
 const RECOVERY_CODE_KEY = 'gx_recovery_code';
 
@@ -45,6 +47,9 @@ export const ALL_PERMISSIONS = [
     'returns',
     'settings',
     'users',
+    'customers',
+    'wallets',
+    'employees',
 ] as const;
 
 export type Permission = (typeof ALL_PERMISSIONS)[number];
@@ -68,6 +73,9 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
     returns: 'المرتجعات',
     settings: 'الإعدادات',
     users: 'إدارة المستخدمين',
+    customers: 'إدارة العملاء',
+    wallets: 'المحافظ والخزنة',
+    employees: 'الموظفين والرواتب',
 };
 
 export interface AppUser {
@@ -93,10 +101,8 @@ const DEFAULT_OWNER: AppUser = {
 };
 
 export function getUsers(): AppUser[] {
-    try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) return JSON.parse(raw) as AppUser[];
-    } catch (_e) { /* ignore */ }
+    const stored = getStorageItem<AppUser[] | null>(STORAGE_KEY, null);
+    if (stored) return stored;
     // Seed default owner on first run
     const defaults = [DEFAULT_OWNER];
     saveUsers(defaults);
@@ -104,7 +110,7 @@ export function getUsers(): AppUser[] {
 }
 
 export function saveUsers(users: AppUser[]): void {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(users));
+    setStorageItem(STORAGE_KEY, users);
 }
 
 export function getUserById(id: string): AppUser | undefined {

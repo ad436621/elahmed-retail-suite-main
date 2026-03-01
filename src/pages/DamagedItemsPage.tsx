@@ -41,6 +41,7 @@ export default function DamagedItemsPage() {
     const [form, setForm] = useState(emptyForm);
     const [search, setSearch] = useState('');
 
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     const inventory = useMemo(() => getAllInventoryProducts(), [showForm]);
 
     const refresh = () => { };

@@ -5,7 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Sun, Moon, Globe, Plus, X, Trash2, RotateCcw, CalendarClock, Archive, AlertTriangle, FileDown, FileUp, Save, FolderOpen, HardDriveDownload, Image, Upload } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
-import { getCategories, saveCategories } from '@/data/mockData';
+import { getLegacyCategories, saveLegacyCategories } from '@/data/categoriesData';
 import {
   getMonthlyResetSettings, saveMonthlyResetSettings,
   archiveCurrentPeriod, getMonthlyArchive,
@@ -48,7 +48,7 @@ const SettingsPage = () => {
   }, [settings]);
 
   // ── Category management ──────────────────────────────────
-  const [cats, setCats] = useState<string[]>(() => getCategories());
+  const [cats, setCats] = useState<string[]>(() => getLegacyCategories());
   const [newCat, setNewCat] = useState('');
 
   const addCategory = () => {
@@ -60,7 +60,7 @@ const SettingsPage = () => {
     }
     const updated = [...cats, trimmed];
     setCats(updated);
-    saveCategories(updated);
+    saveLegacyCategories(updated);
     setNewCat('');
     toast({ title: 'تم إضافة الفئة', description: trimmed });
   };
@@ -68,7 +68,7 @@ const SettingsPage = () => {
   const removeCategory = (cat: string) => {
     const updated = cats.filter(c => c !== cat);
     setCats(updated);
-    saveCategories(updated);
+    saveLegacyCategories(updated);
     toast({ title: 'تم حذف الفئة', description: cat });
   };
 

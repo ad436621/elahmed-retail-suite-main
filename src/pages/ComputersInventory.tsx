@@ -2,8 +2,10 @@ import { useState, useEffect, useRef, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
     Plus, Trash2, Pencil, X, Check, Laptop, Headphones, Search,
-    ImagePlus, ImageOff, AlignLeft, LayoutGrid, List, Tag, FileSpreadsheet
+    AlignLeft, LayoutGrid, List, Tag, FileSpreadsheet, ImageOff
 } from 'lucide-react';
+import { ImageUpload } from '@/components/ImageUpload';
+import { InventoryProductCard } from '@/components/InventoryProductCard';
 import { ComputerItem, ComputerAccessory } from '@/domain/types';
 import {
     getComputers, addComputer, updateComputer, deleteComputer,
@@ -26,104 +28,7 @@ const emptyForm = {
 
 const IC = "w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all placeholder:text-muted-foreground/60";
 
-function ImageUpload({ value, onChange }: { value?: string; onChange: (v: string | undefined) => void }) {
-    const ref = useRef<HTMLInputElement>(null);
-    const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = ev => onChange(ev.target?.result as string);
-        reader.readAsDataURL(file);
-    };
-    return (
-        <div className="col-span-2">
-            <label className="mb-1.5 block text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-                <ImagePlus className="h-3.5 w-3.5 text-primary" /> صورة المنتج
-            </label>
-            <div className="flex items-center gap-3">
-                <div className="shrink-0">
-                    {value ? (
-                        <div className="relative h-20 w-20 rounded-xl overflow-hidden border-2 border-primary/40 shadow-sm">
-                            <img src={value} alt="معاينة" className="h-full w-full object-cover" />
-                            <button type="button" onClick={() => onChange(undefined)}
-                                className="absolute top-1.5 right-1.5 rounded-full bg-red-500/90 p-1 text-white shadow-sm hover:bg-red-600 transition-colors">
-                                <X className="h-3 w-3" />
-                            </button>
-                        </div>
-                    ) : (
-                        <div className="h-20 w-20 rounded-xl border-2 border-dashed border-border/60 bg-muted/40 flex flex-col items-center justify-center gap-1">
-                            <ImageOff className="h-6 w-6 text-muted-foreground/30" />
-                            <span className="text-[10px] text-muted-foreground/50">لا صورة</span>
-                        </div>
-                    )}
-                </div>
-                <div className="flex-1 flex flex-col justify-center gap-2">
-                    <button type="button" onClick={() => ref.current?.click()}
-                        className="w-full rounded-xl border-2 border-dashed border-primary/30 bg-primary/5 py-2 text-xs font-medium text-primary hover:bg-primary/10 hover:border-primary/50 transition-all flex items-center justify-center gap-1.5">
-                        <ImagePlus className="h-3.5 w-3.5" />
-                        {value ? 'تغيير الصورة' : 'اختر صورة'}
-                    </button>
-                    <p className="text-[10px] text-muted-foreground/50 text-center">JPG, PNG, WEBP</p>
-                </div>
-                <input ref={ref} type="file" accept="image/*" onChange={handleFile} className="hidden" />
-            </div>
-        </div>
-    );
-}
-
-function ProductCard({ item, onEdit, onDelete }: { item: any; onEdit: () => void; onDelete: () => void; }) {
-    const isDevice = item._type === 'device';
-    const extras = isDevice ? [item.model, item.processor, item.color].filter(Boolean).join(' · ') : [item.model, item.color].filter(Boolean).join(' · ');
-    const conditionBadge = item.condition === 'used' ? "مستعمل" : "جديد";
-
-    return (
-        <div className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-soft hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 relative">
-            <div className="absolute top-2 left-2 z-10 flex flex-col gap-1.5">
-                <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold shadow-sm ${item.condition === 'used' ? 'bg-orange-100 text-orange-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                    {conditionBadge}
-                </span>
-                <span className="rounded-full px-2 py-0.5 text-[10px] font-bold shadow-sm bg-primary/10 text-primary truncate max-w-[80px]">
-                    {item.categoryName || 'بدون تصنيف'}
-                </span>
-            </div>
-
-            <div className="relative h-44 w-full bg-muted/30 overflow-hidden">
-                {item.image ? (
-                    <img src={item.image} alt={item.name} className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500" />
-                ) : (
-                    <div className="h-full w-full flex flex-col items-center justify-center gap-2">
-                        <ImageOff className="h-10 w-10 text-muted-foreground/20" />
-                        <span className="text-xs text-muted-foreground/40">لا توجد صورة</span>
-                    </div>
-                )}
-                <span className={`absolute top-2 right-2 rounded-full px-2.5 py-0.5 text-xs font-bold shadow-sm ${item.quantity === 0 ? 'bg-red-500 text-white' : 'bg-primary text-primary-foreground'}`}>
-                    {item.quantity === 0 ? 'نفد المخزون' : `${item.quantity} وحدة`}
-                </span>
-            </div>
-
-            <div className="flex flex-col flex-1 p-4 gap-2.5">
-                <h3 className="font-bold text-foreground text-sm leading-snug line-clamp-2">{item.name}</h3>
-                {extras && <p className="text-xs text-muted-foreground line-clamp-1">{extras}</p>}
-
-                <div className="mt-auto pt-3 border-t border-border/40 flex items-center justify-between">
-                    <span className="text-base font-extrabold text-primary tabular-nums">
-                        {item.salePrice.toLocaleString('ar-EG')} <span className="text-xs font-medium text-muted-foreground">ج.م</span>
-                    </span>
-                    <div className="flex gap-1.5">
-                        <button onClick={onEdit} title="تعديل"
-                            className="rounded-xl p-2 bg-primary/10 hover:bg-primary/20 text-primary transition-colors">
-                            <Pencil className="h-3.5 w-3.5" />
-                        </button>
-                        <button onClick={onDelete} title="حذف"
-                            className="rounded-xl p-2 bg-red-50 hover:bg-red-100 text-destructive transition-colors">
-                            <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-}
+// ImageUpload and ProductCard are now imported from shared components
 
 export default function ComputersInventory() {
     const { toast } = useToast();
@@ -338,7 +243,7 @@ export default function ComputersInventory() {
                             <p className="text-base font-medium">لا توجد منتجات مطابقة للبحث</p>
                         </div>
                     ) : filteredList.map(item => (
-                        <ProductCard key={item.id} item={item}
+                        <InventoryProductCard key={item.id} item={item}
                             onEdit={() => openEdit(item)}
                             onDelete={() => {
                                 item._type === 'device' ? deleteComputer(item.id) : deleteComputerAccessory(item.id);

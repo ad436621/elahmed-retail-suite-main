@@ -3,21 +3,16 @@
 // ============================================================
 
 import { OtherRevenue } from '@/domain/types';
+import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
 
 const KEY = 'gx_other_revenue';
 
 export function getOtherRevenues(): OtherRevenue[] {
-    try {
-        const raw = localStorage.getItem(KEY);
-        return raw ? JSON.parse(raw) : [];
-    } catch (e) {
-        console.error('Failed to load other revenues:', e);
-        return [];
-    }
+    return getStorageItem<OtherRevenue[]>(KEY, []);
 }
 
 export function saveOtherRevenues(items: OtherRevenue[]): void {
-    localStorage.setItem(KEY, JSON.stringify(items));
+    setStorageItem(KEY, items);
 }
 
 export function addOtherRevenue(item: Omit<OtherRevenue, 'id' | 'createdAt'>): OtherRevenue {

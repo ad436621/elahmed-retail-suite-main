@@ -3,21 +3,16 @@
 // ============================================================
 
 import { WarehouseItem } from '@/domain/types';
+import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
 
 const KEY = 'gx_warehouse';
 
 export function getWarehouseItems(): WarehouseItem[] {
-    try {
-        const raw = localStorage.getItem(KEY);
-        return raw ? JSON.parse(raw) : [];
-    } catch (e) {
-        console.error('Failed to load warehouse items:', e);
-        return [];
-    }
+    return getStorageItem<WarehouseItem[]>(KEY, []);
 }
 
 export function saveWarehouseItems(items: WarehouseItem[]): void {
-    localStorage.setItem(KEY, JSON.stringify(items));
+    setStorageItem(KEY, items);
 }
 
 export function addWarehouseItem(item: Omit<WarehouseItem, 'id' | 'createdAt' | 'updatedAt'>): WarehouseItem {

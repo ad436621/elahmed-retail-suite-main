@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Product } from '@/domain/types';
-import { getCategories } from '@/data/mockData';
+import { getLegacyCategories } from '@/data/categoriesData';
 import { generateBarcode, validatePricing } from '@/domain/product';
 import { saveProduct, isBarcodeDuplicate } from '@/repositories/productRepository';
 import { addBatch } from '@/data/batchesData';
@@ -82,7 +82,7 @@ export function ProductFormDialog({ open, onOpenChange, product, onSuccess }: Pr
           name: '',
           model: '',
           barcode: '',
-          category: getCategories()[0] || 'Phones',
+          category: getLegacyCategories()[0] || 'Phones',
           supplier: '',
           costPrice: 0,
           sellingPrice: 0,
@@ -251,7 +251,7 @@ export function ProductFormDialog({ open, onOpenChange, product, onSuccess }: Pr
                     <SelectValue placeholder="اختر الفئة" />
                   </SelectTrigger>
                   <SelectContent className="glass-card">
-                    {getCategories().map(c => (
+                    {getLegacyCategories().map(c => (
                       <SelectItem key={c} value={c} className="hover:bg-primary/10">{c}</SelectItem>
                     ))}
                   </SelectContent>

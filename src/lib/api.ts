@@ -5,6 +5,8 @@
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 
+import { User, Product, ProductBatch, Sale, StockMovement, AuditEntry } from '@/domain/types';
+
 interface ApiResponse<T> {
     data?: T;
     error?: string;
@@ -65,21 +67,21 @@ class ApiClient {
 
     // Auth
     async login(username: string, password: string) {
-        return this.request<{ token: string; user: any }>('/auth/login', {
+        return this.request<{ token: string; user: User }>('/auth/login', {
             method: 'POST',
             body: JSON.stringify({ username, password }),
         });
     }
 
     async register(username: string, password: string, fullName: string) {
-        return this.request<{ token: string; user: any }>('/auth/register', {
+        return this.request<{ token: string; user: User }>('/auth/register', {
             method: 'POST',
             body: JSON.stringify({ username, password, fullName }),
         });
     }
 
     async verifyToken() {
-        return this.request<any>('/auth/verify');
+        return this.request<User>('/auth/verify');
     }
 
     async changePassword(currentPassword: string, newPassword: string) {
@@ -91,29 +93,29 @@ class ApiClient {
 
     // Users
     async getUsers() {
-        return this.request<any[]>('/users');
+        return this.request<User[]>('/users');
     }
 
     async getUser(id: string) {
-        return this.request<any>(`/users/${id}`);
+        return this.request<User>(`/users/${id}`);
     }
 
-    async createUser(userData: any) {
-        return this.request<any>('/users', {
+    async createUser(userData: Partial<User>) {
+        return this.request<User>('/users', {
             method: 'POST',
             body: JSON.stringify(userData),
         });
     }
 
-    async updateUser(id: string, userData: any) {
-        return this.request<any>(`/users/${id}`, {
+    async updateUser(id: string, userData: Partial<User>) {
+        return this.request<User>(`/users/${id}`, {
             method: 'PUT',
             body: JSON.stringify(userData),
         });
     }
 
     async deleteUser(id: string) {
-        return this.request<any>(`/users/${id}`, {
+        return this.request<{ message: string }>(`/users/${id}`, {
             method: 'DELETE',
         });
     }
@@ -127,41 +129,41 @@ class ApiClient {
         if (params?.limit) query.set('limit', String(params.limit));
 
         const queryString = query.toString();
-        return this.request<{ products: any[]; pagination: any }>(
+        return this.request<{ products: Product[]; pagination: Record<string, unknown> }>(
             `/products${queryString ? `?${queryString}` : ''}`
         );
     }
 
     async getProduct(id: string) {
-        return this.request<any>(`/products/${id}`);
+        return this.request<Product>(`/products/${id}`);
     }
 
-    async createProduct(productData: any) {
-        return this.request<any>('/products', {
+    async createProduct(productData: Partial<Product>) {
+        return this.request<Product>('/products', {
             method: 'POST',
             body: JSON.stringify(productData),
         });
     }
 
-    async updateProduct(id: string, productData: any) {
-        return this.request<any>(`/products/${id}`, {
+    async updateProduct(id: string, productData: Partial<Product>) {
+        return this.request<Product>(`/products/${id}`, {
             method: 'PUT',
             body: JSON.stringify(productData),
         });
     }
 
     async deleteProduct(id: string) {
-        return this.request<any>(`/products/${id}`, {
+        return this.request<{ message: string }>(`/products/${id}`, {
             method: 'DELETE',
         });
     }
 
     async getProductBatches(productId: string) {
-        return this.request<any[]>(`/products/${productId}/batches`);
+        return this.request<ProductBatch[]>(`/products/${productId}/batches`);
     }
 
-    async addProductBatch(productId: string, batchData: any) {
-        return this.request<any>(`/products/${productId}/batches`, {
+    async addProductBatch(productId: string, batchData: Partial<ProductBatch>) {
+        return this.request<ProductBatch>(`/products/${productId}/batches`, {
             method: 'POST',
             body: JSON.stringify(batchData),
         });
@@ -176,24 +178,24 @@ class ApiClient {
         if (params?.voided !== undefined) query.set('voided', String(params.voided));
 
         const queryString = query.toString();
-        return this.request<{ sales: any[]; pagination: any }>(
+        return this.request<{ sales: Sale[]; pagination: Record<string, unknown> }>(
             `/sales${queryString ? `?${queryString}` : ''}`
         );
     }
 
     async getSale(id: string) {
-        return this.request<any>(`/sales/${id}`);
+        return this.request<Sale>(`/sales/${id}`);
     }
 
-    async createSale(saleData: { items: any[]; discount?: number; paymentMethod?: string }) {
-        return this.request<any>('/sales', {
+    async createSale(saleData: { items: Record<string, unknown>[]; discount?: number; paymentMethod?: string }) {
+        return this.request<Sale>('/sales', {
             method: 'POST',
             body: JSON.stringify(saleData),
         });
     }
 
     async voidSale(id: string, reason: string) {
-        return this.request<any>(`/sales/${id}/void`, {
+        return this.request<Sale>(`/sales/${id}/void`, {
             method: 'POST',
             body: JSON.stringify({ reason }),
         });
@@ -201,7 +203,7 @@ class ApiClient {
 
     // Inventory
     async getInventorySummary() {
-        return this.request<any>('/inventory/summary');
+        return this.request<Record<string, unknown>>('/inventory/summary');
     }
 
     async getStockMovements(params?: { productId?: string; type?: string; startDate?: string; endDate?: string }) {
@@ -212,13 +214,13 @@ class ApiClient {
         if (params?.endDate) query.set('endDate', params.endDate);
 
         const queryString = query.toString();
-        return this.request<{ movements: any[]; pagination: any }>(
+        return this.request<{ movements: StockMovement[]; pagination: Record<string, unknown> }>(
             `/inventory/movements${queryString ? `?${queryString}` : ''}`
         );
     }
 
     async adjustStock(productId: string, quantity: number, reason: string) {
-        return this.request<any>('/inventory/adjust', {
+        return this.request<StockMovement>('/inventory/adjust', {
             method: 'POST',
             body: JSON.stringify({ productId, quantity, reason }),
         });
@@ -231,7 +233,7 @@ class ApiClient {
         if (params?.entityType) query.set('entityType', params.entityType);
 
         const queryString = query.toString();
-        return this.request<{ logs: any[]; pagination: any }>(
+        return this.request<{ logs: AuditEntry[]; pagination: Record<string, unknown> }>(
             `/inventory/audit${queryString ? `?${queryString}` : ''}`
         );
     }
@@ -244,37 +246,37 @@ class ApiClient {
         if (params?.limit) query.set('limit', String(params.limit));
 
         const queryString = query.toString();
-        return this.request<{ customers: any[]; pagination: any }>(
+        return this.request<{ customers: Record<string, unknown>[]; pagination: Record<string, unknown> }>(
             `/customers${queryString ? `?${queryString}` : ''}`
         );
     }
 
     async getCustomer(id: string) {
-        return this.request<any>(`/customers/${id}`);
+        return this.request<Record<string, unknown>>(`/customers/${id}`);
     }
 
-    async createCustomer(customerData: any) {
-        return this.request<any>('/customers', {
+    async createCustomer(customerData: Record<string, unknown>) {
+        return this.request<Record<string, unknown>>('/customers', {
             method: 'POST',
             body: JSON.stringify(customerData),
         });
     }
 
-    async updateCustomer(id: string, customerData: any) {
-        return this.request<any>(`/customers/${id}`, {
+    async updateCustomer(id: string, customerData: Record<string, unknown>) {
+        return this.request<Record<string, unknown>>(`/customers/${id}`, {
             method: 'PUT',
             body: JSON.stringify(customerData),
         });
     }
 
     async deleteCustomer(id: string) {
-        return this.request<any>(`/customers/${id}`, {
+        return this.request<{ message: string }>(`/customers/${id}`, {
             method: 'DELETE',
         });
     }
 
     async getCustomerStats() {
-        return this.request<any>('/customers/stats/summary');
+        return this.request<Record<string, unknown>>('/customers/stats/summary');
     }
 
     // Suppliers
@@ -286,24 +288,24 @@ class ApiClient {
         if (params?.limit) query.set('limit', String(params.limit));
 
         const queryString = query.toString();
-        return this.request<{ suppliers: any[]; pagination: any }>(
+        return this.request<{ suppliers: Record<string, unknown>[]; pagination: Record<string, unknown> }>(
             `/suppliers${queryString ? `?${queryString}` : ''}`
         );
     }
 
     async getSupplier(id: string) {
-        return this.request<any>(`/suppliers/${id}`);
+        return this.request<Record<string, unknown>>(`/suppliers/${id}`);
     }
 
-    async createSupplier(supplierData: any) {
-        return this.request<any>('/suppliers', {
+    async createSupplier(supplierData: Record<string, unknown>) {
+        return this.request<Record<string, unknown>>('/suppliers', {
             method: 'POST',
             body: JSON.stringify(supplierData),
         });
     }
 
-    async updateSupplier(id: string, supplierData: any) {
-        return this.request<any>(`/suppliers/${id}`, {
+    async updateSupplier(id: string, supplierData: Record<string, unknown>) {
+        return this.request<Record<string, unknown>>(`/suppliers/${id}`, {
             method: 'PUT',
             body: JSON.stringify(supplierData),
         });
@@ -316,13 +318,13 @@ class ApiClient {
         if (params?.status) query.set('status', params.status);
 
         const queryString = query.toString();
-        return this.request<{ orders: any[]; pagination: any }>(
+        return this.request<{ orders: Record<string, unknown>[]; pagination: Record<string, unknown> }>(
             `/suppliers/orders${queryString ? `?${queryString}` : ''}`
         );
     }
 
-    async createPurchaseOrder(orderData: any) {
-        return this.request<any>('/suppliers/orders', {
+    async createPurchaseOrder(orderData: Record<string, unknown>) {
+        return this.request<Record<string, unknown>>('/suppliers/orders', {
             method: 'POST',
             body: JSON.stringify(orderData),
         });
@@ -330,47 +332,47 @@ class ApiClient {
 
     // Settings (Tax, Branches)
     async getTaxSettings() {
-        return this.request<any>('/settings/tax');
+        return this.request<Record<string, unknown>>('/settings/tax');
     }
 
     async updateTaxSettings(settings: { enabled: boolean; rate: number; taxNumber: string }) {
-        return this.request<any>('/settings/tax', {
+        return this.request<Record<string, unknown>>('/settings/tax', {
             method: 'PUT',
             body: JSON.stringify(settings),
         });
     }
 
     async calculateTax(amount: number, includeTax: boolean = false) {
-        return this.request<any>('/settings/tax/calculate', {
+        return this.request<Record<string, unknown>>('/settings/tax/calculate', {
             method: 'POST',
             body: JSON.stringify({ amount, includeTax }),
         });
     }
 
     async getBranches() {
-        return this.request<any[]>('/settings/branches');
+        return this.request<Record<string, unknown>[]>('/settings/branches');
     }
 
-    async createBranch(branchData: any) {
-        return this.request<any>('/settings/branches', {
+    async createBranch(branchData: Record<string, unknown>) {
+        return this.request<Record<string, unknown>>('/settings/branches', {
             method: 'POST',
             body: JSON.stringify(branchData),
         });
     }
 
-    async updateBranch(id: string, branchData: any) {
-        return this.request<any>(`/settings/branches/${id}`, {
+    async updateBranch(id: string, branchData: Record<string, unknown>) {
+        return this.request<Record<string, unknown>>(`/settings/branches/${id}`, {
             method: 'PUT',
             body: JSON.stringify(branchData),
         });
     }
 
     async getSettings() {
-        return this.request<any>('/settings');
+        return this.request<Record<string, unknown>>('/settings');
     }
 
-    async updateSetting(key: string, value: any, type: string = 'string') {
-        return this.request<any>('/settings', {
+    async updateSetting(key: string, value: unknown, type: string = 'string') {
+        return this.request<Record<string, unknown>>('/settings', {
             method: 'PUT',
             body: JSON.stringify({ key, value, type }),
         });

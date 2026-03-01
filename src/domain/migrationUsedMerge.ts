@@ -29,9 +29,9 @@ export function migrateUsedMerge() {
         const devices = getDevices();
         const batches = getBatches();
 
-        let mCats = getCategoriesBySection('mobile');
-        let cCats = getCategoriesBySection('computer');
-        let dCats = getCategoriesBySection('device');
+        const mCats = getCategoriesBySection('mobile');
+        const cCats = getCategoriesBySection('computer');
+        const dCats = getCategoriesBySection('device');
 
         const getFallbackCat = (section: 'mobile' | 'computer' | 'device', type: 'device', cats: any[], name: string) => {
             const ext = cats.find(c => c.name === name);

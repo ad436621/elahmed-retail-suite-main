@@ -132,6 +132,7 @@ const POS = () => {
     scannerTimer.current = setTimeout(() => setScannerActive(false), 1200);
   }, []);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const allProducts = useMemo(() => getAllInventoryProducts(), [refreshKey]);
 
   useEffect(() => {
@@ -163,6 +164,7 @@ const POS = () => {
       } else {
         toast({ title: '⚠️ باركود غير موجود', description: code, variant: 'destructive' });
       }
+      // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [allProducts, flashScanner]),
     minLength: 3,
     maxGap: 60,
@@ -178,6 +180,7 @@ const POS = () => {
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cart, invoiceDiscount, selectedPayment]);
 
   const addToCart = useCallback((product: typeof allProducts[0]) => {
@@ -398,10 +401,15 @@ const POS = () => {
       setIsProcessing(false); // Reset loading state
       setRefreshKey(k => k + 1);
       searchRef.current?.focus();
-    } catch (err: any) {
+    } catch (err: unknown) {
       setIsProcessing(false); // Reset on error
-      toast({ title: 'فشلت العملية', description: err.message, variant: 'destructive' });
+      if (err instanceof Error) {
+        toast({ title: 'فشلت العملية', description: err.message, variant: 'destructive' });
+      } else {
+        toast({ title: 'فشلت العملية', description: 'حدث خطأ غير معروف', variant: 'destructive' });
+      }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cart, invoiceDiscount, selectedPayment, toast, user, totals.grossProfit]);
 
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -482,7 +490,7 @@ const POS = () => {
                   <p className="text-base font-bold text-primary">{(getActiveSalePrice(p.id) ?? p.sellingPrice).toLocaleString('ar-EG')} EGP</p>
                   <div className="flex items-center justify-end gap-1 mt-0.5">
                     <span className="text-[10px] font-medium bg-primary/10 text-primary px-1.5 py-0.5 rounded">
-                      {getAvailableBatchesCount(p.id)} {t('pos.batches' || 'دفعات')}
+                      {getAvailableBatchesCount(p.id)} {t('pos.batches') || 'دفعات'}
                     </span>
                     <p className="text-xs text-muted-foreground">{p.quantity} متوفر</p>
                   </div>
@@ -622,7 +630,7 @@ const POS = () => {
                     <div>
                       <p className="text-[10px] text-muted-foreground mb-0.5">سعر التقسيط</p>
                       <p className="text-sm font-bold text-muted-foreground leading-none">
-                        {((p as any).installmentPrice || p.sellingPrice * 1.3).toLocaleString('ar-EG')}
+                        {((p as { installmentPrice?: number }).installmentPrice || p.sellingPrice * 1.3).toLocaleString('ar-EG')}
                         <span className="text-[10px] font-medium text-muted-foreground ms-1">EGP</span>
                       </p>
                     </div>

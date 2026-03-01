@@ -5,6 +5,7 @@
 import { MobileItem, MobileAccessory } from '@/domain/types';
 import { generateBarcode } from '@/domain/product';
 import { addBatch } from './batchesData';
+import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
 
 const MOBILES_KEY = 'gx_mobiles_v2';
 const ACCESSORIES_KEY = 'gx_mobile_accessories';
@@ -12,14 +13,11 @@ const ACCESSORIES_KEY = 'gx_mobile_accessories';
 // ─── Mobiles ────────────────────────────────────────────────
 
 export function getMobiles(): MobileItem[] {
-    try {
-        const raw = localStorage.getItem(MOBILES_KEY);
-        return raw ? JSON.parse(raw) : [];
-    } catch { return []; }
+    return getStorageItem<MobileItem[]>(MOBILES_KEY, []);
 }
 
 export function saveMobiles(items: MobileItem[]): void {
-    localStorage.setItem(MOBILES_KEY, JSON.stringify(items));
+    setStorageItem(MOBILES_KEY, items);
 }
 
 export function addMobile(item: Omit<MobileItem, 'id' | 'createdAt' | 'updatedAt'>): MobileItem {
@@ -65,14 +63,11 @@ export function deleteMobile(id: string): void {
 // ─── Mobile Accessories ──────────────────────────────────────
 
 export function getMobileAccessories(): MobileAccessory[] {
-    try {
-        const raw = localStorage.getItem(ACCESSORIES_KEY);
-        return raw ? JSON.parse(raw) : [];
-    } catch { return []; }
+    return getStorageItem<MobileAccessory[]>(ACCESSORIES_KEY, []);
 }
 
 export function saveMobileAccessories(items: MobileAccessory[]): void {
-    localStorage.setItem(ACCESSORIES_KEY, JSON.stringify(items));
+    setStorageItem(ACCESSORIES_KEY, items);
 }
 
 export function addMobileAccessory(item: Omit<MobileAccessory, 'id' | 'createdAt' | 'updatedAt'>): MobileAccessory {
