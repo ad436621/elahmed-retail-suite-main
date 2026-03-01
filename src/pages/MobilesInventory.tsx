@@ -7,7 +7,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { useLocation } from 'react-router-dom';
 import {
     Plus, Trash2, Pencil, X, Check, Smartphone, Headphones, Search,
-    AlignLeft, LayoutGrid, List, Tag, FileSpreadsheet, ImageOff
+    AlignLeft, LayoutGrid, List, Tag, FileSpreadsheet, ImageOff,
+    Filter, SlidersHorizontal, RotateCcw, Package, ChevronDown, ChevronUp
 } from 'lucide-react';
 import {
     getMobiles, addMobile, updateMobile, deleteMobile,
@@ -53,6 +54,15 @@ export default function MobilesInventory() {
     const [activeFilter, setActiveFilter] = useState<string>('all');
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
 
+    // ── Side Panel Filters ──
+    const [filterImei, setFilterImei] = useState('');
+    const [filterSupplier, setFilterSupplier] = useState('all');
+    const [filterCondition, setFilterCondition] = useState<'all' | 'new' | 'used'>('all');
+    const [filterStock, setFilterStock] = useState<'all' | 'in' | 'out'>('all');
+    const [filterMinPrice, setFilterMinPrice] = useState('');
+    const [filterMaxPrice, setFilterMaxPrice] = useState('');
+    const [showFilters, setShowFilters] = useState(true);
+
     const [showForm, setShowForm] = useState(false);
     const [editId, setEditId] = useState<string | null>(null);
     const [editType, setEditType] = useState<'device' | 'accessory'>('device');
@@ -96,10 +106,19 @@ export default function MobilesInventory() {
         return list;
     }, [mobiles, accessories, categories]);
 
+    // ── Extract unique suppliers for filter dropdown ──
+    const uniqueSuppliers = useMemo(() => {
+        const set = new Set<string>();
+        unifiedProducts.forEach(p => { if (p.supplier) set.add(p.supplier); });
+        return Array.from(set).sort();
+    }, [unifiedProducts]);
+
     const filteredList = useMemo(() => {
         let res = unifiedProducts;
+        // Category tab filter
         if (activeFilter === 'used') res = res.filter(p => p.condition === 'used');
         else if (activeFilter !== 'all') res = res.filter(p => p.category === activeFilter);
+        // Text search
         if (search) {
             const sl = search.toLowerCase();
             res = res.filter(p =>
@@ -109,8 +128,37 @@ export default function MobilesInventory() {
                 (p.color && p.color.toLowerCase().includes(sl))
             );
         }
+        // IMEI / Serial filter
+        if (filterImei.trim()) {
+            const imeiLower = filterImei.toLowerCase();
+            res = res.filter(p => p.serialNumber && p.serialNumber.toLowerCase().includes(imeiLower));
+        }
+        // Supplier filter
+        if (filterSupplier !== 'all') {
+            res = res.filter(p => p.supplier === filterSupplier);
+        }
+        // Condition filter
+        if (filterCondition !== 'all') {
+            res = res.filter(p => p.condition === filterCondition);
+        }
+        // Stock status
+        if (filterStock === 'in') res = res.filter(p => p.quantity > 0);
+        else if (filterStock === 'out') res = res.filter(p => p.quantity === 0);
+        // Price range
+        const minP = parseFloat(filterMinPrice);
+        const maxP = parseFloat(filterMaxPrice);
+        if (!isNaN(minP)) res = res.filter(p => p.salePrice >= minP);
+        if (!isNaN(maxP)) res = res.filter(p => p.salePrice <= maxP);
         return res;
-    }, [unifiedProducts, search, activeFilter]);
+    }, [unifiedProducts, search, activeFilter, filterImei, filterSupplier, filterCondition, filterStock, filterMinPrice, filterMaxPrice]);
+
+    const activeFiltersCount = [filterImei, filterSupplier !== 'all', filterCondition !== 'all', filterStock !== 'all', filterMinPrice, filterMaxPrice].filter(Boolean).length;
+
+    const resetFilters = () => {
+        setFilterImei(''); setFilterSupplier('all'); setFilterCondition('all');
+        setFilterStock('all'); setFilterMinPrice(''); setFilterMaxPrice('');
+        setSearch(''); setActiveFilter('all');
+    };
 
     // ── Stats ──
     const stats = useMemo(() => {
@@ -199,23 +247,23 @@ export default function MobilesInventory() {
 
     // ── Render ──
     return (
-        <div className="space-y-4 animate-fade-in" dir="rtl">
+        <div className="animate-fade-in" dir="rtl">
 
             {/* ─── Header ─── */}
-            <div className="flex items-center justify-between flex-wrap gap-3">
+            <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
                 <div className="flex items-center gap-3">
                     <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-100 border border-cyan-200">
                         <Smartphone className="h-5 w-5 text-cyan-600" />
                     </div>
                     <div>
                         <h1 className="text-2xl font-black text-foreground">مخزون الموبايلات</h1>
-                        <p className="text-xs text-muted-foreground mt-0.5">{unifiedProducts.length} منتج مسجل</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{unifiedProducts.length} منتج مسجل • {filteredList.length} ظاهر</p>
                     </div>
                 </div>
             </div>
 
             {/* ─── Stat Cards ─── */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
                 <div className="rounded-2xl border border-border bg-card p-4 flex items-center gap-3">
                     <div className="h-10 w-10 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center shrink-0">
                         <span className="text-emerald-600 text-sm">💰</span>
@@ -246,22 +294,30 @@ export default function MobilesInventory() {
             </div>
 
             {/* ─── Action Buttons Row ─── */}
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2 mb-4">
                 <button onClick={openAdd}
-                    className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-all shadow-md">
-                    <Plus className="h-4 w-4" /> إضافة منتج
+                    className="flex items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground hover:bg-primary/90 transition-all shadow-sm">
+                    <Plus className="h-3.5 w-3.5" /> إضافة منتج
                 </button>
                 <button onClick={() => setShowExcelRestore(true)}
-                    className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700 transition-all shadow-md">
-                    <FileSpreadsheet className="h-4 w-4" /> استرداد من Excel
+                    className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2 text-xs font-bold text-white hover:bg-blue-700 transition-all shadow-sm">
+                    <FileSpreadsheet className="h-3.5 w-3.5" /> استرداد Excel
                 </button>
                 <button onClick={() => setShowCategoryForm(true)}
-                    className="flex items-center gap-2 rounded-xl border border-dashed border-primary/40 px-4 py-2.5 text-sm font-bold text-primary hover:bg-primary/5 transition-all">
-                    <Tag className="h-4 w-4" /> إضافة تصنيف
+                    className="flex items-center gap-1.5 rounded-xl border border-dashed border-primary/40 px-3 py-2 text-xs font-bold text-primary hover:bg-primary/5 transition-all">
+                    <Tag className="h-3.5 w-3.5" /> تصنيف
                 </button>
 
-                {/* Spacer */}
                 <div className="flex-1" />
+
+                {/* Filter toggle */}
+                <button onClick={() => setShowFilters(s => !s)}
+                    className={`relative flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold border transition-all ${showFilters ? 'bg-primary/10 text-primary border-primary/30' : 'bg-card text-muted-foreground border-border hover:text-foreground'}`}>
+                    <SlidersHorizontal className="h-4 w-4" /> الفلاتر
+                    {activeFiltersCount > 0 && (
+                        <span className="absolute -top-1.5 -left-1.5 h-5 w-5 rounded-full bg-destructive text-white text-[10px] font-black flex items-center justify-center">{activeFiltersCount}</span>
+                    )}
+                </button>
 
                 {/* View Mode Toggle */}
                 <div className="flex gap-1 rounded-xl border border-border p-1 bg-muted/30">
@@ -274,118 +330,230 @@ export default function MobilesInventory() {
                 </div>
             </div>
 
-            {/* ─── Filters Row ─── */}
-            <div className="flex gap-2 w-full overflow-x-auto hide-scrollbar pb-1 px-1 -mx-1">
-                <button onClick={() => setActiveFilter('all')}
-                    className={`shrink-0 rounded-xl px-4 py-2 text-sm font-semibold border transition-all flex items-center gap-2 ${activeFilter === 'all' ? 'bg-primary/10 text-primary border-primary/30 shadow-sm' : 'bg-card border-border text-muted-foreground hover:text-foreground hover:border-primary/30'}`}>
-                    <LayoutGrid className="h-4 w-4" /> الكل
-                </button>
-                <button onClick={() => setActiveFilter('used')}
-                    className={`shrink-0 rounded-xl px-4 py-2 text-sm font-semibold border transition-all flex items-center gap-2 ${activeFilter === 'used' ? 'bg-orange-100 text-orange-700 border-orange-300 shadow-sm' : 'bg-card border-border text-muted-foreground hover:text-foreground hover:border-orange-300'}`}>
-                    <Check className="h-4 w-4" /> مستعمل
-                </button>
-                <div className="shrink-0 w-px h-6 bg-border mx-1 self-center" />
-                {categories.map(c => (
-                    <button key={c.id} onClick={() => setActiveFilter(c.id)}
-                        className={`shrink-0 rounded-xl px-4 py-2 text-sm font-semibold border transition-all flex items-center gap-2 ${activeFilter === c.id ? 'bg-cyan-50 text-cyan-700 border-cyan-300 shadow-sm' : 'bg-card border-border text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}>
-                        {c.type === 'device' ? <Smartphone className="h-4 w-4 opacity-70" /> : <Headphones className="h-4 w-4 opacity-70" />}
-                        {c.name}
-                    </button>
-                ))}
-            </div>
+            {/* ═══ MAIN LAYOUT: Side Panel + Content ═══ */}
+            <div className="flex gap-4">
 
-            {/* ─── Search ─── */}
-            <div className="relative max-w-md">
-                <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60 pointer-events-none" />
-                <input value={search} onChange={e => setSearch(e.target.value)}
-                    placeholder="بحث بالاسم أو السيريال أو اللون..."
-                    className={`${IC} pr-10`} />
-            </div>
+                {/* ─── Right (RTL): Filter Side Panel ─── */}
+                {showFilters && (
+                    <div className="hidden lg:block w-64 shrink-0">
+                        <div className="rounded-2xl border border-border bg-card p-3.5 space-y-3.5 sticky top-4">
+                            {/* Panel Header */}
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <Filter className="h-4 w-4 text-primary" />
+                                    <span className="text-sm font-black text-foreground">الفلاتر</span>
+                                    {activeFiltersCount > 0 && (
+                                        <span className="h-5 px-1.5 rounded-full bg-primary text-white text-[10px] font-bold flex items-center justify-center">{activeFiltersCount}</span>
+                                    )}
+                                </div>
+                                <button onClick={resetFilters} title="إعادة تعيين" className="rounded-lg p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-colors">
+                                    <RotateCcw className="h-3.5 w-3.5" />
+                                </button>
+                            </div>
 
-            {/* ─── Content ─── */}
-            {viewMode === 'grid' ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {filteredList.length === 0 ? (
-                        <div className="col-span-4 py-20 text-center text-muted-foreground bg-card rounded-2xl border border-dashed border-border">
-                            <Smartphone className="h-14 w-14 mx-auto mb-4 opacity-15" />
-                            <p className="text-base font-medium">لا توجد منتجات مطابقة</p>
+                            {/* IMEI Search */}
+                            <div>
+                                <label className="flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground mb-1">
+                                    <Smartphone className="h-3 w-3 text-primary" /> بحث IMEI
+                                </label>
+                                <input value={filterImei} onChange={e => setFilterImei(e.target.value)}
+                                    placeholder="أدخل رقم IMEI..."
+                                    className={`${IC} text-xs font-mono`} />
+                            </div>
+
+                            <div className="border-t border-border/50" />
+
+                            {/* Supplier / Brand */}
+                            <div>
+                                <label className="flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground mb-1">
+                                    <Package className="h-3 w-3 text-primary" /> الشركة / المورد
+                                </label>
+                                <select value={filterSupplier} onChange={e => setFilterSupplier(e.target.value)} className={`${IC} text-xs`}>
+                                    <option value="all">عرض الكل</option>
+                                    {uniqueSuppliers.map(s => <option key={s} value={s}>{s}</option>)}
+                                </select>
+                            </div>
+
+                            {/* Condition */}
+                            <div>
+                                <label className="flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground mb-1">
+                                    <SlidersHorizontal className="h-3 w-3 text-primary" /> حالة الجهاز
+                                </label>
+                                <div className="flex gap-1">
+                                    {[{ v: 'all' as const, l: 'الكل' }, { v: 'new' as const, l: 'جديد' }, { v: 'used' as const, l: 'مستعمل' }].map(opt => (
+                                        <button key={opt.v} onClick={() => setFilterCondition(opt.v)}
+                                            className={`flex-1 py-1 text-[11px] font-bold rounded-lg border transition-all ${filterCondition === opt.v
+                                                ? opt.v === 'used' ? 'bg-orange-100 text-orange-700 border-orange-300' : opt.v === 'new' ? 'bg-emerald-100 text-emerald-700 border-emerald-300' : 'bg-primary/10 text-primary border-primary/30'
+                                                : 'bg-transparent text-muted-foreground border-border hover:bg-muted/50'
+                                                }`}>{opt.l}</button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Stock Status */}
+                            <div>
+                                <label className="flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground mb-1">
+                                    📦 حالة المخزون
+                                </label>
+                                <select value={filterStock} onChange={e => setFilterStock(e.target.value as any)} className={`${IC} text-xs`}>
+                                    <option value="all">عرض الكل</option>
+                                    <option value="in">✅ متاح</option>
+                                    <option value="out">❌ نفذ</option>
+                                </select>
+                            </div>
+
+                            <div className="border-t border-border/50" />
+
+                            {/* Price Range */}
+                            <div>
+                                <label className="flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground mb-1">
+                                    💰 نطاق السعر
+                                </label>
+                                <div className="flex gap-1.5">
+                                    <input value={filterMinPrice} onChange={e => setFilterMinPrice(e.target.value)}
+                                        placeholder="من" type="number" min={0}
+                                        className={`${IC} text-xs text-center`} />
+                                    <span className="text-muted-foreground self-center text-xs">—</span>
+                                    <input value={filterMaxPrice} onChange={e => setFilterMaxPrice(e.target.value)}
+                                        placeholder="إلى" type="number" min={0}
+                                        className={`${IC} text-xs text-center`} />
+                                </div>
+                            </div>
+
+                            {/* Reset */}
+                            <button onClick={resetFilters}
+                                className="w-full flex items-center justify-center gap-1.5 rounded-xl border border-border py-1.5 text-[11px] font-bold text-muted-foreground hover:bg-muted transition-colors">
+                                <RotateCcw className="h-3 w-3" /> إعادة تعيين
+                            </button>
+
+                            {/* Results Count */}
+                            <div className="rounded-xl bg-muted/40 p-2.5 text-center">
+                                <p className="text-[10px] text-muted-foreground">نتائج الفلترة</p>
+                                <p className="text-base font-black text-foreground">{filteredList.length} <span className="text-[10px] font-medium text-muted-foreground">منتج</span></p>
+                            </div>
                         </div>
-                    ) : filteredList.map(item => (
-                        <InventoryProductCard key={item.id} item={item}
-                            onEdit={() => openEdit(item)}
-                            onDelete={() => handleDelete(item)}
-                        />
-                    ))}
-                </div>
-            ) : (
-                <div className="rounded-2xl border border-border bg-card overflow-hidden">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-sm min-w-[900px]">
-                            <thead>
-                                <tr className="border-b border-border bg-muted/30 text-muted-foreground text-xs font-semibold">
-                                    <th className="px-3 py-3 text-right w-8"><input type="checkbox" className="rounded" /></th>
-                                    <th className="px-3 py-3 text-right">النوع</th>
-                                    <th className="px-3 py-3 text-right">الموديل</th>
-                                    <th className="px-3 py-3 text-right">الفئة</th>
-                                    <th className="px-3 py-3 text-right">الحالة</th>
-                                    <th className="px-3 py-3 text-right">IMEI</th>
-                                    <th className="px-3 py-3 text-center">الكمية</th>
-                                    <th className="px-3 py-3 text-right">التكلفة</th>
-                                    <th className="px-3 py-3 text-right">سعر البيع</th>
-                                    <th className="px-3 py-3 text-right">المخزون</th>
-                                    <th className="px-3 py-3 text-left">إجراءات</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredList.length === 0 ? (
-                                    <tr><td colSpan={11} className="py-14 text-center text-muted-foreground">لا توجد منتجات</td></tr>
-                                ) : filteredList.map((item, i) => {
-                                    const avgCost = getWeightedAvgCost(item.id) || item.newCostPrice;
-                                    const details = item._type === 'device'
-                                        ? [item.storage, item.ram, item.color].filter(Boolean).join(' · ')
-                                        : [item.model, item.color].filter(Boolean).join(' · ');
-                                    return (
-                                        <tr key={item.id} className={`border-b border-border/40 hover:bg-muted/20 transition-colors ${i % 2 !== 0 ? 'bg-muted/10' : ''}`}>
-                                            <td className="px-3 py-2"><input type="checkbox" className="rounded" /></td>
-                                            <td className="px-3 py-2">
-                                                <div className="flex items-center gap-2">
-                                                    {item.image
-                                                        ? <img src={item.image} alt={item.name} className="h-8 w-8 rounded-lg object-cover border border-border" />
-                                                        : <div className="h-8 w-8 rounded-lg bg-muted/60 flex items-center justify-center"><ImageOff className="h-3 w-3 text-muted-foreground/30" /></div>
-                                                    }
-                                                    <span className="font-semibold text-foreground truncate max-w-[140px]">{item.name}</span>
-                                                </div>
-                                            </td>
-                                            <td className="px-3 py-2 text-[11px] text-muted-foreground">{details || '—'}</td>
-                                            <td className="px-3 py-2 text-xs font-semibold text-primary">{item.categoryName || '—'}</td>
-                                            <td className="px-3 py-2">
-                                                <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${item.condition === 'used' ? 'bg-orange-100 text-orange-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                                                    {item.condition === 'used' ? 'مستعمل' : 'جديد'}
-                                                </span>
-                                            </td>
-                                            <td className="px-3 py-2 text-[10px] text-muted-foreground font-mono">{item.serialNumber || '—'}</td>
-                                            <td className="px-3 py-2 text-center">
-                                                <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${item.quantity === 0 ? 'bg-red-100 text-red-600' : 'bg-muted text-foreground'}`}>{item.quantity}</span>
-                                            </td>
-                                            <td className="px-3 py-2 text-xs text-muted-foreground tabular-nums">
-                                                <button onClick={() => setActiveBatchesModal({ id: item.id, name: item.name })} className="hover:text-primary transition-colors underline decoration-dotted underline-offset-2" title="عرض الدُفعات">{avgCost.toLocaleString()}</button>
-                                            </td>
-                                            <td className="px-3 py-2 text-sm font-bold text-foreground tabular-nums">{item.salePrice.toLocaleString()}</td>
-                                            <td className="px-3 py-2 text-xs font-bold text-emerald-600 tabular-nums">{(item.salePrice - avgCost).toLocaleString()}</td>
-                                            <td className="px-3 py-2 text-left">
-                                                <div className="flex justify-end gap-1">
-                                                    <button onClick={() => openEdit(item)} className="rounded-lg p-1.5 hover:bg-primary/10 text-primary transition-colors"><Pencil className="h-3.5 w-3.5" /></button>
-                                                    <button onClick={() => handleDelete(item)} className="rounded-lg p-1.5 hover:bg-red-50 text-destructive transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
                     </div>
-                </div>
-            )}
+                )}
+
+                {/* ─── Main Content ─── */}
+                <div className="flex-1 min-w-0 space-y-3">
+
+                    {/* Category Tabs */}
+                    <div className="flex gap-2 w-full overflow-x-auto hide-scrollbar pb-1 px-1 -mx-1">
+                        <button onClick={() => setActiveFilter('all')}
+                            className={`shrink-0 rounded-xl px-4 py-2 text-sm font-semibold border transition-all flex items-center gap-2 ${activeFilter === 'all' ? 'bg-primary/10 text-primary border-primary/30 shadow-sm' : 'bg-card border-border text-muted-foreground hover:text-foreground hover:border-primary/30'}`}>
+                            <LayoutGrid className="h-4 w-4" /> الكل
+                        </button>
+                        <button onClick={() => setActiveFilter('used')}
+                            className={`shrink-0 rounded-xl px-4 py-2 text-sm font-semibold border transition-all flex items-center gap-2 ${activeFilter === 'used' ? 'bg-orange-100 text-orange-700 border-orange-300 shadow-sm' : 'bg-card border-border text-muted-foreground hover:text-foreground hover:border-orange-300'}`}>
+                            <Check className="h-4 w-4" /> مستعمل
+                        </button>
+                        <div className="shrink-0 w-px h-6 bg-border mx-1 self-center" />
+                        {categories.map(c => (
+                            <button key={c.id} onClick={() => setActiveFilter(c.id)}
+                                className={`shrink-0 rounded-xl px-4 py-2 text-sm font-semibold border transition-all flex items-center gap-2 ${activeFilter === c.id ? 'bg-cyan-50 text-cyan-700 border-cyan-300 shadow-sm' : 'bg-card border-border text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}>
+                                {c.type === 'device' ? <Smartphone className="h-4 w-4 opacity-70" /> : <Headphones className="h-4 w-4 opacity-70" />}
+                                {c.name}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* Search */}
+                    <div className="relative max-w-md">
+                        <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60 pointer-events-none" />
+                        <input value={search} onChange={e => setSearch(e.target.value)}
+                            placeholder="بحث بالاسم أو السيريال أو اللون..."
+                            className={`${IC} pr-10`} />
+                    </div>
+
+                    {/* ─── Content ─── */}
+                    {viewMode === 'grid' ? (
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                            {filteredList.length === 0 ? (
+                                <div className="col-span-4 py-20 text-center text-muted-foreground bg-card rounded-2xl border border-dashed border-border">
+                                    <Smartphone className="h-14 w-14 mx-auto mb-4 opacity-15" />
+                                    <p className="text-base font-medium">لا توجد منتجات مطابقة</p>
+                                </div>
+                            ) : filteredList.map(item => (
+                                <InventoryProductCard key={item.id} item={item}
+                                    onEdit={() => openEdit(item)}
+                                    onDelete={() => handleDelete(item)}
+                                />
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="rounded-2xl border border-border bg-card overflow-hidden">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm min-w-[900px]">
+                                    <thead>
+                                        <tr className="border-b border-border bg-muted/30 text-muted-foreground text-xs font-semibold">
+                                            <th className="px-3 py-3 text-right w-8"><input type="checkbox" className="rounded" /></th>
+                                            <th className="px-3 py-3 text-right">النوع</th>
+                                            <th className="px-3 py-3 text-right">الموديل</th>
+                                            <th className="px-3 py-3 text-right">الفئة</th>
+                                            <th className="px-3 py-3 text-right">الحالة</th>
+                                            <th className="px-3 py-3 text-right">IMEI</th>
+                                            <th className="px-3 py-3 text-center">الكمية</th>
+                                            <th className="px-3 py-3 text-right">التكلفة</th>
+                                            <th className="px-3 py-3 text-right">سعر البيع</th>
+                                            <th className="px-3 py-3 text-right">المخزون</th>
+                                            <th className="px-3 py-3 text-left">إجراءات</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {filteredList.length === 0 ? (
+                                            <tr><td colSpan={11} className="py-14 text-center text-muted-foreground">لا توجد منتجات</td></tr>
+                                        ) : filteredList.map((item, i) => {
+                                            const avgCost = getWeightedAvgCost(item.id) || item.newCostPrice;
+                                            const details = item._type === 'device'
+                                                ? [item.storage, item.ram, item.color].filter(Boolean).join(' · ')
+                                                : [item.model, item.color].filter(Boolean).join(' · ');
+                                            return (
+                                                <tr key={item.id} className={`border-b border-border/40 hover:bg-muted/20 transition-colors ${i % 2 !== 0 ? 'bg-muted/10' : ''}`}>
+                                                    <td className="px-3 py-2"><input type="checkbox" className="rounded" /></td>
+                                                    <td className="px-3 py-2">
+                                                        <div className="flex items-center gap-2">
+                                                            {item.image
+                                                                ? <img src={item.image} alt={item.name} className="h-8 w-8 rounded-lg object-cover border border-border" />
+                                                                : <div className="h-8 w-8 rounded-lg bg-muted/60 flex items-center justify-center"><ImageOff className="h-3 w-3 text-muted-foreground/30" /></div>
+                                                            }
+                                                            <span className="font-semibold text-foreground truncate max-w-[140px]">{item.name}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-3 py-2 text-[11px] text-muted-foreground">{details || '—'}</td>
+                                                    <td className="px-3 py-2 text-xs font-semibold text-primary">{item.categoryName || '—'}</td>
+                                                    <td className="px-3 py-2">
+                                                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${item.condition === 'used' ? 'bg-orange-100 text-orange-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                                                            {item.condition === 'used' ? 'مستعمل' : 'جديد'}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-3 py-2 text-[10px] text-muted-foreground font-mono">{item.serialNumber || '—'}</td>
+                                                    <td className="px-3 py-2 text-center">
+                                                        <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${item.quantity === 0 ? 'bg-red-100 text-red-600' : 'bg-muted text-foreground'}`}>{item.quantity}</span>
+                                                    </td>
+                                                    <td className="px-3 py-2 text-xs text-muted-foreground tabular-nums">
+                                                        <button onClick={() => setActiveBatchesModal({ id: item.id, name: item.name })} className="hover:text-primary transition-colors underline decoration-dotted underline-offset-2" title="عرض الدُفعات">{avgCost.toLocaleString()}</button>
+                                                    </td>
+                                                    <td className="px-3 py-2 text-sm font-bold text-foreground tabular-nums">{item.salePrice.toLocaleString()}</td>
+                                                    <td className="px-3 py-2 text-xs font-bold text-emerald-600 tabular-nums">{(item.salePrice - avgCost).toLocaleString()}</td>
+                                                    <td className="px-3 py-2 text-left">
+                                                        <div className="flex justify-end gap-1">
+                                                            <button onClick={() => openEdit(item)} className="rounded-lg p-1.5 hover:bg-primary/10 text-primary transition-colors"><Pencil className="h-3.5 w-3.5" /></button>
+                                                            <button onClick={() => handleDelete(item)} className="rounded-lg p-1.5 hover:bg-red-50 text-destructive transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+
+                </div>{/* end main content */}
+
+            </div>{/* end flex layout */}
 
             {/* ─── Product Form Modal ─── */}
             {showForm && (
