@@ -1,0 +1,632 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>الحسابات العامة • ELOS System</title>
+  <script>
+    // ⚡ تطبيق فوري للثيم - يمنع الوميض
+    (function(){var p=new URLSearchParams(location.search),t=p.get('theme')||localStorage.getItem('elos_theme')||localStorage.getItem('elos-theme')||'dark',h=document.documentElement;h.setAttribute('data-theme',t==='light'?'light':'dark');})();
+  </script>
+  <!-- 🔐 SESSION INJECTION -->
+  <script src="session-inject.js"></script>
+  <!-- 📱 SPA Mode Detection -->
+  <script src="spa-mode.js"></script>
+  <!-- 🌙 Theme Sync -->
+  <script src="theme-sync.js"></script>
+  <!-- 🔤 Font Scale Manager -->
+  <script src="js/font-scale-manager.js"></script>
+  <!-- 🔊 Shared Sound & Toast System -->
+  <script src="shared.js"></script>
+  <!-- 🎨 Design System Tokens (theme colors - MUST BE FIRST) -->
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/tokens-alias.css">
+  <!-- 🎨 Design System (component styles) -->
+  <link rel="stylesheet" href="styles/design-system.css">
+  <!-- 🎨 Theme Governance Layer (load LAST to override legacy styles) -->
+  <link rel="stylesheet" href="styles/theme-fixes.css">
+  <!-- 📏 Font Sizes - تحسين أحجام الخطوط -->
+  <link rel="stylesheet" href="styles/font-sizes.css">
+
+  <style>
+    /* ═══════════════════════════════════════
+       🎨 MODERN VARIABLES
+       ═══════════════════════════════════════ */
+    :root {
+      --bg-primary: #0a0e14;
+      --bg-secondary: #151921;
+      --bg-tertiary: #1a1f29;
+      --card: #151921;
+      --text-primary: #e6e8ee;
+      --text-secondary: #8b93a6;
+      --muted: #6b7280;
+      --border: #1e2530;
+      --line: #1e2530;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --purple: #a855f7;
+      --cyan: #06b6d4;
+      --pink: #ec4899;
+      --radius: 12px;
+      --shadow: 0 2px 8px rgba(0,0,0,0.2);
+      --shadow-hover: 0 4px 16px rgba(59,130,246,0.2);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--bg-primary);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: linear-gradient(180deg, var(--accent) 0%, #1d4ed8 100%);
+      border-radius: 4px;
+      border: 2px solid var(--bg-primary);
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: linear-gradient(180deg, #60a5fa 0%, var(--accent) 100%);
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      font-family: system-ui, "Cairo", "Segoe UI", sans-serif;
+      min-height: 100vh;
+      padding-bottom: 50px;
+    }
+
+    a { color: inherit; text-decoration: none; }
+
+    /* Background Pattern */
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: radial-gradient(circle at 50% 50%, rgba(59,130,246,0.03) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    header, main { position: relative; z-index: 1; }
+
+    /* Animations */
+    @keyframes slideInUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ═══════════════════════════════════════
+       📱 HEADER
+       ═══════════════════════════════════════ */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 10px 24px;
+      background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+      border-bottom: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      flex-wrap: wrap;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      width: 36px;
+      height: 36px;
+      color: #ffffff;
+      filter: drop-shadow(0 2px 6px rgba(255, 255, 255, 0.15));
+      flex-shrink: 0;
+    }
+
+    .brand-container {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .brand {
+      font-weight: 900;
+      font-size: 24px;
+      color: #d1d5db;
+      letter-spacing: 3px;
+      text-shadow: 0 2px 6px rgba(255, 255, 255, 0.1);
+      line-height: 1;
+    }
+
+    .page-subtitle {
+      font-size: 11px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .spacer { flex: 1; }
+
+    .btn-refresh {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text-primary);
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-refresh:hover {
+      background: var(--accent);
+      border-color: var(--accent);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(59,130,246,0.3);
+    }
+
+    /* ═══════════════════════════════════════
+       📊 MAIN CONTENT
+       ═══════════════════════════════════════ */
+    main {
+      padding: 24px;
+      max-width: 1800px;
+      margin: 0 auto;
+    }
+
+    /* ═══════════════════════════════════════
+       💰 SUMMARY CARDS
+       ═══════════════════════════════════════ */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      margin-bottom: 32px;
+    }
+
+    .summary-card {
+      background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+      animation: slideInUp 0.4s ease-out;
+    }
+
+    .summary-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: var(--accent);
+    }
+
+    .summary-card.clients::before { background: var(--success); }
+    .summary-card.suppliers::before { background: var(--warning); }
+    .summary-card.safe::before { background: var(--cyan); }
+    .summary-card.partners::before { background: var(--purple); }
+
+    .summary-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+      border-color: var(--accent);
+    }
+
+    .summary-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .summary-card-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .summary-card-icon {
+      font-size: 24px;
+    }
+
+    .summary-card-value {
+      font-size: 32px;
+      font-weight: 900;
+      color: var(--text-primary);
+      direction: ltr;
+      text-align: right;
+      margin-bottom: 8px;
+    }
+
+    .summary-card-value.positive { color: var(--success); }
+    .summary-card-value.negative { color: var(--danger); }
+
+    .summary-card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .summary-card-count {
+      font-size: 13px;
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+
+    .summary-card-link {
+      font-size: 12px;
+      color: var(--accent);
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .summary-card-link:hover {
+      color: var(--accent-hover);
+      text-decoration: underline;
+    }
+
+    /* ═══════════════════════════════════════
+       📋 DETAILS SECTIONS
+       ═══════════════════════════════════════ */
+    .section {
+      background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      margin-bottom: 24px;
+      animation: slideInUp 0.5s ease-out;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--text-primary);
+    }
+
+    .section-icon {
+      font-size: 24px;
+    }
+
+    .table-container {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead {
+      background: var(--bg-tertiary);
+    }
+
+    th {
+      padding: 12px 16px;
+      text-align: right;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 2px solid var(--border);
+    }
+
+    td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+      color: var(--text-primary);
+    }
+
+    tbody tr {
+      transition: all 0.2s ease;
+    }
+
+    tbody tr:hover {
+      background: var(--bg-tertiary);
+      cursor: pointer;
+    }
+
+    .balance-cell {
+      font-weight: 700;
+      direction: ltr;
+      text-align: right;
+    }
+
+    .balance-cell.positive {
+      color: var(--success);
+    }
+
+    .balance-cell.negative {
+      color: var(--danger);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-secondary);
+    }
+
+    .empty-state-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+
+    .empty-state-text {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-secondary);
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 40px;
+      height: 40px;
+      border: 4px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ═══════════════════════════════════════
+       💳 SAFE WALLETS GRID
+       ═══════════════════════════════════════ */
+    .wallets-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 16px;
+      margin-top: 16px;
+    }
+
+    .wallet-card {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      transition: all 0.3s ease;
+    }
+
+    .wallet-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      border-color: var(--accent);
+    }
+
+    .wallet-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+
+    .wallet-name {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .wallet-type {
+      font-size: 11px;
+      padding: 4px 8px;
+      background: var(--bg-secondary);
+      border-radius: 6px;
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+
+    .wallet-balance {
+      font-size: 24px;
+      font-weight: 900;
+      color: var(--text-primary);
+      direction: ltr;
+      text-align: right;
+    }
+
+    .wallet-balance.positive { color: var(--success); }
+    .wallet-balance.negative { color: var(--danger); }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="logo">📊</div>
+    <div class="brand-container">
+      <div class="brand">ELOS</div>
+      <div class="page-subtitle">الحسابات العامة</div>
+    </div>
+    <div class="spacer"></div>
+    <button class="btn-refresh" onclick="loadAccountsSummary()">
+      🔄 تحديث
+    </button>
+  </header>
+
+  <main>
+    <!-- ═══════════════════════════════════════
+         💰 SUMMARY CARDS
+         ═══════════════════════════════════════ -->
+    <div class="summary-grid" id="summaryGrid">
+      <div class="summary-card clients">
+        <div class="summary-card-header">
+          <div class="summary-card-title">
+            <span class="summary-card-icon">👥</span>
+            <span>رصيد العملاء</span>
+          </div>
+        </div>
+        <div class="summary-card-value" id="totalClientsBalance">0.00</div>
+        <div class="summary-card-footer">
+          <div class="summary-card-count" id="clientsCount">0 عميل</div>
+          <div class="summary-card-link" onclick="window.location.href='./clients.html'">عرض التفاصيل →</div>
+        </div>
+      </div>
+
+      <div class="summary-card suppliers">
+        <div class="summary-card-header">
+          <div class="summary-card-title">
+            <span class="summary-card-icon">🚚</span>
+            <span>رصيد الموردين</span>
+          </div>
+        </div>
+        <div class="summary-card-value" id="totalSuppliersBalance">0.00</div>
+        <div class="summary-card-footer">
+          <div class="summary-card-count" id="suppliersCount">0 مورد</div>
+          <div class="summary-card-link" onclick="window.location.href='./suppliers.html'">عرض التفاصيل →</div>
+        </div>
+      </div>
+
+      <div class="summary-card safe">
+        <div class="summary-card-header">
+          <div class="summary-card-title">
+            <span class="summary-card-icon">🏦</span>
+            <span>رصيد الخزنة</span>
+          </div>
+        </div>
+        <div class="summary-card-value" id="totalSafeBalance">0.00</div>
+        <div class="summary-card-footer">
+          <div class="summary-card-count" id="safeWalletsCount">0 محفظة</div>
+          <div class="summary-card-link" onclick="window.location.href='./safe.html'">عرض التفاصيل →</div>
+        </div>
+      </div>
+
+      <div class="summary-card partners">
+        <div class="summary-card-header">
+          <div class="summary-card-title">
+            <span class="summary-card-icon">🤝</span>
+            <span>رصيد الشركاء</span>
+          </div>
+        </div>
+        <div class="summary-card-value" id="totalPartnersBalance">0.00</div>
+        <div class="summary-card-footer">
+          <div class="summary-card-count" id="partnersCount">0 شريك</div>
+          <div class="summary-card-link" onclick="window.location.href='./partners.html'">عرض التفاصيل →</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         👥 CLIENTS SECTION
+         ═══════════════════════════════════════ -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="section-icon">👥</span>
+          <span>العملاء (أعلى الأرصدة)</span>
+        </div>
+      </div>
+      <div class="table-container" id="clientsTableContainer">
+        <div class="loading">
+          <div class="spinner"></div>
+          <p style="margin-top: 16px;">جاري التحميل...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         🚚 SUPPLIERS SECTION
+         ═══════════════════════════════════════ -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="section-icon">🚚</span>
+          <span>الموردين (أعلى الأرصدة)</span>
+        </div>
+      </div>
+      <div class="table-container" id="suppliersTableContainer">
+        <div class="loading">
+          <div class="spinner"></div>
+          <p style="margin-top: 16px;">جاري التحميل...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         🏦 SAFE WALLETS SECTION
+         ═══════════════════════════════════════ -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="section-icon">🏦</span>
+          <span>محافظ الخزنة</span>
+        </div>
+      </div>
+      <div class="wallets-grid" id="walletsGrid">
+        <div class="loading">
+          <div class="spinner"></div>
+          <p style="margin-top: 16px;">جاري التحميل...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         🤝 PARTNERS SECTION
+         ═══════════════════════════════════════ -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="section-icon">🤝</span>
+          <span>الشركاء</span>
+        </div>
+      </div>
+      <div class="table-container" id="partnersTableContainer">
+        <div class="loading">
+          <div class="spinner"></div>
+          <p style="margin-top: 16px;">جاري التحميل...</p>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="general-accounts.js"></script>
+</body>
+</html>
+
+
+
+

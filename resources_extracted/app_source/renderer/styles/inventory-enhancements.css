@@ -1,0 +1,700 @@
+/**
+ * ELOS Inventory Page Enhancements
+ * تحسينات صفحة المخزون
+ * Version: 1.2 - Glass & Glow Edition
+ * Note: Font sizes are now in font-sizes.css
+ */
+
+/* ═══════════════════════════════════════
+   PAGE LOAD TRANSITION - تحميل الصفحة
+   Only applies to pages that add page-ready class
+   ═══════════════════════════════════════ */
+body.page-loading {
+  opacity: 0;
+  transition: opacity 0.15s ease-out;
+}
+
+body.page-ready {
+  opacity: 1;
+}
+
+/* ═══════════════════════════════════════
+   GLASSMORPHISM HEADER - ترويسة زجاجية
+   ═══════════════════════════════════════ */
+.header {
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.9) 0%, rgba(15, 23, 42, 0.95) 100%) !important;
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid rgba(59, 130, 246, 0.15) !important;
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+}
+
+[data-theme="light"] .header {
+  background: linear-gradient(135deg, rgba(248, 250, 252, 0.95) 0%, rgba(241, 245, 249, 0.98) 100%) !important;
+  border-bottom: 1px solid rgba(37, 99, 235, 0.12) !important;
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Page Title Glow */
+.page-title {
+  text-shadow: 0 0 30px rgba(59, 130, 246, 0.3);
+  animation: titleGlow 3s ease-in-out infinite;
+}
+
+@keyframes titleGlow {
+  0%, 100% { filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.3)); }
+  50% { filter: drop-shadow(0 0 16px rgba(168, 85, 247, 0.5)); }
+}
+
+[data-theme="light"] .page-title {
+  text-shadow: 0 0 20px rgba(37, 99, 235, 0.2);
+}
+
+/* ═══════════════════════════════════════
+   GLASSMORPHISM STATS - إحصائيات زجاجية
+   ═══════════════════════════════════════ */
+.stat {
+  background: rgba(30, 41, 59, 0.5) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(148, 163, 184, 0.15) !important;
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+[data-theme="light"] .stat {
+  background: rgba(255, 255, 255, 0.7) !important;
+  border: 1px solid rgba(148, 163, 184, 0.25) !important;
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.stat:hover {
+  transform: translateY(-4px) scale(1.02) !important;
+  box-shadow:
+    0 8px 32px rgba(59, 130, 246, 0.25),
+    0 0 0 1px rgba(59, 130, 246, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+  border-color: rgba(59, 130, 246, 0.4) !important;
+}
+
+[data-theme="light"] .stat:hover {
+  box-shadow:
+    0 8px 32px rgba(37, 99, 235, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(37, 99, 235, 0.3) !important;
+}
+
+/* Stat value glow */
+.stat-value {
+  text-shadow: 0 0 20px currentColor;
+}
+
+/* ═══════════════════════════════════════
+   GLASSMORPHISM PANELS - لوحات زجاجية
+   ═══════════════════════════════════════ */
+.panel {
+  background: rgba(30, 41, 59, 0.4) !important;
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(148, 163, 184, 0.15) !important;
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+[data-theme="light"] .panel {
+  background: rgba(255, 255, 255, 0.6) !important;
+  border: 1px solid rgba(148, 163, 184, 0.25) !important;
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.panel:hover {
+  box-shadow:
+    0 8px 32px rgba(59, 130, 246, 0.2),
+    0 0 0 1px rgba(59, 130, 246, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(59, 130, 246, 0.3) !important;
+}
+
+[data-theme="light"] .panel:hover {
+  box-shadow:
+    0 8px 32px rgba(37, 99, 235, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+  border-color: rgba(37, 99, 235, 0.2) !important;
+}
+
+/* Panel header styling */
+.panel-header {
+  border-bottom: 1px solid rgba(59, 130, 246, 0.15) !important;
+}
+
+[data-theme="light"] .panel-header {
+  border-bottom: 1px solid rgba(37, 99, 235, 0.1) !important;
+}
+
+.panel-title {
+  text-shadow: 0 0 15px rgba(59, 130, 246, 0.2);
+}
+
+/* ═══════════════════════════════════════
+   GLASSMORPHISM KPI CARDS - بطاقات KPI زجاجية
+   ═══════════════════════════════════════ */
+.kpi-card {
+  background: rgba(30, 41, 59, 0.4) !important;
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(148, 163, 184, 0.15) !important;
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+[data-theme="light"] .kpi-card {
+  background: rgba(255, 255, 255, 0.65) !important;
+  border: 1px solid rgba(148, 163, 184, 0.25) !important;
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+/* Glass shine effect */
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.08),
+    transparent
+  );
+  opacity: 0;
+  transition: all 0.5s ease;
+  pointer-events: none;
+}
+
+.kpi-card:hover::before {
+  left: 100%;
+  opacity: 1;
+}
+
+.kpi-card:hover {
+  transform: translateY(-6px) scale(1.02) !important;
+  box-shadow:
+    0 12px 40px rgba(59, 130, 246, 0.25),
+    0 0 0 1px rgba(59, 130, 246, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+}
+
+[data-theme="light"] .kpi-card:hover {
+  box-shadow:
+    0 12px 40px rgba(37, 99, 235, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+/* KPI value glow */
+.kpi-value {
+  text-shadow: 0 0 25px currentColor;
+  transition: text-shadow 0.3s ease;
+}
+
+.kpi-card:hover .kpi-value {
+  text-shadow: 0 0 35px currentColor;
+}
+
+/* ═══════════════════════════════════════
+   GLASS INPUT FIELDS - حقول الإدخال الزجاجية
+   ═══════════════════════════════════════ */
+.input,
+.select,
+.search-input {
+  background: rgba(30, 41, 59, 0.5) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+[data-theme="light"] .input,
+[data-theme="light"] .select,
+[data-theme="light"] .search-input {
+  background: rgba(255, 255, 255, 0.7) !important;
+  border: 1px solid rgba(148, 163, 184, 0.3) !important;
+}
+
+.input:focus,
+.select:focus,
+.search-input:focus {
+  border-color: rgba(59, 130, 246, 0.6) !important;
+  box-shadow:
+    0 0 0 3px rgba(59, 130, 246, 0.15),
+    0 0 20px rgba(59, 130, 246, 0.1),
+    inset 0 0 0 1px rgba(59, 130, 246, 0.1) !important;
+  background: rgba(30, 41, 59, 0.7) !important;
+}
+
+[data-theme="light"] .input:focus,
+[data-theme="light"] .select:focus,
+[data-theme="light"] .search-input:focus {
+  border-color: rgba(37, 99, 235, 0.5) !important;
+  box-shadow:
+    0 0 0 3px rgba(37, 99, 235, 0.12),
+    0 0 20px rgba(37, 99, 235, 0.08) !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* ═══════════════════════════════════════
+   GLOWING BUTTONS - أزرار متوهجة
+   ═══════════════════════════════════════ */
+.btn {
+  position: relative;
+  overflow: hidden;
+  box-shadow:
+    0 4px 15px rgba(59, 130, 246, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Shine sweep effect */
+.btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.25),
+    transparent
+  );
+  transition: left 0.5s ease;
+  z-index: 1;
+}
+
+.btn:hover::before {
+  left: 100%;
+}
+
+/* Outer glow on hover */
+.btn::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(135deg, #60a5fa, #3b82f6, #2563eb);
+  border-radius: inherit;
+  z-index: -1;
+  opacity: 0;
+  filter: blur(8px);
+  transition: opacity 0.3s ease;
+}
+
+.btn:hover::after {
+  opacity: 0.6;
+  animation: btnGlowPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes btnGlowPulse {
+  0%, 100% { opacity: 0.4; filter: blur(8px); }
+  50% { opacity: 0.7; filter: blur(12px); }
+}
+
+.btn:hover {
+  transform: translateY(-3px) !important;
+  box-shadow:
+    0 8px 25px rgba(59, 130, 246, 0.4),
+    0 0 40px rgba(59, 130, 246, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+}
+
+.btn:active {
+  transform: translateY(-1px) scale(0.98) !important;
+}
+
+/* Success button glow */
+.btn-success::after {
+  background: linear-gradient(135deg, #34d399, #10b981, #059669);
+}
+
+.btn-success:hover {
+  box-shadow:
+    0 8px 25px rgba(16, 185, 129, 0.4),
+    0 0 40px rgba(16, 185, 129, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+}
+
+/* Ghost button glass effect */
+.btn-ghost {
+  background: rgba(30, 41, 59, 0.4) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+  box-shadow: none !important;
+}
+
+[data-theme="light"] .btn-ghost {
+  background: rgba(255, 255, 255, 0.6) !important;
+  border: 1px solid rgba(148, 163, 184, 0.3) !important;
+}
+
+.btn-ghost:hover {
+  background: rgba(59, 130, 246, 0.15) !important;
+  border-color: rgba(59, 130, 246, 0.4) !important;
+  box-shadow:
+    0 4px 20px rgba(59, 130, 246, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+}
+
+.btn-ghost::after {
+  display: none;
+}
+
+/* ═══════════════════════════════════════
+   GLASSMORPHISM TABLE - جدول زجاجي
+   ═══════════════════════════════════════ */
+.table-container {
+  background: rgba(30, 41, 59, 0.3) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(148, 163, 184, 0.15) !important;
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+}
+
+[data-theme="light"] .table-container {
+  background: rgba(255, 255, 255, 0.5) !important;
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+/* Table header glass */
+.tbl thead,
+.table thead {
+  background: rgba(30, 41, 59, 0.6) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+[data-theme="light"] .tbl thead,
+[data-theme="light"] .table thead {
+  background: rgba(248, 250, 252, 0.9) !important;
+}
+
+.tbl th,
+.table th {
+  text-shadow: 0 0 15px rgba(59, 130, 246, 0.3);
+  border-bottom: 2px solid rgba(59, 130, 246, 0.2) !important;
+}
+
+[data-theme="light"] .tbl th,
+[data-theme="light"] .table th {
+  text-shadow: none;
+  border-bottom: 2px solid rgba(37, 99, 235, 0.15) !important;
+}
+
+/* Table row hover with glow */
+.tbl tbody tr,
+.table tbody tr {
+  transition: all 0.2s ease !important;
+}
+
+.tbl tbody tr:hover,
+.table tbody tr:hover {
+  background: rgba(59, 130, 246, 0.08) !important;
+}
+
+[data-theme="light"] .tbl tbody tr:hover,
+[data-theme="light"] .table tbody tr:hover {
+  background: rgba(37, 99, 235, 0.06) !important;
+}
+
+/* Status row colors with glass effect */
+.tbl tbody tr.row-in_stock,
+.table tbody tr.row-in_stock {
+  background: rgba(16, 185, 129, 0.05) !important;
+}
+
+.tbl tbody tr.row-in_stock:hover,
+.table tbody tr.row-in_stock:hover {
+  background: rgba(16, 185, 129, 0.12) !important;
+}
+
+.tbl tbody tr.row-sold,
+.table tbody tr.row-sold {
+  background: rgba(139, 147, 166, 0.05) !important;
+}
+
+.tbl tbody tr.row-sold:hover,
+.table tbody tr.row-sold:hover {
+  background: rgba(139, 147, 166, 0.12) !important;
+}
+
+.tbl tbody tr.row-reserved,
+.table tbody tr.row-reserved {
+  background: rgba(168, 85, 247, 0.05) !important;
+}
+
+.tbl tbody tr.row-reserved:hover,
+.table tbody tr.row-reserved:hover {
+  background: rgba(168, 85, 247, 0.12) !important;
+}
+
+.tbl tbody tr.row-returned,
+.table tbody tr.row-returned {
+  background: rgba(6, 182, 212, 0.05) !important;
+}
+
+.tbl tbody tr.row-returned:hover,
+.table tbody tr.row-returned:hover {
+  background: rgba(6, 182, 212, 0.12) !important;
+}
+
+/* ═══════════════════════════════════════
+   GLOWING ACTION BUTTONS - أزرار الإجراءات المتوهجة
+   ═══════════════════════════════════════ */
+.action-btn {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Light mode - no shadows or effects on action buttons */
+[data-theme="light"] .details-btn:hover,
+[data-theme="light"] .sell-btn:hover,
+[data-theme="light"] .edit-btn:hover,
+[data-theme="light"] .archive-btn:hover,
+[data-theme="light"] .delete-btn:hover {
+  box-shadow: none !important;
+}
+
+/* Dark mode - subtle glow on hover */
+.details-btn:hover {
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3) !important;
+}
+
+.sell-btn:hover {
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3) !important;
+}
+
+.edit-btn:hover {
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3) !important;
+}
+
+.archive-btn:hover {
+  box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3) !important;
+}
+
+.delete-btn:hover {
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3) !important;
+}
+
+/* ═══════════════════════════════════════
+   GLASSMORPHISM BADGES - شارات زجاجية
+   ═══════════════════════════════════════ */
+.badge {
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  box-shadow: none;
+  transition: all 0.2s ease;
+}
+
+[data-theme="light"] .badge {
+  box-shadow: none !important;
+}
+
+.badge:hover {
+  transform: scale(1.05);
+}
+
+.results-badge {
+  background: rgba(59, 130, 246, 0.15) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(59, 130, 246, 0.25) !important;
+  box-shadow: 0 2px 12px rgba(59, 130, 246, 0.15);
+}
+
+[data-theme="light"] .results-badge {
+  background: rgba(37, 99, 235, 0.1) !important;
+  border: 1px solid rgba(37, 99, 235, 0.2) !important;
+}
+
+/* ═══════════════════════════════════════
+   GLASSMORPHISM MODAL - نافذة مودال زجاجية
+   ═══════════════════════════════════════ */
+.modal {
+  background: rgba(10, 14, 20, 0.85) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+[data-theme="light"] .modal {
+  background: rgba(15, 23, 42, 0.6) !important;
+}
+
+.modal-box {
+  background: rgba(22, 27, 34, 0.95) !important;
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(148, 163, 184, 0.15) !important;
+  box-shadow:
+    0 24px 48px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+}
+
+[data-theme="light"] .modal-box {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid rgba(148, 163, 184, 0.3) !important;
+  box-shadow:
+    0 24px 48px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+}
+
+/* Modal header with glow */
+.modal-title {
+  text-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+}
+
+[data-theme="light"] .modal-title {
+  text-shadow: none;
+}
+
+/* ═══════════════════════════════════════
+   HEADER BUTTONS GLASS - أزرار الترويسة الزجاجية
+   ═══════════════════════════════════════ */
+.header-btn {
+  background: rgba(59, 130, 246, 0.1) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(59, 130, 246, 0.2) !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.header-btn:hover {
+  background: rgba(59, 130, 246, 0.2) !important;
+  border-color: rgba(59, 130, 246, 0.4) !important;
+  box-shadow:
+    0 4px 20px rgba(59, 130, 246, 0.3),
+    0 0 30px rgba(59, 130, 246, 0.15);
+  transform: translateY(-2px);
+}
+
+[data-theme="light"] .header-btn {
+  background: rgba(37, 99, 235, 0.08) !important;
+  border: 1px solid rgba(37, 99, 235, 0.15) !important;
+}
+
+[data-theme="light"] .header-btn:hover {
+  background: rgba(37, 99, 235, 0.15) !important;
+  border-color: rgba(37, 99, 235, 0.3) !important;
+  box-shadow:
+    0 4px 20px rgba(37, 99, 235, 0.2),
+    0 0 30px rgba(37, 99, 235, 0.1);
+}
+
+/* ═══════════════════════════════════════
+   TRACK RESULT BOX - صندوق نتيجة التتبع
+   ═══════════════════════════════════════ */
+#trackResult {
+  background: rgba(30, 41, 59, 0.5) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+[data-theme="light"] #trackResult {
+  background: rgba(255, 255, 255, 0.7) !important;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+/* ═══════════════════════════════════════
+   SCROLLBAR ENHANCEMENT - تحسين شريط التمرير
+   ═══════════════════════════════════════ */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(30, 41, 59, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(59, 130, 246, 0.4);
+  border-radius: 4px;
+  transition: background 0.2s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(59, 130, 246, 0.6);
+}
+
+[data-theme="light"] ::-webkit-scrollbar-track {
+  background: rgba(148, 163, 184, 0.2);
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb {
+  background: rgba(37, 99, 235, 0.3);
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(37, 99, 235, 0.5);
+}
+
+/* ═══════════════════════════════════════
+   SKELETON LOADING ENHANCEMENT - تحسين التحميل
+   ═══════════════════════════════════════ */
+.skeleton-text,
+.skeleton-badge,
+.skeleton-actions {
+  background: linear-gradient(
+    90deg,
+    rgba(59, 130, 246, 0.1) 25%,
+    rgba(59, 130, 246, 0.2) 50%,
+    rgba(59, 130, 246, 0.1) 75%
+  ) !important;
+  background-size: 200% 100%;
+}
+
+/* ═══════════════════════════════════════
+   EMPTY STATE ENHANCEMENT - تحسين الحالة الفارغة
+   ═══════════════════════════════════════ */
+.empty-state {
+  background: rgba(30, 41, 59, 0.2);
+  border-radius: 16px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+[data-theme="light"] .empty-state {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.empty-icon {
+  filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.3));
+}

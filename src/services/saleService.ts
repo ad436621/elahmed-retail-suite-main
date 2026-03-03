@@ -8,8 +8,9 @@ import { buildSaleRecord, calcCartTotals } from '@/domain/sale';
 import { validateStock, createStockMovement } from '@/domain/stock';
 import { createAuditEntry, createVoidAudit } from '@/domain/audit';
 import { calculateFIFOSale, bulkCommitFIFOSales, BatchSaleResult } from '@/domain/batchLogic';
+import { STORAGE_KEYS } from '@/config';
 
-const INVOICE_COUNTER_KEY = 'gx_invoice_counter';
+const INVOICE_COUNTER_KEY = STORAGE_KEYS.INVOICE_COUNTER;
 
 function getStoredInvoiceCounter(): number {
   try {

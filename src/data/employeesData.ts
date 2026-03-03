@@ -3,10 +3,11 @@
 // ============================================================
 
 import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
+import { STORAGE_KEYS } from '@/config';
 
-const EMP_KEY = 'gx_employees';
-const SAL_KEY = 'gx_salary_records';
-const ADV_KEY = 'gx_advances';
+const EMP_KEY = STORAGE_KEYS.EMPLOYEES;
+const SAL_KEY = STORAGE_KEYS.SALARY_RECORDS;
+const ADV_KEY = STORAGE_KEYS.ADVANCES;
 
 // ─── Types ──────────────────────────────────────────────────
 

@@ -176,7 +176,7 @@ export default function UsersManagement() {
                         <div className="grid grid-cols-2 gap-3">
                             <div className="col-span-2">
                                 <label className="mb-1 block text-xs font-medium text-muted-foreground">الاسم الكامل *</label>
-                                <input value={form.fullName} onChange={e => setForm(f => ({ ...f, fullName: e.target.value }))} placeholder="مثال: أحمد محمد" className={inputClass} />
+                                <input data-validation="text-only" value={form.fullName} onChange={e => setForm(f => ({ ...f, fullName: e.target.value }))} placeholder="مثال: أحمد محمد" className={inputClass} />
                             </div>
                             <div>
                                 <label className="mb-1 block text-xs font-medium text-muted-foreground">اسم المستخدم *</label>

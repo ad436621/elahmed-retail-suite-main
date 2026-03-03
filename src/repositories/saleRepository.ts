@@ -4,20 +4,17 @@
 // ============================================================
 
 import { Sale } from '@/domain/types';
+import { STORAGE_KEYS } from '@/config';
+import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
 
-const STORAGE_KEY = 'elahmed_sales';
+const STORAGE_KEY = STORAGE_KEYS.SALES_LEGACY;
 
 function loadSales(): Sale[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) : [];
-  } catch {
-    return [];
-  }
+  return getStorageItem<Sale[]>(STORAGE_KEY, []);
 }
 
 function persistSales(sales: Sale[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(sales));
+  setStorageItem(STORAGE_KEY, sales);
 }
 
 export function getAllSales(): Sale[] {

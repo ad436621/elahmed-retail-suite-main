@@ -4,6 +4,9 @@ import { Sale } from '@/domain/types';
 import { getActiveSales } from '@/repositories/saleRepository';
 import { useToast } from '@/hooks/use-toast';
 import { getMobiles, saveMobiles } from '@/data/mobilesData';
+import { getDevices, saveDevices } from '@/data/devicesData';
+import { getComputers, saveComputers } from '@/data/computersData';
+import { getCars, saveCars } from '@/data/carsData';
 import { restoreBatchQty } from '@/data/batchesData';
 import { BatchSaleResult } from '@/domain/types';
 
@@ -88,13 +91,38 @@ export default function ReturnsPage() {
     const totalRefund = itemsToReturn.reduce((s, i) => s + i.returnQty * i.price, 0);
 
     itemsToReturn.forEach(item => {
-      // 1. Restore the item in Mobiles inventory (if it exists)
+      // 1. Restore the item quantity in the correct inventory
       try {
+        // Try mobiles
         const mobiles = getMobiles();
         const mobileIdx = mobiles.findIndex(m => m.id === item.productId);
         if (mobileIdx >= 0) {
           mobiles[mobileIdx] = { ...mobiles[mobileIdx], quantity: mobiles[mobileIdx].quantity + item.returnQty, updatedAt: new Date().toISOString() };
           saveMobiles(mobiles);
+        } else {
+          // Try devices
+          const devices = getDevices();
+          const deviceIdx = devices.findIndex(d => d.id === item.productId);
+          if (deviceIdx >= 0) {
+            devices[deviceIdx] = { ...devices[deviceIdx], quantity: devices[deviceIdx].quantity + item.returnQty, updatedAt: new Date().toISOString() };
+            saveDevices(devices);
+          } else {
+            // Try computers
+            const computers = getComputers();
+            const computerIdx = computers.findIndex(c => c.id === item.productId);
+            if (computerIdx >= 0) {
+              computers[computerIdx] = { ...computers[computerIdx], quantity: computers[computerIdx].quantity + item.returnQty, updatedAt: new Date().toISOString() };
+              saveComputers(computers);
+            } else {
+              // Try cars
+              const cars = getCars();
+              const carIdx = cars.findIndex(c => c.id === item.productId);
+              if (carIdx >= 0) {
+                cars[carIdx] = { ...cars[carIdx], quantity: (cars[carIdx] as any).quantity ? (cars[carIdx] as any).quantity + item.returnQty : item.returnQty, updatedAt: new Date().toISOString() } as any;
+                saveCars(cars);
+              }
+            }
+          }
         }
       } catch { /* ignore */ }
 

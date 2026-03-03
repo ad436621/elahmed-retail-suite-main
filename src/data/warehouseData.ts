@@ -4,8 +4,9 @@
 
 import { WarehouseItem } from '@/domain/types';
 import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
+import { STORAGE_KEYS } from '@/config';
 
-const KEY = 'gx_warehouse';
+const KEY = STORAGE_KEYS.WAREHOUSE;
 
 export function getWarehouseItems(): WarehouseItem[] {
     return getStorageItem<WarehouseItem[]>(KEY, []);

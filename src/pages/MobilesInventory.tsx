@@ -37,6 +37,16 @@ const emptyForm = {
 
 const fmt = (n: number) => n.toLocaleString('ar-EG');
 
+// ─── Predefined Options ──────────────────────────────────────
+const BRAND_OPTIONS = [
+    'Samsung', 'Apple', 'Huawei', 'Xiaomi', 'Oppo', 'Vivo', 'Realme',
+    'OnePlus', 'Nokia', 'Motorola', 'Honor', 'Tecno', 'Infinix', 'Itel',
+    'Google', 'Sony', 'LG', 'Lenovo', 'Nothing',
+];
+const STORAGE_OPTIONS = ['16GB', '32GB', '64GB', '128GB', '256GB', '512GB', '1TB'];
+const RAM_OPTIONS = ['2GB', '3GB', '4GB', '6GB', '8GB', '12GB', '16GB'];
+
+
 // ─── Main Component ──────────────────────────────────────────
 
 export default function MobilesInventory() {
@@ -67,6 +77,9 @@ export default function MobilesInventory() {
     const [editId, setEditId] = useState<string | null>(null);
     const [editType, setEditType] = useState<'device' | 'accessory'>('device');
     const [f, setF] = useState(emptyForm);
+    const [customSupplier, setCustomSupplier] = useState(false);
+    const [customStorage, setCustomStorage] = useState(false);
+    const [customRam, setCustomRam] = useState(false);
 
     const [showCategoryForm, setShowCategoryForm] = useState(false);
     const [newCatName, setNewCatName] = useState('');
@@ -214,7 +227,7 @@ export default function MobilesInventory() {
         refreshData();
     };
 
-    const openAdd = () => { setEditId(null); setF(emptyForm); setShowForm(true); };
+    const openAdd = () => { setEditId(null); setF(emptyForm); setCustomSupplier(false); setCustomStorage(false); setCustomRam(false); setShowForm(true); };
     const openEdit = (item: any) => {
         setEditId(item.id);
         setEditType(item._type);
@@ -226,6 +239,9 @@ export default function MobilesInventory() {
             supplier: item.supplier || '', serialNumber: item.serialNumber || '',
             model: item.model || '', description: item.description || '', image: item.image || '',
         });
+        setCustomSupplier(!!item.supplier && !BRAND_OPTIONS.includes(item.supplier));
+        setCustomStorage(!!item.storage && !STORAGE_OPTIONS.includes(item.storage));
+        setCustomRam(!!item.ram && !RAM_OPTIONS.includes(item.ram));
         setShowForm(true);
     };
     const closeForm = () => setShowForm(false);
@@ -591,24 +607,58 @@ export default function MobilesInventory() {
                             <div className="border-t border-border/50" />
 
                             <div className="grid grid-cols-2 gap-3">
-                                <div><label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase">اسم المنتج *</label><input value={f.name} onChange={e => setF(p => ({ ...p, name: e.target.value }))} className={IC} autoFocus /></div>
+                                <div><label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase">اسم المنتج *</label><input data-validation="text-only" value={f.name} onChange={e => setF(p => ({ ...p, name: e.target.value }))} className={IC} autoFocus /></div>
                                 <div><label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase">الباركود</label><input value={f.barcode} onChange={e => setF(p => ({ ...p, barcode: e.target.value }))} placeholder="تلقائي" className={IC} /></div>
                             </div>
 
                             {activeCategoryType === 'device' ? (
                                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-muted/20 p-3 rounded-xl border border-border/40">
                                     <div className="col-span-full mb-1"><span className="text-xs font-bold text-primary flex items-center gap-1"><Smartphone className="w-3.5 h-3.5" /> مواصفات الجهاز</span></div>
-                                    <div><label className="mb-1 block text-xs text-muted-foreground">التخزين</label><input value={f.storage} onChange={e => setF(p => ({ ...p, storage: e.target.value }))} className={IC} /></div>
-                                    <div><label className="mb-1 block text-xs text-muted-foreground">الرام</label><input value={f.ram} onChange={e => setF(p => ({ ...p, ram: e.target.value }))} className={IC} /></div>
-                                    <div><label className="mb-1 block text-xs text-muted-foreground">اللون</label><input value={f.color} onChange={e => setF(p => ({ ...p, color: e.target.value }))} className={IC} /></div>
-                                    <div><label className="mb-1 block text-xs text-muted-foreground">المورد</label><input value={f.supplier} onChange={e => setF(p => ({ ...p, supplier: e.target.value }))} className={IC} /></div>
+                                    {/* التخزين */}
+                                    <div>
+                                        <label className="mb-1 block text-xs text-muted-foreground">التخزين</label>
+                                        <select value={customStorage ? '__other__' : f.storage} onChange={e => { const v = e.target.value; if (v === '__other__') { setCustomStorage(true); setF(p => ({ ...p, storage: '' })); } else { setCustomStorage(false); setF(p => ({ ...p, storage: v })); } }} className={IC}>
+                                            <option value="">-- اختر --</option>
+                                            {STORAGE_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                                            <option value="__other__">أخرى...</option>
+                                        </select>
+                                        {customStorage && (
+                                            <input value={f.storage} onChange={e => setF(p => ({ ...p, storage: e.target.value }))} placeholder="أدخل الحجم..." className={`${IC} mt-1.5`} autoFocus />
+                                        )}
+                                    </div>
+                                    {/* الرام */}
+                                    <div>
+                                        <label className="mb-1 block text-xs text-muted-foreground">الرام</label>
+                                        <select value={customRam ? '__other__' : f.ram} onChange={e => { const v = e.target.value; if (v === '__other__') { setCustomRam(true); setF(p => ({ ...p, ram: '' })); } else { setCustomRam(false); setF(p => ({ ...p, ram: v })); } }} className={IC}>
+                                            <option value="">-- اختر --</option>
+                                            {RAM_OPTIONS.map(r => <option key={r} value={r}>{r}</option>)}
+                                            <option value="__other__">أخرى...</option>
+                                        </select>
+                                        {customRam && (
+                                            <input value={f.ram} onChange={e => setF(p => ({ ...p, ram: e.target.value }))} placeholder="أدخل الرام..." className={`${IC} mt-1.5`} autoFocus />
+                                        )}
+                                    </div>
+                                    {/* اللون */}
+                                    <div><label className="mb-1 block text-xs text-muted-foreground">اللون</label><input data-validation="text-only" value={f.color} onChange={e => setF(p => ({ ...p, color: e.target.value }))} className={IC} /></div>
+                                    {/* الشركة */}
+                                    <div>
+                                        <label className="mb-1 block text-xs text-muted-foreground">الشركة</label>
+                                        <select value={customSupplier ? '__other__' : f.supplier} onChange={e => { const v = e.target.value; if (v === '__other__') { setCustomSupplier(true); setF(p => ({ ...p, supplier: '' })); } else { setCustomSupplier(false); setF(p => ({ ...p, supplier: v })); } }} className={IC}>
+                                            <option value="">-- اختر --</option>
+                                            {BRAND_OPTIONS.map(b => <option key={b} value={b}>{b}</option>)}
+                                            <option value="__other__">أخرى...</option>
+                                        </select>
+                                        {customSupplier && (
+                                            <input value={f.supplier} onChange={e => setF(p => ({ ...p, supplier: e.target.value }))} placeholder="اسم الشركة..." className={`${IC} mt-1.5`} autoFocus />
+                                        )}
+                                    </div>
                                     <div className="col-span-2"><label className="mb-1 block text-xs text-muted-foreground">السيريال نمبر</label><input value={f.serialNumber} onChange={e => setF(p => ({ ...p, serialNumber: e.target.value }))} className={IC} /></div>
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-2 gap-3 bg-muted/20 p-3 rounded-xl border border-border/40">
                                     <div className="col-span-full mb-1"><span className="text-xs font-bold text-primary flex items-center gap-1"><Tag className="w-3.5 h-3.5" /> بيانات الإكسسوار</span></div>
                                     <div><label className="mb-1 block text-xs text-muted-foreground">الموديل</label><input value={f.model} onChange={e => setF(p => ({ ...p, model: e.target.value }))} className={IC} /></div>
-                                    <div><label className="mb-1 block text-xs text-muted-foreground">اللون</label><input value={f.color} onChange={e => setF(p => ({ ...p, color: e.target.value }))} className={IC} /></div>
+                                    <div><label className="mb-1 block text-xs text-muted-foreground">اللون</label><input data-validation="text-only" value={f.color} onChange={e => setF(p => ({ ...p, color: e.target.value }))} className={IC} /></div>
                                 </div>
                             )}
 

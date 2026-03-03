@@ -9,9 +9,10 @@ import { getDevices, saveDevices } from '@/data/devicesData';
 import { getBatches, saveBatches } from '@/data/batchesData';
 import { getCategoriesBySection, addCategory } from '@/data/categoriesData';
 import { MobileItem, ComputerItem, DeviceItem } from '@/domain/types';
+import { STORAGE_KEYS } from '@/config';
 
 export function migrateUsedMerge() {
-    const MIGRATION_KEY = 'gx_used_merge_migrated_v1';
+    const MIGRATION_KEY = STORAGE_KEYS.MIGRATION_USED_MERGE_DONE;
 
     try {
         const alreadyMigrated = localStorage.getItem(MIGRATION_KEY);
@@ -138,7 +139,7 @@ export function migrateUsedMerge() {
         saveBatches(batches);
 
         // Remove old used devices storage to clean up
-        localStorage.removeItem('gx_used_devices');
+        localStorage.removeItem(STORAGE_KEYS.USED_DEVICES);
         localStorage.setItem(MIGRATION_KEY, 'true');
         console.log('[Used Merge Migration] Successfully merged legacy used devices.');
 

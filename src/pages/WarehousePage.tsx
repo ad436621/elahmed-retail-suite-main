@@ -135,7 +135,7 @@ export default function WarehousePage() {
                         <div className="space-y-3">
                             <div>
                                 <label className="mb-1 block text-xs font-semibold text-muted-foreground">اسم المنتج *</label>
-                                <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="اسم المنتج" className={IC} />
+                                <input data-validation="text-only" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="اسم المنتج" className={IC} />
                             </div>
                             <div>
                                 <label className="mb-1 block text-xs font-semibold text-muted-foreground">التصنيف</label>
@@ -144,7 +144,7 @@ export default function WarehousePage() {
                                         <option value="">اختر تصنيف</option>
                                         {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                                     </select>
-                                    <input value={newCategory} onChange={e => setNewCategory(e.target.value)} onKeyDown={e => e.key === 'Enter' && addNewCategory()} placeholder="تصنيف جديد" className={`${IC} w-32`} />
+                                    <input data-validation="text-only" value={newCategory} onChange={e => setNewCategory(e.target.value)} onKeyDown={e => e.key === 'Enter' && addNewCategory()} placeholder="تصنيف جديد" className={`${IC} w-32`} />
                                 </div>
                             </div>
                             <div className="grid grid-cols-3 gap-3">

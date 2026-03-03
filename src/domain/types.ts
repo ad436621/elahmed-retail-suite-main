@@ -2,12 +2,16 @@
 // نظام إدارة المحل — Domain Types
 // ============================================================
 
-export type UserRole = 'super_admin' | 'admin' | 'employee';
+// Must match usersData.ts UserRole — 'owner' is the super user, 'user' is a staff member
+// Extended with legacy role names used in discount rules and permission checks
+export type UserRole = 'owner' | 'user' | 'super_admin' | 'admin' | 'employee';
 
 export interface User {
   id: string;
   username: string;
+  fullName: string;
   role: UserRole;
+  permissions: string[];
   active: boolean;
 }
 
@@ -375,6 +379,8 @@ export interface InstallmentScheduleItem {
 export interface InstallmentContract {
   id: string;
   contractNumber: string;
+  // Contract type: product sale on installment, transfer, or car
+  contractType?: 'product' | 'transfer' | 'car';
   customerName: string;
   customerIdCard: string;
   guarantorName: string;
@@ -382,6 +388,8 @@ export interface InstallmentContract {
   customerPhone: string;
   customerAddress: string;
   productName: string;
+  // For transfer contracts: the wallet/operator used (e.g. "فودافون كاش")
+  transferType?: string;
   cashPrice: number;
   installmentPrice: number;
   downPayment: number;
@@ -391,6 +399,7 @@ export interface InstallmentContract {
   payments: InstallmentPayment[];
   paidTotal: number;
   remaining: number;
+  notes?: string;
   status: 'active' | 'completed' | 'overdue';
   createdAt: string;
   updatedAt: string;

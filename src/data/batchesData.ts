@@ -4,8 +4,9 @@
 
 import { ProductBatch, BatchInventoryType } from '@/domain/types';
 import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
+import { STORAGE_KEYS } from '@/config';
 
-const BATCHES_KEY = 'gx_product_batches_v1';
+const BATCHES_KEY = STORAGE_KEYS.BATCHES;
 
 export function getBatches(): ProductBatch[] {
     return getStorageItem<ProductBatch[]>(BATCHES_KEY, []);

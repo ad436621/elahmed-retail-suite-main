@@ -3,6 +3,7 @@
 // ============================================================
 
 import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
+import { STORAGE_KEYS } from '@/config';
 
 // ─── Types ──────────────────────────────────────────────────
 
@@ -18,8 +19,8 @@ export interface DynamicCategory {
 
 // ─── Constants ──────────────────────────────────────────────
 
-const DYNAMIC_CATEGORIES_KEY = 'gx_categories_v1';
-const LEGACY_CATEGORIES_KEY = 'elahmed-categories';
+const DYNAMIC_CATEGORIES_KEY = STORAGE_KEYS.CATEGORIES;
+const LEGACY_CATEGORIES_KEY = STORAGE_KEYS.LEGACY_CATEGORIES;
 
 const DEFAULT_DYNAMIC_CATEGORIES: DynamicCategory[] = [
     { id: 'cat-mob-1', section: 'mobile', name: 'موبايلات', type: 'device' },

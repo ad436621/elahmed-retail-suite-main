@@ -17,8 +17,23 @@ function ImageUpload({ value, onChange }: { value?: string; onChange: (v: string
     const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
+        const img = new Image();
         const reader = new FileReader();
-        reader.onload = ev => onChange(ev.target?.result as string);
+        reader.onload = ev => {
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const MAX_DIM = 800;
+                let w = img.width, h = img.height;
+                if (w > MAX_DIM || h > MAX_DIM) {
+                    if (w > h) { h = Math.round(h * MAX_DIM / w); w = MAX_DIM; }
+                    else { w = Math.round(w * MAX_DIM / h); h = MAX_DIM; }
+                }
+                canvas.width = w; canvas.height = h;
+                canvas.getContext('2d')?.drawImage(img, 0, 0, w, h);
+                onChange(canvas.toDataURL('image/jpeg', 0.7));
+            };
+            img.src = ev.target?.result as string;
+        };
         reader.readAsDataURL(file);
     };
     return (
@@ -123,7 +138,7 @@ export default function UsedInventory() {
                             <ImageUpload value={form.image} onChange={v => setForm(f => ({ ...f, image: v }))} />
                             <div className="col-span-2">
                                 <label className="mb-1 block text-xs font-semibold text-muted-foreground">اسم الجهاز *</label>
-                                <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="مثال: iPhone 13" className={IC} />
+                                <input data-validation="text-only" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="مثال: iPhone 13" className={IC} />
                             </div>
                             {/* Device Type */}
                             <div className="col-span-2">
@@ -149,7 +164,7 @@ export default function UsedInventory() {
                             </div>
                             <div><label className="mb-1 block text-xs font-semibold text-muted-foreground">الموديل</label><input value={form.model} onChange={e => setForm(f => ({ ...f, model: e.target.value }))} className={IC} /></div>
                             <div><label className="mb-1 block text-xs font-semibold text-muted-foreground">السيريال</label><input value={form.serialNumber} onChange={e => setForm(f => ({ ...f, serialNumber: e.target.value }))} className={IC} /></div>
-                            <div><label className="mb-1 block text-xs font-semibold text-muted-foreground">اللون</label><input value={form.color} onChange={e => setForm(f => ({ ...f, color: e.target.value }))} className={IC} /></div>
+                            <div><label className="mb-1 block text-xs font-semibold text-muted-foreground">اللون</label><input data-validation="text-only" value={form.color} onChange={e => setForm(f => ({ ...f, color: e.target.value }))} className={IC} /></div>
                             <div><label className="mb-1 block text-xs font-semibold text-muted-foreground">التخزين</label><input value={form.storage} onChange={e => setForm(f => ({ ...f, storage: e.target.value }))} placeholder="128GB" className={IC} /></div>
                             <div><label className="mb-1 block text-xs font-semibold text-muted-foreground">الرام</label><input value={form.ram} onChange={e => setForm(f => ({ ...f, ram: e.target.value }))} placeholder="6GB" className={IC} /></div>
                             <div><label className="mb-1 block text-xs font-semibold text-muted-foreground">س.شراء (ج.م)</label><input type="number" min={0} value={form.purchasePrice} onChange={e => setForm(f => ({ ...f, purchasePrice: +e.target.value }))} className={IC} /></div>

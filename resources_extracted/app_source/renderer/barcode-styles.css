@@ -1,0 +1,565 @@
+/* ═══════════════════════════════════════════════════════════════════════════════ */
+/* 🏷️ ELOS BARCODE STYLES V6.0 - Thermal-Safe Print Styling                       */
+/* ═══════════════════════════════════════════════════════════════════════════════ */
+/*
+ * 📋 PURPOSE:
+ * This CSS provides styling for barcode labels with a focus on reliable thermal printing.
+ *
+ * 🖨️ THERMAL PRINTING REQUIREMENTS (203 DPI):
+ * - NO CSS scaling of SVG barcodes (max-width, transform, etc.)
+ * - NO rounded corners, shadows, or gradients on printed labels
+ * - Pure black (#000000) and white (#ffffff) only
+ * - Exact pixel dimensions - no percentage-based sizing
+ * - Adequate quiet zones preserved (no overflow:hidden clipping)
+ *
+ * ⚠️ CRITICAL RULES:
+ * 1. Never use max-width on barcode SVG containers
+ * 2. Never use transform:scale() on barcodes
+ * 3. Always use overflow:visible on barcode containers
+ * 4. Print media removes all decorative styles
+ */
+
+/* ═══════════════════════════════════════════════════════════════════════════════ */
+/* BASE LABEL STYLES (Screen Preview)                                              */
+/* ═══════════════════════════════════════════════════════════════════════════════ */
+
+.barcode-label {
+  background: #ffffff;
+  border: 2px solid #000000;
+  border-radius: 8px;
+  padding: 10px;
+  font-family: 'Cairo', 'Segoe UI', Arial, sans-serif;
+  direction: rtl;
+  text-align: center;
+  box-sizing: border-box;
+  break-inside: avoid;
+  page-break-inside: avoid;
+  color: #000000;
+}
+
+/* Thermal-safe labels have no decorative styling */
+.barcode-label-thermal-safe {
+  border: 1px solid #cccccc; /* Visible on screen only */
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* Size variants (screen preview only) */
+.barcode-label-small {
+  width: 180px;
+}
+
+.barcode-label-medium {
+  width: 240px;
+}
+
+.barcode-label-large {
+  width: 300px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════ */
+/* LABEL COMPONENTS                                                                 */
+/* ═══════════════════════════════════════════════════════════════════════════════ */
+
+.barcode-label .shop-name {
+  font-weight: bold;
+  color: #000000;
+  border-bottom: 2px solid #000000;
+  padding-bottom: 6px;
+  margin-bottom: 8px;
+}
+
+.barcode-label .product-name {
+  font-weight: bold;
+  color: #000000;
+  margin-bottom: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.barcode-label .product-info {
+  color: #000000;
+  margin-bottom: 4px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════ */
+/* BARCODE CONTAINER - CRITICAL FOR THERMAL PRINTING                               */
+/* ═══════════════════════════════════════════════════════════════════════════════ */
+/*
+ * ⚠️ NEVER ADD:
+ * - max-width (causes scaling)
+ * - overflow: hidden (clips quiet zones)
+ * - transform: scale() (reduces readability)
+ */
+
+.barcode-label .barcode-container {
+  margin: 8px 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  /* CRITICAL: Allow barcode to render at natural size */
+  overflow: visible;
+  background: #ffffff;
+}
+
+/* SVG barcode styling - exact pixel rendering */
+.barcode-label .barcode-container svg {
+  display: block;
+  /* CRITICAL: No max-width - render at exact pixel size */
+  /* CRITICAL: No transform - no scaling allowed */
+  background: #ffffff;
+}
+
+/* Ensure barcode bars are black */
+.barcode-label .barcode-container svg rect {
+  /* Let BarcodeService control fill colors */
+}
+
+/* Barcode number (fallback display) */
+.barcode-label .barcode-number {
+  font-family: 'Courier New', monospace;
+  color: #000000;
+  margin-top: 4px;
+  letter-spacing: 1px;
+  font-weight: bold;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════ */
+/* PRICE TAG                                                                        */
+/* ═══════════════════════════════════════════════════════════════════════════════ */
+
+.barcode-label .price-tag {
+  font-weight: bold;
+  color: #000000;
+  background: #f0f0f0;
+  padding: 6px 12px;
+  border-radius: 4px;
+  margin-top: 6px;
+  border: 1px solid #000000;
+}
+
+/* Battery info styling */
+.barcode-label .battery-info {
+  font-weight: bold;
+  margin-bottom: 4px;
+}
+
+.barcode-label .battery-good {
+  color: #16a34a;
+}
+
+.barcode-label .battery-medium {
+  color: #ca8a04;
+}
+
+.barcode-label .battery-low {
+  color: #dc2626;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════ */
+/* PRINT BUTTON STYLES (Screen Only)                                               */
+/* ═══════════════════════════════════════════════════════════════════════════════ */
+
+.btn-print-barcode {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: 'Cairo', sans-serif;
+}
+
+.btn-print-barcode:hover {
+  background: linear-gradient(135deg, #7c3aed, #6d28d9);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(124, 58, 237, 0.3);
+}
+
+.btn-print-barcode:active {
+  transform: translateY(0);
+}
+
+.btn-print-barcode.btn-small {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.btn-print-barcode.btn-large {
+  padding: 12px 24px;
+  font-size: 15px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════ */
+/* BARCODE MODAL STYLES (Screen Only)                                              */
+/* ═══════════════════════════════════════════════════════════════════════════════ */
+
+#barcodePreviewModal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  backdrop-filter: blur(5px);
+}
+
+#barcodePreviewModal .modal-content {
+  background: #1a1f29;
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  direction: rtl;
+}
+
+#barcodePreviewModal .modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid #2d3748;
+}
+
+#barcodePreviewModal .modal-header h3 {
+  margin: 0;
+  color: #fff;
+  font-size: 18px;
+}
+
+#barcodePreviewModal .close-btn {
+  background: none;
+  border: none;
+  color: #9ca3af;
+  font-size: 24px;
+  cursor: pointer;
+  padding: 0;
+  line-height: 1;
+}
+
+#barcodePreviewModal .close-btn:hover {
+  color: #fff;
+}
+
+#barcodePreviewModal .preview-area {
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+  /* CRITICAL: Allow barcode to display at full size */
+  overflow: visible;
+}
+
+#barcodePreviewModal .size-selector {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 20px;
+  justify-content: center;
+}
+
+#barcodePreviewModal .size-selector label {
+  color: #9ca3af;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+#barcodePreviewModal .size-selector input[type="radio"] {
+  accent-color: #3b82f6;
+}
+
+#barcodePreviewModal .copies-input {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+#barcodePreviewModal .copies-input label {
+  color: #9ca3af;
+  font-size: 14px;
+}
+
+#barcodePreviewModal .copies-input input {
+  width: 70px;
+  padding: 8px;
+  border: 1px solid #3b82f6;
+  border-radius: 6px;
+  background: #0f1319;
+  color: #fff;
+  text-align: center;
+  font-size: 16px;
+}
+
+#barcodePreviewModal .modal-buttons {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+#barcodePreviewModal .btn-print {
+  padding: 12px 30px;
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: 'Cairo', sans-serif;
+  transition: all 0.2s ease;
+}
+
+#barcodePreviewModal .btn-print:hover {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  transform: translateY(-1px);
+}
+
+#barcodePreviewModal .btn-cancel {
+  padding: 12px 30px;
+  background: #374151;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  cursor: pointer;
+  font-family: 'Cairo', sans-serif;
+  transition: all 0.2s ease;
+}
+
+#barcodePreviewModal .btn-cancel:hover {
+  background: #4b5563;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════ */
+/* TABLE ACTION BUTTONS                                                            */
+/* ═══════════════════════════════════════════════════════════════════════════════ */
+
+.action-btn-barcode {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+}
+
+.action-btn-barcode:hover {
+  background: linear-gradient(135deg, #7c3aed, #6d28d9);
+  transform: scale(1.1);
+}
+
+.action-btn-barcode:active {
+  transform: scale(1);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════ */
+/* DEBUG OVERLAY (Screen Only - Never Printed)                                     */
+/* ═══════════════════════════════════════════════════════════════════════════════ */
+
+.barcode-debug-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: rgba(0, 0, 0, 0.85);
+  color: #00ff00;
+  font-family: 'Courier New', monospace;
+  font-size: 9px;
+  padding: 4px;
+  z-index: 100;
+  white-space: pre-wrap;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════ */
+/* BATCH PRINT STYLES                                                              */
+/* ═══════════════════════════════════════════════════════════════════════════════ */
+
+.batch-print-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  padding: 20px;
+}
+
+.batch-print-container .barcode-label {
+  margin: 5px;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════ */
+/* PRINT MEDIA QUERIES - THERMAL PRINTER OPTIMIZATION                              */
+/* ═══════════════════════════════════════════════════════════════════════════════ */
+/*
+ * 🖨️ THERMAL PRINTING RULES:
+ *
+ * These rules ensure barcodes print correctly on XPrinter 233B (203 DPI).
+ *
+ * CRITICAL REQUIREMENTS:
+ * 1. Remove ALL decorative styles (rounded corners, shadows, gradients)
+ * 2. Force black (#000000) and white (#ffffff) only
+ * 3. NO scaling of SVG barcodes
+ * 4. Preserve quiet zones (no clipping)
+ * 5. Exact page size matching label dimensions
+ */
+
+@media print {
+  /* Hide non-printing elements */
+  .btn-print-barcode,
+  .action-btn-barcode,
+  #barcodePreviewModal,
+  .barcode-debug-overlay,
+  .no-print {
+    display: none !important;
+  }
+
+  /* Reset body for thermal printing */
+  body {
+    background: #ffffff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     CRITICAL: ONE .barcode-label = ONE physical printed sticker
+     This is the ONLY element that should trigger page breaks
+     ═══════════════════════════════════════════════════════════════ */
+  .barcode-label {
+    /* Remove all decorative styling */
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+
+    /* CRITICAL: Content MUST stay together - no splitting */
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+
+    /* Each label on its own page */
+    page-break-after: always !important;
+    break-after: page !important;
+
+    /* Reset margins for thermal printer */
+    margin: 0 !important;
+  }
+
+  /* Force all text to black, prevent internal page breaks */
+  .barcode-label * {
+    color: #000000 !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* CRITICAL: Prevent ANY child element from triggering page breaks */
+  .barcode-label div,
+  .barcode-label span,
+  .barcode-label svg,
+  .barcode-label p {
+    page-break-before: avoid !important;
+    page-break-after: avoid !important;
+    break-before: avoid !important;
+    break-after: avoid !important;
+  }
+
+  /* Keep white backgrounds where needed */
+  .barcode-label {
+    background: #ffffff !important;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     SVG BARCODE - CRITICAL THERMAL RULES
+     ═══════════════════════════════════════════════════════════════ */
+  .barcode-label svg {
+    display: block !important;
+    visibility: visible !important;
+    /* Allow barcode to use full width - don't clip */
+    max-width: 100% !important;
+    height: auto !important;
+    /* White background for thermal paper */
+    background: #ffffff !important;
+  }
+
+  /* Ensure barcode bars print black */
+  .barcode-label svg rect {
+    fill-opacity: 1 !important;
+    stroke-opacity: 1 !important;
+  }
+
+  /* Ensure barcode text prints black and is not clipped */
+  .barcode-label svg text {
+    fill: #000000 !important;
+    stroke: none !important;
+    overflow: visible !important;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     PAGE SIZE - XPrinter 233B Label Dimensions
+     ═══════════════════════════════════════════════════════════════ */
+  @page {
+    /* Default: Full label 38×25mm */
+    size: 38mm 25mm;
+    margin: 0;
+  }
+
+  /* Split label page size */
+  .barcode-label-split {
+    /* Split labels use the same physical paper */
+  }
+
+  /* ═══════════════════════════════════════════════════════════════
+     CONTAINER RULES - PREVENT QUIET ZONE CLIPPING
+     ═══════════════════════════════════════════════════════════════ */
+  .barcode-container,
+  .barcode-label .barcode-container,
+  .barcode-label > div {
+    overflow: visible !important;
+  }
+
+  /* Price tag for thermal printing */
+  .barcode-label .price-tag {
+    background: transparent !important;
+    border: 1px solid #000000 !important;
+    border-radius: 0 !important;
+  }
+
+  /* Remove battery color coding in print */
+  .barcode-label .battery-good,
+  .barcode-label .battery-medium,
+  .barcode-label .battery-low {
+    color: #000000 !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════ */
+/* END OF THERMAL-SAFE BARCODE STYLES                                              */
+/* ═══════════════════════════════════════════════════════════════════════════════ */

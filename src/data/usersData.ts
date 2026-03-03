@@ -4,9 +4,10 @@
 // ============================================================
 
 import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
+import { STORAGE_KEYS } from '@/config';
 
-const STORAGE_KEY = 'gx_users';
-const RECOVERY_CODE_KEY = 'gx_recovery_code';
+const STORAGE_KEY = STORAGE_KEYS.USERS;
+const RECOVERY_CODE_KEY = STORAGE_KEYS.RECOVERY_CODE;
 
 // Generate a secure recovery code and store in localStorage if not exists
 function getOrCreateRecoveryCode(): string {
@@ -50,6 +51,13 @@ export const ALL_PERMISSIONS = [
     'customers',
     'wallets',
     'employees',
+    'suppliers',
+    'partners',
+    'blacklist',
+    'reminders',
+    'shiftClosing',
+    'purchaseInvoices',
+    'stocktake',
 ] as const;
 
 export type Permission = (typeof ALL_PERMISSIONS)[number];
@@ -76,6 +84,13 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
     customers: 'إدارة العملاء',
     wallets: 'المحافظ والخزنة',
     employees: 'الموظفين والرواتب',
+    suppliers: 'الموردون',
+    partners: 'الشركاء',
+    blacklist: 'القائمة السوداء',
+    reminders: 'التذكيرات',
+    shiftClosing: 'إقفال الوردية',
+    purchaseInvoices: 'فواتير الشراء',
+    stocktake: 'جرد المخزون',
 };
 
 export interface AppUser {

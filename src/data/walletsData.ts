@@ -3,9 +3,10 @@
 // ============================================================
 
 import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
+import { STORAGE_KEYS } from '@/config';
 
-const WALLETS_KEY = 'gx_wallets';
-const TXN_KEY = 'gx_wallet_transactions';
+const WALLETS_KEY = STORAGE_KEYS.WALLETS;
+const TXN_KEY = STORAGE_KEYS.WALLET_TRANSACTIONS;
 
 // ─── Types ──────────────────────────────────────────────────
 
@@ -120,6 +121,9 @@ export function withdraw(walletId: string, amount: number, reason: string, refer
     const wallets = getWallets();
     const w = wallets.find(w => w.id === walletId);
     if (!w) return;
+    if (amount > w.balance) {
+        throw new Error(`رصيد المحفظة غير كافٍ. الرصيد: ${w.balance}، المطلوب: ${amount}`);
+    }
     w.balance -= amount;
     saveWallets(wallets);
     addTransaction({ walletId, type: 'withdrawal', amount, reason, date: new Date().toISOString(), reference });

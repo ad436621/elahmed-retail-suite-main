@@ -1,0 +1,89 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   ELOS Accounting System - Design Variables
+   Version: 2.0
+   Description: CSS Custom Properties for consistent design system
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* ═══════════════════════════════════════
+     SIZING SYSTEM - Larger sizes for readability
+     ═══════════════════════════════════════ */
+
+  /* Font Sizes - Minimum sizes enforced (accessibility: base >=16px, small >=14px) */
+  --text-xs: 14px;      /* Minimum readable: labels, captions (was 13px) */
+  --text-sm: 14px;      /* Minimum readable: small body text (was 15px, but ensuring 14px minimum) */
+  --text-base: 16px;    /* Base body text (accessibility minimum, was 17px but ensuring 16px minimum) */
+  --text-lg: 20px;      /* was 15-16px - Subheadings */
+  --text-xl: 26px;      /* was 18-22px - Headings */
+  --text-2xl: 34px;     /* was 26px    - Large numbers */
+  --text-3xl: 48px;     /* was 36px    - KPI main numbers */
+
+  /* Font Weights */
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+  --font-black: 900;
+
+  /* Spacing */
+  --space-xs: 6px;
+  --space-sm: 10px;
+  --space-md: 16px;
+  --space-lg: 24px;
+  --space-xl: 32px;
+  --space-2xl: 48px;
+
+  /* Border Radius */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-full: 9999px;
+
+  /* Shadows - Default (overridden by themes) */
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.2);
+  --shadow-xl: 0 12px 32px rgba(0, 0, 0, 0.25);
+
+  /* Transitions */
+  --transition-fast: 150ms ease;
+  --transition-normal: 250ms ease;
+  --transition-slow: 400ms ease;
+
+  /* Component Heights */
+  --input-height: 52px;     /* was ~40px */
+  --button-height: 48px;    /* was ~36px */
+  --button-height-sm: 40px;
+  --button-height-lg: 56px;
+  --header-height: 72px;    /* was 65-68px */
+
+  /* Z-Index Scale */
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-fixed: 300;
+  --z-modal-backdrop: 400;
+  --z-modal: 500;
+  --z-popover: 600;
+  --z-tooltip: 700;
+  --z-toast: 800;
+
+  /* Icon Sizes */
+  --icon-xs: 14px;
+  --icon-sm: 18px;
+  --icon-md: 24px;
+  --icon-lg: 32px;
+  --icon-xl: 48px;
+
+  /* Line Heights */
+  --leading-none: 1;
+  --leading-tight: 1.25;
+  --leading-snug: 1.375;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.625;
+
+  /* Letter Spacing */
+  --tracking-tight: -0.025em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.025em;
+}

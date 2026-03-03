@@ -1,0 +1,2848 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>التقارير والتحليلات • ELOS ERP System</title>
+  <script>
+    // ⚡ تطبيق فوري للثيم - يمنع الوميض
+    (function(){var p=new URLSearchParams(location.search),t=p.get('theme')||localStorage.getItem('elos_theme')||localStorage.getItem('elos-theme')||'dark',h=document.documentElement;h.setAttribute('data-theme',t==='light'?'light':'dark');})();
+  </script>
+  <script src="session-inject.js"></script>
+  <!-- 📱 SPA Mode Detection -->
+  <script src="spa-mode.js"></script>
+  <!-- 🌙 Theme Sync -->
+  <script src="theme-sync.js"></script>
+  <!-- 🔤 Font Scale Manager -->
+  <script src="js/font-scale-manager.js"></script>
+  <!-- 🔊 Shared Sound & Toast System -->
+  <script src="shared.js"></script>
+  <!-- 🎨 Design System Tokens (theme colors - MUST BE FIRST) -->
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/tokens-alias.css">
+  <!-- 🎨 Design System (component styles) -->
+  <link rel="stylesheet" href="styles/design-system.css">
+  <!-- 🎨 Theme Governance Layer (load LAST to override legacy styles) -->
+  <link rel="stylesheet" href="styles/theme-fixes.css">
+  <!-- 📏 Font Sizes - تحسين أحجام الخطوط -->
+  <link rel="stylesheet" href="styles/font-sizes.css">
+  <script src="libs/chart.min.js"></script>
+
+  <style>
+    /* ═══════════════════════════════════════
+       Color variables are now in tokens.css and tokens-alias.css
+       Only layout-specific styles here
+       ═══════════════════════════════════════ */
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--ds-bg); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb { background: var(--ds-brand); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--ds-brand-hover); }
+    * { scrollbar-width: thin; scrollbar-color: var(--ds-brand) var(--ds-bg); }
+
+    body { 
+      margin: 0; 
+      background: var(--bg-primary); 
+      color: var(--text-primary); 
+      font-family: system-ui, "Cairo", sans-serif;
+      min-height: 100vh;
+      padding-bottom: 50px;
+    }
+
+    /* ═══════════════════════════════════════
+       📱 HEADER
+       ═══════════════════════════════════════ */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 10px 24px;
+      background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+      border-bottom: 1px solid var(--border);
+      box-shadow: var(--ds-shadow-sm);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      flex-wrap: wrap;
+    }
+
+    .logo { width: 36px; height: 36px; color: var(--ds-text); }
+    .brand-container { display: flex; flex-direction: column; gap: 2px; }
+    .brand { font-weight: 900; font-size: 24px; color: var(--ds-text); letter-spacing: 3px; }
+    .page-subtitle { font-size: 11px; color: var(--text-secondary); }
+
+    .btn-back {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text-primary);
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+    }
+    .btn-back:hover { background: var(--accent); border-color: var(--accent); transform: translateY(-2px); }
+
+    .spacer { flex: 1; }
+
+    /* Date Filter */
+    .date-filters { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .date-group { display: flex; align-items: center; gap: 6px; }
+    .date-label { font-size: 11px; color: var(--text-secondary); }
+    .date-input {
+      padding: 8px 12px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 13px;
+    }
+    .date-input:focus { outline: none; border-color: var(--accent); }
+
+    .btn-filter {
+      padding: 8px 16px;
+      background: linear-gradient(135deg, var(--accent) 0%, #2563eb 100%);
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-filter:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(59,130,246,0.4); }
+
+    /* Clock */
+    .header-clock {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 16px;
+      background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+    .clock-time { font-size: 16px; font-weight: 900; color: var(--accent); font-family: 'Courier New', monospace; direction: ltr; }
+    .clock-date { font-size: 9px; color: var(--text-secondary); }
+
+    /* ═══════════════════════════════════════
+       📊 CONTAINER
+       ═══════════════════════════════════════ */
+    .container { max-width: 1800px; margin: 0 auto; padding: 20px 24px; }
+
+    /* ═══════════════════════════════════════
+       📑 TABS - Scrollable
+       ═══════════════════════════════════════ */
+    .tabs-wrapper {
+      position: relative;
+      margin-bottom: 20px;
+    }
+    .tabs {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 10px;
+      border-bottom: 2px solid var(--border);
+    }
+    .tab {
+      padding: 10px 16px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 10px 10px 0 0;
+      color: var(--text-secondary);
+      font-weight: 600;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .tab:hover { border-color: rgba(59,130,246,0.4); color: var(--accent); }
+    .tab.active {
+      background: linear-gradient(135deg, var(--accent) 0%, #2563eb 100%);
+      color: white;
+      border-color: var(--accent);
+    }
+    .tab .badge { background: rgba(255,255,255,0.2); padding: 2px 8px; border-radius: 10px; font-size: 10px; }
+
+    /* ═══════════════════════════════════════
+       📦 PANELS
+       ═══════════════════════════════════════ */
+    .panel { display: none; animation: fadeIn 0.3s ease; }
+    .panel.active { display: block; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ═══════════════════════════════════════
+       📊 STATS GRID
+       ═══════════════════════════════════════ */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+
+    .stat-card {
+      background: var(--ds-bg-card);
+      border: 1px solid var(--ds-border);
+      border-radius: var(--ds-radius-md);
+      padding: 16px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+      box-shadow: var(--ds-shadow-sm);
+    }
+    .stat-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: var(--accent);
+    }
+    .stat-card.green::before { background: var(--success); }
+    .stat-card.red::before { background: var(--danger); }
+    .stat-card.purple::before { background: var(--purple); }
+    .stat-card.orange::before { background: var(--orange); }
+    .stat-card.cyan::before { background: var(--cyan); }
+    .stat-card.pink::before { background: var(--pink); }
+
+    .stat-card:hover { transform: translateY(-4px); box-shadow: var(--ds-shadow-md); border-color: var(--ds-border-focus); }
+
+    .stat-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+    .stat-icon { font-size: 24px; }
+    .stat-trend { display: flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700; padding: 3px 6px; border-radius: 6px; }
+    .stat-trend.up { background: rgba(16,185,129,0.15); color: var(--success); }
+    .stat-trend.down { background: rgba(239,68,68,0.15); color: var(--danger); }
+
+    .stat-label { font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; }
+    .stat-value { font-size: 20px; font-weight: 900; margin-bottom: 4px; }
+    .stat-desc { font-size: 10px; color: var(--muted); }
+
+    /* ═══════════════════════════════════════
+       📈 CHARTS
+       ═══════════════════════════════════════ */
+    .charts-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 20px; margin-bottom: 24px; }
+
+    .chart-card {
+      background: var(--ds-bg-card);
+      border: 1px solid var(--ds-border);
+      border-radius: var(--ds-radius-md);
+      padding: 20px;
+      box-shadow: var(--ds-shadow-sm);
+    }
+    .chart-title { font-size: 14px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+    .chart-container { height: 280px; position: relative; }
+
+    /* ═══════════════════════════════════════
+       📋 TABLES
+       ═══════════════════════════════════════ */
+    .table-card {
+      background: var(--ds-bg-card);
+      border: 1px solid var(--ds-border);
+      border-radius: var(--ds-radius-md);
+      overflow: hidden;
+      margin-bottom: 24px;
+      box-shadow: var(--ds-shadow-sm);
+    }
+    .table-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-tertiary);
+    }
+    .table-title { font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .table-actions { display: flex; gap: 8px; }
+
+    .table-container { max-height: 400px; overflow-y: auto; }
+
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 12px 16px; text-align: right; border-bottom: 1px solid var(--border); font-size: 13px; }
+    th { background: var(--bg-tertiary); font-weight: 700; color: var(--text-secondary); position: sticky; top: 0; z-index: 1; }
+    tr:hover { background: rgba(59,130,246,0.05); }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .badge-success { background: rgba(16,185,129,0.15); color: var(--success); }
+    .badge-warning { background: rgba(245,158,11,0.15); color: var(--warning); }
+    .badge-danger { background: rgba(239,68,68,0.15); color: var(--danger); }
+    .badge-info { background: rgba(59,130,246,0.15); color: var(--accent); }
+    .badge-purple { background: rgba(168,85,247,0.15); color: var(--purple); }
+
+    .empty-state { text-align: center; padding: 40px; color: var(--text-secondary); }
+    .empty-state-icon { font-size: 48px; margin-bottom: 12px; opacity: 0.5; }
+
+    /* ═══════════════════════════════════════
+       🔘 BUTTONS
+       ═══════════════════════════════════════ */
+    .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: inherit;
+    }
+    .btn-primary { background: linear-gradient(135deg, var(--accent) 0%, #2563eb 100%); color: white; }
+    .btn-success { background: linear-gradient(135deg, var(--success) 0%, #059669 100%); color: white; }
+    .btn-warning { background: linear-gradient(135deg, var(--warning) 0%, #d97706 100%); color: white; }
+    .btn-purple { background: linear-gradient(135deg, var(--purple) 0%, #9333ea 100%); color: white; }
+    .btn-secondary { background: var(--bg-tertiary); color: var(--text-primary); border: 1px solid var(--border); }
+    .btn:hover { transform: translateY(-2px); }
+    .btn-sm { padding: 6px 12px; font-size: 11px; }
+
+    /* ═══════════════════════════════════════
+       📊 SUMMARY BOX
+       ═══════════════════════════════════════ */
+    .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; margin-bottom: 24px; }
+
+    .summary-box {
+      background: var(--ds-bg-card);
+      border: 1px solid var(--ds-border);
+      border-radius: var(--ds-radius-md);
+      padding: 20px;
+      box-shadow: var(--ds-shadow-sm);
+    }
+    .summary-title { font-size: 14px; font-weight: 700; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+    .summary-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid var(--border); }
+    .summary-row:last-child { border-bottom: none; font-weight: 700; font-size: 15px; }
+    .summary-label { color: var(--text-secondary); font-size: 13px; }
+    .summary-value { font-weight: 600; font-size: 14px; }
+    .summary-value.positive { color: var(--success); }
+    .summary-value.negative { color: var(--danger); }
+
+    /* ═══════════════════════════════════════
+       🔍 FILTERS
+       ═══════════════════════════════════════ */
+    .filters-bar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      align-items: center;
+      padding: 16px;
+      background: var(--ds-bg-card);
+      border: 1px solid var(--ds-border);
+      border-radius: var(--ds-radius-md);
+      box-shadow: var(--ds-shadow-sm);
+    }
+    .filter-group { display: flex; align-items: center; gap: 8px; }
+    .filter-group label { font-size: 12px; color: var(--text-secondary); }
+    .filter-group select, .filter-group input {
+      padding: 8px 12px;
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-primary);
+      font-size: 12px;
+    }
+
+    /* ═══════════════════════════════════════
+       🏷️ SECTION TITLE
+       ═══════════════════════════════════════ */
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .section-title { font-size: 18px; font-weight: 700; display: flex; align-items: center; gap: 10px; }
+
+    /* ═══════════════════════════════════════
+       🦶 FOOTER
+       ═══════════════════════════════════════ */
+    footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 24px;
+      background: var(--card);
+      border-top: 1px solid var(--line);
+      font-size: 10px;
+      color: var(--muted);
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 50;
+    }
+
+    /* ═══════════════════════════════════════
+       📱 RESPONSIVE
+       ═══════════════════════════════════════ */
+    @media (max-width: 768px) {
+      .header { padding: 10px 16px; }
+      .container { padding: 16px; }
+      .date-filters { display: none; }
+      .charts-grid { grid-template-columns: 1fr; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    /* Print Styles */
+    @media print {
+      .header, footer, .tabs-wrapper, .btn { display: none !important; }
+      .panel { display: block !important; }
+      body { background: white; color: black; }
+      .card, .stat-card, .chart-card, .table-card { border: 1px solid #ddd; box-shadow: none; }
+    }
+  </style>
+  <link rel="stylesheet" href="responsive.css">
+</head>
+<body>
+  <!-- ═══════════════════════════════════════
+       📱 HEADER
+       ═══════════════════════════════════════ -->
+  <header class="header">
+    <svg class="logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+      <path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>
+    </svg>
+
+    <div class="brand-container">
+      <span class="brand">ELOS SYSTEM</span>
+      <span class="page-subtitle">📊 التقارير والتحليلات • ERP</span>
+    </div>
+
+    <a href="index.html" class="btn-back">← الرئيسية</a>
+
+    <div class="spacer"></div>
+
+    <div class="date-filters">
+      <div class="date-group">
+        <span class="date-label">من:</span>
+        <input type="date" id="dateFrom" class="date-input">
+      </div>
+      <div class="date-group">
+        <span class="date-label">إلى:</span>
+        <input type="date" id="dateTo" class="date-input">
+      </div>
+      <button class="btn-filter" onclick="loadAllReports()">🔄 تحديث</button>
+    </div>
+
+    <div class="header-clock">
+      <span class="clock-time" id="headerTime">00:00:00</span>
+      <span class="clock-date" id="headerDate">--</span>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════════════════════
+       📊 MAIN CONTENT
+       ═══════════════════════════════════════ -->
+  <div class="container">
+    <!-- Tabs -->
+    <div class="tabs-wrapper">
+      <div class="tabs">
+        <div class="tab active" data-tab="dashboard" onclick="switchTab('dashboard')">📊 لوحة التحكم</div>
+        <div class="tab" data-tab="devices" onclick="switchTab('devices')">📱 الأجهزة</div>
+        <div class="tab" data-tab="accessories" onclick="switchTab('accessories')">🎧 الإكسسوارات</div>
+        <div class="tab" data-tab="repairParts" onclick="switchTab('repairParts')">🔩 قطع الغيار</div>
+        <div class="tab" data-tab="repairs" onclick="switchTab('repairs')">🔧 الصيانة</div>
+        <div class="tab" data-tab="sales" onclick="switchTab('sales')">💰 المبيعات</div>
+        <div class="tab" data-tab="salesReturns" onclick="switchTab('salesReturns')">↩️ مرتجعات المبيعات</div>
+        <div class="tab" data-tab="purchases" onclick="switchTab('purchases')">🛒 المشتريات</div>
+        <div class="tab" data-tab="purchaseReturns" onclick="switchTab('purchaseReturns')">↩️ مرتجعات المشتريات</div>
+        <div class="tab" data-tab="invoices" onclick="switchTab('invoices')">🧾 الفواتير</div>
+        <div class="tab" data-tab="moneyTransfers" onclick="switchTab('moneyTransfers')">💱 التحويلات</div>
+        <div class="tab" data-tab="partners" onclick="switchTab('partners')">🤝 الشركاء</div>
+        <div class="tab" data-tab="cashflow" onclick="switchTab('cashflow')">💵 التدفق النقدي</div>
+        <div class="tab" data-tab="clients" onclick="switchTab('clients')">👥 العملاء</div>
+        <div class="tab" data-tab="capital" onclick="switchTab('capital')">💎 رأس المال</div>
+        <div class="tab" data-tab="profits" onclick="switchTab('profits')">📊 الأرباح والخسائر</div>
+        <div class="tab" data-tab="expenses" onclick="switchTab('expenses')">🧾 المصروفات</div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         📊 DASHBOARD PANEL
+         ═══════════════════════════════════════ -->
+    <div id="dashboardPanel" class="panel active">
+      <!-- Main Stats -->
+      <div class="stats-grid" id="mainStats">
+        <!-- Will be populated by JS -->
+      </div>
+
+      <!-- Charts -->
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h3 class="chart-title">📈 اتجاه المبيعات والأرباح</h3>
+          <div class="chart-container"><canvas id="salesTrendChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">📊 توزيع الإيرادات</h3>
+          <div class="chart-container"><canvas id="revenueDistChart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Summary Boxes -->
+      <div class="summary-grid">
+        <div class="summary-box">
+          <h4 class="summary-title">💰 ملخص المبيعات</h4>
+          <div class="summary-row"><span class="summary-label">إجمالي المبيعات</span><span class="summary-value" id="dashTotalSales">0</span></div>
+          <div class="summary-row"><span class="summary-label">مبيعات الأجهزة</span><span class="summary-value" id="dashDeviceSales">0</span></div>
+          <div class="summary-row"><span class="summary-label">مبيعات الإكسسوارات</span><span class="summary-value" id="dashAccessorySales">0</span></div>
+          <div class="summary-row"><span class="summary-label">صافي الربح</span><span class="summary-value positive" id="dashNetProfit">0</span></div>
+        </div>
+        <div class="summary-box">
+          <h4 class="summary-title">📦 ملخص المخزون</h4>
+          <div class="summary-row"><span class="summary-label">أجهزة متاحة</span><span class="summary-value" id="dashDevicesStock">0</span></div>
+          <div class="summary-row"><span class="summary-label">إكسسوارات متاحة</span><span class="summary-value" id="dashAccessoriesStock">0</span></div>
+          <div class="summary-row"><span class="summary-label">قيمة المخزون</span><span class="summary-value" id="dashStockValue">0</span></div>
+          <div class="summary-row"><span class="summary-label">منتجات منخفضة</span><span class="summary-value negative" id="dashLowStock">0</span></div>
+        </div>
+        <div class="summary-box">
+          <h4 class="summary-title">🤝 ملخص الشركاء</h4>
+          <div class="summary-row"><span class="summary-label">عدد الشركاء</span><span class="summary-value" id="dashPartnersCount">0</span></div>
+          <div class="summary-row"><span class="summary-label">إجمالي رأس المال</span><span class="summary-value" id="dashPartnersCapital">0</span></div>
+          <div class="summary-row"><span class="summary-label">أرباح الشهر</span><span class="summary-value" id="dashPartnersProfit">0</span></div>
+          <div class="summary-row"><span class="summary-label">توزيعات معلقة</span><span class="summary-value" id="dashPendingDist">0</span></div>
+        </div>
+      </div>
+
+      <!-- Top Items Tables -->
+      <div class="charts-grid">
+        <div class="table-card">
+          <div class="table-header">
+            <h3 class="table-title">🏆 أفضل المنتجات مبيعاً</h3>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead><tr><th>#</th><th>المنتج</th><th>النوع</th><th>الكمية</th><th>الإيرادات</th></tr></thead>
+              <tbody id="topProductsBody"><tr><td colspan="5" class="empty-state">جاري التحميل...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="table-card">
+          <div class="table-header">
+            <h3 class="table-title">⭐ أفضل العملاء</h3>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead><tr><th>#</th><th>العميل</th><th>المعاملات</th><th>الإجمالي</th></tr></thead>
+              <tbody id="topClientsBody"><tr><td colspan="4" class="empty-state">جاري التحميل...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         📱 DEVICES PANEL
+         ═══════════════════════════════════════ -->
+    <div id="devicesPanel" class="panel">
+      <div class="section-header">
+        <h2 class="section-title">📱 تقارير الأجهزة</h2>
+      </div>
+
+      <div class="stats-grid" id="devicesStats"></div>
+
+      <div class="filters-bar">
+        <div class="filter-group">
+          <label>الحالة:</label>
+          <select id="deviceStatusFilter" onchange="filterDevicesReport()">
+            <option value="">الكل</option>
+            <option value="in_stock">متاح</option>
+            <option value="sold">مباع</option>
+            <option value="maintenance">صيانة</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>الماركة:</label>
+          <select id="deviceBrandFilter" onchange="filterDevicesReport()">
+            <option value="">الكل</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>البحث:</label>
+          <input type="text" id="deviceSearch" placeholder="IMEI أو الموديل..." oninput="filterDevicesReport()">
+        </div>
+      </div>
+
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h3 class="chart-title">📊 توزيع الأجهزة حسب الحالة</h3>
+          <div class="chart-container"><canvas id="devicesStatusChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">📱 توزيع الأجهزة حسب الماركة</h3>
+          <div class="chart-container"><canvas id="devicesBrandChart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">
+          <h3 class="table-title">📋 تفاصيل الأجهزة</h3>
+          <span id="devicesCount" class="badge badge-info">0 جهاز</span>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>الجهاز</th>
+                <th>IMEI</th>
+                <th>المخزن</th>
+                <th>الحالة</th>
+                <th>سعر الشراء</th>
+                <th>سعر البيع</th>
+                <th>الربح</th>
+                <th>التاريخ</th>
+              </tr>
+            </thead>
+            <tbody id="devicesTableBody"><tr><td colspan="9" class="empty-state">جاري التحميل...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         🎧 ACCESSORIES PANEL
+         ═══════════════════════════════════════ -->
+    <div id="accessoriesPanel" class="panel">
+      <div class="section-header">
+        <h2 class="section-title">🎧 تقارير الإكسسوارات</h2>
+        <div class="table-actions">
+          <button class="btn btn-success btn-sm" onclick="exportAccessoriesReport()">📥 تصدير Excel</button>
+          <button class="btn btn-secondary btn-sm" onclick="printReport('accessories')">🖨️ طباعة</button>
+        </div>
+      </div>
+
+      <div class="stats-grid" id="accessoriesStats"></div>
+
+      <div class="filters-bar">
+        <div class="filter-group">
+          <label>التصنيف:</label>
+          <select id="accessoryCategoryFilter" onchange="filterAccessoriesReport()">
+            <option value="">الكل</option>
+            <option value="case">جرابات</option>
+            <option value="charger">شواحن</option>
+            <option value="headphone">سماعات</option>
+            <option value="cable">كابلات</option>
+            <option value="screen">واقي شاشة</option>
+            <option value="other">أخرى</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>المخزون:</label>
+          <select id="accessoryStockFilter" onchange="filterAccessoriesReport()">
+            <option value="">الكل</option>
+            <option value="low">منخفض</option>
+            <option value="out">نفذ</option>
+            <option value="available">متوفر</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>البحث:</label>
+          <input type="text" id="accessorySearch" placeholder="اسم المنتج..." oninput="filterAccessoriesReport()">
+        </div>
+      </div>
+
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h3 class="chart-title">📊 توزيع الإكسسوارات حسب التصنيف</h3>
+          <div class="chart-container"><canvas id="accessoriesCategoryChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">💰 مبيعات الإكسسوارات</h3>
+          <div class="chart-container"><canvas id="accessoriesSalesChart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">
+          <h3 class="table-title">📋 تفاصيل الإكسسوارات</h3>
+          <span id="accessoriesCount" class="badge badge-info">0 منتج</span>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>المنتج</th>
+                <th>التصنيف</th>
+                <th>المخزن</th>
+                <th>الكمية</th>
+                <th>سعر الشراء</th>
+                <th>سعر البيع</th>
+                <th>المبيعات</th>
+                <th>الربح</th>
+              </tr>
+            </thead>
+            <tbody id="accessoriesTableBody"><tr><td colspan="9" class="empty-state">جاري التحميل...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         🔩 REPAIR PARTS PANEL
+         ═══════════════════════════════════════ -->
+    <div id="repairPartsPanel" class="panel">
+      <div class="section-header">
+        <h2 class="section-title">🔩 تقارير قطع الغيار</h2>
+        <div class="table-actions">
+          <button class="btn btn-success btn-sm" onclick="exportRepairPartsReport()">📥 تصدير Excel</button>
+          <button class="btn btn-secondary btn-sm" onclick="printReport('repairParts')">🖨️ طباعة</button>
+        </div>
+      </div>
+
+      <div class="stats-grid" id="repairPartsStats"></div>
+
+      <div class="filters-bar">
+        <div class="filter-group">
+          <label>التصنيف:</label>
+          <select id="repairPartCategoryFilter" onchange="filterRepairPartsReport()">
+            <option value="">الكل</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>المخزون:</label>
+          <select id="repairPartStockFilter" onchange="filterRepairPartsReport()">
+            <option value="">الكل</option>
+            <option value="low">منخفض</option>
+            <option value="out">نفذ</option>
+            <option value="available">متوفر</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>البحث:</label>
+          <input type="text" id="repairPartSearch" placeholder="اسم القطعة..." oninput="filterRepairPartsReport()">
+        </div>
+      </div>
+
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h3 class="chart-title">📊 توزيع قطع الغيار حسب التصنيف</h3>
+          <div class="chart-container"><canvas id="repairPartsCategoryChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">💰 مبيعات قطع الغيار</h3>
+          <div class="chart-container"><canvas id="repairPartsSalesChart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">
+          <h3 class="table-title">📋 تفاصيل قطع الغيار</h3>
+          <span id="repairPartsCount" class="badge badge-info">0 قطعة</span>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>القطعة</th>
+                <th>التصنيف</th>
+                <th>المخزن</th>
+                <th>الكمية</th>
+                <th>سعر التكلفة</th>
+                <th>سعر البيع</th>
+                <th>المبيعات</th>
+                <th>الربح</th>
+              </tr>
+            </thead>
+            <tbody id="repairPartsTableBody"><tr><td colspan="9" class="empty-state">جاري التحميل...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         💰 SALES PANEL
+         ═══════════════════════════════════════ -->
+    <div id="salesPanel" class="panel">
+      <div class="section-header">
+        <h2 class="section-title">💰 تقارير المبيعات</h2>
+        <div class="table-actions">
+          <button class="btn btn-success btn-sm" onclick="exportSalesReport()">📥 تصدير Excel</button>
+          <button class="btn btn-secondary btn-sm" onclick="printReport('sales')">🖨️ طباعة</button>
+        </div>
+      </div>
+
+      <!-- فلتر الفترة: يتحكم في الفترة المعروضة (افتراضي: آخر شهر) -->
+      <div class="filter-bar sales-filter-bar" style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-bottom:20px; padding:14px 16px; background:var(--ds-bg-card, var(--bg-tertiary)); border:1px solid var(--ds-border, var(--border)); border-radius:var(--ds-radius-md, 12px);">
+        <div class="filter-group">
+          <label style="font-size:13px; color:var(--text-secondary); font-weight:600;">الفترة</label>
+          <select id="salesPeriodFilter" class="filter-input" style="min-width:140px;" onchange="applySalesPeriodFilter(); loadSalesReport();">
+            <option value="last_day">آخر يوم</option>
+            <option value="last_7">آخر 7 أيام</option>
+            <option value="last_month" selected>آخر شهر</option>
+            <option value="last_3_months">آخر 3 أشهر</option>
+            <option value="last_year">آخر سنة</option>
+            <option value="custom">مخصص (من - إلى)</option>
+          </select>
+        </div>
+        <div class="filter-group sales-custom-dates" id="salesCustomDatesGroup" style="display:none;">
+          <label style="font-size:12px; color:var(--text-secondary);">من</label>
+          <input type="date" id="salesDateFrom" class="filter-input" style="padding:8px 12px; border-radius:8px;" onchange="loadSalesReport()">
+          <label style="font-size:12px; color:var(--text-secondary);">إلى</label>
+          <input type="date" id="salesDateTo" class="filter-input" style="padding:8px 12px; border-radius:8px;" onchange="loadSalesReport()">
+        </div>
+        <button type="button" class="btn btn-primary btn-sm" onclick="loadSalesReport()" style="padding:8px 16px;">تطبيق</button>
+      </div>
+
+      <div class="stats-grid" id="salesStats"></div>
+
+      <div class="summary-grid">
+        <div class="summary-box">
+          <h4 class="summary-title">💰 ملخص المبيعات</h4>
+          <div class="summary-row"><span class="summary-label">إجمالي المبيعات</span><span class="summary-value" id="salesTotalRevenue">0</span></div>
+          <div class="summary-row"><span class="summary-label">تكلفة البضاعة</span><span class="summary-value" id="salesCOGS">0</span></div>
+          <div class="summary-row"><span class="summary-label">إجمالي الربح</span><span class="summary-value positive" id="salesGrossProfit">0</span></div>
+          <div class="summary-row"><span class="summary-label">هامش الربح</span><span class="summary-value" id="salesProfitMargin">0%</span></div>
+        </div>
+        <div class="summary-box">
+          <h4 class="summary-title">📊 إحصائيات</h4>
+          <div class="summary-row"><span class="summary-label">عدد الفواتير</span><span class="summary-value" id="salesInvoicesCount">0</span></div>
+          <div class="summary-row"><span class="summary-label">متوسط الفاتورة</span><span class="summary-value" id="salesAvgInvoice">0</span></div>
+          <div class="summary-row"><span class="summary-label">أجهزة مباعة</span><span class="summary-value" id="salesDevicesSold">0</span></div>
+          <div class="summary-row"><span class="summary-label">إكسسوارات مباعة</span><span class="summary-value" id="salesAccessoriesSold">0</span></div>
+        </div>
+      </div>
+
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h3 class="chart-title">📈 المبيعات اليومية</h3>
+          <div class="chart-container"><canvas id="dailySalesChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">📊 المبيعات حسب النوع</h3>
+          <div class="chart-container"><canvas id="salesByTypeChart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">
+          <h3 class="table-title">📋 تفاصيل المبيعات</h3>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>التاريخ</th>
+                <th>رقم الفاتورة</th>
+                <th>العميل</th>
+                <th>النوع</th>
+                <th>المنتج</th>
+                <th>الكمية</th>
+                <th>الإجمالي</th>
+                <th>الربح</th>
+              </tr>
+            </thead>
+            <tbody id="salesTableBody"><tr><td colspan="9" class="empty-state">جاري التحميل...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         🔧 REPAIRS PANEL
+         ═══════════════════════════════════════ -->
+    <div id="repairsPanel" class="panel">
+      <div class="section-header">
+        <h2 class="section-title">🔧 تقارير إدارة الصيانة</h2>
+        <div class="table-actions">
+          <button class="btn btn-success btn-sm" onclick="exportRepairsReport()">📥 تصدير Excel</button>
+          <button class="btn btn-secondary btn-sm" onclick="printReport('repairs')">🖨️ طباعة</button>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="filter-bar report-period-filter-bar" style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-bottom:20px; padding:14px 16px; background:var(--ds-bg-card, var(--bg-tertiary)); border:1px solid var(--ds-border, var(--border)); border-radius:var(--ds-radius-md, 12px);">
+        <div class="filter-group">
+          <label style="font-size:13px; color:var(--text-secondary); font-weight:600;">الفترة</label>
+          <select id="repairsPeriodFilter" class="filter-input" style="min-width:140px;" onchange="applyReportPeriodFilter('repairs'); loadRepairsReport();">
+            <option value="last_day">آخر يوم</option>
+            <option value="last_7">آخر 7 أيام</option>
+            <option value="last_month" selected>آخر شهر</option>
+            <option value="last_3_months">آخر 3 أشهر</option>
+            <option value="last_year">آخر سنة</option>
+            <option value="custom">مخصص (من - إلى)</option>
+          </select>
+        </div>
+        <div class="filter-group" id="repairsCustomDatesGroup" style="display:none;">
+          <label style="font-size:12px; color:var(--text-secondary);">من</label>
+          <input type="date" id="repairsDateFrom" class="filter-input" style="padding:8px 12px; border-radius:8px;" onchange="loadRepairsReport()">
+          <label style="font-size:12px; color:var(--text-secondary);">إلى</label>
+          <input type="date" id="repairsDateTo" class="filter-input" style="padding:8px 12px; border-radius:8px;" onchange="loadRepairsReport()">
+        </div>
+        <div class="filter-group">
+          <label style="font-size:12px; color:var(--text-secondary);">حالة التذكرة</label>
+          <select id="repairsStatusFilter" class="filter-input" onchange="loadRepairsReport()">
+            <option value="">الكل</option>
+            <option value="open">مفتوحة</option>
+            <option value="delivered">تم التسليم</option>
+            <option value="financially_closed">مقفولة ماليًا</option>
+            <option value="adjustment">تذكرة تعديل</option>
+          </select>
+        </div>
+        <button type="button" class="btn btn-primary btn-sm" onclick="loadRepairsReport()" style="padding:8px 16px;">تطبيق</button>
+        <button class="btn btn-secondary btn-sm" onclick="clearRepairsFilters()">🗑️ مسح الفلاتر</button>
+      </div>
+
+      <!-- KPI Cards -->
+      <div class="stats-grid" id="repairsStats">
+        <div class="stat-card">
+          <div class="stat-header"><span class="stat-icon">🎫</span></div>
+          <div class="stat-label">عدد تذاكر الصيانة</div>
+          <div class="stat-value" id="repairsTotalTickets">0</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-header"><span class="stat-icon">💰</span></div>
+          <div class="stat-label">إجمالي الإيراد</div>
+          <div class="stat-value" id="repairsTotalRevenue">0 ج.م</div>
+        </div>
+        <div class="stat-card cyan">
+          <div class="stat-header"><span class="stat-icon">💵</span></div>
+          <div class="stat-label">إجمالي التحصيلات</div>
+          <div class="stat-value" id="repairsTotalCollections">0 ج.م</div>
+        </div>
+        <div class="stat-card purple">
+          <div class="stat-header"><span class="stat-icon">📊</span></div>
+          <div class="stat-label">متوسط قيمة التذكرة</div>
+          <div class="stat-value" id="repairsAvgTicket">0 ج.م</div>
+        </div>
+        <div class="stat-card orange">
+          <div class="stat-header"><span class="stat-icon">🔓</span></div>
+          <div class="stat-label">التذاكر المفتوحة</div>
+          <div class="stat-value" id="repairsOpenTickets">0</div>
+        </div>
+        <div class="stat-card warning">
+          <div class="stat-header"><span class="stat-icon">🔒</span></div>
+          <div class="stat-label">المقفولة ماليًا</div>
+          <div class="stat-value" id="repairsClosedTickets">0</div>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h3 class="chart-title">📊 توزيع الحالات</h3>
+          <div class="chart-container"><canvas id="repairsStatusChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">📈 اتجاه الإيراد اليومي</h3>
+          <div class="chart-container"><canvas id="repairsRevenueChart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- تذاكر حسب الفني -->
+      <div class="table-card" style="margin-bottom: 20px;">
+        <h3 class="table-title">👤 تذاكر حسب الفني</h3>
+        <div class="table-container" style="max-height: 280px; overflow-y: auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>الفني</th>
+                <th>عدد التذاكر</th>
+                <th>إجمالي الإيراد</th>
+              </tr>
+            </thead>
+            <tbody id="repairsByTechnicianBody">
+              <tr><td colspan="3" class="empty-state">جاري التحميل...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-card">
+        <div class="table-header">
+          <h3 class="table-title">📋 تفاصيل تذاكر الصيانة</h3>
+          <span id="repairsTableCount" style="font-size:12px; color:var(--text-secondary);">0 تذكرة</span>
+        </div>
+        <div class="table-container" style="max-height: 500px; overflow-y: auto;">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:50px;">#</th>
+                <th>رقم التذكرة</th>
+                <th>العميل</th>
+                <th>الجهاز / الموديل</th>
+                <th>الحالة</th>
+                <th>الإجمالي</th>
+                <th>المدفوع</th>
+                <th>المتبقي</th>
+                <th>طريقة الدفع</th>
+                <th>مقفولة ماليًا</th>
+                <th>تاريخ الإنشاء</th>
+                <th style="width:80px;">إجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="repairsTableBody">
+              <tr><td colspan="12" class="empty-state">جاري التحميل...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         ↩️ SALES RETURNS PANEL
+         ═══════════════════════════════════════ -->
+    <div id="salesReturnsPanel" class="panel">
+      <div class="section-header">
+        <h2 class="section-title">↩️ تقارير مرتجعات المبيعات</h2>
+        <div class="table-actions">
+          <button class="btn btn-success btn-sm" onclick="exportSalesReturnsReport()">📥 تصدير Excel</button>
+          <button class="btn btn-secondary btn-sm" onclick="printReport('salesReturns')">🖨️ طباعة</button>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="filter-bar report-period-filter-bar" style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-bottom:20px; padding:14px 16px; background:var(--ds-bg-card, var(--bg-tertiary)); border:1px solid var(--ds-border, var(--border)); border-radius:var(--ds-radius-md, 12px);">
+        <div class="filter-group">
+          <label style="font-size:13px; color:var(--text-secondary); font-weight:600;">الفترة</label>
+          <select id="salesReturnsPeriodFilter" class="filter-input" style="min-width:140px;" onchange="applyReportPeriodFilter('salesReturns'); loadSalesReturnsReport();">
+            <option value="last_day">آخر يوم</option>
+            <option value="last_7">آخر 7 أيام</option>
+            <option value="last_month" selected>آخر شهر</option>
+            <option value="last_3_months">آخر 3 أشهر</option>
+            <option value="last_year">آخر سنة</option>
+            <option value="custom">مخصص (من - إلى)</option>
+          </select>
+        </div>
+        <div class="filter-group" id="salesReturnsCustomDatesGroup" style="display:none;">
+          <label style="font-size:12px; color:var(--text-secondary);">من</label>
+          <input type="date" id="salesReturnsDateFrom" class="filter-input" style="padding:8px 12px; border-radius:8px;" onchange="loadSalesReturnsReport()">
+          <label style="font-size:12px; color:var(--text-secondary);">إلى</label>
+          <input type="date" id="salesReturnsDateTo" class="filter-input" style="padding:8px 12px; border-radius:8px;" onchange="loadSalesReturnsReport()">
+        </div>
+        <div class="filter-group">
+          <label style="font-size:12px; color:var(--text-secondary);">نوع المرتجع</label>
+          <select id="salesReturnsType" class="filter-input" onchange="loadSalesReturnsReport()">
+            <option value="">الكل</option>
+            <option value="device">أجهزة</option>
+            <option value="accessory">إكسسوارات</option>
+          </select>
+        </div>
+        <button type="button" class="btn btn-primary btn-sm" onclick="loadSalesReturnsReport()" style="padding:8px 16px;">تطبيق</button>
+        <button class="btn btn-secondary btn-sm" onclick="clearSalesReturnsFilters()">🗑️ مسح الفلاتر</button>
+      </div>
+
+      <!-- Stats Cards -->
+      <div class="stats-grid">
+        <div class="stat-card danger">
+          <div class="stat-icon">↩️</div>
+          <div class="stat-info">
+            <div class="stat-value" id="salesReturnsTotal">0</div>
+            <div class="stat-label">إجمالي المرتجعات</div>
+          </div>
+        </div>
+        <div class="stat-card warning">
+          <div class="stat-icon">📦</div>
+          <div class="stat-info">
+            <div class="stat-value" id="salesReturnsCount">0</div>
+            <div class="stat-label">عدد العمليات</div>
+          </div>
+        </div>
+        <div class="stat-card info">
+          <div class="stat-icon">📱</div>
+          <div class="stat-info">
+            <div class="stat-value" id="salesReturnsDevices">0</div>
+            <div class="stat-label">أجهزة مرتجعة</div>
+          </div>
+        </div>
+        <div class="stat-card purple">
+          <div class="stat-icon">🎧</div>
+          <div class="stat-info">
+            <div class="stat-value" id="salesReturnsAccessories">0</div>
+            <div class="stat-label">إكسسوارات مرتجعة</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Summary Boxes -->
+      <div class="summary-grid">
+        <div class="summary-box">
+          <h4 class="summary-title">💰 ملخص مالي</h4>
+          <div class="summary-row"><span class="summary-label">إجمالي المبالغ المستردة</span><span class="summary-value negative" id="salesReturnsTotalRefund">0</span></div>
+          <div class="summary-row"><span class="summary-label">متوسط قيمة المرتجع</span><span class="summary-value" id="salesReturnsAvgRefund">0</span></div>
+          <div class="summary-row"><span class="summary-label">أعلى مرتجع</span><span class="summary-value" id="salesReturnsMaxRefund">0</span></div>
+        </div>
+        <div class="summary-box">
+          <h4 class="summary-title">📊 أسباب الإرجاع</h4>
+          <div id="salesReturnsReasons">
+            <div class="summary-row"><span class="summary-label">جاري التحميل...</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h3 class="chart-title">📈 المرتجعات اليومية</h3>
+          <div class="chart-container"><canvas id="dailySalesReturnsChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">📊 المرتجعات حسب السبب</h3>
+          <div class="chart-container"><canvas id="salesReturnsByReasonChart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-card">
+        <div class="table-header">
+          <h3 class="table-title">📋 تفاصيل المرتجعات</h3>
+          <span id="salesReturnsTableCount" class="badge badge-warning">0 عملية</span>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>التاريخ</th>
+                <th>رقم الفاتورة</th>
+                <th>العميل</th>
+                <th>النوع</th>
+                <th>المنتج</th>
+                <th>السبب</th>
+                <th>المبلغ المسترد</th>
+                <th>الحالة</th>
+              </tr>
+            </thead>
+            <tbody id="salesReturnsTableBody"><tr><td colspan="9" class="empty-state">جاري التحميل...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Monthly Summary Table -->
+      <div class="table-card" style="margin-top: 20px;">
+        <div class="table-header">
+          <h3 class="table-title">📅 ملخص شهري للمرتجعات</h3>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>الشهر</th>
+                <th>عدد المرتجعات</th>
+                <th>أجهزة</th>
+                <th>إكسسوارات</th>
+                <th>إجمالي المستردات</th>
+                <th>النسبة من المبيعات</th>
+              </tr>
+            </thead>
+            <tbody id="salesReturnsMonthlyBody"><tr><td colspan="6" class="empty-state">جاري التحميل...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         🛒 PURCHASES PANEL
+         ═══════════════════════════════════════ -->
+    <div id="purchasesPanel" class="panel">
+      <div class="section-header">
+        <h2 class="section-title">🛒 تقارير المشتريات</h2>
+        <div class="table-actions">
+          <button class="btn btn-success btn-sm" onclick="exportPurchasesReport()">📥 تصدير Excel</button>
+        </div>
+      </div>
+      <div class="filter-bar report-period-filter-bar" style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-bottom:20px; padding:14px 16px; background:var(--ds-bg-card, var(--bg-tertiary)); border:1px solid var(--ds-border, var(--border)); border-radius:var(--ds-radius-md, 12px);">
+        <div class="filter-group">
+          <label style="font-size:13px; color:var(--text-secondary); font-weight:600;">الفترة</label>
+          <select id="purchasesPeriodFilter" class="filter-input" style="min-width:140px;" onchange="applyReportPeriodFilter('purchases'); loadPurchasesReport();">
+            <option value="last_day">آخر يوم</option>
+            <option value="last_7">آخر 7 أيام</option>
+            <option value="last_month" selected>آخر شهر</option>
+            <option value="last_3_months">آخر 3 أشهر</option>
+            <option value="last_year">آخر سنة</option>
+            <option value="custom">مخصص (من - إلى)</option>
+          </select>
+        </div>
+        <div class="filter-group" id="purchasesCustomDatesGroup" style="display:none;">
+          <label style="font-size:12px; color:var(--text-secondary);">من</label>
+          <input type="date" id="purchasesDateFrom" class="filter-input" style="padding:8px 12px; border-radius:8px;" onchange="loadPurchasesReport()">
+          <label style="font-size:12px; color:var(--text-secondary);">إلى</label>
+          <input type="date" id="purchasesDateTo" class="filter-input" style="padding:8px 12px; border-radius:8px;" onchange="loadPurchasesReport()">
+        </div>
+        <button type="button" class="btn btn-primary btn-sm" onclick="loadPurchasesReport()" style="padding:8px 16px;">تطبيق</button>
+      </div>
+      <div class="stats-grid" id="purchasesStats"></div>
+
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h3 class="chart-title">📈 المشتريات الشهرية</h3>
+          <div class="chart-container"><canvas id="monthlyPurchasesChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">🏪 المشتريات حسب المورد</h3>
+          <div class="chart-container"><canvas id="purchasesBySupplierChart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- توريدات الإكسسوارات (فواتير + توريد سريع) -->
+      <div class="table-card">
+        <div class="table-header">
+          <h3 class="table-title">🧾 توريدات الإكسسوارات</h3>
+          <span id="purchaseInvoicesCount" class="badge badge-purple">0 عملية</span>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>رقم الفاتورة</th>
+                <th>التاريخ</th>
+                <th>المورد</th>
+                <th>عدد الأصناف</th>
+                <th>الإجمالي</th>
+                <th>المدفوع</th>
+                <th>المتبقي</th>
+                <th>الحالة</th>
+                <th>التفاصيل</th>
+              </tr>
+            </thead>
+            <tbody id="purchaseInvoicesBody"><tr><td colspan="10" class="empty-state">جاري التحميل...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- مشتريات الأجهزة -->
+      <div class="table-card" style="margin-top: 20px;">
+        <div class="table-header">
+          <h3 class="table-title">📱 مشتريات الأجهزة</h3>
+          <span id="devicePurchasesCount" class="badge badge-info">0 جهاز</span>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>التاريخ</th>
+                <th>المورد</th>
+                <th>الجهاز</th>
+                <th>IMEI</th>
+                <th>التكلفة</th>
+                <th>طريقة الدفع</th>
+              </tr>
+            </thead>
+            <tbody id="devicePurchasesBody"><tr><td colspan="7" class="empty-state">جاري التحميل...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ✅ مشتريات قطع الغيار -->
+      <div class="table-card" style="margin-top: 20px;">
+        <div class="table-header">
+          <h3 class="table-title">🔧 مشتريات قطع الغيار</h3>
+          <span id="repairPartsPurchasesCount" class="badge badge-danger">0 عملية</span>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>التاريخ</th>
+                <th>اسم القطعة</th>
+                <th>التصنيف</th>
+                <th>الكمية</th>
+                <th>سعر الوحدة</th>
+                <th>الإجمالي</th>
+                <th>المورد</th>
+              </tr>
+            </thead>
+            <tbody id="repairPartsPurchasesBody"><tr><td colspan="8" class="empty-state">جاري التحميل...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- مودال تفاصيل فاتورة التوريد -->
+    <div id="purchaseInvoiceModal" class="modal" style="display:none;">
+      <div class="modal-content" style="max-width: 700px;">
+        <div class="modal-header">
+          <h3 id="purchaseInvoiceModalTitle">تفاصيل فاتورة التوريد</h3>
+          <button class="close-btn" onclick="closePurchaseInvoiceModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+          <div id="purchaseInvoiceInfo" style="margin-bottom: 15px; padding: 15px; background: var(--bg-tertiary); border-radius: 8px;"></div>
+          <table style="width: 100%;">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>الصنف</th>
+                <th>الكمية</th>
+                <th>سعر الوحدة</th>
+                <th>الإجمالي</th>
+              </tr>
+            </thead>
+            <tbody id="purchaseInvoiceItemsBody"></tbody>
+            <tfoot>
+              <tr style="font-weight: bold; background: var(--bg-tertiary);">
+                <td colspan="4" style="text-align: left;">الإجمالي الكلي:</td>
+                <td id="purchaseInvoiceTotal">0.00 ج.م</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         ↩️ PURCHASE RETURNS PANEL - مرتجعات المشتريات
+         ═══════════════════════════════════════ -->
+    <div id="purchaseReturnsPanel" class="panel">
+      <div class="section-header">
+        <h2 class="section-title">↩️ تقارير مرتجعات المشتريات</h2>
+        <div class="table-actions">
+          <button class="btn btn-success btn-sm" onclick="exportPurchaseReturnsReport()">📥 تصدير Excel</button>
+          <button class="btn btn-secondary btn-sm" onclick="printReport('purchaseReturns')">🖨️ طباعة</button>
+        </div>
+      </div>
+
+      <div class="filter-bar report-period-filter-bar" style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-bottom:20px; padding:14px 16px; background:var(--ds-bg-card, var(--bg-tertiary)); border:1px solid var(--ds-border, var(--border)); border-radius:var(--ds-radius-md, 12px);">
+        <div class="filter-group">
+          <label style="font-size:13px; color:var(--text-secondary); font-weight:600;">الفترة</label>
+          <select id="purchaseReturnsPeriodFilter" class="filter-input" style="min-width:140px;" onchange="applyReportPeriodFilter('purchaseReturns'); loadPurchaseReturnsReport();">
+            <option value="last_day">آخر يوم</option>
+            <option value="last_7">آخر 7 أيام</option>
+            <option value="last_month" selected>آخر شهر</option>
+            <option value="last_3_months">آخر 3 أشهر</option>
+            <option value="last_year">آخر سنة</option>
+            <option value="custom">مخصص (من - إلى)</option>
+          </select>
+        </div>
+        <div class="filter-group" id="purchaseReturnsCustomDatesGroup" style="display:none;">
+          <label style="font-size:12px; color:var(--text-secondary);">من</label>
+          <input type="date" id="purchaseReturnsDateFrom" class="filter-input" style="padding:8px 12px; border-radius:8px;" onchange="loadPurchaseReturnsReport()">
+          <label style="font-size:12px; color:var(--text-secondary);">إلى</label>
+          <input type="date" id="purchaseReturnsDateTo" class="filter-input" style="padding:8px 12px; border-radius:8px;" onchange="loadPurchaseReturnsReport()">
+        </div>
+        <div class="filter-group">
+          <label style="font-size:12px; color:var(--text-secondary);">نوع المرتجع</label>
+          <select id="purchaseReturnsType" class="filter-input" onchange="loadPurchaseReturnsReport()">
+            <option value="">الكل</option>
+            <option value="device">أجهزة</option>
+            <option value="accessory">إكسسوارات</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label style="font-size:12px; color:var(--text-secondary);">المورد</label>
+          <select id="purchaseReturnsSupplier" class="filter-input" onchange="loadPurchaseReturnsReport()">
+            <option value="">الكل</option>
+          </select>
+        </div>
+        <button type="button" class="btn btn-primary btn-sm" onclick="loadPurchaseReturnsReport()" style="padding:8px 16px;">تطبيق</button>
+      </div>
+
+      <!-- Stats Cards -->
+      <div class="stats-grid">
+        <div class="stat-card danger">
+          <div class="stat-icon">↩️</div>
+          <div class="stat-info">
+            <div class="stat-value" id="purchaseReturnsTotal">0</div>
+            <div class="stat-label">إجمالي المرتجعات</div>
+          </div>
+        </div>
+        <div class="stat-card warning">
+          <div class="stat-icon">📦</div>
+          <div class="stat-info">
+            <div class="stat-value" id="purchaseReturnsCount">0</div>
+            <div class="stat-label">عدد العمليات</div>
+          </div>
+        </div>
+        <div class="stat-card info">
+          <div class="stat-icon">📱</div>
+          <div class="stat-info">
+            <div class="stat-value" id="purchaseReturnsDevices">0</div>
+            <div class="stat-label">أجهزة مرتجعة</div>
+          </div>
+        </div>
+        <div class="stat-card purple">
+          <div class="stat-icon">🎧</div>
+          <div class="stat-info">
+            <div class="stat-value" id="purchaseReturnsAccessories">0</div>
+            <div class="stat-label">إكسسوارات مرتجعة</div>
+          </div>
+        </div>
+        <div class="stat-card red">
+          <div class="stat-icon">🔧</div>
+          <div class="stat-info">
+            <div class="stat-value" id="purchaseReturnsRepairParts">0</div>
+            <div class="stat-label">قطع صيانة مرتجعة</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Summary Boxes -->
+      <div class="summary-grid">
+        <div class="summary-box">
+          <h4 class="summary-title">💰 ملخص مالي</h4>
+          <div class="summary-row"><span class="summary-label">إجمالي المبالغ المستردة</span><span class="summary-value positive" id="purchaseReturnsTotalRefund">0</span></div>
+          <div class="summary-row"><span class="summary-label">متوسط قيمة المرتجع</span><span class="summary-value" id="purchaseReturnsAvgRefund">0</span></div>
+          <div class="summary-row"><span class="summary-label">أعلى مرتجع</span><span class="summary-value" id="purchaseReturnsMaxRefund">0</span></div>
+        </div>
+        <div class="summary-box">
+          <h4 class="summary-title">📊 أسباب الإرجاع</h4>
+          <div id="purchaseReturnsReasons">
+            <div class="summary-row"><span class="summary-label">جاري التحميل...</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts -->
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h3 class="chart-title">📈 المرتجعات اليومية</h3>
+          <div class="chart-container"><canvas id="dailyPurchaseReturnsChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">📊 المرتجعات حسب السبب</h3>
+          <div class="chart-container"><canvas id="purchaseReturnsByReasonChart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Table -->
+      <div class="table-card">
+        <div class="table-header">
+          <h3 class="table-title">📋 تفاصيل المرتجعات</h3>
+          <span id="purchaseReturnsTableCount" class="badge badge-warning">0 عملية</span>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>التاريخ</th>
+                <th>المورد</th>
+                <th>النوع</th>
+                <th>المنتج</th>
+                <th>السبب</th>
+                <th>المبلغ المسترد</th>
+                <th>الحالة</th>
+              </tr>
+            </thead>
+            <tbody id="purchaseReturnsTableBody"><tr><td colspan="8" class="empty-state">جاري التحميل...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Monthly Summary Table -->
+      <div class="table-card" style="margin-top: 20px;">
+        <div class="table-header">
+          <h3 class="table-title">📅 ملخص شهري للمرتجعات</h3>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>الشهر</th>
+                <th>عدد المرتجعات</th>
+                <th>أجهزة</th>
+                <th>إكسسوارات</th>
+                <th>قطع صيانة</th>
+                <th>إجمالي المستردات</th>
+              </tr>
+            </thead>
+            <tbody id="purchaseReturnsMonthlyBody"><tr><td colspan="6" class="empty-state">جاري التحميل...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         🧾 INVOICES PANEL - فواتير نقطة البيع
+         ═══════════════════════════════════════ -->
+    <div id="invoicesPanel" class="panel">
+      <div class="section-header">
+        <h2 class="section-title">🧾 فواتير نقطة البيع</h2>
+        <div class="table-actions">
+          <button class="btn btn-success btn-sm" onclick="exportInvoicesReport()">📥 تصدير Excel</button>
+          <button class="btn btn-primary btn-sm" onclick="printInvoicesReport()">🖨️ طباعة</button>
+        </div>
+      </div>
+
+      <!-- إحصائيات الفواتير -->
+      <div class="stats-grid" id="invoicesStats">
+        <div class="stat-card">
+          <div class="stat-icon" style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);">🧾</div>
+          <div class="stat-info">
+            <div class="stat-value" id="invoicesTotalCount">0</div>
+            <div class="stat-label">إجمالي الفواتير</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">💰</div>
+          <div class="stat-info">
+            <div class="stat-value" id="invoicesTotalAmount">0</div>
+            <div class="stat-label">إجمالي المبيعات</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">↩️</div>
+          <div class="stat-info">
+            <div class="stat-value" id="invoicesReturnsCount">0</div>
+            <div class="stat-label">فواتير المرتجعات</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);">💸</div>
+          <div class="stat-info">
+            <div class="stat-value" id="invoicesReturnsAmount">0</div>
+            <div class="stat-label">إجمالي المرتجعات</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="filter-bar report-period-filter-bar" style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-bottom:20px; padding:14px 16px; background:var(--ds-bg-card, var(--bg-tertiary)); border:1px solid var(--ds-border, var(--border)); border-radius:var(--ds-radius-md, 12px);">
+        <div class="filter-group">
+          <label style="font-size:13px; color:var(--text-secondary); font-weight:600;">الفترة</label>
+          <select id="invoicePeriodFilter" class="filter-input" style="min-width:140px;" onchange="applyReportPeriodFilter('invoice'); loadInvoicesReport();">
+            <option value="last_day">آخر يوم</option>
+            <option value="last_7">آخر 7 أيام</option>
+            <option value="last_month" selected>آخر شهر</option>
+            <option value="last_3_months">آخر 3 أشهر</option>
+            <option value="last_year">آخر سنة</option>
+            <option value="custom">مخصص (من - إلى)</option>
+          </select>
+        </div>
+        <div class="filter-group" id="invoiceCustomDatesGroup" style="display:none;">
+          <label style="font-size:12px; color:var(--text-secondary);">من</label>
+          <input type="date" id="invoiceDateFrom" class="filter-input" style="padding:8px 12px; border-radius:8px;" onchange="loadInvoicesReport()">
+          <label style="font-size:12px; color:var(--text-secondary);">إلى</label>
+          <input type="date" id="invoiceDateTo" class="filter-input" style="padding:8px 12px; border-radius:8px;" onchange="loadInvoicesReport()">
+        </div>
+        <div class="filter-group">
+          <label style="font-size:12px; color:var(--text-secondary);">نوع الفاتورة</label>
+          <select id="invoiceTypeFilter" class="filter-input" onchange="filterInvoices()">
+            <option value="all">الكل</option>
+            <option value="sale">مبيعات (SAL)</option>
+            <option value="return">مرتجعات (RET)</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label style="font-size:12px; color:var(--text-secondary);">بحث</label>
+          <input type="text" id="invoiceSearchFilter" class="filter-input" placeholder="رقم الفاتورة أو اسم العميل..." style="min-width:160px;" oninput="filterInvoices()">
+        </div>
+        <button type="button" class="btn btn-primary btn-sm" onclick="loadInvoicesReport()" style="padding:8px 16px;">تطبيق</button>
+      </div>
+
+      <!-- جدول الفواتير -->
+      <div class="table-card">
+        <div class="table-header">
+          <h3 class="table-title">📋 قائمة الفواتير</h3>
+          <span id="invoicesTableCount" style="font-size:12px; color:var(--text-secondary);"></span>
+        </div>
+        <div class="table-container" style="max-height: 500px; overflow-y: auto;">
+          <table>
+            <thead>
+              <tr>
+                <th style="width:50px;">#</th>
+                <th>رقم الفاتورة</th>
+                <th>النوع</th>
+                <th>التاريخ</th>
+                <th>العميل</th>
+                <th>العناصر</th>
+                <th>الإجمالي</th>
+                <th>المدفوع</th>
+                <th>الحالة</th>
+                <th style="width:100px;">إجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="invoicesTableBody">
+              <tr><td colspan="10" class="empty-state">جاري التحميل...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         🤝 PARTNERS PANEL
+         ═══════════════════════════════════════ -->
+    <div id="partnersPanel" class="panel">
+      <div class="section-header">
+        <h2 class="section-title">🤝 تقارير الشركاء والأرباح</h2>
+        <div class="table-actions">
+          <button class="btn btn-purple btn-sm" onclick="calculatePartnersProfit()">🧮 حساب الأرباح</button>
+          <button class="btn btn-success btn-sm" onclick="exportPartnersReport()">📥 تصدير Excel</button>
+        </div>
+      </div>
+
+      <div class="stats-grid" id="partnersStats"></div>
+
+      <div class="summary-grid">
+        <div class="summary-box">
+          <h4 class="summary-title">💰 ملخص الأرباح</h4>
+          <div class="summary-row"><span class="summary-label">إجمالي الإيرادات</span><span class="summary-value" id="partnersTotalRevenue">0</span></div>
+          <div class="summary-row"><span class="summary-label">إجمالي التكاليف</span><span class="summary-value" id="partnersTotalCosts">0</span></div>
+          <div class="summary-row"><span class="summary-label">صافي الربح</span><span class="summary-value positive" id="partnersNetProfit">0</span></div>
+          <div class="summary-row"><span class="summary-label">أرباح موزعة</span><span class="summary-value" id="partnersDistributed">0</span></div>
+        </div>
+        <div class="summary-box">
+          <h4 class="summary-title">📊 توزيع الأرباح</h4>
+          <div id="partnersDistribution">
+            <!-- سيتم إضافة توزيع كل شريك -->
+          </div>
+        </div>
+      </div>
+
+      <div class="charts-grid">
+        <div class="chart-card">
+          <h3 class="chart-title">📊 نسب الشراكة</h3>
+          <div class="chart-container"><canvas id="partnersShareChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">💰 أرباح الشركاء الشهرية</h3>
+          <div class="chart-container"><canvas id="partnersProfitChart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">
+          <h3 class="table-title">📋 تفاصيل الشركاء</h3>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>الشريك</th>
+                <th>نوع الشراكة</th>
+                <th>رأس المال</th>
+                <th>نسبة الأجهزة</th>
+                <th>نسبة الإكسسوارات</th>
+                <th>الربح المستحق</th>
+                <th>المسحوب</th>
+                <th>المتبقي</th>
+              </tr>
+            </thead>
+            <tbody id="partnersTableBody"><tr><td colspan="9" class="empty-state">جاري التحميل...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- سجل التوزيعات -->
+      <div class="table-card" style="margin-top:20px">
+        <div class="table-header">
+          <h3 class="table-title">📜 سجل توزيعات الأرباح</h3>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>التاريخ</th>
+                <th>الفترة</th>
+                <th>إجمالي الربح</th>
+                <th>الموزع</th>
+                <th>الحالة</th>
+              </tr>
+            </thead>
+            <tbody id="distributionsTableBody"><tr><td colspan="6" class="empty-state">جاري التحميل...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         💵 CASHFLOW PANEL
+         ═══════════════════════════════════════ -->
+    <div id="cashflowPanel" class="panel">
+      <div class="section-header">
+        <h2 class="section-title">💵 تقارير التدفق النقدي</h2>
+        <div class="table-actions" style="display:flex; align-items:center; gap:12px;">
+          <div class="wallet-filter-wrapper" style="position:relative;">
+            <select id="cashflowWalletFilter" onchange="loadCashflowReport()" style="
+              appearance: none;
+              -webkit-appearance: none;
+              padding: 10px 40px 10px 16px;
+              background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+              border: 1px solid var(--border);
+              border-radius: 10px;
+              color: var(--text-primary);
+              font-size: 14px;
+              font-weight: 500;
+              cursor: pointer;
+              min-width: 180px;
+              transition: all 0.2s ease;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            ">
+              <option value="all">🏦 جميع المحافظ</option>
+              <option value="cash">💵 كاش سائل</option>
+              <option value="mobile_wallet">📱 محفظة إلكترونية</option>
+              <option value="bank">🏦 حساب بنكي</option>
+            </select>
+            <span style="position:absolute; left:14px; top:50%; transform:translateY(-50%); pointer-events:none; color:var(--text-secondary); font-size:12px;">▼</span>
+          </div>
+          <button class="btn btn-success btn-sm" onclick="exportCashflowReport()" style="padding:10px 16px; border-radius:10px; font-weight:500;">📥 تصدير Excel</button>
+        </div>
+      </div>
+      <div class="filter-bar report-period-filter-bar" style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-bottom:20px; padding:14px 16px; background:var(--ds-bg-card, var(--bg-tertiary)); border:1px solid var(--ds-border, var(--border)); border-radius:var(--ds-radius-md, 12px);">
+        <div class="filter-group">
+          <label style="font-size:13px; color:var(--text-secondary); font-weight:600;">الفترة</label>
+          <select id="cashflowPeriodFilter" class="filter-input" style="min-width:140px;" onchange="applyReportPeriodFilter('cashflow'); loadCashflowReport();">
+            <option value="last_day">آخر يوم</option>
+            <option value="last_7">آخر 7 أيام</option>
+            <option value="last_month" selected>آخر شهر</option>
+            <option value="last_3_months">آخر 3 أشهر</option>
+            <option value="last_year">آخر سنة</option>
+            <option value="custom">مخصص (من - إلى)</option>
+          </select>
+        </div>
+        <div class="filter-group" id="cashflowCustomDatesGroup" style="display:none;">
+          <label style="font-size:12px; color:var(--text-secondary);">من</label>
+          <input type="date" id="cashflowDateFrom" class="filter-input" style="padding:8px 12px; border-radius:8px;" onchange="loadCashflowReport()">
+          <label style="font-size:12px; color:var(--text-secondary);">إلى</label>
+          <input type="date" id="cashflowDateTo" class="filter-input" style="padding:8px 12px; border-radius:8px;" onchange="loadCashflowReport()">
+        </div>
+        <button type="button" class="btn btn-primary btn-sm" onclick="loadCashflowReport()" style="padding:8px 16px;">تطبيق</button>
+      </div>
+      <div class="stats-grid" id="cashflowStats"></div>
+
+      <!-- Wallet Breakdown Cards -->
+      <div class="stats-grid" id="cashflowWalletCards">
+        <div class="stat-card" style="border-right: 4px solid var(--success)">
+          <div class="stat-header"><span class="stat-icon">💵</span></div>
+          <div class="stat-label">كاش سائل</div>
+          <div class="stat-value" id="cfWalletCash">0.00 ج.م</div>
+        </div>
+        <div class="stat-card" style="border-right: 4px solid var(--purple)">
+          <div class="stat-header"><span class="stat-icon">📱</span></div>
+          <div class="stat-label">محفظة إلكترونية</div>
+          <div class="stat-value" id="cfWalletMobile">0.00 ج.م</div>
+        </div>
+        <div class="stat-card" style="border-right: 4px solid var(--accent)">
+          <div class="stat-header"><span class="stat-icon">🏦</span></div>
+          <div class="stat-label">حساب بنكي</div>
+          <div class="stat-value" id="cfWalletBank">0.00 ج.م</div>
+        </div>
+        <div class="stat-card cyan">
+          <div class="stat-header"><span class="stat-icon">💰</span></div>
+          <div class="stat-label">إجمالي المحافظ</div>
+          <div class="stat-value" id="cfWalletTotal">0.00 ج.م</div>
+        </div>
+      </div>
+
+      <div class="summary-grid">
+        <div class="summary-box">
+          <h4 class="summary-title">💵 ملخص التدفق النقدي</h4>
+          <div class="summary-row"><span class="summary-label">التدفقات الداخلة</span><span class="summary-value positive" id="cashInflow">0</span></div>
+          <div class="summary-row"><span class="summary-label">التدفقات الخارجة</span><span class="summary-value negative" id="cashOutflow">0</span></div>
+          <div class="summary-row"><span class="summary-label">صافي التدفق</span><span class="summary-value" id="netCashflow">0</span></div>
+          <div class="summary-row"><span class="summary-label">الرصيد الحالي</span><span class="summary-value" id="currentBalance">0</span></div>
+        </div>
+        <div class="summary-box">
+          <h4 class="summary-title">🔄 التحويلات بين المحافظ</h4>
+          <div class="summary-row"><span class="summary-label">عدد التحويلات</span><span class="summary-value" id="cfTransferCount">0</span></div>
+          <div class="summary-row"><span class="summary-label">إجمالي التحويلات</span><span class="summary-value" id="cfTransferTotal">0.00 ج.م</span></div>
+        </div>
+      </div>
+
+      <div class="chart-card">
+        <h3 class="chart-title">📈 اتجاه التدفق النقدي حسب المحفظة</h3>
+        <div class="chart-container" style="height:350px"><canvas id="cashflowTrendChart"></canvas></div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-header">
+          <h3 class="table-title">📋 حركات الخزينة</h3>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>التاريخ</th>
+                <th>المحفظة</th>
+                <th>النوع</th>
+                <th>الوصف</th>
+                <th>المبلغ</th>
+                <th>الرصيد</th>
+              </tr>
+            </thead>
+            <tbody id="cashflowTableBody"><tr><td colspan="7" class="empty-state">جاري التحميل...</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         👥 CLIENTS PANEL
+         ═══════════════════════════════════════ -->
+    <div id="clientsPanel" class="panel">
+      <div class="section-header">
+        <h2 class="section-title">👥 تقارير العملاء والموردين</h2>
+      </div>
+
+      <div class="stats-grid" id="clientsStats"></div>
+
+      <div class="charts-grid">
+        <div class="table-card">
+          <div class="table-header">
+            <h3 class="table-title">⭐ أفضل 10 عملاء</h3>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead><tr><th>#</th><th>العميل</th><th>المعاملات</th><th>الإجمالي</th><th>آخر معاملة</th></tr></thead>
+              <tbody id="topClientsTableBody"><tr><td colspan="5" class="empty-state">جاري التحميل...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="table-card">
+          <div class="table-header">
+            <h3 class="table-title">🏪 أفضل 10 موردين</h3>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead><tr><th>#</th><th>المورد</th><th>التوريدات</th><th>الإجمالي</th><th>آخر توريد</th></tr></thead>
+              <tbody id="topSuppliersTableBody"><tr><td colspan="5" class="empty-state">جاري التحميل...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         💎 CAPITAL PANEL - تقرير رأس المال
+         ═══════════════════════════════════════ -->
+    <div id="capitalPanel" class="panel">
+      <div class="section-header">
+        <h2 class="section-title">💎 تقرير رأس المال</h2>
+        <div class="table-actions">
+          <button class="btn btn-success btn-sm" onclick="exportCapitalReport()">📥 تصدير Excel</button>
+          <button class="btn btn-secondary btn-sm" onclick="printReport('capital')">🖨️ طباعة</button>
+        </div>
+      </div>
+
+      <!-- إجمالي رأس المال -->
+      <div class="stats-grid">
+        <div class="stat-card" style="grid-column: span 2;">
+          <div class="stat-header">
+            <span class="stat-icon">💎</span>
+          </div>
+          <div class="stat-label">إجمالي رأس المال</div>
+          <div class="stat-value" id="capitalTotal" style="font-size: 32px; color: var(--accent);">0.00 ج.م</div>
+          <div class="stat-desc">مجموع كل الأصول</div>
+        </div>
+      </div>
+
+      <!-- تفاصيل رأس المال -->
+      <div class="summary-grid" style="margin-top: 20px;">
+        <div class="summary-box">
+          <h4 class="summary-title">📱 مخزون الأجهزة</h4>
+          <div class="summary-row">
+            <span class="summary-label">عدد الأجهزة في المخزن</span>
+            <span class="summary-value" id="capitalDevicesCount">0</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">تكلفة الأجهزة (سعر الشراء)</span>
+            <span class="summary-value" id="capitalDevicesCost">0.00 ج.م</span>
+          </div>
+        </div>
+        <div class="summary-box">
+          <h4 class="summary-title">🎧 مخزون الإكسسوارات</h4>
+          <div class="summary-row">
+            <span class="summary-label">عدد الإكسسوارات في المخزن</span>
+            <span class="summary-value" id="capitalAccessoriesCount">0</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">تكلفة الإكسسوارات</span>
+            <span class="summary-value" id="capitalAccessoriesCost">0.00 ج.م</span>
+          </div>
+        </div>
+        <div class="summary-box">
+          <h4 class="summary-title">🔧 مخزن قطع الغيار</h4>
+          <div class="summary-row">
+            <span class="summary-label">عدد الأصناف في المخزن</span>
+            <span class="summary-value" id="capitalRepairPartsCount">0</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">تكلفة قطع الغيار</span>
+            <span class="summary-value" id="capitalRepairPartsCost">0.00 ج.م</span>
+          </div>
+        </div>
+        <div class="summary-box">
+          <h4 class="summary-title">📦 المخازن التخزينية</h4>
+          <div class="summary-row">
+            <span class="summary-label">عدد المخازن التخزينية</span>
+            <span class="summary-value" id="capitalStorageCount">0</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">قيمة البضاعة المخزنة</span>
+            <span class="summary-value" id="capitalStorageValue">0.00 ج.م</span>
+          </div>
+        </div>
+        <div class="summary-box">
+          <h4 class="summary-title">💵 النقدية</h4>
+          <div class="summary-row">
+            <span class="summary-label">الكاش في درج الكاش</span>
+            <span class="summary-value" id="capitalCashDrawer">0.00 ج.م</span>
+          </div>
+          <!-- ✅ المحافظ الفردية (النظام الجديد) -->
+          <div id="capitalWalletsContainer" style="display: none;"></div>
+          <!-- ✅ المحافظ المجمعة (للتوافق العكسي) -->
+          <div class="summary-row">
+            <span class="summary-label">💵 كاش سائل</span>
+            <span class="summary-value" id="capitalWalletCash">0.00 ج.م</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">📱 محفظة إلكترونية</span>
+            <span class="summary-value" id="capitalWalletMobile">0.00 ج.م</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">🏦 حساب بنكي</span>
+            <span class="summary-value" id="capitalWalletBank">0.00 ج.م</span>
+          </div>
+          <div class="summary-row" style="border-top: 1px solid var(--border); padding-top: 8px; margin-top: 8px;">
+            <span class="summary-label"><strong>إجمالي الخزنة</strong></span>
+            <span class="summary-value" id="capitalSafeBalance">0.00 ج.م</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label"><strong>إجمالي النقدية</strong></span>
+            <span class="summary-value positive" id="capitalTotalCash">0.00 ج.م</span>
+          </div>
+        </div>
+        <div class="summary-box">
+          <h4 class="summary-title">💳 الذمم المدينة (الفلوس اللي لينا)</h4>
+          <div class="summary-row">
+            <span class="summary-label">عدد العملاء المدينين</span>
+            <span class="summary-value" id="capitalDebtorsCount">0</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">إجمالي المديونيات</span>
+            <span class="summary-value positive" id="capitalReceivables">0.00 ج.م</span>
+          </div>
+        </div>
+        <div class="summary-box">
+          <h4 class="summary-title">🔴 الذمم الدائنة (الفلوس اللي علينا)</h4>
+          <div class="summary-row">
+            <span class="summary-label">عدد الموردين الدائنين</span>
+            <span class="summary-value" id="capitalCreditorsCount">0</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">إجمالي المستحقات</span>
+            <span class="summary-value negative" id="capitalPayables">0.00 ج.م</span>
+          </div>
+        </div>
+        <div class="summary-box">
+          <h4 class="summary-title">🏦 القروض والسلف (ديون علينا)</h4>
+          <div class="summary-row">
+            <span class="summary-label">عدد القروض</span>
+            <span class="summary-value" id="capitalLoansCount">0</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">إجمالي القروض</span>
+            <span class="summary-value negative" id="capitalLoansTotal">0.00 ج.م</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- رأس المال الصافي -->
+      <div class="stats-grid" style="margin-top: 20px;">
+        <div class="stat-card green" style="grid-column: span 2;">
+          <div class="stat-header">
+            <span class="stat-icon">✅</span>
+          </div>
+          <div class="stat-label">رأس المال الصافي (بعد طرح الالتزامات)</div>
+          <div class="stat-value" id="capitalNetTotal" style="font-size: 28px; color: var(--success);">0.00 ج.م</div>
+          <div class="stat-desc">إجمالي الأصول - إجمالي الالتزامات</div>
+        </div>
+      </div>
+
+      <!-- Chart للتوزيع -->
+      <div class="charts-grid" style="margin-top: 20px;">
+        <div class="chart-card">
+          <h3 class="chart-title">📊 توزيع رأس المال</h3>
+          <div class="chart-container"><canvas id="capitalDistChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">📈 تطور رأس المال</h3>
+          <div class="chart-container"><canvas id="capitalTrendChart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- جدول تفاصيل الذمم المدينة -->
+      <div class="table-card" style="margin-top: 20px;">
+        <div class="table-header">
+          <h3 class="table-title">💳 تفاصيل الذمم المدينة (الفلوس اللي لينا عند العملاء)</h3>
+          <span id="debtorsTableCount" class="badge badge-info">0 عميل</span>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>العميل</th>
+                <th>الهاتف</th>
+                <th>المبلغ المستحق</th>
+                <th>آخر معاملة</th>
+              </tr>
+            </thead>
+            <tbody id="debtorsTableBody">
+              <tr><td colspan="5" class="empty-state">جاري التحميل...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- جدول تفاصيل الذمم الدائنة -->
+      <div class="table-card" style="margin-top: 20px;">
+        <div class="table-header">
+          <h3 class="table-title">🔴 تفاصيل الذمم الدائنة (الفلوس اللي علينا للموردين)</h3>
+          <span id="creditorsTableCount" class="badge badge-danger">0 مورد</span>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>المورد</th>
+                <th>الهاتف</th>
+                <th>المبلغ المستحق</th>
+                <th>آخر معاملة</th>
+              </tr>
+            </thead>
+            <tbody id="creditorsTableBody">
+              <tr><td colspan="5" class="empty-state">جاري التحميل...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         📊 PROFITS PANEL - تقرير الأرباح والخسائر
+         ═══════════════════════════════════════ -->
+    <div id="profitsPanel" class="panel">
+      <div class="section-header">
+        <h2 class="section-title">📊 تقرير الأرباح والخسائر</h2>
+        <div class="table-actions">
+          <button class="btn btn-success btn-sm" onclick="exportProfitsReport()">📥 تصدير Excel</button>
+          <button class="btn btn-secondary btn-sm" onclick="printReport('profits')">🖨️ طباعة</button>
+        </div>
+      </div>
+
+      <div class="filter-bar report-period-filter-bar" style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-bottom:20px; padding:14px 16px; background:var(--ds-bg-card, var(--bg-tertiary)); border:1px solid var(--ds-border, var(--border)); border-radius:var(--ds-radius-md, 12px);">
+        <div class="filter-group">
+          <label style="font-size:13px; color:var(--text-secondary); font-weight:600;">الفترة</label>
+          <select id="profitPeriodFilter" class="filter-input" style="min-width:140px;" onchange="applyReportPeriodFilter('profit'); loadProfitsReport();">
+            <option value="last_day">آخر يوم</option>
+            <option value="last_7">آخر 7 أيام</option>
+            <option value="last_month" selected>آخر شهر</option>
+            <option value="last_3_months">آخر 3 أشهر</option>
+            <option value="last_year">آخر سنة</option>
+            <option value="custom">مخصص (من - إلى)</option>
+          </select>
+        </div>
+        <div class="filter-group" id="profitCustomDatesGroup" style="display:none;">
+          <label style="font-size:12px; color:var(--text-secondary);">من</label>
+          <input type="date" id="profitDateFrom" class="filter-input" style="padding:8px 12px; border-radius:8px;" onchange="loadProfitsReport()">
+          <label style="font-size:12px; color:var(--text-secondary);">إلى</label>
+          <input type="date" id="profitDateTo" class="filter-input" style="padding:8px 12px; border-radius:8px;" onchange="loadProfitsReport()">
+        </div>
+        <button type="button" class="btn btn-primary btn-sm" onclick="loadProfitsReport()" style="padding:8px 16px;">تطبيق</button>
+      </div>
+
+      <!-- توضيح للمراجعة والشركاء -->
+      <div class="summary-box" style="margin-bottom: 20px; padding: 16px 20px; background: linear-gradient(135deg, var(--ds-bg-card, #f8fafc) 0%, var(--bg-tertiary) 100%); border: 1px solid var(--border); border-right: 4px solid var(--success);">
+        <h4 style="margin: 0 0 8px 0; font-size: 15px; color: var(--text-primary);">📌 كيف يُحسب صافي الربح؟</h4>
+        <p style="margin: 0; font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
+          <strong>إجمالي الربح = أرباح الأجهزة + الإكسسوارات + قطع الغيار + الصيانة + إيرادات خارجية + عمولات التحويل</strong><br>
+          <strong>صافي الربح = إجمالي الربح − المصروفات التشغيلية (رواتب + مصاريف تشغيل)</strong><br>
+          تكلفة البضاعة المباعة والمرتجعات = دورة رأس مال وليست خسارة (محسوبة ضمن ربح كل فئة).<br>
+          <span style="color: var(--primary); font-weight: 600;">هذا الصافي هو أساس توزيع حصص الشركاء</span> في صفحة <a href="partners.html" style="color: var(--primary); text-decoration: underline;">الشركاء</a>.
+        </p>
+      </div>
+
+      <!-- ملخص سريع للأرباح -->
+      <div class="stats-grid">
+        <div class="stat-card green">
+          <div class="stat-header">
+            <span class="stat-icon">💰</span>
+            <span class="stat-trend up" id="profitTrend">▲ 0%</span>
+          </div>
+          <div class="stat-label">صافي الربح</div>
+          <div class="stat-value" id="profitsNetProfit" style="color: var(--success);">0.00 ج.م</div>
+          <div class="stat-desc" id="profitsPeriodLabel">بعد خصم المصروفات التشغيلية — أساس حساب الشركاء</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-header">
+            <span class="stat-icon">📈</span>
+          </div>
+          <div class="stat-label">إجمالي الربح</div>
+          <div class="stat-value" id="profitsGrossProfit">0.00 ج.م</div>
+          <div class="stat-desc">أرباح المبيعات قبل خصم المصروفات</div>
+        </div>
+        <div class="stat-card red">
+          <div class="stat-header">
+            <span class="stat-icon">📤</span>
+          </div>
+          <div class="stat-label">المصروفات التشغيلية</div>
+          <div class="stat-value" id="profitsOperatingExpenses" style="color: var(--danger);">0.00 ج.م</div>
+          <div class="stat-desc">رواتب + مصروفات تشغيلية</div>
+        </div>
+        <div class="stat-card purple">
+          <div class="stat-header">
+            <span class="stat-icon">📊</span>
+          </div>
+          <div class="stat-label">هامش الربح</div>
+          <div class="stat-value" id="profitsMargin">0%</div>
+          <div class="stat-desc">نسبة صافي الربح من إجمالي الربح</div>
+        </div>
+      </div>
+
+      <!-- مؤشر الربح/الخسارة -->
+      <div class="summary-box" style="margin-bottom: 20px; text-align: center; padding: 30px;">
+        <div id="profitLossIndicator" style="font-size: 48px; margin-bottom: 10px;">📈</div>
+        <div id="profitLossText" style="font-size: 24px; font-weight: 700; color: var(--success);">أنت رابح!</div>
+        <div id="profitLossAmount" style="font-size: 18px; color: var(--text-secondary);">صافي الربح: 0.00 ج.م</div>
+        <div style="font-size: 12px; color: var(--text-secondary); margin-top: 8px;">يُستخدم هذا المبلغ كأساس لتوزيع أرباح الشركاء</div>
+      </div>
+
+      <!-- تفاصيل الأرباح والمصروفات -->
+      <div class="summary-grid">
+        <!-- صندوق 1: تفاصيل الأرباح حسب الفئة -->
+        <div class="summary-box">
+          <h4 class="summary-title">📈 تفاصيل الأرباح حسب الفئة</h4>
+          <p class="summary-subtitle" style="margin: 0 0 12px 0; font-size: 12px; color: var(--text-secondary);">ربح كل فئة = إيرادات المبيعات − تكلفة البضاعة المباعة</p>
+          <div class="summary-row">
+            <span class="summary-label">📱 ربح الأجهزة</span>
+            <span class="summary-value positive" id="profitsDeviceProfit">0.00 ج.م</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">🎧 ربح الإكسسوارات</span>
+            <span class="summary-value positive" id="profitsAccessoryProfit">0.00 ج.م</span>
+          </div>
+          <div class="summary-row" style="border-top: 1px dashed var(--border); padding-top: 8px; margin-top: 8px;">
+            <span class="summary-label">🔩 ربح قطع الغيار (POS)</span>
+            <span class="summary-value positive" id="profitsRepairPartsProfit">0.00 ج.م</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">🔧 ربح الصيانة</span>
+            <span class="summary-value positive" id="profitsRepairsProfit">0.00 ج.م</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">💵 إيرادات خارجية</span>
+            <span class="summary-value positive" id="profitsExternalRevenue">0.00 ج.م</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">💱 عمولات التحويل</span>
+            <span class="summary-value positive" id="profitsTransferCommissions">0.00 ج.م</span>
+          </div>
+          <div class="summary-row" style="border-top: 2px solid var(--border); padding-top: 10px;">
+            <span class="summary-label" style="font-weight: 700;">إجمالي الربح</span>
+            <span class="summary-value positive" id="profitsGrossProfitTotal" style="font-weight: 700;">0.00 ج.م</span>
+          </div>
+        </div>
+        <!-- صندوق 2: المصروفات التشغيلية -->
+        <div class="summary-box">
+          <h4 class="summary-title">📤 المصروفات التشغيلية</h4>
+          <p class="summary-subtitle" style="margin: 0 0 12px 0; font-size: 12px; color: var(--text-secondary);">المصروفات الحقيقية التي تُخصم من الربح (رواتب + مصروفات تشغيل)</p>
+          <div class="summary-row">
+            <span class="summary-label">مصروفات تشغيلية ورواتب</span>
+            <span class="summary-value negative" id="profitsExpenses">0.00 ج.م</span>
+          </div>
+          <div class="summary-row" style="border-top: 2px solid var(--border); padding-top: 10px;">
+            <span class="summary-label" style="font-weight: 700;">إجمالي المصروفات</span>
+            <span class="summary-value negative" id="profitsTotalExpenses" style="font-weight: 700;">0.00 ج.م</span>
+          </div>
+          <!-- معلومات تفصيلية (دورة رأس المال - لا تؤثر على صافي الربح) -->
+          <div style="margin-top: 20px; padding-top: 16px; border-top: 2px solid var(--border);">
+            <h4 class="summary-title" style="font-size: 13px; color: var(--text-secondary);">📋 معلومات تفصيلية (دورة رأس المال)</h4>
+            <p style="margin: 4px 0 12px 0; font-size: 11px; color: var(--text-secondary);">هذه الأرقام للمعلومية فقط ولا تُخصم من الربح — تكلفة البضاعة محسوبة ضمن ربح كل فئة</p>
+            <div class="summary-row">
+              <span class="summary-label" style="font-size: 12px;">مبيعات الأجهزة</span>
+              <span class="summary-value" id="profitsDeviceRevenue" style="font-size: 12px; color: var(--text-secondary);">0.00 ج.م</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-label" style="font-size: 12px;">تكلفة الأجهزة المباعة</span>
+              <span class="summary-value" id="profitsDeviceCost" style="font-size: 12px; color: var(--text-secondary);">0.00 ج.م</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-label" style="font-size: 12px;">مبيعات الإكسسوارات</span>
+              <span class="summary-value" id="profitsAccessoryRevenue" style="font-size: 12px; color: var(--text-secondary);">0.00 ج.م</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-label" style="font-size: 12px;">تكلفة الإكسسوارات</span>
+              <span class="summary-value" id="profitsAccessoryCost" style="font-size: 12px; color: var(--text-secondary);">0.00 ج.م</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-label" style="font-size: 12px;">مبيعات قطع الغيار (POS)</span>
+              <span class="summary-value" id="profitsRepairPartsRevenue" style="font-size: 12px; color: var(--text-secondary);">0.00 ج.م</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-label" style="font-size: 12px;">تكلفة قطع الغيار (POS)</span>
+              <span class="summary-value" id="profitsRepairPartsCost" style="font-size: 12px; color: var(--text-secondary);">0.00 ج.م</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-label" style="font-size: 12px;">إيرادات الصيانة</span>
+              <span class="summary-value" id="profitsRepairsRevenue" style="font-size: 12px; color: var(--text-secondary);">0.00 ج.م</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-label" style="font-size: 12px;">تكلفة قطع غيار الصيانة</span>
+              <span class="summary-value" id="profitsRepairsPartsCost" style="font-size: 12px; color: var(--text-secondary);">0.00 ج.م</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-label" style="font-size: 12px;">المرتجعات</span>
+              <span class="summary-value" id="profitsReturns" style="font-size: 12px; color: var(--text-secondary);">0.00 ج.م</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- رسوم بيانية -->
+      <div class="charts-grid" style="margin-top: 20px;">
+        <div class="chart-card">
+          <h3 class="chart-title">📈 اتجاه الأرباح اليومية</h3>
+          <div class="chart-container"><canvas id="dailyProfitChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h3 class="chart-title">📊 توزيع مصادر الربح</h3>
+          <div class="chart-container"><canvas id="profitSourcesChart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- جدول تفصيلي للمعاملات -->
+      <div class="table-card" style="margin-top: 20px;">
+        <div class="table-header">
+          <h3 class="table-title">📋 تفاصيل المعاملات المربحة</h3>
+          <span id="profitTransactionsCount" class="badge badge-success">0 معاملة</span>
+        </div>
+        <p style="margin: 0 16px 12px; font-size: 12px; color: var(--text-secondary);">معاملات البيع التي حققت ربحاً: أجهزة، إكسسوارات، قطع غيار (نقطة بيع)، <strong>وإجمالي إيرادات الصيانة</strong> في الفترة. الربح = سعر البيع − التكلفة</p>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>التاريخ</th>
+                <th>النوع</th>
+                <th>المنتج</th>
+                <th>الكمية</th>
+                <th>سعر البيع</th>
+                <th>التكلفة</th>
+                <th>الربح</th>
+              </tr>
+            </thead>
+            <tbody id="profitTransactionsBody">
+              <tr><td colspan="8" class="empty-state">جاري التحميل...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ملخص شهري -->
+      <div class="table-card" style="margin-top: 20px;">
+        <div class="table-header">
+          <h3 class="table-title">📅 ملخص الأرباح الشهرية</h3>
+        </div>
+        <p style="margin: 0 16px 12px; font-size: 12px; color: var(--text-secondary);">مقارنة الإيرادات والتكاليف وصافي الربح لكل شهر — للمراجعة والتحليل</p>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>الشهر</th>
+                <th>الإيرادات</th>
+                <th>التكاليف</th>
+                <th>صافي الربح</th>
+                <th>هامش الربح</th>
+                <th>الحالة</th>
+              </tr>
+            </thead>
+            <tbody id="monthlyProfitBody">
+              <tr><td colspan="6" class="empty-state">جاري التحميل...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         🧾 EXPENSES PANEL - تقرير المصروفات
+         ═══════════════════════════════════════ -->
+    <div id="expensesPanel" class="panel">
+      <div class="section-header">
+        <h2 class="section-title">🧾 تقرير المصروفات التفصيلي</h2>
+        <div class="table-actions">
+          <button class="btn btn-success btn-sm" onclick="exportExpensesReport()">📥 تصدير Excel</button>
+          <button class="btn btn-secondary btn-sm" onclick="printReport('expenses')">🖨️ طباعة</button>
+        </div>
+      </div>
+
+      <div class="filter-bar report-period-filter-bar" style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-bottom:20px; padding:14px 16px; background:var(--ds-bg-card, var(--bg-tertiary)); border:1px solid var(--ds-border, var(--border)); border-radius:var(--ds-radius-md, 12px);">
+        <div class="filter-group">
+          <label style="font-size:13px; color:var(--text-secondary); font-weight:600;">الفترة</label>
+          <select id="expensePeriodFilter" class="filter-input" style="min-width:140px;" onchange="applyReportPeriodFilter('expense'); loadExpensesReport();">
+            <option value="last_day">آخر يوم</option>
+            <option value="last_7">آخر 7 أيام</option>
+            <option value="last_month" selected>آخر شهر</option>
+            <option value="last_3_months">آخر 3 أشهر</option>
+            <option value="last_year">آخر سنة</option>
+            <option value="custom">مخصص (من - إلى)</option>
+          </select>
+        </div>
+        <div class="filter-group" id="expenseCustomDatesGroup" style="display:none;">
+          <label style="font-size:12px; color:var(--text-secondary);">من</label>
+          <input type="date" id="expenseDateFrom" class="filter-input" style="padding:8px 12px; border-radius:8px;" onchange="loadExpensesReport()">
+          <label style="font-size:12px; color:var(--text-secondary);">إلى</label>
+          <input type="date" id="expenseDateTo" class="filter-input" style="padding:8px 12px; border-radius:8px;" onchange="loadExpensesReport()">
+        </div>
+        <div class="filter-group">
+          <label style="font-size:12px; color:var(--text-secondary);">التصنيف</label>
+          <select id="expenseCategoryFilter" class="filter-input" onchange="loadExpensesReport()">
+            <option value="">الكل</option>
+          </select>
+        </div>
+        <button type="button" class="btn btn-primary btn-sm" onclick="loadExpensesReport()" style="padding:8px 16px;">تطبيق</button>
+      </div>
+
+      <!-- ملخص المصروفات -->
+      <div class="stats-grid">
+        <div class="stat-card red">
+          <div class="stat-header">
+            <span class="stat-icon">🧾</span>
+          </div>
+          <div class="stat-label">إجمالي المصروفات</div>
+          <div class="stat-value" id="expensesTotalAmount" style="color: var(--danger);">0.00 ج.م</div>
+          <div class="stat-desc" id="expensesPeriodLabel">هذا الشهر</div>
+        </div>
+        <div class="stat-card orange">
+          <div class="stat-header">
+            <span class="stat-icon">📊</span>
+          </div>
+          <div class="stat-label">عدد المعاملات</div>
+          <div class="stat-value" id="expensesCount">0</div>
+          <div class="stat-desc">معاملة مصروف</div>
+        </div>
+        <div class="stat-card purple">
+          <div class="stat-header">
+            <span class="stat-icon">📈</span>
+          </div>
+          <div class="stat-label">متوسط المصروف</div>
+          <div class="stat-value" id="expensesAverage">0.00 ج.م</div>
+          <div class="stat-desc">لكل معاملة</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-header">
+            <span class="stat-icon">🏷️</span>
+          </div>
+          <div class="stat-label">أعلى تصنيف</div>
+          <div class="stat-value" id="expensesTopCategory" style="font-size: 16px;">-</div>
+          <div class="stat-desc" id="expensesTopCategoryAmount">0.00 ج.م</div>
+        </div>
+      </div>
+
+      <!-- تصنيفات المصروفات -->
+      <div class="summary-grid">
+        <div class="summary-box">
+          <h4 class="summary-title">🏷️ المصروفات حسب التصنيف</h4>
+          <div id="expensesCategoryBreakdown">
+            <div class="empty-state" style="padding: 20px;">جاري التحميل...</div>
+          </div>
+        </div>
+        <div class="chart-card" style="flex: 1;">
+          <h3 class="chart-title">📊 توزيع المصروفات</h3>
+          <div class="chart-container"><canvas id="expensesCategoryChart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- رسم بياني للاتجاه -->
+      <div class="chart-card" style="margin-top: 20px;">
+        <h3 class="chart-title">📈 اتجاه المصروفات اليومية</h3>
+        <div class="chart-container" style="height: 300px;"><canvas id="expensesTrendChart"></canvas></div>
+      </div>
+
+      <!-- جدول تفصيلي للمصروفات -->
+      <div class="table-card" style="margin-top: 20px;">
+        <div class="table-header">
+          <h3 class="table-title">📋 سجل المصروفات التفصيلي</h3>
+          <span id="expensesTableCount" class="badge badge-danger">0 مصروف</span>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>التاريخ</th>
+                <th>الوقت</th>
+                <th>النوع</th>
+                <th>الوصف</th>
+                <th>المحفظة</th>
+                <th>المبلغ</th>
+              </tr>
+            </thead>
+            <tbody id="expensesTableBody">
+              <tr><td colspan="7" class="empty-state">جاري التحميل...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ملخص شهري -->
+      <div class="table-card" style="margin-top: 20px;">
+        <div class="table-header">
+          <h3 class="table-title">📅 ملخص المصروفات الشهرية</h3>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>الشهر</th>
+                <th>عدد المعاملات</th>
+                <th>إجمالي المصروفات</th>
+                <th>المتوسط اليومي</th>
+                <th>أعلى مصروف</th>
+              </tr>
+            </thead>
+            <tbody id="expensesMonthlyBody">
+              <tr><td colspan="5" class="empty-state">جاري التحميل...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         💱 MONEY TRANSFERS PANEL
+         ═══════════════════════════════════════ -->
+    <div id="moneyTransfersPanel" class="panel">
+      <div class="section-header">
+        <h2 class="section-title">💱 تقرير تحويلات الأموال التفصيلي</h2>
+        <div class="table-actions">
+          <button class="btn btn-success btn-sm" onclick="exportMoneyTransfersReport()">📥 تصدير Excel</button>
+          <button class="btn btn-secondary btn-sm" onclick="printReport('moneyTransfers')">🖨️ طباعة</button>
+        </div>
+      </div>
+
+      <!-- Period Filter Bar -->
+      <div class="filter-bar report-period-filter-bar" style="display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-bottom:20px; padding:14px 16px; background:var(--ds-bg-card, var(--bg-tertiary)); border:1px solid var(--ds-border, var(--border)); border-radius:var(--ds-radius-md, 12px);">
+        <div class="filter-group">
+          <label style="font-size:13px; color:var(--text-secondary); font-weight:600;">الفترة</label>
+          <select id="moneyTransfersPeriodFilter" class="filter-input" style="min-width:140px;" onchange="applyReportPeriodFilter('moneyTransfers'); loadMoneyTransfersReport();">
+            <option value="last_day">آخر يوم</option>
+            <option value="last_7">آخر 7 أيام</option>
+            <option value="last_month" selected>آخر شهر</option>
+            <option value="last_3_months">آخر 3 أشهر</option>
+            <option value="last_year">آخر سنة</option>
+            <option value="custom">مخصص (من - إلى)</option>
+          </select>
+        </div>
+        <div class="filter-group" id="moneyTransfersCustomDatesGroup" style="display:none;">
+          <label style="font-size:12px; color:var(--text-secondary);">من</label>
+          <input type="date" id="moneyTransfersDateFrom" class="filter-input" style="padding:8px 12px; border-radius:8px;" onchange="loadMoneyTransfersReport()">
+          <label style="font-size:12px; color:var(--text-secondary);">إلى</label>
+          <input type="date" id="moneyTransfersDateTo" class="filter-input" style="padding:8px 12px; border-radius:8px;" onchange="loadMoneyTransfersReport()">
+        </div>
+        <div class="filter-group">
+          <label style="font-size:12px; color:var(--text-secondary);">النوع</label>
+          <select id="mtReportTypeFilter" class="filter-input" onchange="loadMoneyTransfersReport()">
+            <option value="">الكل</option>
+            <option value="vodafone_cash">فودافون كاش</option>
+            <option value="etisalat_cash">اتصالات كاش</option>
+            <option value="orange_cash">اورنج كاش</option>
+            <option value="we_pay">وي باي</option>
+            <option value="instapay">انستاباي</option>
+            <option value="other">أخرى</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label style="font-size:12px; color:var(--text-secondary);">الاتجاه</label>
+          <select id="mtReportDirFilter" class="filter-input" onchange="loadMoneyTransfersReport()">
+            <option value="">الكل</option>
+            <option value="deposit">إيداع</option>
+            <option value="withdraw">سحب</option>
+            <option value="deferred">آجل</option>
+          </select>
+        </div>
+        <button type="button" class="btn btn-primary btn-sm" onclick="loadMoneyTransfersReport()" style="padding:8px 16px;">تطبيق</button>
+      </div>
+
+      <!-- Stats Cards -->
+      <div class="stats-grid">
+        <div class="stat-card purple">
+          <div class="stat-header"><span class="stat-icon">💱</span></div>
+          <div class="stat-label">عدد التحويلات</div>
+          <div class="stat-value" id="mtReportCount">0</div>
+          <div class="stat-desc" id="mtReportPeriodLabel">هذا الشهر</div>
+        </div>
+        <div class="stat-card cyan">
+          <div class="stat-header"><span class="stat-icon">💰</span></div>
+          <div class="stat-label">إجمالي المبالغ المحولة</div>
+          <div class="stat-value" id="mtReportTotalAmount" style="color:var(--accent);">0.00 ج.م</div>
+          <div class="stat-desc">مجموع كل التحويلات</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-header"><span class="stat-icon">📈</span></div>
+          <div class="stat-label">إجمالي العمولات (الربح)</div>
+          <div class="stat-value" id="mtReportTotalCommission" style="color:var(--success);">0.00 ج.م</div>
+          <div class="stat-desc">صافي أرباح التحويلات</div>
+        </div>
+        <div class="stat-card orange">
+          <div class="stat-header"><span class="stat-icon">📊</span></div>
+          <div class="stat-label">متوسط العمولة</div>
+          <div class="stat-value" id="mtReportAvgCommission">0.00 ج.م</div>
+          <div class="stat-desc">لكل تحويل</div>
+        </div>
+      </div>
+
+      <!-- Type Breakdown + Chart -->
+      <div class="summary-grid">
+        <div class="summary-box">
+          <h4 class="summary-title">📱 التحويلات حسب النوع</h4>
+          <div id="mtReportTypeBreakdown">
+            <div class="empty-state" style="padding:20px;">جاري التحميل...</div>
+          </div>
+        </div>
+        <div class="chart-card" style="flex:1;">
+          <h3 class="chart-title">📊 توزيع التحويلات حسب النوع</h3>
+          <div class="chart-container"><canvas id="mtReportTypeChart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Direction Breakdown + Chart -->
+      <div class="summary-grid" style="margin-top:20px;">
+        <div class="summary-box">
+          <h4 class="summary-title">📥📤 التحويلات حسب الاتجاه</h4>
+          <div id="mtReportDirBreakdown">
+            <div class="empty-state" style="padding:20px;">جاري التحميل...</div>
+          </div>
+        </div>
+        <div class="chart-card" style="flex:1;">
+          <h3 class="chart-title">📊 توزيع حسب الاتجاه</h3>
+          <div class="chart-container"><canvas id="mtReportDirChart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Commission Trend Chart -->
+      <div class="chart-card" style="margin-top:20px;">
+        <h3 class="chart-title">📈 اتجاه العمولات اليومية</h3>
+        <div class="chart-container" style="height:300px;"><canvas id="mtReportTrendChart"></canvas></div>
+      </div>
+
+      <!-- Detail Table -->
+      <div class="table-card" style="margin-top:20px;">
+        <div class="table-header">
+          <h3 class="table-title">📋 سجل التحويلات التفصيلي</h3>
+          <span id="mtReportTableCount" style="background:rgba(168,85,247,0.2);color:#a855f7;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;">0 تحويل</span>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>التاريخ</th>
+                <th>الوقت</th>
+                <th>النوع</th>
+                <th>الاتجاه</th>
+                <th>المبلغ</th>
+                <th>العمولة</th>
+                <th>العميل</th>
+                <th>الهاتف</th>
+                <th>من محفظة</th>
+                <th>إلى محفظة</th>
+                <th>المستخدم</th>
+                <th>ملاحظات</th>
+              </tr>
+            </thead>
+            <tbody id="mtReportTableBody">
+              <tr><td colspan="13" class="empty-state">جاري التحميل...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Monthly Summary Table -->
+      <div class="table-card" style="margin-top:20px;">
+        <div class="table-header">
+          <h3 class="table-title">📅 ملخص التحويلات الشهرية</h3>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>الشهر</th>
+                <th>عدد التحويلات</th>
+                <th>إجمالي المبالغ</th>
+                <th>إجمالي العمولات</th>
+                <th>متوسط العمولة</th>
+                <th>أعلى تحويل</th>
+              </tr>
+            </thead>
+            <tbody id="mtReportMonthlyBody">
+              <tr><td colspan="6" class="empty-state">جاري التحميل...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       🦶 FOOTER
+       ═══════════════════════════════════════ -->
+  <footer>
+    <span>Developed by ElOs | 4Accounting System © 2025</span>
+    <span>التقارير v2.0 • نظام ERP المتكامل</span>
+  </footer>
+
+  <script src="./reports.js"></script>
+  <!-- Invoice Edit Module (admin only) -->
+  <script src="./js/invoice-edit.js" defer></script>
+
+  <!-- Company Logo Script -->
+  <script>
+    (function() {
+      async function loadCompanyData() {
+        try {
+          const saved = localStorage.getItem('appSettings');
+          if (saved) {
+            const settings = JSON.parse(saved);
+            const brandEl = document.querySelector('.brand');
+            const logoEl = document.querySelector('.logo');
+            
+            if (settings.companyName && brandEl) {
+              brandEl.textContent = settings.companyName;
+              if (/[؀-ۿ]/.test(settings.companyName)) {
+                brandEl.style.fontFamily = '"Tajawal", "Cairo", sans-serif';
+                brandEl.style.letterSpacing = '0';
+              }
+            }
+            
+            if (settings.companyLogo && logoEl) {
+              const img = document.createElement('img');
+              img.src = settings.companyLogo;
+              img.style.cssText = 'width:40px;height:40px;object-fit:contain;border-radius:8px;';
+              logoEl.replaceWith(img);
+            }
+          }
+        } catch (error) {
+          console.warn('[HEADER] Failed to load company data:', error);
+        }
+      }
+
+      window.addEventListener('storage', (e) => {
+        if (e.key === 'appSettings') loadCompanyData();
+      });
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', loadCompanyData);
+      } else {
+        loadCompanyData();
+      }
+    })();
+  </script>
+
+  <!-- Invoice Details Modal -->
+  <div id="invoiceDetailsModal" class="modal" style="display:none;">
+    <div class="modal-overlay" onclick="closeInvoiceModal()"></div>
+    <div class="modal-container" style="max-width:500px;">
+      <div class="modal-header">
+        <h3 class="modal-title">🧾 تفاصيل الفاتورة</h3>
+        <button class="modal-close" onclick="closeInvoiceModal()">&times;</button>
+      </div>
+      <div class="modal-body" id="invoiceDetailsContent">
+        <!-- سيتم ملؤها بـ JavaScript -->
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeInvoiceModal()">إغلاق</button>
+        <button class="btn btn-primary" onclick="printCurrentInvoice()">🖨️ طباعة الفاتورة</button>
+      </div>
+    </div>
+  </div>
+
+  <style>
+    /* Modal Base Styles */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 9999;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-overlay {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      backdrop-filter: blur(4px);
+    }
+    .modal-container {
+      position: relative;
+      z-index: 1;
+      width: 90%;
+      max-width: 500px;
+      animation: modalSlideIn 0.3s ease;
+    }
+    @keyframes modalSlideIn {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-tertiary);
+      border-radius: 16px 16px 0 0;
+    }
+    .modal-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin: 0;
+    }
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 24px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+    }
+    .modal-close:hover { color: var(--danger); }
+    .modal-body {
+      padding: 20px;
+      background: var(--bg-secondary);
+    }
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      padding: 15px 20px;
+      border-top: 1px solid var(--border);
+      background: var(--bg-tertiary);
+      border-radius: 0 0 16px 16px;
+    }
+
+    /* Invoice Details Modal Styles */
+    #invoiceDetailsModal .modal-container {
+      background: var(--bg-secondary);
+      border-radius: 16px;
+      max-height: 90vh;
+      overflow: hidden;
+    }
+    #invoiceDetailsModal .modal-body {
+      max-height: 60vh;
+      overflow-y: auto;
+      padding: 20px;
+    }
+    .invoice-detail-card {
+      background: var(--bg-tertiary);
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 15px;
+    }
+    .invoice-detail-header {
+      text-align: center;
+      padding-bottom: 15px;
+      border-bottom: 2px dashed var(--border);
+      margin-bottom: 15px;
+    }
+    .invoice-number-big {
+      font-size: 24px;
+      font-weight: 700;
+      color: var(--primary);
+      font-family: monospace;
+    }
+    .invoice-type-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 8px;
+    }
+    .invoice-type-badge.sale { background: var(--success); color: white; }
+    .invoice-type-badge.return { background: var(--danger); color: white; }
+    .invoice-info-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .invoice-info-row:last-child { border-bottom: none; }
+    .invoice-info-label {
+      color: var(--text-secondary);
+      font-size: 13px;
+    }
+    .invoice-info-value {
+      font-weight: 600;
+      color: var(--text-primary);
+    }
+    .invoice-items-section {
+      margin-top: 15px;
+    }
+    .invoice-items-title {
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: var(--text-primary);
+    }
+    .invoice-item {
+      background: var(--bg-primary);
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 8px;
+    }
+    .invoice-item-name {
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 5px;
+    }
+    .invoice-item-details {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+    .invoice-total-section {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: white;
+      padding: 15px;
+      border-radius: 12px;
+      text-align: center;
+      margin-top: 15px;
+    }
+    .invoice-total-label {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+    .invoice-total-value {
+      font-size: 28px;
+      font-weight: 700;
+      margin-top: 5px;
+    }
+  </style>
+</body>
+</html>

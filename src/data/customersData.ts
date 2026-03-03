@@ -3,8 +3,9 @@
 // ============================================================
 
 import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
+import { STORAGE_KEYS } from '@/config';
 
-const KEY = 'gx_customers';
+const KEY = STORAGE_KEYS.CUSTOMERS;
 
 export interface Customer {
     id: string;

@@ -44,3 +44,7 @@ server/node_modules
 
 # OS files
 Thumbs.db
+
+# Large extracted resources (from Electron app extraction)
+resources.zip
+resources_extracted/

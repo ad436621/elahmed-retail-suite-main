@@ -128,7 +128,7 @@ export default function Expenses() {
                         <div className="space-y-3">
                             <div>
                                 <label className="mb-1 block text-xs font-medium text-muted-foreground">الوصف *</label>
-                                <input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="مثال: إيجار الشهر" className={inputClass} />
+                                <input data-validation="text-only" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="مثال: إيجار الشهر" className={inputClass} />
                             </div>
                             <div className="grid grid-cols-2 gap-3">
                                 <div>
@@ -149,7 +149,7 @@ export default function Expenses() {
                                 </div>
                                 <div>
                                     <label className="mb-1 block text-xs font-medium text-muted-foreground">أضيف بواسطة</label>
-                                    <input value={form.addedBy} onChange={e => setForm(f => ({ ...f, addedBy: e.target.value }))} placeholder="اختياري" className={inputClass} />
+                                    <input data-validation="text-only" value={form.addedBy} onChange={e => setForm(f => ({ ...f, addedBy: e.target.value }))} placeholder="اختياري" className={inputClass} />
                                 </div>
                             </div>
                         </div>

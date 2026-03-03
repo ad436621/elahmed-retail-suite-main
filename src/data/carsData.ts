@@ -4,8 +4,9 @@
 
 import { CarItem } from '@/domain/types';
 import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
+import { STORAGE_KEYS } from '@/config';
 
-const KEY = 'gx_cars';
+const KEY = STORAGE_KEYS.CARS;
 
 export function getCars(): CarItem[] {
     return getStorageItem<CarItem[]>(KEY, []);

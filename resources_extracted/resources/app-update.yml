@@ -1,0 +1,6 @@
+owner: elos-system
+repo: elos-accounting
+provider: github
+updaterCacheDirName: elos-accounting-updater
+publisherName:
+  - ELOS Development Team

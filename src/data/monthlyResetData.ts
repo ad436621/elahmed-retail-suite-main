@@ -21,10 +21,11 @@ export interface MonthlyArchiveEntry {
     snapshot: Record<string, unknown>; // arbitrary stats snapshot
 }
 
-const RESET_SETTINGS_KEY = 'gx_monthly_reset_settings';
-const MONTHLY_ARCHIVE_KEY = 'gx_monthly_archive';
-
 import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
+import { STORAGE_KEYS } from '@/config';
+
+const RESET_SETTINGS_KEY = STORAGE_KEYS.MONTHLY_RESET_SETTINGS;
+const MONTHLY_ARCHIVE_KEY = STORAGE_KEYS.MONTHLY_ARCHIVE;
 
 // ─── Settings ───────────────────────────────────────────────
 
@@ -95,20 +96,20 @@ export function shouldAutoReset(): boolean {
 // ─── ALL DATA KEYS (for "Clear All Data") ───────────────────
 
 export const ALL_DATA_KEYS = [
-    'gx_mobiles_v2',
-    'gx_mobile_accessories',
-    'gx_devices_v2',
-    'gx_device_accessories',
-    'gx_computers_v2',
-    'gx_computer_accessories',
-    'gx_used_devices',
-    'gx_maintenance_v2',
-    'gx_expenses',
-    'gx_installments_v2',
-    'elahmed_sales',
-    'elahmed-products',
-    'elahmed-categories',
-    'gx_returns_v2',
+    STORAGE_KEYS.MOBILES,
+    STORAGE_KEYS.MOBILE_ACCESSORIES,
+    STORAGE_KEYS.DEVICES,
+    STORAGE_KEYS.DEVICE_ACCESSORIES,
+    STORAGE_KEYS.COMPUTERS,
+    STORAGE_KEYS.COMPUTER_ACCESSORIES,
+    STORAGE_KEYS.USED_DEVICES,
+    STORAGE_KEYS.MAINTENANCE,
+    STORAGE_KEYS.EXPENSES,
+    STORAGE_KEYS.INSTALLMENTS,
+    STORAGE_KEYS.SALES_LEGACY,
+    STORAGE_KEYS.PRODUCTS,
+    STORAGE_KEYS.LEGACY_CATEGORIES,
+    STORAGE_KEYS.RETURNS,
     MONTHLY_ARCHIVE_KEY,
     RESET_SETTINGS_KEY,
 ];

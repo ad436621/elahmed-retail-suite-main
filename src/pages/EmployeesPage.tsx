@@ -56,14 +56,14 @@ function EmployeeModal({ emp, onClose, onDone }: { emp?: Employee; onClose: () =
 
                     <div>
                         <label className="block text-xs font-bold text-muted-foreground mb-1.5">الاسم *</label>
-                        <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="اسم الموظف"
+                        <input data-validation="text-only" value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="اسم الموظف"
                             className="w-full rounded-xl border border-border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <label className="block text-xs font-bold text-muted-foreground mb-1.5">الهاتف</label>
-                            <input value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} placeholder="01xxxxxxxxx"
+                            <input data-validation="phone" value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} placeholder="01xxxxxxxxx"
                                 className="w-full rounded-xl border border-border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
                         </div>
                         <div>

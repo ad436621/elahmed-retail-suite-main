@@ -1,0 +1,1463 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>إدارة الموردين | ElOs</title>
+  <script>(function(){var p=new URLSearchParams(location.search),t=p.get('theme')||localStorage.getItem('elos_theme')||localStorage.getItem('elos-theme')||'dark',h=document.documentElement;h.setAttribute('data-theme',t==='light'?'light':'dark');})();</script>
+  <script src="session-inject.js"></script>
+  <!-- 📱 SPA Mode Detection -->
+  <script src="spa-mode.js"></script>
+  <!-- 🔊 Shared Sound & Toast System -->
+  <script src="shared.js"></script>
+  <!-- 🌙 Theme Sync -->
+  <script src="theme-sync.js"></script>
+  <!-- 🔤 Font Scale Manager -->
+  <script src="js/font-scale-manager.js"></script>
+  <!-- 🎨 Design System Tokens (theme colors - MUST BE FIRST) -->
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/tokens-alias.css">
+  <!-- 🎨 Design System (component styles) -->
+  <link rel="stylesheet" href="styles/design-system.css">
+  <!-- 🎨 Theme Governance Layer (load LAST to override legacy styles) -->
+  <link rel="stylesheet" href="styles/theme-fixes.css">
+  <!-- 📏 Font Sizes - تحسين أحجام الخطوط -->
+  <link rel="stylesheet" href="styles/font-sizes.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-primary: #0a0e14;
+      --bg-secondary: #151921;
+      --bg-tertiary: #1d2330;
+      --bg-card: #252d3d;
+      --border: #2d3548;
+      --text-primary: #e6e8ee;
+      --text-secondary: #9ca3af;
+      --accent: #8b5cf6;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --info: #3b82f6;
+      --cyan: #06b6d4;
+      --success-light: rgba(16,185,129,0.1);
+      --warning-light: rgba(245,158,11,0.1);
+      --danger-light: rgba(239,68,68,0.1);
+      --info-light: rgba(59,130,246,0.1);
+      --shadow: 0 4px 12px rgba(0,0,0,0.3);
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg-tertiary); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb { background: linear-gradient(135deg, var(--accent) 0%, #a855f7 100%); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: linear-gradient(135deg, #9d6dfa 0%, #b86ef7 100%); }
+    * { scrollbar-width: thin; scrollbar-color: var(--accent) var(--bg-tertiary); }
+
+    .arabic-text {
+      font-family: 'Tajawal', 'Cairo', 'Dubai', 'Segoe UI', sans-serif;
+    }
+
+    /* ═══════════════════════════════════════
+       📱 HEADER
+       ═══════════════════════════════════════ */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 10px 24px;
+      background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      flex-shrink: 0;
+      min-height: 65px;
+      flex-wrap: wrap;
+    }
+
+    .logo {
+      width: 42px;
+      height: 42px;
+      color: #ffffff;
+      flex-shrink: 0;
+    }
+
+    .brand-container {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+    }
+
+    .brand {
+      font-weight: 900;
+      font-size: 26px;
+      color: #d1d5db;
+      letter-spacing: 3px;
+      text-shadow: 0 2px 6px rgba(255, 255, 255, 0.1);
+      line-height: 1;
+    }
+
+    .page-subtitle {
+      font-size: 11px;
+      color: var(--text-secondary);
+      font-weight: 500;
+      opacity: 0.8;
+    }
+
+    .header-btn {
+      background: linear-gradient(135deg, rgba(139,92,246,0.15) 0%, rgba(168,85,247,0.15) 100%);
+      color: var(--accent);
+      border: 1px solid rgba(139,92,246,0.3);
+      border-radius: 10px;
+      padding: 8px 16px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 13px;
+      transition: var(--transition);
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+
+    .header-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(139,92,246,0.4);
+      border-color: var(--accent);
+      background: linear-gradient(135deg, rgba(139,92,246,0.25) 0%, rgba(168,85,247,0.25) 100%);
+    }
+
+    .back-btn {
+      background: linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(5,150,105,0.15) 100%);
+      color: var(--success);
+      border: 1px solid rgba(16,185,129,0.3);
+    }
+
+    .back-btn:hover {
+      box-shadow: 0 4px 12px rgba(16,185,129,0.4);
+      border-color: var(--success);
+      background: linear-gradient(135deg, rgba(16,185,129,0.25) 0%, rgba(5,150,105,0.25) 100%);
+    }
+
+    .spacer { flex: 1; }
+
+    /* Header Stats Cards */
+    .header-stats {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .stat-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      padding: 8px 16px;
+      background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      min-width: 110px;
+      transition: var(--transition);
+    }
+
+    .stat-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(139,92,246,0.3);
+      border-color: var(--accent);
+    }
+
+    .stat-card.success { border-top: 3px solid var(--success); }
+    .stat-card.danger { border-top: 3px solid var(--danger); }
+    .stat-card.info { border-top: 3px solid var(--info); }
+    .stat-card.warning { border-top: 3px solid var(--warning); }
+
+    .stat-card-value {
+      font-size: 20px;
+      font-weight: 900;
+      font-family: 'Courier New', monospace;
+    }
+
+    .stat-card-label {
+      font-size: 10px;
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+
+    /* Clock */
+    .header-clock {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      padding: 8px 14px;
+      background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      min-width: 100px;
+    }
+
+    .clock-time {
+      font-size: 16px;
+      font-weight: 900;
+      color: var(--accent);
+      font-family: 'Courier New', monospace;
+      direction: ltr;
+    }
+
+    .clock-date {
+      font-size: 9px;
+      color: var(--text-secondary);
+      font-weight: 600;
+    }
+
+    /* ═══════════════════════════════════════
+       📊 MAIN CONTENT
+       ═══════════════════════════════════════ */
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      padding: 20px;
+      gap: 16px;
+    }
+
+    /* Action Bar */
+    .action-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      background: var(--bg-secondary);
+      padding: 16px 20px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+    }
+
+    .search-box {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex: 1;
+      max-width: 400px;
+    }
+
+    .search-input {
+      flex: 1;
+      padding: 12px 16px;
+      font-size: 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      transition: var(--transition);
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(139,92,246,0.1);
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      transition: var(--transition);
+      border: none;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent) 0%, #a855f7 100%);
+      color: white;
+      box-shadow: 0 2px 8px rgba(139,92,246,0.3);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(139,92,246,0.4);
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+      color: white;
+      box-shadow: 0 2px 8px rgba(16,185,129,0.3);
+    }
+
+    .btn-success:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 16px rgba(16,185,129,0.4);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+    }
+
+    .btn-ghost:hover {
+      background: rgba(139,92,246,0.1);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    /* Table Container */
+    .table-container {
+      flex: 1;
+      background: var(--bg-secondary);
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .table-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-tertiary);
+    }
+
+    .table-title {
+      font-size: 18px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .table-count {
+      background: var(--accent);
+      color: white;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .table-wrapper {
+      flex: 1;
+      overflow: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+
+    thead {
+      position: sticky;
+      top: 0;
+      background: var(--bg-tertiary);
+      z-index: 10;
+    }
+
+    th {
+      padding: 14px 16px;
+      text-align: right;
+      font-weight: 700;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      font-size: 11px;
+      letter-spacing: 0.5px;
+      border-bottom: 2px solid var(--border);
+      white-space: nowrap;
+    }
+
+    /* Sortable Table Headers */
+    th.sortable {
+      cursor: pointer;
+      user-select: none;
+      transition: var(--transition);
+    }
+
+    th.sortable:hover {
+      background: rgba(139,92,246,0.1);
+      color: var(--accent);
+    }
+
+    th.sortable::after {
+      content: ' ⇅';
+      opacity: 0.3;
+      font-size: 10px;
+    }
+
+    th.sortable.asc::after {
+      content: ' ▲';
+      opacity: 1;
+      color: var(--accent);
+    }
+
+    th.sortable.desc::after {
+      content: ' ▼';
+      opacity: 1;
+      color: var(--accent);
+    }
+
+    td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+
+    tbody tr {
+      transition: var(--transition);
+    }
+
+    tbody tr:hover {
+      background: rgba(139,92,246,0.05);
+    }
+
+    .supplier-name {
+      font-weight: 700;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .supplier-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--accent) 0%, #a855f7 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 14px;
+      color: white;
+    }
+
+    .phone-cell {
+      direction: ltr;
+      font-family: 'Courier New', monospace;
+      color: var(--info);
+    }
+
+    .address-cell {
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      color: var(--text-secondary);
+    }
+
+    /* Balance Badge */
+    .balance-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+      font-family: 'Courier New', monospace;
+    }
+
+    .balance-badge.debt {
+      background: rgba(239,68,68,0.15);
+      color: var(--danger);
+      border: 1px solid rgba(239,68,68,0.3);
+    }
+
+    .balance-badge.clear {
+      background: rgba(16,185,129,0.15);
+      color: var(--success);
+      border: 1px solid rgba(16,185,129,0.3);
+    }
+
+    .balance-badge.credit {
+      background: rgba(245,158,11,0.15);
+      color: var(--warning);
+      border: 1px solid rgba(245,158,11,0.3);
+    }
+
+    /* Action Buttons */
+    .action-btns {
+      display: flex;
+      gap: 6px;
+      justify-content: flex-start;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .action-btn {
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      border: 1px solid;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: transparent;
+      white-space: nowrap;
+      font-family: 'Tajawal', 'Cairo', 'Segoe UI', sans-serif;
+    }
+
+    .action-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+
+    .action-btn.sales-report {
+      color: #8b5cf6;
+      border-color: rgba(139,92,246,0.3);
+      background: rgba(139,92,246,0.08);
+    }
+
+    .action-btn.view {
+      color: var(--info);
+      border-color: rgba(59,130,246,0.3);
+      background: rgba(59,130,246,0.08);
+    }
+    .action-btn.view:hover {
+      background: rgba(59,130,246,0.2);
+      border-color: var(--info);
+    }
+
+    .action-btn.edit {
+      color: var(--accent);
+      border-color: rgba(139,92,246,0.3);
+      background: rgba(139,92,246,0.08);
+    }
+    .action-btn.edit:hover {
+      background: rgba(139,92,246,0.2);
+      border-color: var(--accent);
+    }
+
+    .action-btn.pay {
+      color: var(--success);
+      border-color: rgba(16,185,129,0.3);
+      background: rgba(16,185,129,0.08);
+    }
+    .action-btn.pay:hover {
+      background: rgba(16,185,129,0.2);
+      border-color: var(--success);
+    }
+
+    .action-btn.history {
+      color: var(--warning);
+      border-color: rgba(245,158,11,0.3);
+      background: rgba(245,158,11,0.08);
+    }
+    .action-btn.history:hover {
+      background: rgba(245,158,11,0.2);
+      border-color: var(--warning);
+    }
+
+    .action-btn.delete {
+      color: var(--danger);
+      border-color: rgba(239,68,68,0.3);
+      background: rgba(239,68,68,0.08);
+    }
+    .action-btn.delete:hover {
+      background: rgba(239,68,68,0.2);
+      border-color: var(--danger);
+    }
+
+    .action-btn.sales-report:hover {
+      background: rgba(139,92,246,0.2);
+      border-color: #8b5cf6;
+    }
+
+    /* ═══════════════════════════════════════
+       📊 SALES REPORT STYLES
+       ═══════════════════════════════════════ */
+    .sales-report-summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .summary-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      transition: var(--transition);
+    }
+
+    .summary-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      border-color: var(--accent);
+    }
+
+    .summary-card.highlight {
+      background: linear-gradient(135deg, rgba(139,92,246,0.15) 0%, rgba(168,85,247,0.1) 100%);
+      border-color: var(--accent);
+    }
+
+    .summary-icon {
+      font-size: 32px;
+      width: 60px;
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-tertiary);
+      border-radius: 12px;
+      flex-shrink: 0;
+    }
+
+    .summary-content {
+      flex: 1;
+    }
+
+    .summary-label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+
+    .summary-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .summary-amount {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .summary-percentage {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--success);
+    }
+
+    .summary-sub {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+
+    .action-btn.disabled,
+    .action-btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      pointer-events: none;
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-secondary);
+    }
+
+    .empty-state-icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+
+    .empty-state-text {
+      font-size: 16px;
+      margin-bottom: 20px;
+    }
+
+    /* ═══════════════════════════════════════
+       🪟 MODAL
+       ═══════════════════════════════════════ */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      width: 100%;
+      max-width: 550px;
+      max-height: 90vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      animation: modalSlideIn 0.3s ease-out;
+    }
+
+    @keyframes modalSlideIn {
+      from { opacity: 0; transform: translateY(-30px) scale(0.95); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-tertiary);
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .modal-close {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition);
+    }
+
+    .modal-close:hover {
+      background: rgba(239,68,68,0.1);
+      border-color: var(--danger);
+      color: var(--danger);
+    }
+
+    .modal-body {
+      padding: 24px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    .form-label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 12px 16px;
+      font-size: 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      transition: var(--transition);
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(139,92,246,0.1);
+    }
+
+    .form-input:read-only {
+      background: var(--bg-primary);
+      opacity: 0.7;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      padding: 16px 24px;
+      border-top: 1px solid var(--border);
+      background: var(--bg-tertiary);
+    }
+
+    /* ═══════════════════════════════════════
+       🧾 HISTORY MODAL
+       ═══════════════════════════════════════ */
+    .history-modal .modal-content {
+      max-width: 950px;
+      height: 90vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .history-modal .modal-body {
+      flex: 1;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .history-modal .history-list {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .history-list {
+      overflow-y: auto;
+    }
+
+    .history-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border);
+      transition: var(--transition);
+    }
+
+    .history-item:hover {
+      background: rgba(139,92,246,0.05);
+    }
+
+    .history-item:last-child {
+      border-bottom: none;
+    }
+
+    .history-info {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .history-type {
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .history-date {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .history-amount {
+      font-family: 'Courier New', monospace;
+      font-weight: 700;
+      font-size: 16px;
+    }
+
+    .history-amount.in { color: var(--success); }
+    .history-amount.out { color: var(--danger); }
+
+    /* Account Statement Styles */
+    .account-summary {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+      padding: 10px;
+      background: var(--bg-tertiary);
+      border-radius: 10px;
+    }
+
+    .summary-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+      padding: 8px 6px;
+      background: var(--bg-secondary);
+      border-radius: 8px;
+    }
+
+    .summary-item.highlight {
+      background: linear-gradient(135deg, rgba(139,92,246,0.15), rgba(139,92,246,0.05));
+      border: 1px solid rgba(139,92,246,0.3);
+    }
+
+    .summary-label {
+      font-size: 10px;
+      color: var(--text-secondary);
+    }
+
+    .summary-value {
+      font-size: 14px;
+      font-weight: 700;
+      font-family: 'Courier New', monospace;
+    }
+
+    .summary-value.purchase { color: var(--danger); }
+    .summary-value.payment { color: var(--success); }
+    .summary-value.debt { color: var(--danger); }
+    .summary-value.clear { color: var(--success); }
+
+    .export-buttons {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .export-buttons .btn {
+      padding: 6px 12px;
+      font-size: 11px;
+    }
+
+    .transactions-table {
+      flex: 1;
+      overflow-y: auto;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+
+    .transactions-table table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .transactions-table th {
+      background: var(--bg-tertiary);
+      padding: 10px 12px;
+      text-align: right;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      position: sticky;
+      top: 0;
+    }
+
+    .transactions-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .transactions-table .type-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .transactions-table .type-badge.purchase {
+      background: rgba(239,68,68,0.15);
+      color: var(--danger);
+    }
+
+    .transactions-table .type-badge.payment {
+      background: rgba(16,185,129,0.15);
+      color: var(--success);
+    }
+
+    .transactions-table .type-badge.opening {
+      background: rgba(139,92,246,0.15);
+      color: var(--accent);
+    }
+
+    .transactions-table .amount {
+      font-weight: 700;
+      font-family: 'Courier New', monospace;
+    }
+
+    .transactions-table .amount.purchase { color: var(--danger); }
+    .transactions-table .amount.payment { color: var(--success); }
+
+    .transactions-table .notes {
+      color: var(--text-secondary);
+      font-size: 11px;
+      max-width: 150px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* ═══════════════════════════════════════
+       📄 FOOTER
+       ═══════════════════════════════════════ */
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 8px 24px;
+      background: var(--bg-secondary);
+      border-top: 1px solid var(--border);
+      font-size: 11px;
+      color: var(--text-secondary);
+      flex-shrink: 0;
+    }
+
+    /* Toast */
+    #toastContainer {
+      position: fixed;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10000;
+      display: flex;
+      flex-direction: column;
+      pointer-events: none;
+    }
+
+    @keyframes slideIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes slideOut { from { opacity: 1; } to { opacity: 0; transform: translateY(-20px); } }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .header { padding: 10px 16px; gap: 12px; }
+      .header-stats { display: none; }
+      .main-content { padding: 12px; }
+      .form-row { grid-template-columns: 1fr; }
+      .action-btns { flex-wrap: wrap; }
+    }
+  </style>
+  <link rel="stylesheet" href="responsive.css">
+</head>
+<body>
+  <!-- ═══════════════════════════════════════
+       📱 HEADER
+       ═══════════════════════════════════════ -->
+  <header class="header">
+    <svg class="logo" id="headerLogo" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+    </svg>
+    
+    <div class="brand-container">
+      <div class="brand" id="headerCompanyName">ElOs</div>
+      <div class="page-subtitle arabic-text">إدارة الموردين</div>
+    </div>
+
+    <a href="index.html" class="header-btn back-btn">
+      <span>🏠</span>
+      <span class="arabic-text">الرئيسية</span>
+    </a>
+
+    <a href="purchases-general.html" class="header-btn">
+      <span>📦</span>
+      <span class="arabic-text">المشتريات</span>
+    </a>
+
+    <button class="header-btn" onclick="exportSuppliersToCSV()" title="تصدير الموردين إلى CSV">
+      <span>📤</span>
+      <span class="arabic-text">تصدير</span>
+    </button>
+
+    <button class="header-btn" onclick="openSuppliersImportModal()" title="استيراد موردين من CSV">
+      <span>📥</span>
+      <span class="arabic-text">استيراد</span>
+    </button>
+
+    <div class="spacer"></div>
+
+    <div class="header-stats">
+      <div class="stat-card info">
+        <div class="stat-card-value" id="statTotalSuppliers">0</div>
+        <div class="stat-card-label arabic-text">عدد الموردين</div>
+      </div>
+      <div class="stat-card danger">
+        <div class="stat-card-value" id="statTotalDebt">0</div>
+        <div class="stat-card-label arabic-text">إجمالي المستحقات</div>
+      </div>
+      <div class="stat-card success">
+        <div class="stat-card-value" id="statPaidToday">0</div>
+        <div class="stat-card-label arabic-text">مدفوعات اليوم</div>
+      </div>
+    </div>
+
+    <div class="header-clock">
+      <div class="clock-time" id="clockTime">--:--</div>
+      <div class="clock-date arabic-text" id="clockDate">---</div>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════════════════════
+       📊 MAIN CONTENT
+       ═══════════════════════════════════════ -->
+  <main class="main-content">
+    <!-- Action Bar -->
+    <div class="action-bar">
+      <div class="search-box">
+        <input type="text" class="search-input" id="searchInput" placeholder="🔍 بحث بالاسم أو الهاتف أو العنوان..." oninput="filterSuppliers()">
+      </div>
+      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <button class="btn btn-ghost" onclick="exportSuppliersToCSV()" title="تصدير إلى CSV">
+          <span>📤</span>
+          <span class="arabic-text">تصدير</span>
+        </button>
+        <button class="btn btn-ghost" onclick="openSuppliersImportModal()" title="استيراد من CSV">
+          <span>📥</span>
+          <span class="arabic-text">استيراد</span>
+        </button>
+        <button class="btn btn-ghost" onclick="loadSuppliers()">
+          <span>🔄</span>
+          <span class="arabic-text">تحديث</span>
+        </button>
+        <button class="btn btn-primary" onclick="openAddModal()">
+          <span>➕</span>
+          <span class="arabic-text">إضافة مورد</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-container">
+      <div class="table-header">
+        <div class="table-title">
+          <span>🚚</span>
+          <span class="arabic-text">قائمة الموردين</span>
+          <span class="table-count" id="suppliersCount">0</span>
+        </div>
+      </div>
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th class="sortable" data-sort="id" onclick="sortTable('id')">#</th>
+              <th class="sortable" data-sort="name" onclick="sortTable('name')">المورد</th>
+              <th>الهاتف</th>
+              <th>العنوان</th>
+              <th class="sortable" data-sort="balance" onclick="sortTable('balance')">الرصيد</th>
+              <th class="sortable" data-sort="date" onclick="sortTable('date')">آخر معاملة</th>
+              <th>الإجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="suppliersTableBody">
+            <tr>
+              <td colspan="7" class="empty-state">
+                <div class="empty-state-icon">🚚</div>
+                <div class="empty-state-text">جاري تحميل الموردين...</div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- ═══════════════════════════════════════
+       📄 FOOTER
+       ═══════════════════════════════════════ -->
+  <footer class="footer">
+    <span>Developed by ElOs | 4Accounting System © 2025</span>
+    <span class="arabic-text">نسخة محسّنة • واجهة حديثة</span>
+  </footer>
+
+  <!-- ═══════════════════════════════════════
+       ➕ ADD/EDIT SUPPLIER MODAL
+       ═══════════════════════════════════════ -->
+  <div class="modal-overlay" id="supplierModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modalTitle">
+          <span>➕</span>
+          <span class="arabic-text">إضافة مورد جديد</span>
+        </h3>
+        <button class="modal-close" onclick="closeModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="supplierForm" onsubmit="saveSupplier(event)">
+          <input type="hidden" id="supplierId">
+          
+          <div class="form-group">
+            <label class="form-label arabic-text">اسم المورد *</label>
+            <input type="text" class="form-input" id="supplierName" required placeholder="أدخل اسم المورد...">
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label arabic-text">رقم الهاتف</label>
+              <input type="tel" class="form-input" id="supplierPhone" placeholder="01xxxxxxxxx">
+            </div>
+            <div class="form-group" id="balanceGroup">
+              <label class="form-label arabic-text">الرصيد الافتتاحي</label>
+              <input type="number" class="form-input" id="supplierBalance" step="0.01" value="0" placeholder="0.00">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label arabic-text">العنوان</label>
+            <input type="text" class="form-input" id="supplierAddress" placeholder="العنوان الكامل...">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label arabic-text">ملاحظات</label>
+            <textarea class="form-input" id="supplierNotes" rows="3" placeholder="ملاحظات إضافية..."></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="closeModal()">إلغاء</button>
+        <button type="submit" form="supplierForm" class="btn btn-success">
+          <span>💾</span>
+          <span class="arabic-text">حفظ</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       💰 PAYMENT MODAL
+       ═══════════════════════════════════════ -->
+  <div class="modal-overlay" id="paymentModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">
+          <span>💰</span>
+          <span class="arabic-text">سداد دفعة للمورد</span>
+        </h3>
+        <button class="modal-close" onclick="closePaymentModal()">✕</button>
+      </div>
+      <div class="modal-body">
+        <form id="paymentForm" onsubmit="savePayment(event)">
+          <input type="hidden" id="paymentSupplierId">
+          
+          <div class="form-group">
+            <label class="form-label arabic-text">اسم المورد</label>
+            <input type="text" class="form-input" id="paymentSupplierName" readonly>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label arabic-text">الرصيد الحالي (المستحق)</label>
+            <input type="text" class="form-input" id="paymentCurrentBalance" readonly style="color: var(--danger); font-weight: bold;">
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label arabic-text">💵 المبلغ المراد سداده</label>
+              <input type="number" class="form-input" id="paymentAmount" step="0.01" min="0.01" required placeholder="0.00" oninput="calculatePaymentRemaining()">
+            </div>
+            <div class="form-group">
+              <label class="form-label arabic-text">🏦 من المحفظة</label>
+              <select class="form-input" id="paymentMethod" onchange="updateSupplierPaymentWalletsList()">
+                <option value="cash">💵 كاش سائل (الخزنة)</option>
+                <option value="mobile_wallet">📱 محفظة إلكترونية</option>
+                <option value="bank">🏛️ البنك</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- ✅ Dropdown للمحافظ المحددة -->
+          <div class="form-group" id="supplierPaymentWalletSelectGroup" style="display: none; margin-top: 8px;">
+            <label class="form-label arabic-text" style="font-size: 13px; color: var(--text-secondary);">اختر المحفظة المحددة</label>
+            <select class="form-input" id="supplierPaymentWalletSelect" onchange="updateSupplierPaymentWalletBalance()">
+              <option value="">-- اختر المحفظة --</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label arabic-text">💰 رصيد المحفظة المختارة</label>
+            <input type="text" class="form-input" id="paymentWalletBalance" readonly style="text-align:center; background:var(--bg-tertiary); font-weight:bold; color:var(--success);" value="جاري التحميل...">
+          </div>
+
+          <div class="form-group" id="remainingAfterPayment" style="display: none;">
+            <label class="form-label arabic-text">المتبقي بعد السداد</label>
+            <input type="text" class="form-input" id="remainingAmount" readonly style="color: var(--warning); font-weight: bold;">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label arabic-text">ملاحظات</label>
+            <input type="text" class="form-input" id="paymentNotes" placeholder="ملاحظات على الدفعة...">
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="closePaymentModal()">إلغاء</button>
+        <button type="submit" form="paymentForm" class="btn btn-success">
+          <span>✅</span>
+          <span class="arabic-text">تأكيد السداد</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       📜 HISTORY MODAL
+       ═══════════════════════════════════════ -->
+  <div class="modal-overlay history-modal" id="historyModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">
+          <span>📜</span>
+          <span class="arabic-text" id="historyTitle">سجل المعاملات</span>
+        </h3>
+        <button class="modal-close" onclick="closeHistoryModal()">✕</button>
+      </div>
+      <!-- فلتر التاريخ -->
+      <div class="date-filter-bar" style="padding: 12px 20px; background: var(--bg-tertiary); border-bottom: 1px solid var(--border); display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <label style="font-size: 12px; color: var(--text-secondary);">من:</label>
+          <input type="date" id="historyDateFrom" class="form-input" style="width: 140px; padding: 6px 10px; font-size: 12px;">
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <label style="font-size: 12px; color: var(--text-secondary);">إلى:</label>
+          <input type="date" id="historyDateTo" class="form-input" style="width: 140px; padding: 6px 10px; font-size: 12px;">
+        </div>
+        <div style="display: flex; gap: 6px; border-right: 1px solid var(--border); padding-right: 12px;">
+          <button class="btn btn-sm btn-ghost" onclick="setHistoryDateRange('week')" style="padding: 5px 10px; font-size: 11px;">أسبوع</button>
+          <button class="btn btn-sm btn-ghost" onclick="setHistoryDateRange('month')" style="padding: 5px 10px; font-size: 11px; background: rgba(139,92,246,0.15); color: var(--brand);">شهر</button>
+          <button class="btn btn-sm btn-ghost" onclick="setHistoryDateRange('3months')" style="padding: 5px 10px; font-size: 11px;">3 شهور</button>
+          <button class="btn btn-sm btn-ghost" onclick="setHistoryDateRange('year')" style="padding: 5px 10px; font-size: 11px;">سنة</button>
+          <button class="btn btn-sm btn-ghost" onclick="setHistoryDateRange('all')" style="padding: 5px 10px; font-size: 11px;">الكل</button>
+        </div>
+        <button class="btn btn-sm btn-primary" onclick="applyHistoryDateFilter()" style="padding: 6px 14px;">
+          🔍 تطبيق
+        </button>
+        <span id="historyFilterInfo" style="font-size: 11px; color: var(--text-secondary); margin-right: auto;"></span>
+      </div>
+      <div class="modal-body">
+        <div class="history-list" id="historyList">
+          <div class="empty-state">
+            <div class="empty-state-icon">📜</div>
+            <div class="empty-state-text">لا توجد معاملات</div>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="closeHistoryModal()">إغلاق</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       📊 SUPPLIER SALES REPORT MODAL
+       ═══════════════════════════════════════ -->
+  <div class="modal-overlay" id="supplierSalesReportModal">
+    <div class="modal-content" style="max-width: 1200px;">
+      <div class="modal-header">
+        <h3 class="modal-title">
+          <span>📊</span>
+          <span class="arabic-text" id="salesReportTitle">كشف مبيعات المورد</span>
+        </h3>
+        <button class="modal-close" onclick="closeSupplierSalesReport()">✕</button>
+      </div>
+      <!-- فلتر التاريخ -->
+      <div class="date-filter-bar" style="padding: 12px 20px; background: var(--bg-tertiary); border-bottom: 1px solid var(--border); display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <label style="font-size: 12px; color: var(--text-secondary);">من:</label>
+          <input type="date" id="salesReportDateFrom" class="form-input" style="width: 140px; padding: 6px 10px; font-size: 12px;" onchange="loadSupplierSalesReport(currentSupplierId)">
+        </div>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <label style="font-size: 12px; color: var(--text-secondary);">إلى:</label>
+          <input type="date" id="salesReportDateTo" class="form-input" style="width: 140px; padding: 6px 10px; font-size: 12px;" onchange="loadSupplierSalesReport(currentSupplierId)">
+        </div>
+      </div>
+      <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+        <div id="salesReportBody">
+          <!-- سيتم ملؤه ديناميكياً -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-ghost" onclick="closeSupplierSalesReport()">إغلاق</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div id="toastContainer"></div>
+
+  <script src="suppliers.js"></script>
+
+  <!-- ═══════════════════════════════════════
+       🏢 COMPANY HEADER SCRIPT
+       ═══════════════════════════════════════ -->
+  <script>
+  (function() {
+    const settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
+    const companyName = settings.companyName || 'ElOs';
+    const companyLogo = settings.companyLogo;
+    
+    const companyNameEl = document.getElementById('headerCompanyName');
+    if (companyNameEl) {
+      companyNameEl.textContent = companyName;
+      if (/[\u0600-\u06FF]/.test(companyName)) {
+        companyNameEl.style.fontFamily = '"Tajawal", "Cairo", "Dubai", "Segoe UI", system-ui, sans-serif';
+        companyNameEl.style.letterSpacing = '0';
+      }
+    }
+    
+    if (companyLogo) {
+      const logoEl = document.getElementById('headerLogo');
+      if (logoEl) {
+        const img = document.createElement('img');
+        img.src = companyLogo;
+        img.className = 'logo';
+        img.alt = 'Logo';
+        img.style.cssText = 'width: 42px; height: 42px; object-fit: contain; border-radius: 8px;';
+        logoEl.replaceWith(img);
+      }
+    }
+
+    // Clock
+    function updateClock() {
+      const now = new Date();
+      const timeEl = document.getElementById('clockTime');
+      const dateEl = document.getElementById('clockDate');
+      
+      if (timeEl) {
+        timeEl.textContent = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+      }
+      if (dateEl) {
+        dateEl.textContent = now.toLocaleDateString('ar-EG', { 
+          weekday: 'short', 
+          year: 'numeric', 
+          month: 'short', 
+          day: 'numeric' 
+        });
+      }
+    }
+    updateClock();
+    setInterval(updateClock, 1000);
+  })();
+  </script>
+</body>
+</html>

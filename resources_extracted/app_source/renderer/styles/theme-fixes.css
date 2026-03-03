@@ -1,0 +1,1143 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   ELOS Theme Fixes - Governance Layer
+   Version: 1.0
+   Description: Final override layer to enforce token consistency
+   Load this file LAST in all pages to override legacy hard-coded colors
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════
+   🎯 CRITICAL PRIMITIVES
+   ═══════════════════════════════════════ */
+
+/* Body & Page Background */
+body {
+  background-color: var(--ds-bg) !important;
+  color: var(--ds-text) !important;
+}
+
+html[data-theme="light"] body {
+  background-color: var(--ds-bg) !important;
+  color: var(--ds-text) !important;
+}
+
+html[data-theme="dark"] body {
+  background-color: var(--ds-bg) !important;
+  color: var(--ds-text) !important;
+}
+
+/* ═══════════════════════════════════════
+   📋 TABLES - Critical Overrides
+   ═══════════════════════════════════════ */
+
+/* Base table */
+table,
+.table,
+.dataTable {
+  background-color: transparent !important;
+  color: var(--ds-text) !important;
+}
+
+/* Table header */
+thead,
+table thead,
+.table thead,
+.dataTable thead {
+  background-color: var(--ds-bg-tertiary) !important;
+}
+
+th,
+table th,
+.table th,
+.dataTable th {
+  background-color: var(--ds-bg-tertiary) !important;
+  color: var(--ds-text-secondary) !important;
+  border-bottom-color: var(--ds-border) !important;
+}
+
+/* Table body */
+tbody,
+table tbody,
+.table tbody,
+.dataTable tbody {
+  background-color: transparent !important;
+}
+
+td,
+table td,
+.table td,
+.dataTable td {
+  background-color: transparent !important;
+  color: var(--ds-text) !important;
+  border-bottom-color: var(--ds-border) !important;
+}
+
+/* Table row hover */
+tr:hover td,
+table tbody tr:hover td,
+.table tbody tr:hover td,
+.dataTable tbody tr:hover td {
+  background-color: var(--ds-bg-hover) !important;
+}
+
+/* Striped tables */
+table tbody tr:nth-child(even),
+.table-striped tbody tr:nth-child(even) {
+  background-color: var(--ds-bg-tertiary) !important;
+}
+
+html[data-theme="light"] table tbody tr:nth-child(even),
+html[data-theme="light"] .table-striped tbody tr:nth-child(even) {
+  background-color: var(--ds-bg-tertiary) !important;
+}
+
+/* ═══════════════════════════════════════
+   📝 INPUTS & FORM ELEMENTS
+   ═══════════════════════════════════════ */
+
+input[type="text"],
+input[type="number"],
+input[type="search"],
+input[type="tel"],
+input[type="email"],
+input[type="date"],
+input[type="datetime-local"],
+input[type="time"],
+input[type="password"],
+select,
+textarea,
+.form-control,
+.input,
+.select,
+.textarea {
+  background-color: var(--ds-bg-card) !important;
+  color: var(--ds-text) !important;
+  border-color: var(--ds-border) !important;
+}
+
+input:focus,
+select:focus,
+textarea:focus,
+.form-control:focus,
+.input:focus,
+.select:focus,
+.textarea:focus {
+  background-color: var(--ds-bg-card) !important;
+  color: var(--ds-text) !important;
+  border-color: var(--ds-border-focus) !important;
+  box-shadow: var(--ds-focus-shadow, 0 0 0 3px rgba(37, 99, 235, 0.1)) !important;
+  outline: none !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--ds-text-muted) !important;
+}
+
+html[data-theme="light"] input[type="text"],
+html[data-theme="light"] input[type="number"],
+html[data-theme="light"] input[type="search"],
+html[data-theme="light"] input[type="tel"],
+html[data-theme="light"] input[type="email"],
+html[data-theme="light"] input[type="date"],
+html[data-theme="light"] input[type="datetime-local"],
+html[data-theme="light"] input[type="time"],
+html[data-theme="light"] input[type="password"],
+html[data-theme="light"] select,
+html[data-theme="light"] textarea,
+html[data-theme="light"] .form-control,
+html[data-theme="light"] .input,
+html[data-theme="light"] .select,
+html[data-theme="light"] .textarea {
+  background-color: var(--ds-bg-card) !important;
+  color: var(--ds-text) !important;
+  border-color: var(--ds-border) !important;
+  color-scheme: light !important;
+}
+
+/* ✅ ضمان تحكمات المتصفح الأصلية (date/time pickers) تتبع الثيم */
+html:not([data-theme="light"]) input[type="date"],
+html:not([data-theme="light"]) input[type="datetime-local"],
+html:not([data-theme="light"]) input[type="time"] {
+  color-scheme: dark !important;
+}
+
+/* ═══════════════════════════════════════
+   🎴 CARDS & PANELS
+   ═══════════════════════════════════════ */
+
+.card,
+.panel,
+.box {
+  background-color: var(--ds-bg-card) !important;
+  color: var(--ds-text) !important;
+  border-color: var(--ds-border) !important;
+  box-shadow: var(--ds-shadow-sm) !important;
+}
+
+.card-header,
+.panel-header {
+  background-color: var(--ds-bg-tertiary) !important;
+  border-bottom-color: var(--ds-border) !important;
+  color: var(--ds-text) !important;
+}
+
+.card-body,
+.panel-body {
+  background-color: transparent !important;
+  color: var(--ds-text) !important;
+}
+
+.card-footer,
+.panel-footer {
+  background-color: var(--ds-bg-tertiary) !important;
+  border-top-color: var(--ds-border) !important;
+  color: var(--ds-text) !important;
+}
+
+html[data-theme="light"] .card,
+html[data-theme="light"] .panel,
+html[data-theme="light"] .box {
+  background-color: var(--ds-bg-card) !important;
+  color: var(--ds-text) !important;
+  border-color: var(--ds-border) !important;
+}
+
+/* ═══════════════════════════════════════
+   🔘 BUTTONS
+   ═══════════════════════════════════════ */
+
+button,
+.btn {
+  color: var(--ds-text) !important;
+}
+
+.btn-primary,
+.btn-main,
+.btn-action {
+  background: var(--ds-brand) !important;
+  color: var(--ds-brand-contrast) !important;
+  border-color: var(--ds-brand) !important;
+}
+
+.btn-primary:hover,
+.btn-main:hover,
+.btn-action:hover {
+  background: var(--ds-brand-hover) !important;
+  border-color: var(--ds-brand-hover) !important;
+}
+
+.btn-primary:focus,
+.btn-main:focus,
+.btn-action:focus {
+  outline: none !important;
+  box-shadow: var(--ds-focus-shadow, 0 0 0 3px rgba(37, 99, 235, 0.2)) !important;
+}
+
+.btn-secondary,
+.btn-outline {
+  background-color: transparent !important;
+  color: var(--ds-text-secondary) !important;
+  border-color: var(--ds-border) !important;
+}
+
+.btn-secondary:hover,
+.btn-outline:hover {
+  background-color: var(--ds-bg-hover) !important;
+  color: var(--ds-text) !important;
+  border-color: var(--ds-border-hover) !important;
+}
+
+.btn-secondary:focus,
+.btn-outline:focus {
+  outline: none !important;
+  box-shadow: var(--ds-focus-shadow, 0 0 0 3px rgba(37, 99, 235, 0.1)) !important;
+  border-color: var(--ds-border-focus) !important;
+}
+
+/* ═══════════════════════════════════════
+   🪟 MODALS & OVERLAYS
+   ═══════════════════════════════════════ */
+
+.modal-overlay,
+.modal-backdrop {
+  background-color: var(--ds-overlay) !important;
+}
+
+.modal,
+.modal-content,
+.modal-container {
+  background-color: var(--ds-bg-card) !important;
+  color: var(--ds-text) !important;
+  border-color: var(--ds-border) !important;
+  box-shadow: var(--ds-shadow-lg) !important;
+}
+
+.modal-header {
+  background-color: var(--ds-bg-tertiary) !important;
+  border-bottom-color: var(--ds-border) !important;
+  color: var(--ds-text) !important;
+}
+
+.modal-body {
+  background-color: transparent !important;
+  color: var(--ds-text) !important;
+}
+
+.modal-footer {
+  background-color: var(--ds-bg-tertiary) !important;
+  border-top-color: var(--ds-border) !important;
+  color: var(--ds-text) !important;
+}
+
+/* ═══════════════════════════════════════
+   📦 DROPDOWN MENUS
+   ═══════════════════════════════════════ */
+
+.dropdown-menu,
+.dropdown-content,
+.select-dropdown {
+  background-color: var(--ds-bg-card) !important;
+  color: var(--ds-text) !important;
+  border-color: var(--ds-border) !important;
+  box-shadow: var(--ds-shadow-md) !important;
+}
+
+.dropdown-item,
+.dropdown-menu-item {
+  color: var(--ds-text) !important;
+}
+
+.dropdown-item:hover,
+.dropdown-menu-item:hover {
+  background-color: var(--ds-bg-hover) !important;
+  color: var(--ds-text) !important;
+}
+
+/* ═══════════════════════════════════════
+   🎨 SIDEBAR & TOPBAR (SPA Shell)
+   ═══════════════════════════════════════ */
+
+/* Sidebar container - use shell tokens */
+.sidebar {
+  background: var(--sidebar-bg) !important;
+  border-left-color: var(--sidebar-border) !important;
+  color: var(--sidebar-text) !important;
+}
+
+.sidebar-header {
+  background-color: var(--sidebar-surface) !important;
+  border-bottom-color: var(--sidebar-border) !important;
+  color: var(--sidebar-text) !important;
+}
+
+.sidebar-nav {
+  background-color: transparent !important;
+}
+
+.sidebar-footer {
+  background-color: var(--sidebar-surface) !important;
+  border-top-color: var(--sidebar-border) !important;
+  color: var(--sidebar-text) !important;
+}
+
+/* Sidebar navigation items */
+.nav-item {
+  color: var(--sidebar-text-muted) !important;
+  background-color: transparent !important;
+}
+
+.nav-item:hover {
+  background-color: var(--sidebar-hover) !important;
+  color: var(--sidebar-text) !important;
+  border-color: transparent !important;
+}
+
+.nav-item.active {
+  background: var(--sidebar-active) !important;
+  color: var(--ds-brand) !important;
+  border-color: var(--ds-border-focus) !important;
+  font-weight: 600 !important;
+}
+
+/* Topbar */
+.top-header,
+.topbar,
+.header-top {
+  background-color: var(--topbar-bg) !important;
+  border-bottom-color: var(--topbar-border) !important;
+  color: var(--topbar-text) !important;
+}
+
+/* ═══════════════════════════════════════
+   📊 DATA DISPLAY COMPONENTS
+   ═══════════════════════════════════════ */
+
+.data-row,
+.list-item,
+.list-row {
+  background-color: var(--ds-bg-card) !important;
+  color: var(--ds-text) !important;
+  border-color: var(--ds-border) !important;
+}
+
+.data-row:hover,
+.list-item:hover,
+.list-row:hover {
+  background-color: var(--ds-bg-hover) !important;
+  border-color: var(--ds-border-hover) !important;
+}
+
+/* ═══════════════════════════════════════
+   🔍 SEARCH & FILTER BARS
+   ═══════════════════════════════════════ */
+
+.search-container,
+.filter-bar,
+.filters,
+.filters-section {
+  background-color: var(--ds-bg-card) !important;
+  border-color: var(--ds-border) !important;
+  color: var(--ds-text) !important;
+}
+
+/* Right-side filter panels (sidebar content panels) */
+.sidebar .panel,
+aside.sidebar .panel,
+.filters-section .panel {
+  background-color: var(--ds-bg-card) !important;
+  border-color: var(--ds-border) !important;
+  color: var(--ds-text) !important;
+}
+
+.sidebar .panel-header,
+aside.sidebar .panel-header {
+  background-color: transparent !important;
+  border-bottom-color: var(--ds-border) !important;
+  color: var(--ds-text) !important;
+}
+
+/* ═══════════════════════════════════════
+   📑 TABS
+   ═══════════════════════════════════════ */
+
+.tabs,
+.tab-list {
+  background-color: var(--ds-bg-tertiary) !important;
+  border-bottom-color: var(--ds-border) !important;
+}
+
+.tab,
+.tab-item {
+  color: var(--ds-text-secondary) !important;
+  background-color: transparent !important;
+}
+
+.tab:hover,
+.tab-item:hover {
+  background-color: var(--ds-bg-hover) !important;
+  color: var(--ds-text) !important;
+}
+
+.tab.active,
+.tab-item.active {
+  color: var(--ds-brand) !important;
+  border-bottom-color: var(--ds-brand) !important;
+}
+
+/* ═══════════════════════════════════════
+   ⚡ QUICK FILTER BUTTONS
+   ═══════════════════════════════════════ */
+
+.quick-filter-btn {
+  background-color: var(--ds-bg-tertiary) !important;
+  border-color: var(--ds-border) !important;
+  color: var(--ds-text) !important;
+}
+
+.quick-filter-btn:hover {
+  background-color: var(--ds-brand) !important;
+  border-color: var(--ds-brand) !important;
+  color: var(--ds-brand-contrast) !important;
+}
+
+.quick-filter-btn.active {
+  background-color: var(--ds-brand) !important;
+  border-color: var(--ds-brand) !important;
+  color: var(--ds-brand-contrast) !important;
+}
+
+/* ═══════════════════════════════════════
+   📊 QUICK STAT WIDGETS
+   ═══════════════════════════════════════ */
+
+.quick-stat,
+.quick-stat-item {
+  background-color: var(--ds-bg-card) !important;
+  border-color: var(--ds-border) !important;
+  color: var(--ds-text) !important;
+}
+
+.quick-stat:hover {
+  border-color: var(--ds-border-hover) !important;
+  background-color: var(--ds-bg-hover) !important;
+}
+
+.quick-stat-label,
+.quick-stat-content .label {
+  color: var(--ds-text-secondary) !important;
+}
+
+.quick-stat-value,
+.quick-stat-content .value {
+  color: var(--ds-text) !important;
+}
+
+/* Quick stat widgets in dashboard/home */
+.panel-compact,
+.stat-card {
+  background-color: var(--ds-bg-card) !important;
+  border-color: var(--ds-border) !important;
+  color: var(--ds-text) !important;
+}
+
+.panel-compact .panel-title-small,
+.stat-card .label {
+  color: var(--ds-text-secondary) !important;
+}
+
+.panel-compact .panel-content-compact,
+.stat-card .value {
+  color: var(--ds-text) !important;
+}
+
+/* ═══════════════════════════════════════
+   📄 PAGINATION BARS
+   ═══════════════════════════════════════ */
+
+.pagination-controls,
+.pagination,
+.pagination-bar {
+  background-color: var(--ds-bg-card) !important;
+  border-color: var(--ds-border) !important;
+  color: var(--ds-text) !important;
+}
+
+.pagination-btn,
+.pagination-button,
+.pagination button {
+  background-color: var(--ds-bg-tertiary) !important;
+  border-color: var(--ds-border) !important;
+  color: var(--ds-text) !important;
+}
+
+.pagination-btn:hover,
+.pagination-button:hover,
+.pagination button:hover:not(:disabled) {
+  background-color: var(--ds-bg-hover) !important;
+  border-color: var(--ds-border-hover) !important;
+  color: var(--ds-text) !important;
+}
+
+.pagination-btn.active,
+.pagination-button.active,
+.pagination button.active {
+  background-color: var(--ds-brand) !important;
+  border-color: var(--ds-brand) !important;
+  color: var(--ds-brand-contrast) !important;
+}
+
+.pagination-btn:disabled,
+.pagination-button:disabled,
+.pagination button:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+}
+
+/* ═══════════════════════════════════════
+   🏷️ BADGES & TAGS
+   ═══════════════════════════════════════ */
+
+.badge,
+.tag,
+.status-badge {
+  color: var(--ds-text) !important;
+}
+
+.badge-success,
+.status-success {
+  background-color: var(--ds-success-bg) !important;
+  color: var(--ds-success) !important;
+}
+
+.badge-warning,
+.status-warning {
+  background-color: var(--ds-warning-bg) !important;
+  color: var(--ds-warning) !important;
+}
+
+.badge-danger,
+.status-danger {
+  background-color: var(--ds-danger-bg) !important;
+  color: var(--ds-danger) !important;
+}
+
+.badge-info,
+.status-info {
+  background-color: var(--ds-info-bg) !important;
+  color: var(--ds-info) !important;
+}
+
+/* ═══════════════════════════════════════
+   🔔 TOASTS & NOTIFICATIONS
+   ═══════════════════════════════════════ */
+
+.toast,
+.notification {
+  background-color: var(--ds-bg-card) !important;
+  color: var(--ds-text) !important;
+  border-color: var(--ds-border) !important;
+  box-shadow: var(--ds-shadow-lg) !important;
+}
+
+.toast-success {
+  border-left-color: var(--ds-success) !important;
+}
+
+.toast-error,
+.toast-danger {
+  border-left-color: var(--ds-danger) !important;
+}
+
+.toast-warning {
+  border-left-color: var(--ds-warning) !important;
+}
+
+.toast-info {
+  border-left-color: var(--ds-info) !important;
+}
+
+/* ═══════════════════════════════════════
+   🎯 LEGACY OVERRIDE PROTECTION
+   ═══════════════════════════════════════ */
+
+/* Force override any body.light-mode or html.light-mode selectors */
+body.light-mode,
+html.light-mode body {
+  background-color: var(--ds-bg) !important;
+  color: var(--ds-text) !important;
+}
+
+body.dark-mode,
+html.dark-mode body {
+  background-color: var(--ds-bg) !important;
+  color: var(--ds-text) !important;
+}
+
+/* Override any inline style backgrounds on critical elements */
+table[style*="background"],
+td[style*="background"],
+th[style*="background"],
+input[style*="background"],
+select[style*="background"],
+textarea[style*="background"],
+.card[style*="background"],
+.panel[style*="background"] {
+  /* Note: Cannot override inline styles with CSS, but we can ensure computed styles use tokens */
+}
+
+/* ═══════════════════════════════════════
+   📊 REPORTS PAGE SPECIFIC FIXES
+   ═══════════════════════════════════════ */
+
+/* Ensure all report cards/panels use light theme in LIGHT mode */
+html[data-theme="light"] .stat-card,
+html[data-theme="light"] .chart-card,
+html[data-theme="light"] .table-card,
+html[data-theme="light"] .summary-box,
+html[data-theme="light"] .filters-bar {
+  background-color: var(--ds-bg-card) !important;
+  border-color: var(--ds-border) !important;
+  color: var(--ds-text) !important;
+}
+
+html[data-theme="light"] .table-header {
+  background-color: var(--ds-bg-tertiary) !important;
+  border-bottom-color: var(--ds-border) !important;
+}
+
+html[data-theme="light"] table th {
+  background-color: var(--ds-bg-tertiary) !important;
+  color: var(--ds-text-secondary) !important;
+  border-bottom-color: var(--ds-border) !important;
+}
+
+html[data-theme="light"] table td {
+  background-color: transparent !important;
+  color: var(--ds-text) !important;
+  border-bottom-color: var(--ds-border) !important;
+}
+
+html[data-theme="light"] tr:hover td {
+  background-color: var(--ds-bg-hover) !important;
+}
+
+/* ═══════════════════════════════════════
+   👥 USERS & EMPLOYEES PAGES - Light Mode Fixes
+   ═══════════════════════════════════════ */
+
+/* Override hard-coded dark CSS variables in light mode */
+html[data-theme="light"] body[data-page="users"],
+html[data-theme="light"] body[data-page="employees"] {
+  --bg-primary: var(--ds-bg) !important;
+  --bg-secondary: var(--ds-bg-secondary) !important;
+  --bg-tertiary: var(--ds-bg-tertiary) !important;
+  --card: var(--ds-bg-card) !important;
+  --text-primary: var(--ds-text) !important;
+  --text-secondary: var(--ds-text-secondary) !important;
+  --muted: var(--ds-text-muted) !important;
+  --border: var(--ds-border) !important;
+  --line: var(--ds-border) !important;
+}
+
+/* Table wrapper background */
+html[data-theme="light"] body[data-page="users"] .table-wrapper,
+html[data-theme="light"] body[data-page="employees"] .table-wrapper {
+  background-color: var(--ds-bg-card) !important;
+  border-color: var(--ds-border) !important;
+}
+
+/* Table headers */
+html[data-theme="light"] body[data-page="users"] table th,
+html[data-theme="light"] body[data-page="employees"] table th {
+  background-color: var(--ds-bg-secondary) !important;
+  color: var(--ds-text) !important;
+  border-bottom-color: var(--ds-border-strong, var(--ds-border)) !important;
+}
+
+/* Table body rows */
+html[data-theme="light"] body[data-page="users"] table tbody tr,
+html[data-theme="light"] body[data-page="employees"] table tbody tr {
+  background-color: var(--ds-bg-card) !important;
+}
+
+html[data-theme="light"] body[data-page="users"] table tbody tr td,
+html[data-theme="light"] body[data-page="employees"] table tbody tr td {
+  background-color: var(--ds-bg-card) !important;
+  color: var(--ds-text) !important;
+  border-bottom-color: var(--ds-border) !important;
+}
+
+/* Table row hover */
+html[data-theme="light"] body[data-page="users"] table tbody tr:hover,
+html[data-theme="light"] body[data-page="employees"] table tbody tr:hover {
+  background-color: var(--ds-bg-hover) !important;
+}
+
+html[data-theme="light"] body[data-page="users"] table tbody tr:hover td,
+html[data-theme="light"] body[data-page="employees"] table tbody tr:hover td {
+  background-color: var(--ds-bg-hover) !important;
+}
+
+/* Header styling */
+html[data-theme="light"] body[data-page="users"] .header,
+html[data-theme="light"] body[data-page="employees"] .header {
+  background: var(--ds-bg-secondary) !important;
+  border-bottom-color: var(--ds-border) !important;
+}
+
+/* Header cards */
+html[data-theme="light"] body[data-page="users"] .header-card,
+html[data-theme="light"] body[data-page="employees"] .header-card {
+  background: var(--ds-bg-card) !important;
+  border-color: var(--ds-border) !important;
+}
+
+/* ═══════════════════════════════════════
+   🦶 FOOTER SAFE AREA
+   ═══════════════════════════════════════ */
+
+/* Ensure footer respects safe area (Windows taskbar, etc.) */
+.app-footer {
+  padding-bottom: 0 !important;
+  min-height: var(--footer-height) !important;
+}
+
+/* Standalone page footers (position: fixed) */
+footer[style*="position: fixed"],
+footer[style*="position:fixed"] {
+  bottom: 0 !important;
+  padding-bottom: 0 !important;
+}
+
+/* For standalone pages with fixed footers, add padding to main content */
+body:not(.app-container) > main,
+body:not(.app-container) > .container,
+body:not(.app-container) > .wrapper {
+  padding-bottom: var(--footer-height, 32px) !important;
+}
+
+/* ═══════════════════════════════════════
+   📋 THEME REGRESSION PREVENTION
+   ═══════════════════════════════════════ */
+
+/*
+ * GOVERNANCE RULES:
+ * -----------------
+ * 1. ALL colors MUST come from tokens.css (--ds-* variables)
+ * 2. NO hard-coded colors (#hex, rgb(), rgba()) outside tokens.css
+ * 3. ALL overrides MUST be in this file (theme-fixes.css)
+ * 4. Use !important ONLY in this file, and ONLY when necessary
+ * 5. Scope overrides using: html[data-theme="light"] body[data-page="page-name"]
+ * 
+ * WHEN ADDING OVERRIDES:
+ * - Always use tokens: var(--ds-*)
+ * - Always scope to specific page/theme if possible
+ * - Document why !important is needed
+ * - Test in both light and dark themes
+ */
+
+/* ═══════════════════════════════════════
+   🔄 OVERRIDE LEGACY :root VARIABLES
+   Force all pages to use DS tokens in light mode
+   ═══════════════════════════════════════ */
+html[data-theme="light"] {
+  /* Override legacy hardcoded :root variables */
+  --bg-primary: var(--ds-bg) !important;
+  --bg-secondary: var(--ds-bg-secondary) !important;
+  --bg-tertiary: var(--ds-bg-tertiary) !important;
+  --card: var(--ds-bg-card) !important;
+  --text-primary: var(--ds-text) !important;
+  --text-secondary: var(--ds-text-secondary) !important;
+  --muted: var(--ds-text-muted) !important;
+  --border: var(--ds-border) !important;
+  --line: var(--ds-border) !important;
+  --accent: var(--ds-brand) !important;
+  --success: var(--ds-success) !important;
+  --warning: var(--ds-warning) !important;
+  --danger: var(--ds-danger) !important;
+  --info: var(--ds-info) !important;
+  --purple: var(--ds-purple) !important;
+  --shadow: var(--ds-shadow-md) !important;
+  --shadow-hover: var(--ds-shadow-lg) !important;
+  --radius: var(--ds-radius-md) !important;
+}
+
+/* ═══════════════════════════════════════
+   📦 GENERAL PAGE COMPONENTS - Light Mode Fixes
+   ═══════════════════════════════════════ */
+
+/* Table container */
+html[data-theme="light"] .table-container {
+  background: var(--ds-bg-card) !important;
+  border-color: var(--ds-border) !important;
+}
+
+/* Table header */
+html[data-theme="light"] .table thead {
+  background: var(--ds-bg-tertiary) !important;
+}
+
+html[data-theme="light"] .table th {
+  background: var(--ds-bg-tertiary) !important;
+  color: var(--ds-text-secondary) !important;
+  border-bottom-color: var(--ds-border) !important;
+}
+
+html[data-theme="light"] .table th:hover {
+  background: var(--ds-bg-hover) !important;
+  color: var(--ds-brand) !important;
+}
+
+/* Table body */
+html[data-theme="light"] .table tbody tr {
+  background: var(--ds-bg-card) !important;
+  border-bottom-color: var(--ds-border) !important;
+}
+
+html[data-theme="light"] .table tbody tr:hover {
+  background: var(--ds-bg-hover) !important;
+}
+
+html[data-theme="light"] .table td {
+  color: var(--ds-text) !important;
+  background: transparent !important;
+}
+
+/* Table inputs */
+html[data-theme="light"] .table td input {
+  background: var(--ds-bg-tertiary) !important;
+  border-color: var(--ds-border) !important;
+  color: var(--ds-text) !important;
+}
+
+html[data-theme="light"] .table td input:focus {
+  background: var(--ds-bg-card) !important;
+  border-color: var(--ds-brand) !important;
+  box-shadow: 0 0 0 2px var(--ds-brand-lighter) !important;
+}
+
+/* Header & Stats */
+html[data-theme="light"] .header {
+  background: linear-gradient(135deg, var(--ds-bg-secondary) 0%, var(--ds-bg-tertiary) 100%) !important;
+  border-bottom-color: var(--ds-border) !important;
+}
+
+html[data-theme="light"] .stat {
+  background: linear-gradient(135deg, var(--ds-bg-card) 0%, var(--ds-bg-tertiary) 100%) !important;
+  border-color: var(--ds-border) !important;
+}
+
+html[data-theme="light"] .stat-value {
+  color: var(--ds-text) !important;
+}
+
+html[data-theme="light"] .stat-label {
+  color: var(--ds-text-secondary) !important;
+}
+
+/* Toolbar */
+html[data-theme="light"] .toolbar {
+  background: var(--ds-bg-card) !important;
+  border-color: var(--ds-border) !important;
+}
+
+/* Quick filter buttons */
+html[data-theme="light"] .quick-filter {
+  background: var(--ds-bg-tertiary) !important;
+  border-color: var(--ds-border) !important;
+  color: var(--ds-text) !important;
+}
+
+html[data-theme="light"] .quick-filter:hover,
+html[data-theme="light"] .quick-filter.active {
+  background: var(--ds-brand) !important;
+  border-color: var(--ds-brand) !important;
+  color: var(--ds-brand-contrast) !important;
+}
+
+/* Pagination */
+html[data-theme="light"] .pagination-controls {
+  background: var(--ds-bg-card) !important;
+  border-color: var(--ds-border) !important;
+}
+
+html[data-theme="light"] .pagination-btn {
+  background: var(--ds-bg-tertiary) !important;
+  border-color: var(--ds-border) !important;
+  color: var(--ds-text) !important;
+}
+
+html[data-theme="light"] .pagination-btn:hover {
+  background: var(--ds-bg-hover) !important;
+  border-color: var(--ds-border-hover) !important;
+}
+
+html[data-theme="light"] .pagination-btn.active {
+  background: var(--ds-brand) !important;
+  border-color: var(--ds-brand) !important;
+  color: var(--ds-brand-contrast) !important;
+}
+
+/* Search & Filter inputs */
+html[data-theme="light"] .search-input,
+html[data-theme="light"] .filter-select {
+  background: var(--ds-bg-card) !important;
+  border-color: var(--ds-border) !important;
+  color: var(--ds-text) !important;
+}
+
+/* Back button */
+html[data-theme="light"] .back-btn {
+  background: var(--ds-brand-lighter) !important;
+  border-color: var(--ds-brand-light) !important;
+  color: var(--ds-brand) !important;
+}
+
+html[data-theme="light"] .back-btn:hover {
+  background: var(--ds-brand-light) !important;
+}
+
+/* Header buttons */
+html[data-theme="light"] .header-btn {
+  background: var(--ds-bg-tertiary) !important;
+  border-color: var(--ds-border) !important;
+  color: var(--ds-text-secondary) !important;
+}
+
+html[data-theme="light"] .header-btn:hover {
+  background: var(--ds-brand) !important;
+  border-color: var(--ds-brand) !important;
+  color: var(--ds-brand-contrast) !important;
+}
+
+/* Main content area */
+html[data-theme="light"] .main-content {
+  background: var(--ds-bg) !important;
+}
+
+/* ═══════════════════════════════════════
+   📦 PURCHASES & SALES PAGES - Light Mode Fixes
+   ═══════════════════════════════════════ */
+
+/* Table wrapper and sections */
+html[data-theme="light"] .table-wrapper,
+html[data-theme="light"] .table-section {
+  background: var(--ds-bg-card) !important;
+}
+
+/* Table header section */
+html[data-theme="light"] .table-header {
+  background: var(--ds-bg-card) !important;
+  border-bottom-color: var(--ds-border) !important;
+}
+
+/* Generic table styling for pages without .table class */
+html[data-theme="light"] table thead,
+html[data-theme="light"] thead {
+  background: var(--ds-bg-tertiary) !important;
+}
+
+html[data-theme="light"] table th,
+html[data-theme="light"] th {
+  background: var(--ds-bg-tertiary) !important;
+  color: var(--ds-text-secondary) !important;
+  border-bottom-color: var(--ds-border) !important;
+}
+
+html[data-theme="light"] table tbody tr,
+html[data-theme="light"] tbody tr {
+  background: var(--ds-bg-card) !important;
+}
+
+html[data-theme="light"] table tbody tr:hover,
+html[data-theme="light"] tbody tr:hover {
+  background: var(--ds-bg-hover) !important;
+}
+
+html[data-theme="light"] table tbody tr:hover td,
+html[data-theme="light"] tbody tr:hover td {
+  background: var(--ds-bg-hover) !important;
+}
+
+html[data-theme="light"] table td,
+html[data-theme="light"] td {
+  color: var(--ds-text) !important;
+  border-bottom-color: var(--ds-border) !important;
+}
+
+/* Empty state */
+html[data-theme="light"] .empty-state {
+  background: var(--ds-bg-card) !important;
+  color: var(--ds-text-secondary) !important;
+}
+
+/* Tab content */
+html[data-theme="light"] .tab-content {
+  background: var(--ds-bg-card) !important;
+}
+
+/* Filter and search sections */
+html[data-theme="light"] .filters-section,
+html[data-theme="light"] .filter-row,
+html[data-theme="light"] .filters-row {
+  background: var(--ds-bg-card) !important;
+  border-color: var(--ds-border) !important;
+}
+
+/* Tab buttons */
+html[data-theme="light"] .tab-btn {
+  background: var(--ds-bg-tertiary) !important;
+  color: var(--ds-text-secondary) !important;
+  border-color: var(--ds-border) !important;
+}
+
+html[data-theme="light"] .tab-btn:hover {
+  background: var(--ds-bg-hover) !important;
+  color: var(--ds-text) !important;
+}
+
+html[data-theme="light"] .tab-btn.active {
+  background: var(--ds-brand) !important;
+  color: var(--ds-brand-contrast) !important;
+  border-color: var(--ds-brand) !important;
+}
+
+/* Stats cards */
+html[data-theme="light"] .stats-card,
+html[data-theme="light"] .stat-card {
+  background: var(--ds-bg-card) !important;
+  border-color: var(--ds-border) !important;
+}
+
+html[data-theme="light"] .stats-card .value,
+html[data-theme="light"] .stat-card .value {
+  color: var(--ds-text) !important;
+}
+
+html[data-theme="light"] .stats-card .label,
+html[data-theme="light"] .stat-card .label {
+  color: var(--ds-text-secondary) !important;
+}
+
+/* ═══════════════════════════════════════
+   🎨 SCROLLBAR - Light Mode Global Fix
+   ═══════════════════════════════════════ */
+html[data-theme="light"] ::-webkit-scrollbar,
+html[data-theme="light"] *::-webkit-scrollbar {
+  width: 10px !important;
+  height: 10px !important;
+}
+
+html[data-theme="light"] ::-webkit-scrollbar-track,
+html[data-theme="light"] *::-webkit-scrollbar-track {
+  background: #e9ecef !important;
+}
+
+html[data-theme="light"] ::-webkit-scrollbar-thumb,
+html[data-theme="light"] *::-webkit-scrollbar-thumb {
+  background: #adb5bd !important;
+  border-radius: 5px !important;
+}
+
+html[data-theme="light"] ::-webkit-scrollbar-thumb:hover,
+html[data-theme="light"] *::-webkit-scrollbar-thumb:hover {
+  background: #868e96 !important;
+}
+
+html[data-theme="light"] ::-webkit-scrollbar-thumb:active,
+html[data-theme="light"] *::-webkit-scrollbar-thumb:active {
+  background: #495057 !important;
+}
+
+html[data-theme="light"] ::-webkit-scrollbar-corner,
+html[data-theme="light"] *::-webkit-scrollbar-corner {
+  background: #e9ecef !important;
+}
+
+/* ═══════════════════════════════════════
+   🔧 RTL Scroll Fix - Reusable Pattern
+   Keep everything RTL with proper table layout
+   Usage: <div class="table-container rtl-scroll-fix"><table>...</table></div>
+   ═══════════════════════════════════════ */
+.rtl-scroll-fix {
+  direction: rtl;
+  overflow-x: auto;
+  width: 100% !important;
+}
+
+.rtl-scroll-fix > table {
+  direction: rtl;
+  width: 100% !important;
+  min-width: 100% !important;
+  table-layout: auto !important;
+}
+
+/* Ensure sticky header inherits RTL direction */
+.rtl-scroll-fix > table thead {
+  direction: rtl;
+}
+
+/* ═══════════════════════════════════════
+   ✅ END OF GOVERNANCE LAYER
+   ═══════════════════════════════════════ */
+

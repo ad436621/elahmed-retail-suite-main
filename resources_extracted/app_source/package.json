@@ -1,0 +1,20 @@
+{
+  "name": "elos-accounting",
+  "version": "2.0.0",
+  "description": "ELOS Accounting System - نظام محاسبي متكامل لمحلات الموبايلات",
+  "main": "main.js",
+  "author": {
+    "name": "ELOS Development Team",
+    "email": "support@elos-system.com"
+  },
+  "homepage": "https://www.elos-system.com",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/elos-system/elos-accounting"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "better-sqlite3": "^11.7.0",
+    "jsbarcode": "^3.12.1"
+  }
+}

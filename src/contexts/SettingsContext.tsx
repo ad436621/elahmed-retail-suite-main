@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { STORAGE_KEYS, APP_CONFIG } from '@/config';
 
 interface Settings {
     companyName: string;
@@ -15,21 +16,23 @@ interface SettingsContextType {
     updateSettings: (newSettings: Partial<Settings>) => void;
 }
 
+const SETTINGS_KEY = STORAGE_KEYS.APP_SETTINGS;
+
 const defaultSettings: Settings = {
-    companyName: 'GLEAMEX',
-    companySuffix: 'ش. ذ. م.م',
-    branchName: 'Main Branch',
-    branchAddress: 'Cairo, Egypt', // You can change this default
+    companyName: APP_CONFIG.DEFAULT_COMPANY_NAME,
+    companySuffix: APP_CONFIG.DEFAULT_COMPANY_SUFFIX,
+    branchName: APP_CONFIG.DEFAULT_BRANCH_NAME,
+    branchAddress: APP_CONFIG.DEFAULT_BRANCH_ADDRESS,
     shopPhone: '',
-    printerName: '80mm Thermal Printer',
-    logoUrl: '/logo.png',
+    printerName: APP_CONFIG.DEFAULT_PRINTER_NAME,
+    logoUrl: APP_CONFIG.DEFAULT_LOGO_URL,
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
 export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     const [settings, setSettings] = useState<Settings>(() => {
-        const saved = localStorage.getItem('app_settings');
+        const saved = localStorage.getItem(SETTINGS_KEY);
         if (saved) {
             try {
                 return { ...defaultSettings, ...JSON.parse(saved) };
@@ -41,14 +44,14 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     });
 
     useEffect(() => {
-        localStorage.setItem('app_settings', JSON.stringify(settings));
+        localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
     }, [settings]);
 
     useEffect(() => {
         const handleStorage = (e: StorageEvent | CustomEvent) => {
             const key = 'key' in e ? e.key : e.detail?.key;
-            if (key === 'app_settings') {
-                const saved = localStorage.getItem('app_settings');
+            if (key === SETTINGS_KEY) {
+                const saved = localStorage.getItem(SETTINGS_KEY);
                 if (saved) {
                     try {
                         const parsed = JSON.parse(saved);
@@ -83,3 +86,4 @@ export const useSettings = () => {
     }
     return context;
 };
+

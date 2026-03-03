@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>البلاك ليست • ELOS System</title>
+  <script>(function(){var p=new URLSearchParams(location.search),t=p.get('theme')||localStorage.getItem('elos_theme')||localStorage.getItem('elos-theme')||'dark',h=document.documentElement;h.setAttribute('data-theme',t==='light'?'light':'dark');})();</script>
+  <script src="session-inject.js"></script>
+  <!-- SPA Mode Detection -->
+  <script src="spa-mode.js"></script>
+  <!-- Shared Sound & Toast System -->
+  <script src="shared.js"></script>
+  <!-- 🌙 Theme Sync -->
+  <script src="theme-sync.js"></script>
+  <!-- 🔤 Font Scale Manager -->
+  <script src="js/font-scale-manager.js"></script>
+  <!-- 🎨 Design System Tokens (theme colors - MUST BE FIRST) -->
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/tokens-alias.css">
+  <!-- 🎨 Design System (component styles) -->
+  <link rel="stylesheet" href="styles/design-system.css">
+  <!-- 🎨 Theme Governance Layer (load LAST to override legacy styles) -->
+  <link rel="stylesheet" href="styles/theme-fixes.css">
+  <!-- 📏 Font Sizes - تحسين أحجام الخطوط -->
+  <link rel="stylesheet" href="styles/font-sizes.css">
+
+  <style>
+    /* ═══════════════════════════════════════
+       Color variables are now in tokens.css and tokens-alias.css
+       Only layout-specific styles here
+       ═══════════════════════════════════════ */
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: "Tajawal", "Cairo", "Segoe UI", sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      padding: 24px;
+    }
+
+    /* Header */
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .page-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .page-title h1 {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--danger);
+    }
+
+    .page-title .icon {
+      font-size: 28px;
+    }
+
+    .page-stats {
+      display: flex;
+      gap: 16px;
+    }
+
+    .stat-card {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 12px 20px;
+      text-align: center;
+    }
+
+    .stat-card .value {
+      font-size: 24px;
+      font-weight: 800;
+      color: var(--danger);
+    }
+
+    .stat-card .label {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    /* Actions Bar */
+    .actions-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .search-box {
+      flex: 1;
+      min-width: 250px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 16px;
+    }
+
+    .search-box input {
+      flex: 1;
+      background: none;
+      border: none;
+      color: var(--text-primary);
+      font-size: 14px;
+      outline: none;
+    }
+
+    .search-box input::placeholder {
+      color: var(--text-muted);
+    }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border-radius: var(--radius);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: 1px solid transparent;
+    }
+
+    .btn-primary {
+      background: var(--danger);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: #dc2626;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(239,68,68,0.3);
+    }
+
+    .btn-secondary {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border-color: var(--border);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-secondary);
+      border-color: var(--accent);
+    }
+
+    /* Table */
+    .table-container {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 14px 16px;
+      text-align: right;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      background: var(--bg-tertiary);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    td {
+      font-size: 13px;
+      color: var(--text-primary);
+    }
+
+    tr:hover td {
+      background: rgba(255,255,255,0.02);
+    }
+
+    .imei-cell {
+      font-family: 'Courier New', monospace;
+      font-weight: 600;
+      color: var(--danger);
+      letter-spacing: 1px;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .status-active {
+      background: rgba(239,68,68,0.15);
+      color: var(--danger);
+    }
+
+    .status-recovered {
+      background: rgba(16,185,129,0.15);
+      color: var(--success);
+    }
+
+    .action-btns {
+      display: flex;
+      gap: 6px;
+    }
+
+    .action-btn {
+      width: 32px;
+      height: 32px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .action-btn:hover {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+
+    .action-btn.delete:hover {
+      background: var(--danger);
+      border-color: var(--danger);
+    }
+
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-muted);
+    }
+
+    .empty-state .icon {
+      font-size: 64px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+
+    .empty-state h3 {
+      font-size: 18px;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+    }
+
+    /* Modal */
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.2s ease;
+    }
+
+    .modal.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal-content {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      width: 90%;
+      max-width: 500px;
+      padding: 24px;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .modal-header h2 {
+      font-size: 18px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .modal-close {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      border: none;
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      cursor: pointer;
+      font-size: 18px;
+    }
+
+    .modal-close:hover {
+      background: var(--danger);
+      color: white;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+      width: 100%;
+      padding: 12px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text-primary);
+      font-size: 14px;
+      font-family: inherit;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .form-group textarea {
+      min-height: 80px;
+      resize: vertical;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <div class="page-header">
+    <div class="page-title">
+      <span class="icon">🚫</span>
+      <h1>البلاك ليست - الأجهزة المسروقة</h1>
+    </div>
+    <div class="page-stats">
+      <div class="stat-card">
+        <div class="value" id="totalCount">0</div>
+        <div class="label">إجمالي المسجل</div>
+      </div>
+      <div class="stat-card">
+        <div class="value" id="activeCount">0</div>
+        <div class="label">نشط</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Actions Bar -->
+  <div class="actions-bar">
+    <div class="search-box">
+      <span>🔍</span>
+      <input type="text" id="searchInput" placeholder="بحث بالـ IMEI أو اسم الجهاز أو المالك..." oninput="searchBlacklist()">
+    </div>
+    <button class="btn btn-primary" onclick="openAddModal()">
+      <span>➕</span>
+      <span>إضافة جهاز</span>
+    </button>
+    <button class="btn btn-secondary" onclick="loadBlacklist()">
+      <span>🔄</span>
+      <span>تحديث</span>
+    </button>
+  </div>
+
+  <!-- Table -->
+  <div class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>IMEI</th>
+          <th>الجهاز</th>
+          <th>المالك</th>
+          <th>الهاتف</th>
+          <th>السبب</th>
+          <th>تاريخ البلاغ</th>
+          <th>الحالة</th>
+          <th>إجراءات</th>
+        </tr>
+      </thead>
+      <tbody id="blacklistTable">
+        <!-- Data loaded dynamically -->
+      </tbody>
+    </table>
+    <div class="empty-state" id="emptyState" style="display:none;">
+      <div class="icon">🚫</div>
+      <h3>لا توجد أجهزة في البلاك ليست</h3>
+      <p>أضف أجهزة مسروقة للتتبع والتحذير</p>
+    </div>
+  </div>
+
+  <!-- Add/Edit Modal -->
+  <div class="modal" id="addModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2><span>🚫</span> إضافة جهاز للبلاك ليست</h2>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <form id="blacklistForm" onsubmit="saveBlacklist(event)">
+        <input type="hidden" id="editId">
+
+        <div class="form-group">
+          <label>رقم IMEI *</label>
+          <input type="text" id="imei" required placeholder="أدخل رقم IMEI (15 رقم)">
+        </div>
+
+        <div class="form-group">
+          <label>اسم الجهاز</label>
+          <input type="text" id="deviceName" placeholder="مثال: iPhone 15 Pro Max">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>اسم المالك</label>
+            <input type="text" id="ownerName" placeholder="اسم صاحب الجهاز">
+          </div>
+          <div class="form-group">
+            <label>هاتف المالك</label>
+            <input type="text" id="ownerPhone" placeholder="رقم هاتف للتواصل">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>سبب البلاغ</label>
+          <select id="reason">
+            <option value="مسروق">مسروق</option>
+            <option value="مفقود">مفقود</option>
+            <option value="منهوب">منهوب</option>
+            <option value="نصب">نصب</option>
+            <option value="آخر">آخر</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label>تاريخ البلاغ</label>
+          <input type="date" id="reportedDate">
+        </div>
+
+        <div class="form-group">
+          <label>ملاحظات</label>
+          <textarea id="notes" placeholder="أي ملاحظات إضافية..."></textarea>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeModal()">إلغاء</button>
+          <button type="submit" class="btn btn-primary">
+            <span>💾</span>
+            <span>حفظ</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    let blacklistData = [];
+
+    // Load blacklist on page load
+    document.addEventListener('DOMContentLoaded', loadBlacklist);
+
+    async function loadBlacklist() {
+      try {
+        const res = await fetch('elos-db://blacklist');
+        if (!res.ok) throw new Error('فشل تحميل البيانات');
+
+        const data = await res.json();
+        blacklistData = data.blacklist || [];
+
+        renderTable(blacklistData);
+        updateStats();
+      } catch (error) {
+        console.error('Error loading blacklist:', error);
+        showToast('فشل تحميل البلاك ليست', 'error');
+      }
+    }
+
+    function renderTable(data) {
+      const tbody = document.getElementById('blacklistTable');
+      const emptyState = document.getElementById('emptyState');
+
+      if (!data || data.length === 0) {
+        tbody.innerHTML = '';
+        emptyState.style.display = 'block';
+        return;
+      }
+
+      emptyState.style.display = 'none';
+
+      tbody.innerHTML = data.map(item => `
+        <tr>
+          <td class="imei-cell">${item.imei || '--'}</td>
+          <td>${item.device_name || '--'}</td>
+          <td>${item.owner_name || '--'}</td>
+          <td>${item.owner_phone || '--'}</td>
+          <td>${item.reason || '--'}</td>
+          <td>${item.reported_date ? new Date(item.reported_date).toLocaleDateString('ar-EG') : '--'}</td>
+          <td>
+            <span class="status-badge ${item.status === 'active' ? 'status-active' : 'status-recovered'}">
+              ${item.status === 'active' ? '🔴 نشط' : '🟢 تم الاسترداد'}
+            </span>
+          </td>
+          <td>
+            <div class="action-btns">
+              <button class="action-btn" onclick="editItem(${item.id})" title="تعديل">✏️</button>
+              <button class="action-btn delete" onclick="deleteItem(${item.id})" title="حذف">🗑️</button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function updateStats() {
+      document.getElementById('totalCount').textContent = blacklistData.length;
+      document.getElementById('activeCount').textContent = blacklistData.filter(x => x.status === 'active').length;
+    }
+
+    function searchBlacklist() {
+      const query = document.getElementById('searchInput').value.toLowerCase();
+
+      if (!query) {
+        renderTable(blacklistData);
+        return;
+      }
+
+      const filtered = blacklistData.filter(item =>
+        (item.imei && item.imei.toLowerCase().includes(query)) ||
+        (item.device_name && item.device_name.toLowerCase().includes(query)) ||
+        (item.owner_name && item.owner_name.toLowerCase().includes(query)) ||
+        (item.owner_phone && item.owner_phone.includes(query))
+      );
+
+      renderTable(filtered);
+    }
+
+    function openAddModal() {
+      document.getElementById('editId').value = '';
+      document.getElementById('blacklistForm').reset();
+      document.getElementById('reportedDate').value = new Date().toISOString().split('T')[0];
+      document.getElementById('addModal').classList.add('active');
+    }
+
+    function closeModal() {
+      document.getElementById('addModal').classList.remove('active');
+    }
+
+    function editItem(id) {
+      const item = blacklistData.find(x => x.id === id);
+      if (!item) return;
+
+      document.getElementById('editId').value = id;
+      document.getElementById('imei').value = item.imei || '';
+      document.getElementById('deviceName').value = item.device_name || '';
+      document.getElementById('ownerName').value = item.owner_name || '';
+      document.getElementById('ownerPhone').value = item.owner_phone || '';
+      document.getElementById('reason').value = item.reason || 'مسروق';
+      document.getElementById('reportedDate').value = item.reported_date ? item.reported_date.split('T')[0] : '';
+      document.getElementById('notes').value = item.notes || '';
+
+      document.getElementById('addModal').classList.add('active');
+    }
+
+    async function saveBlacklist(e) {
+      e.preventDefault();
+
+      const editId = document.getElementById('editId').value;
+      const payload = {
+        imei: document.getElementById('imei').value.trim(),
+        device_name: document.getElementById('deviceName').value.trim(),
+        owner_name: document.getElementById('ownerName').value.trim(),
+        owner_phone: document.getElementById('ownerPhone').value.trim(),
+        reason: document.getElementById('reason').value,
+        reported_date: document.getElementById('reportedDate').value,
+        notes: document.getElementById('notes').value.trim()
+      };
+
+      if (!payload.imei) {
+        showToast('رقم IMEI مطلوب', 'error');
+        return;
+      }
+
+      try {
+        const url = editId ? `elos-db://blacklist/${editId}` : 'elos-db://blacklist';
+        const method = editId ? 'PUT' : 'POST';
+
+        const res = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+          const err = await res.json();
+          throw new Error(err.error || 'فشل الحفظ');
+        }
+
+        showToast(editId ? 'تم تحديث السجل بنجاح' : 'تم إضافة الجهاز للبلاك ليست', 'success');
+        closeModal();
+        loadBlacklist();
+      } catch (error) {
+        console.error('Save error:', error);
+        showToast(error.message, 'error');
+      }
+    }
+
+    async function deleteItem(id) {
+      if (!confirm('هل أنت متأكد من حذف هذا السجل؟')) return;
+
+      try {
+        const res = await fetch(`elos-db://blacklist/${id}`, { method: 'DELETE' });
+
+        if (!res.ok) throw new Error('فشل الحذف');
+
+        showToast('تم حذف السجل بنجاح', 'success');
+        loadBlacklist();
+      } catch (error) {
+        console.error('Delete error:', error);
+        showToast('فشل حذف السجل', 'error');
+      }
+    }
+
+    // Close modal on outside click
+    document.getElementById('addModal').addEventListener('click', function(e) {
+      if (e.target === this) closeModal();
+    });
+  </script>
+</body>
+</html>

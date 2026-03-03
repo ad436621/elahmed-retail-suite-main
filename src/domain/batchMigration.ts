@@ -7,9 +7,10 @@ import { getMobiles, getMobileAccessories } from '@/data/mobilesData';
 import { getDevices, getDeviceAccessories } from '@/data/devicesData';
 import { getComputers, getComputerAccessories } from '@/data/computersData';
 import { getUsedDevices } from '@/data/usedDevicesData';
+import { STORAGE_KEYS } from '@/config';
 
 export function migrateLegacyDataToBatches() {
-    const MIGRATION_KEY = 'gx_batches_migrated_v1';
+    const MIGRATION_KEY = STORAGE_KEYS.MIGRATION_BATCHES_DONE;
 
     try {
         const alreadyMigrated = localStorage.getItem(MIGRATION_KEY);

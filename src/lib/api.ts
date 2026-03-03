@@ -3,9 +3,10 @@
 // Connects to Node.js/Express backend
 // ============================================================
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
-
+import { STORAGE_KEYS, APP_CONFIG } from '@/config';
 import { User, Product, ProductBatch, Sale, StockMovement, AuditEntry } from '@/domain/types';
+
+const API_BASE_URL = APP_CONFIG.API_BASE_URL;
 
 interface ApiResponse<T> {
     data?: T;
@@ -18,15 +19,15 @@ class ApiClient {
     setToken(token: string | null) {
         this.token = token;
         if (token) {
-            localStorage.setItem('gx_auth_token', token);
+            localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, token);
         } else {
-            localStorage.removeItem('gx_auth_token');
+            localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
         }
     }
 
     getToken(): string | null {
         if (!this.token) {
-            this.token = localStorage.getItem('gx_auth_token');
+            this.token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
         }
         return this.token;
     }

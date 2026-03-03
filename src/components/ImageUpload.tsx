@@ -23,8 +23,34 @@ export function ImageUpload({ value, onChange }: ImageUploadProps) {
     const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
+
+        // Warn if file is very large
+        if (file.size > 5 * 1024 * 1024) {
+            alert('⚠️ الصورة كبيرة جداً (أكثر من 5MB). سيتم ضغطها تلقائياً.');
+        }
+
+        // Compress image using canvas
+        const img = new Image();
         const reader = new FileReader();
-        reader.onload = (ev) => onChange(ev.target?.result as string);
+        reader.onload = (ev) => {
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const MAX_DIM = 800;
+                let w = img.width;
+                let h = img.height;
+                if (w > MAX_DIM || h > MAX_DIM) {
+                    if (w > h) { h = Math.round(h * MAX_DIM / w); w = MAX_DIM; }
+                    else { w = Math.round(w * MAX_DIM / h); h = MAX_DIM; }
+                }
+                canvas.width = w;
+                canvas.height = h;
+                const ctx = canvas.getContext('2d');
+                ctx?.drawImage(img, 0, 0, w, h);
+                const compressed = canvas.toDataURL('image/jpeg', 0.7);
+                onChange(compressed);
+            };
+            img.src = ev.target?.result as string;
+        };
         reader.readAsDataURL(file);
     };
 

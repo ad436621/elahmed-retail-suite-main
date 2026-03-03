@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { STORAGE_KEYS } from '@/config';
 
 type Language = 'en' | 'ar';
 
@@ -152,12 +153,12 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 
 export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   const [language, setLanguageState] = useState<Language>(() => {
-    return (localStorage.getItem('elahmed-lang') as Language) || 'en';
+    return (localStorage.getItem(STORAGE_KEYS.LANGUAGE) as Language) || 'en';
   });
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
-    localStorage.setItem('elahmed-lang', lang);
+    localStorage.setItem(STORAGE_KEYS.LANGUAGE, lang);
   };
 
   const t = (key: string) => translations[language][key] || key;

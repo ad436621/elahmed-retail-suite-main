@@ -1,0 +1,1114 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>إعداد الشبكة - ELOS</title>
+  <script src="session-inject.js"></script>
+  <script src="api.js"></script>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    /* ═══════════════════════════════════════════════════════════════════════════
+       Network Setup Page Styles
+       ═══════════════════════════════════════════════════════════════════════════ */
+
+    body {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .setup-container {
+      max-width: 900px;
+      width: 100%;
+    }
+
+    .setup-header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+
+    .setup-header h1 {
+      color: #fff;
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 15px;
+    }
+
+    .setup-header p {
+      color: rgba(255,255,255,0.7);
+      font-size: 1.1rem;
+    }
+
+    .mode-cards {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 25px;
+      margin-bottom: 30px;
+    }
+
+    @media (max-width: 768px) {
+      .mode-cards {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .mode-card {
+      background: rgba(255,255,255,0.05);
+      border: 2px solid rgba(255,255,255,0.1);
+      border-radius: 20px;
+      padding: 30px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .mode-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--card-color), transparent);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .mode-card:hover {
+      transform: translateY(-5px);
+      border-color: rgba(255,255,255,0.3);
+      background: rgba(255,255,255,0.08);
+    }
+
+    .mode-card.selected {
+      border-color: var(--card-color);
+      background: rgba(255,255,255,0.1);
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    }
+
+    .mode-card.selected::before {
+      opacity: 1;
+    }
+
+    .mode-card.server { --card-color: #10b981; }
+    .mode-card.client { --card-color: #3b82f6; }
+    .mode-card.standalone { --card-color: #8b5cf6; }
+
+    .mode-icon {
+      font-size: 4rem;
+      margin-bottom: 20px;
+      display: block;
+    }
+
+    .mode-title {
+      color: #fff;
+      font-size: 1.5rem;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+
+    .mode-subtitle {
+      color: var(--card-color);
+      font-size: 0.9rem;
+      margin-bottom: 15px;
+      font-weight: 500;
+    }
+
+    .mode-description {
+      color: rgba(255,255,255,0.6);
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+
+    .mode-features {
+      margin-top: 20px;
+      text-align: right;
+    }
+
+    .mode-features li {
+      color: rgba(255,255,255,0.7);
+      font-size: 0.85rem;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .mode-features li::before {
+      content: '✓';
+      color: var(--card-color);
+      font-weight: bold;
+    }
+
+    /* Configuration Panel */
+    .config-panel {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 15px;
+      padding: 30px;
+      margin-top: 30px;
+      display: none;
+    }
+
+    .config-panel.visible {
+      display: block;
+      animation: slideDown 0.3s ease;
+    }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .config-title {
+      color: #fff;
+      font-size: 1.3rem;
+      margin-bottom: 25px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .config-row {
+      display: grid;
+      grid-template-columns: 150px 1fr;
+      gap: 15px;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .config-label {
+      color: rgba(255,255,255,0.8);
+      font-size: 0.95rem;
+    }
+
+    .config-input {
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 8px;
+      padding: 12px 15px;
+      color: #fff;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+    }
+
+    .config-input:focus {
+      outline: none;
+      border-color: #3b82f6;
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+    }
+
+    .config-input::placeholder {
+      color: rgba(255,255,255,0.4);
+    }
+
+    .config-input:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .config-hint {
+      color: rgba(255,255,255,0.5);
+      font-size: 0.85rem;
+      margin-top: 5px;
+      grid-column: 2;
+    }
+
+    /* Server Info Box */
+    .server-info {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      border-radius: 10px;
+      padding: 20px;
+      margin-top: 20px;
+    }
+
+    .server-info h4 {
+      color: #10b981;
+      margin: 0 0 15px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .ip-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+
+    .ip-list li {
+      color: rgba(255,255,255,0.8);
+      padding: 8px 12px;
+      background: rgba(0,0,0,0.2);
+      border-radius: 6px;
+      margin-bottom: 8px;
+      font-family: 'Consolas', monospace;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .ip-list .interface-name {
+      color: rgba(255,255,255,0.5);
+      font-size: 0.85rem;
+    }
+
+    .copy-btn {
+      background: rgba(255,255,255,0.1);
+      border: none;
+      color: #fff;
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: all 0.2s ease;
+    }
+
+    .copy-btn:hover {
+      background: rgba(255,255,255,0.2);
+    }
+
+    /* Client Discovery */
+    .discovery-section {
+      margin-top: 20px;
+    }
+
+    .discovery-btn {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      border: none;
+      color: #fff;
+      padding: 12px 25px;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.3s ease;
+    }
+
+    .discovery-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 20px rgba(59, 130, 246, 0.4);
+    }
+
+    .discovery-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .discovery-btn.scanning {
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    .discovered-servers {
+      margin-top: 20px;
+      display: none;
+    }
+
+    .discovered-servers.visible {
+      display: block;
+    }
+
+    .discovered-servers h4 {
+      color: rgba(255,255,255,0.8);
+      margin-bottom: 15px;
+    }
+
+    .server-item {
+      background: rgba(0,0,0,0.3);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .server-item:hover {
+      border-color: #3b82f6;
+      background: rgba(59, 130, 246, 0.1);
+    }
+
+    .server-item.selected {
+      border-color: #10b981;
+      background: rgba(16, 185, 129, 0.1);
+    }
+
+    .server-item-info {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .server-item-icon {
+      font-size: 2rem;
+    }
+
+    .server-item-details h5 {
+      color: #fff;
+      margin: 0 0 5px 0;
+    }
+
+    .server-item-details p {
+      color: rgba(255,255,255,0.6);
+      margin: 0;
+      font-size: 0.85rem;
+    }
+
+    .server-item-status {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: #10b981;
+      font-size: 0.9rem;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      background: #10b981;
+      border-radius: 50%;
+      animation: blink 1s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    /* Action Buttons */
+    .action-buttons {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 40px;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #10b981, #059669);
+      border: none;
+      color: #fff;
+      padding: 15px 40px;
+      border-radius: 10px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.3s ease;
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4);
+    }
+
+    .btn-primary:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .btn-secondary {
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.2);
+      color: #fff;
+      padding: 15px 40px;
+      border-radius: 10px;
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255,255,255,0.15);
+    }
+
+    /* Status Messages */
+    .status-message {
+      padding: 15px 20px;
+      border-radius: 10px;
+      margin-top: 20px;
+      display: none;
+    }
+
+    .status-message.visible {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .status-message.success {
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #10b981;
+    }
+
+    .status-message.error {
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #ef4444;
+    }
+
+    .status-message.warning {
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: #f59e0b;
+    }
+
+    .status-message.info {
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      color: #3b82f6;
+    }
+
+    /* Loading Spinner */
+    .spinner {
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Footer */
+    .setup-footer {
+      text-align: center;
+      margin-top: 40px;
+      color: rgba(255,255,255,0.4);
+      font-size: 0.9rem;
+    }
+
+    .setup-footer a {
+      color: #3b82f6;
+      text-decoration: none;
+    }
+
+    .setup-footer a:hover {
+      text-decoration: underline;
+    }
+
+    /* Test Connection Section */
+    .test-connection {
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      border-radius: 10px;
+      padding: 20px;
+      margin-top: 20px;
+    }
+
+    .test-connection h4 {
+      color: #3b82f6;
+      margin: 0 0 15px 0;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .test-result {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px;
+      background: rgba(0,0,0,0.2);
+      border-radius: 6px;
+      margin-top: 15px;
+    }
+
+    .test-result.success {
+      color: #10b981;
+    }
+
+    .test-result.error {
+      color: #ef4444;
+    }
+  </style>
+</head>
+<body>
+  <div class="setup-container">
+    <!-- Header -->
+    <div class="setup-header">
+      <h1>
+        <span>🌐</span>
+        <span>إعداد الشبكة</span>
+      </h1>
+      <p>اختر طريقة تشغيل البرنامج على هذا الجهاز</p>
+    </div>
+
+    <!-- Mode Selection Cards -->
+    <div class="mode-cards">
+      <!-- Server Mode -->
+      <div class="mode-card server" onclick="selectMode('server')">
+        <span class="mode-icon">🖥️</span>
+        <div class="mode-title">جهاز رئيسي (سيرفر)</div>
+        <div class="mode-subtitle">Server Mode</div>
+        <div class="mode-description">
+          هذا الجهاز سيحتوي على قاعدة البيانات الرئيسية وسيستقبل الاتصالات من الأجهزة الأخرى
+        </div>
+        <ul class="mode-features">
+          <li>قاعدة بيانات محلية</li>
+          <li>يستقبل اتصالات من أجهزة أخرى</li>
+          <li>النسخ الاحتياطي التلقائي</li>
+          <li>التحكم الكامل</li>
+        </ul>
+      </div>
+
+      <!-- Client Mode -->
+      <div class="mode-card client" onclick="selectMode('client')">
+        <span class="mode-icon">💻</span>
+        <div class="mode-title">جهاز فرعي (عميل)</div>
+        <div class="mode-subtitle">Client Mode</div>
+        <div class="mode-description">
+          هذا الجهاز سيتصل بجهاز رئيسي آخر على الشبكة ويستخدم قاعدة بياناته
+        </div>
+        <ul class="mode-features">
+          <li>اتصال بسيرفر خارجي</li>
+          <li>مزامنة تلقائية</li>
+          <li>لا يحتاج قاعدة بيانات</li>
+          <li>يعمل عند وجود اتصال</li>
+        </ul>
+      </div>
+
+      <!-- Standalone Mode -->
+      <div class="mode-card standalone" onclick="selectMode('standalone')">
+        <span class="mode-icon">📱</span>
+        <div class="mode-title">جهاز مستقل</div>
+        <div class="mode-subtitle">Standalone Mode</div>
+        <div class="mode-description">
+          هذا الجهاز سيعمل بشكل مستقل مع قاعدة بيانات خاصة به بدون اتصال بالشبكة
+        </div>
+        <ul class="mode-features">
+          <li>قاعدة بيانات محلية</li>
+          <li>لا يتطلب شبكة</li>
+          <li>عمل مستقل تماماً</li>
+          <li>الوضع الافتراضي</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- Server Configuration Panel -->
+    <div class="config-panel" id="serverConfig">
+      <div class="config-title">
+        <span>⚙️</span>
+        <span>إعدادات السيرفر</span>
+      </div>
+
+      <div class="config-row">
+        <label class="config-label">المنفذ (Port):</label>
+        <input type="number" class="config-input" id="serverPort" value="48572" min="1024" max="65535">
+      </div>
+      <div class="config-hint">المنفذ الافتراضي 48572 - تأكد من أنه غير مستخدم</div>
+
+      <div class="server-info">
+        <h4>
+          <span>📡</span>
+          <span>عناوين IP المتاحة</span>
+        </h4>
+        <ul class="ip-list" id="ipList">
+          <li>
+            <span>جاري البحث...</span>
+          </li>
+        </ul>
+        <p style="color: rgba(255,255,255,0.5); font-size: 0.85rem; margin-top: 15px;">
+          💡 شارك أحد هذه العناوين مع الأجهزة الأخرى للاتصال
+        </p>
+      </div>
+
+      <div class="status-message warning visible" style="margin-top: 20px;">
+        <span>⚠️</span>
+        <span>تأكد من السماح للبرنامج في جدار الحماية Windows Firewall</span>
+      </div>
+    </div>
+
+    <!-- Client Configuration Panel -->
+    <div class="config-panel" id="clientConfig">
+      <div class="config-title">
+        <span>🔗</span>
+        <span>الاتصال بالسيرفر</span>
+      </div>
+
+      <div class="config-row">
+        <label class="config-label">عنوان السيرفر:</label>
+        <input type="text" class="config-input" id="serverIP" placeholder="مثال: 192.168.1.100">
+      </div>
+
+      <div class="config-row">
+        <label class="config-label">المنفذ:</label>
+        <input type="number" class="config-input" id="clientPort" value="48572" min="1024" max="65535">
+      </div>
+
+      <div class="discovery-section">
+        <button class="discovery-btn" id="discoverBtn" onclick="discoverServers()">
+          <span>🔍</span>
+          <span>البحث عن سيرفرات على الشبكة</span>
+        </button>
+
+        <div class="discovered-servers" id="discoveredServers">
+          <h4>السيرفرات المكتشفة:</h4>
+          <div id="serversList">
+            <!-- Will be populated dynamically -->
+          </div>
+        </div>
+      </div>
+
+      <div class="test-connection">
+        <h4>
+          <span>🔌</span>
+          <span>اختبار الاتصال</span>
+        </h4>
+        <button class="discovery-btn" onclick="testConnection()">
+          <span>📡</span>
+          <span>اختبار الاتصال بالسيرفر</span>
+        </button>
+        <div class="test-result" id="testResult" style="display: none;">
+          <!-- Will be populated dynamically -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Standalone Configuration Panel -->
+    <div class="config-panel" id="standaloneConfig">
+      <div class="config-title">
+        <span>📁</span>
+        <span>إعدادات الوضع المستقل</span>
+      </div>
+
+      <div class="status-message info visible">
+        <span>ℹ️</span>
+        <span>سيعمل البرنامج بقاعدة بيانات محلية بدون اتصال بالشبكة. يمكنك تغيير هذا لاحقاً.</span>
+      </div>
+    </div>
+
+    <!-- Status Message -->
+    <div class="status-message" id="statusMessage">
+      <!-- Will be populated dynamically -->
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+      <button class="btn-secondary" onclick="goBack()">
+        <span>↩️</span>
+        <span>رجوع</span>
+      </button>
+      <button class="btn-primary" id="saveBtn" onclick="saveConfiguration()" disabled>
+        <span>💾</span>
+        <span>حفظ وتطبيق</span>
+      </button>
+    </div>
+
+    <!-- Footer -->
+    <div class="setup-footer">
+      <p>ELOS Accounting System v1.0</p>
+      <p>للمساعدة: <a href="#" onclick="showHelp()">دليل إعداد الشبكة</a></p>
+    </div>
+  </div>
+
+  <script>
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Network Setup JavaScript
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    let selectedMode = null;
+    let discoveredServers = [];
+
+    /**
+     * تحديد وضع التشغيل
+     */
+    function selectMode(mode) {
+      // إزالة التحديد من الكل
+      document.querySelectorAll('.mode-card').forEach(card => {
+        card.classList.remove('selected');
+      });
+
+      // إخفاء كل لوحات الإعدادات
+      document.querySelectorAll('.config-panel').forEach(panel => {
+        panel.classList.remove('visible');
+      });
+
+      // تحديد البطاقة المختارة
+      const selectedCard = document.querySelector(`.mode-card.${mode}`);
+      if (selectedCard) {
+        selectedCard.classList.add('selected');
+      }
+
+      // إظهار لوحة الإعدادات المناسبة
+      const configPanel = document.getElementById(`${mode}Config`);
+      if (configPanel) {
+        configPanel.classList.add('visible');
+      }
+
+      selectedMode = mode;
+
+      // تفعيل زر الحفظ
+      document.getElementById('saveBtn').disabled = false;
+
+      // إذا كان وضع السيرفر، جلب عناوين IP
+      if (mode === 'server') {
+        fetchLocalIPs();
+      }
+    }
+
+    /**
+     * جلب عناوين IP المحلية
+     */
+    async function fetchLocalIPs() {
+      const ipList = document.getElementById('ipList');
+      ipList.innerHTML = '<li><span>جاري البحث...</span></li>';
+
+      try {
+        const response = await fetch('http://127.0.0.1:48572/api/network/local-ips');
+        if (!response.ok) throw new Error('Failed to fetch IPs');
+
+        const data = await response.json();
+
+        if (data.ips && data.ips.length > 0) {
+          ipList.innerHTML = data.ips.map(ip => `
+            <li>
+              <span>
+                <strong>${ip.address}</strong>
+                <span class="interface-name">(${ip.name})</span>
+              </span>
+              <button class="copy-btn" onclick="copyIP('${ip.address}')">📋 نسخ</button>
+            </li>
+          `).join('');
+        } else {
+          ipList.innerHTML = '<li><span style="color: #f59e0b;">لم يتم العثور على عناوين IP</span></li>';
+        }
+      } catch (error) {
+        console.error('Error fetching IPs:', error);
+        ipList.innerHTML = `
+          <li>
+            <span style="color: #ef4444;">خطأ في جلب العناوين</span>
+          </li>
+          <li>
+            <span>127.0.0.1</span>
+            <span class="interface-name">(localhost)</span>
+          </li>
+        `;
+      }
+    }
+
+    /**
+     * نسخ عنوان IP
+     */
+    function copyIP(ip) {
+      const port = document.getElementById('serverPort').value || '48572';
+      const fullAddress = `${ip}:${port}`;
+
+      navigator.clipboard.writeText(fullAddress).then(() => {
+        showStatus('success', `تم نسخ العنوان: ${fullAddress}`);
+      }).catch(() => {
+        // Fallback
+        const input = document.createElement('input');
+        input.value = fullAddress;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+        showStatus('success', `تم نسخ العنوان: ${fullAddress}`);
+      });
+    }
+
+    /**
+     * البحث عن السيرفرات على الشبكة
+     */
+    async function discoverServers() {
+      const btn = document.getElementById('discoverBtn');
+      const serversDiv = document.getElementById('discoveredServers');
+      const serversList = document.getElementById('serversList');
+
+      btn.disabled = true;
+      btn.classList.add('scanning');
+      btn.innerHTML = '<span class="spinner"></span><span>جاري البحث...</span>';
+
+      try {
+        const response = await fetch('http://127.0.0.1:48572/api/network/discover');
+        if (!response.ok) throw new Error('Discovery failed');
+
+        const data = await response.json();
+        discoveredServers = data.servers || [];
+
+        if (discoveredServers.length > 0) {
+          serversList.innerHTML = discoveredServers.map((server, index) => `
+            <div class="server-item" onclick="selectServer(${index})">
+              <div class="server-item-info">
+                <span class="server-item-icon">🖥️</span>
+                <div class="server-item-details">
+                  <h5>${server.name || 'ELOS Server'}</h5>
+                  <p>${server.ip}:${server.port}</p>
+                </div>
+              </div>
+              <div class="server-item-status">
+                <span class="status-dot"></span>
+                <span>متصل</span>
+              </div>
+            </div>
+          `).join('');
+          serversDiv.classList.add('visible');
+        } else {
+          serversList.innerHTML = `
+            <div style="text-align: center; padding: 20px; color: rgba(255,255,255,0.6);">
+              <p>لم يتم العثور على سيرفرات</p>
+              <p style="font-size: 0.85rem;">تأكد من تشغيل السيرفر على الجهاز الآخر</p>
+            </div>
+          `;
+          serversDiv.classList.add('visible');
+        }
+      } catch (error) {
+        console.error('Discovery error:', error);
+        showStatus('error', 'فشل البحث عن السيرفرات');
+      } finally {
+        btn.disabled = false;
+        btn.classList.remove('scanning');
+        btn.innerHTML = '<span>🔍</span><span>البحث عن سيرفرات على الشبكة</span>';
+      }
+    }
+
+    /**
+     * اختيار سيرفر من القائمة
+     */
+    function selectServer(index) {
+      const server = discoveredServers[index];
+      if (server) {
+        document.getElementById('serverIP').value = server.ip;
+        document.getElementById('clientPort').value = server.port;
+
+        // تحديث التحديد المرئي
+        document.querySelectorAll('.server-item').forEach((item, i) => {
+          item.classList.toggle('selected', i === index);
+        });
+
+        showStatus('success', `تم اختيار السيرفر: ${server.ip}:${server.port}`);
+      }
+    }
+
+    /**
+     * اختبار الاتصال بالسيرفر
+     */
+    async function testConnection() {
+      const ip = document.getElementById('serverIP').value.trim();
+      const port = document.getElementById('clientPort').value || '48572';
+      const resultDiv = document.getElementById('testResult');
+
+      if (!ip) {
+        showStatus('error', 'الرجاء إدخال عنوان السيرفر');
+        return;
+      }
+
+      resultDiv.style.display = 'flex';
+      resultDiv.className = 'test-result';
+      resultDiv.innerHTML = '<span class="spinner"></span><span>جاري الاختبار...</span>';
+
+      try {
+        const response = await fetch(`http://127.0.0.1:48572/api/network/test-connection?ip=${ip}&port=${port}`);
+        const data = await response.json();
+
+        if (data.success) {
+          resultDiv.className = 'test-result success';
+          resultDiv.innerHTML = `
+            <span>✅</span>
+            <span>تم الاتصال بنجاح! - ${data.serverName || 'ELOS Server'}</span>
+          `;
+        } else {
+          throw new Error(data.error || 'Connection failed');
+        }
+      } catch (error) {
+        resultDiv.className = 'test-result error';
+        resultDiv.innerHTML = `
+          <span>❌</span>
+          <span>فشل الاتصال: ${error.message}</span>
+        `;
+      }
+    }
+
+    /**
+     * حفظ الإعدادات
+     */
+    async function saveConfiguration() {
+      if (!selectedMode) {
+        showStatus('error', 'الرجاء اختيار وضع التشغيل');
+        return;
+      }
+
+      const config = {
+        mode: selectedMode
+      };
+
+      // جمع الإعدادات حسب الوضع
+      if (selectedMode === 'server') {
+        config.port = document.getElementById('serverPort').value || '48572';
+      } else if (selectedMode === 'client') {
+        const serverIP = document.getElementById('serverIP').value.trim();
+        if (!serverIP) {
+          showStatus('error', 'الرجاء إدخال عنوان السيرفر');
+          return;
+        }
+        config.serverIP = serverIP;
+        config.port = document.getElementById('clientPort').value || '48572';
+      }
+
+      const saveBtn = document.getElementById('saveBtn');
+      saveBtn.disabled = true;
+      saveBtn.innerHTML = '<span class="spinner"></span><span>جاري الحفظ...</span>';
+
+      try {
+        const response = await fetch('http://127.0.0.1:48572/api/network/configure', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(config)
+        });
+
+        const data = await response.json();
+
+        if (data.success) {
+          showStatus('success', 'تم حفظ الإعدادات بنجاح! سيتم إعادة تشغيل البرنامج...');
+
+          // انتظار ثم إعادة تشغيل — إما مباشرة أو عبر postMessage للصفحة الرئيسية
+          setTimeout(() => {
+            try {
+              const bridge = window.authBridge || window.top?.authBridge || window.parent?.authBridge;
+              if (bridge && typeof bridge.restartApp === 'function') {
+                bridge.restartApp();
+                return;
+              }
+              // عندما نكون داخل iframe: إرسال طلب للصفحة الرئيسية (app.html) لتنفيذ الإعادة
+              if (window.top && window.top !== window) {
+                window.top.postMessage({ type: 'elos-restart-app' }, '*');
+                return;
+              }
+            } catch (e) {
+              console.error('[NETWORK-SETUP] restartApp error:', e);
+            }
+            alert('تم حفظ الإعدادات.\nيرجى إغلاق البرنامج وإعادة فتحه يدوياً.');
+          }, 2000);
+        } else {
+          throw new Error(data.error || 'Save failed');
+        }
+      } catch (error) {
+        console.error('Save error:', error);
+        showStatus('error', `فشل حفظ الإعدادات: ${error.message}`);
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = '<span>💾</span><span>حفظ وتطبيق</span>';
+      }
+    }
+
+    /**
+     * عرض رسالة الحالة
+     */
+    function showStatus(type, message) {
+      const statusDiv = document.getElementById('statusMessage');
+      statusDiv.className = `status-message ${type} visible`;
+
+      const icons = {
+        success: '✅',
+        error: '❌',
+        warning: '⚠️',
+        info: 'ℹ️'
+      };
+
+      statusDiv.innerHTML = `
+        <span>${icons[type] || 'ℹ️'}</span>
+        <span>${message}</span>
+      `;
+
+      // إخفاء تلقائي بعد 5 ثوان
+      setTimeout(() => {
+        statusDiv.classList.remove('visible');
+      }, 5000);
+    }
+
+    /**
+     * العودة للخلف
+     */
+    function goBack() {
+      if (window.history.length > 1) {
+        window.history.back();
+      } else if (window.top && window.top !== window) {
+        window.top.location.hash = '#settings';
+      } else {
+        window.location.href = 'app.html';
+      }
+    }
+
+    /**
+     * عرض المساعدة
+     */
+    function showHelp() {
+      alert(`
+دليل إعداد الشبكة:
+
+1️⃣ جهاز رئيسي (سيرفر):
+- اختر هذا الوضع للجهاز الذي سيحتوي على قاعدة البيانات
+- شارك عنوان IP مع الأجهزة الأخرى
+- تأكد من فتح المنفذ في جدار الحماية
+
+2️⃣ جهاز فرعي (عميل):
+- اختر هذا الوضع للأجهزة التي ستتصل بالسيرفر
+- أدخل عنوان IP الخاص بالسيرفر
+- أو استخدم البحث التلقائي
+
+3️⃣ جهاز مستقل:
+- اختر هذا للعمل بدون شبكة
+- قاعدة بيانات محلية منفصلة
+      `);
+    }
+
+    /**
+     * تحميل الإعدادات الحالية عند فتح الصفحة
+     */
+    async function loadCurrentConfig() {
+      try {
+        const response = await fetch('http://127.0.0.1:48572/api/network/current-config');
+        if (!response.ok) return;
+
+        const data = await response.json();
+
+        if (data.mode) {
+          selectMode(data.mode);
+
+          if (data.mode === 'server' && data.port) {
+            document.getElementById('serverPort').value = data.port;
+          } else if (data.mode === 'client') {
+            if (data.serverIP) document.getElementById('serverIP').value = data.serverIP;
+            if (data.port) document.getElementById('clientPort').value = data.port;
+          }
+        }
+      } catch (error) {
+        console.log('No existing config found');
+      }
+    }
+
+    // تحميل الإعدادات عند فتح الصفحة
+    document.addEventListener('DOMContentLoaded', loadCurrentConfig);
+  </script>
+</body>
+</html>

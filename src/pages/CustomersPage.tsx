@@ -8,6 +8,7 @@ import {
     getCustomers, addCustomer, updateCustomer, deleteCustomer,
     type Customer,
 } from '@/data/customersData';
+import { getContracts } from '@/data/installmentsData';
 import { useConfirm } from '@/components/ConfirmDialog';
 
 // ─── Customer Form Modal ──────────────────────────────────────
@@ -62,14 +63,14 @@ function CustomerModal({
 
                     <div>
                         <label className="block text-xs font-bold text-muted-foreground mb-1.5">الاسم *</label>
-                        <input value={form.name} onChange={f('name')} placeholder="اسم العميل"
+                        <input data-validation="text-only" value={form.name} onChange={f('name')} placeholder="اسم العميل"
                             className="w-full rounded-xl border border-border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50" />
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
                         <div>
                             <label className="block text-xs font-bold text-muted-foreground mb-1.5">رقم الهاتف</label>
-                            <input value={form.phone} onChange={f('phone')} placeholder="01xxxxxxxxx" type="tel"
+                            <input data-validation="phone" value={form.phone} onChange={f('phone')} placeholder="01xxxxxxxxx" type="tel"
                                 className="w-full rounded-xl border border-border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50" />
                         </div>
                         <div>
@@ -81,7 +82,7 @@ function CustomerModal({
 
                     <div>
                         <label className="block text-xs font-bold text-muted-foreground mb-1.5">العنوان</label>
-                        <input value={form.address} onChange={f('address')} placeholder="عنوان العميل"
+                        <input data-validation="text-only" value={form.address} onChange={f('address')} placeholder="عنوان العميل"
                             className="w-full rounded-xl border border-border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50" />
                     </div>
 
@@ -129,6 +130,20 @@ export default function CustomersPage() {
     const handleEdit = (c: Customer) => { setEditTarget(c); setShowModal(true); };
     const handleAdd = () => { setEditTarget(undefined); setShowModal(true); };
     const handleDelete = async (c: Customer) => {
+        // Check if customer has active contracts
+        const contracts = getContracts();
+        const activeContracts = contracts.filter(ct =>
+            ct.customerName === c.name && (ct.status === 'active' || ct.status === 'overdue')
+        );
+        if (activeContracts.length > 0) {
+            await confirm({
+                title: 'لا يمكن الحذف',
+                message: `العميل "${c.name}" لديه ${activeContracts.length} عقد تقسيط نشط. قم بإنهاء العقود أولاً.`,
+                confirmLabel: 'حسناً',
+                danger: false
+            });
+            return;
+        }
         const ok = await confirm({ title: 'حذف عميل', message: `هل أنت متأكد من حذف العميل "${c.name}"؟`, confirmLabel: 'حذف', danger: true });
         if (ok) { deleteCustomer(c.id); refresh(); }
     };

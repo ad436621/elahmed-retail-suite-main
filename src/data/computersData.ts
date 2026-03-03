@@ -6,9 +6,10 @@ import { ComputerItem, ComputerAccessory } from '@/domain/types';
 import { generateBarcode } from '@/domain/product';
 import { addBatch } from './batchesData';
 import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
+import { STORAGE_KEYS } from '@/config';
 
-const COMPUTERS_KEY = 'gx_computers_v2';
-const ACCESSORIES_KEY = 'gx_computer_accessories';
+const COMPUTERS_KEY = STORAGE_KEYS.COMPUTERS;
+const ACCESSORIES_KEY = STORAGE_KEYS.COMPUTER_ACCESSORIES;
 
 // ─── Computers ────────────────────────────────────────────────
 

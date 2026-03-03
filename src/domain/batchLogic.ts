@@ -4,7 +4,7 @@
 
 import { ProductBatch, BatchSaleResult } from './types';
 export type { BatchSaleResult }; // re-export to fix lint error
-import { getBatchesForProduct, updateBatchQty } from '@/data/batchesData';
+import { getBatchesForProduct, updateBatchQty, getBatches, saveBatches } from '@/data/batchesData';
 
 export class BatchError extends Error {
     constructor(message: string) {
@@ -102,8 +102,7 @@ export function commitFIFOSaleFromBatches(
  * Bulk update to avoid multiple writes for one cart
  */
 export function bulkCommitFIFOSales(saleResults: BatchSaleResult[]): void {
-    // Get all batches once
-    const { getBatches, saveBatches } = require('@/data/batchesData');
+    // Get all batches once (using static import — no require())
     const allBatches = getBatches() as ProductBatch[];
 
     let modified = false;

@@ -6,9 +6,10 @@ import { DeviceItem, DeviceAccessory } from '@/domain/types';
 import { generateBarcode } from '@/domain/product';
 import { addBatch } from './batchesData';
 import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
+import { STORAGE_KEYS } from '@/config';
 
-const DEVICES_KEY = 'gx_devices_v2';
-const ACCESSORIES_KEY = 'gx_device_accessories';
+const DEVICES_KEY = STORAGE_KEYS.DEVICES;
+const ACCESSORIES_KEY = STORAGE_KEYS.DEVICE_ACCESSORIES;
 
 // ─── Devices ─────────────────────────────────────────────────
 

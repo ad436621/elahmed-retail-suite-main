@@ -1,35 +1,99 @@
-import { Search } from 'lucide-react';
-import { useState, useMemo } from 'react';
+import { Search, Ban, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
-import { getActiveSales } from '@/repositories/saleRepository';
+import { getActiveSales, getAllSales, saveSale } from '@/repositories/saleRepository';
+import { voidSale } from '@/services/saleService';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+
+const PAGE_SIZE = 20;
+
+const paymentLabels: Record<string, string> = {
+  cash: 'نقدي',
+  card: 'بطاقة',
+  installment: 'تقسيط',
+  mixed: 'مختلط',
+};
 
 const Sales = () => {
   const { t } = useLanguage();
+  const { user, isOwner } = useAuth();
+  const { toast } = useToast();
   const [search, setSearch] = useState('');
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [showVoided, setShowVoided] = useState(false);
+  const [page, setPage] = useState(1);
 
-  const allSales = useMemo(() => getActiveSales(), []);
+  useEffect(() => {
+    const handleStorage = (e: StorageEvent | CustomEvent) => {
+      const key = 'key' in e ? e.key : (e as CustomEvent).detail?.key;
+      if (key && key.startsWith('gx_') || key?.startsWith('elahmed_')) setRefreshKey(k => k + 1);
+    };
+    window.addEventListener('storage', handleStorage as EventListener);
+    window.addEventListener('local-storage', handleStorage as EventListener);
+    return () => {
+      window.removeEventListener('storage', handleStorage as EventListener);
+      window.removeEventListener('local-storage', handleStorage as EventListener);
+    };
+  }, []);
+
+  const allSales = useMemo(() => showVoided ? getAllSales() : getActiveSales(), [refreshKey, showVoided]);
 
   const filtered = useMemo(
     () => allSales.filter(s =>
       s.invoiceNumber.toLowerCase().includes(search.toLowerCase()) ||
       s.employee.toLowerCase().includes(search.toLowerCase())
-    ),
+    ).sort((a, b) => (b.date ?? '').localeCompare(a.date ?? '')),
     [allSales, search]
   );
 
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const paged = useMemo(() => filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), [filtered, page]);
+
+  // Reset page when search changes
+  useEffect(() => { setPage(1); }, [search, showVoided]);
+
+  const handleVoid = (saleId: string, invoiceNumber: string) => {
+    const reason = window.prompt(`سبب إلغاء الفاتورة ${invoiceNumber}:`);
+    if (!reason || !reason.trim()) return;
+    try {
+      const sale = allSales.find(s => s.id === saleId);
+      if (!sale) return;
+      const { voidedSale } = voidSale(sale, reason.trim(), user?.id || 'admin');
+      saveSale(voidedSale);
+      setRefreshKey(k => k + 1);
+      toast({ title: '✅ تم إلغاء الفاتورة', description: `${invoiceNumber} — ${reason}` });
+    } catch (err: any) {
+      toast({ title: 'خطأ', description: err.message, variant: 'destructive' });
+    }
+  };
+
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold text-foreground">{t('sales.title')}</h1>
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <h1 className="text-2xl font-bold text-foreground">{t('sales.title')}</h1>
+        <div className="flex items-center gap-2">
+          <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none">
+            <input type="checkbox" checked={showVoided} onChange={e => setShowVoided(e.target.checked)}
+              className="rounded border-border" />
+            عرض الملغية
+          </label>
+        </div>
+      </div>
 
-      <div className="relative max-w-md">
-        <Search className="absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search invoices..."
-          className="w-full rounded-lg border border-input bg-card ps-10 pe-4 py-2 text-sm text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-        />
+      <div className="flex items-center gap-3 flex-wrap">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <input
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="بحث في الفواتير..."
+            className="w-full rounded-lg border border-input bg-card ps-10 pe-4 py-2 text-sm text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+        </div>
+        <p className="text-xs text-muted-foreground">{filtered.length} فاتورة</p>
       </div>
 
       <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden mb-8">
@@ -41,15 +105,24 @@ const Sales = () => {
                 <th className="px-4 py-3 text-start font-medium text-muted-foreground">{t('sales.date')}</th>
                 <th className="px-4 py-3 text-start font-medium text-muted-foreground">{t('sales.items')}</th>
                 <th className="px-4 py-3 text-end font-medium text-muted-foreground">{t('sales.amount')}</th>
-                <th className="px-4 py-3 text-center font-medium text-muted-foreground">Payment</th>
+                <th className="px-4 py-3 text-center font-medium text-muted-foreground">طريقة الدفع</th>
                 <th className="px-4 py-3 text-start font-medium text-muted-foreground">{t('sales.employee')}</th>
+                {isOwner() && <th className="px-4 py-3 text-center font-medium text-muted-foreground">إجراءات</th>}
               </tr>
             </thead>
             <tbody>
-              {filtered.map(sale => (
-                <tr key={sale.id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors cursor-pointer">
-                  <td className="px-4 py-3 font-mono text-xs font-semibold text-primary">{sale.invoiceNumber}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{sale.date}</td>
+              {paged.length === 0 ? (
+                <tr><td colSpan={7} className="py-12 text-center text-muted-foreground">لا توجد فواتير</td></tr>
+              ) : paged.map(sale => (
+                <tr key={sale.id} className={cn(
+                  'border-b border-border last:border-0 hover:bg-muted/30 transition-colors',
+                  sale.voidedAt && 'opacity-50 line-through'
+                )}>
+                  <td className="px-4 py-3 font-mono text-xs font-semibold text-primary">
+                    {sale.invoiceNumber}
+                    {sale.voidedAt && <span className="ms-2 text-[10px] text-destructive font-bold no-underline">(ملغية)</span>}
+                  </td>
+                  <td className="px-4 py-3 text-muted-foreground">{new Date(sale.date).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
                   <td className="px-4 py-3">
                     <div className="space-y-0.5">
                       {sale.items.map((item, i) => (
@@ -68,15 +141,41 @@ const Sales = () => {
                         sale.paymentMethod === 'card' ? 'bg-primary/10 text-primary' :
                           'bg-warning/10 text-warning'
                     )}>
-                      {sale.paymentMethod}
+                      {paymentLabels[sale.paymentMethod] || sale.paymentMethod}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{sale.employee}</td>
+                  {isOwner() && (
+                    <td className="px-4 py-3 text-center">
+                      {!sale.voidedAt && (
+                        <button onClick={() => handleVoid(sale.id, sale.invoiceNumber)}
+                          title="إلغاء الفاتورة"
+                          className="rounded-lg p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all">
+                          <Ban className="h-4 w-4" />
+                        </button>
+                      )}
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-muted/20">
+            <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
+              className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted disabled:opacity-40 transition-colors">
+              <ChevronRight className="h-3.5 w-3.5" /> السابق
+            </button>
+            <span className="text-xs text-muted-foreground">صفحة {page} من {totalPages}</span>
+            <button onClick={() => setPage(p => Math.min(totalPages, p + 1))} disabled={page === totalPages}
+              className="flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-medium text-muted-foreground hover:bg-muted disabled:opacity-40 transition-colors">
+              التالي <ChevronLeft className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

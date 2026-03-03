@@ -1,0 +1,1898 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>مرحباً بك • إعداد النظام</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+  <!-- 🎨 Design System Tokens (theme colors - MUST BE FIRST) -->
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/tokens-alias.css">
+
+  <style>
+    :root {
+      --bg-primary: #0a0e14;
+      --bg-secondary: #151921;
+      --bg-tertiary: #1a1f29;
+      --bg-glass: rgba(21, 25, 33, 0.85);
+      --text-primary: #e6e8ee;
+      --text-secondary: #8b93a6;
+      --border: #1e2530;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --accent-glow: rgba(59, 130, 246, 0.4);
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --purple: #a855f7;
+      --cyan: #06b6d4;
+      --pink: #ec4899;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg-primary); }
+    ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, var(--accent) 0%, var(--purple) 100%); border-radius: 4px; }
+
+    body { 
+      font-family: 'Cairo', system-ui, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* ═══════════════════════════════════════
+       🌌 ANIMATED BACKGROUND
+       ═══════════════════════════════════════ */
+    .bg-animation {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: -1;
+      overflow: hidden;
+    }
+
+    .bg-gradient {
+      position: absolute;
+      width: 150%;
+      height: 150%;
+      top: -25%;
+      left: -25%;
+      background: 
+        radial-gradient(ellipse at 20% 20%, rgba(59, 130, 246, 0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(168, 85, 247, 0.12) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, rgba(6, 182, 212, 0.08) 0%, transparent 60%);
+      animation: bgFloat 20s ease-in-out infinite;
+      will-change: transform;
+    }
+
+    @keyframes bgFloat {
+      0%, 100% { transform: translate(0, 0); }
+      50% { transform: translate(1%, 1%); }
+    }
+
+    .particles {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+    }
+
+    .particle {
+      position: absolute;
+      width: 4px;
+      height: 4px;
+      background: var(--accent);
+      border-radius: 50%;
+      opacity: 0.3;
+      animation: particleFloat 15s linear infinite;
+      will-change: transform, opacity;
+    }
+
+    @keyframes particleFloat {
+      0% { transform: translateY(100vh); opacity: 0; }
+      10% { opacity: 0.3; }
+      90% { opacity: 0.3; }
+      100% { transform: translateY(-100vh); opacity: 0; }
+    }
+
+    /* ═══════════════════════════════════════
+       📦 MAIN CONTAINER
+       ═══════════════════════════════════════ */
+    .setup-container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 20px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ═══════════════════════════════════════
+       🎨 WIZARD CARD
+       ═══════════════════════════════════════ */
+    .wizard-card {
+      background: var(--bg-glass);
+      backdrop-filter: blur(10px);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      box-shadow: 
+        0 25px 80px rgba(0,0,0,0.5),
+        0 0 0 1px rgba(255,255,255,0.05) inset;
+      overflow: hidden;
+      animation: cardAppear 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    @keyframes cardAppear {
+      from { opacity: 0; transform: translateY(40px) scale(0.95); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* ═══════════════════════════════════════
+       🏠 HEADER
+       ═══════════════════════════════════════ */
+    .wizard-header {
+      position: relative;
+      padding: 50px 40px 40px;
+      background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 50%, #0ea5e9 100%);
+      text-align: center;
+      overflow: hidden;
+    }
+
+    .wizard-header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+      opacity: 0.03;
+    }
+
+    .header-glow {
+      position: absolute;
+      width: 300px;
+      height: 300px;
+      background: radial-gradient(circle, rgba(255,255,255,0.2) 0%, transparent 70%);
+      border-radius: 50%;
+      top: -100px;
+      left: 50%;
+      transform: translateX(-50%);
+      animation: pulseGlow 4s ease-in-out infinite;
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 0.5; transform: translateX(-50%) scale(1); }
+      50% { opacity: 0.8; transform: translateX(-50%) scale(1.1); }
+    }
+
+    .wizard-logo {
+      position: relative;
+      z-index: 1;
+      width: 100px;
+      height: 100px;
+      margin: 0 auto 24px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255,255,255,0.2);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+      animation: logoFloat 3s ease-in-out infinite;
+    }
+
+    @keyframes logoFloat {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+
+    .wizard-title {
+      position: relative;
+      z-index: 1;
+      font-size: 36px;
+      font-weight: 900;
+      color: white;
+      margin-bottom: 12px;
+      text-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+
+    .wizard-subtitle {
+      position: relative;
+      z-index: 1;
+      font-size: 16px;
+      color: rgba(255,255,255,0.9);
+      max-width: 500px;
+      margin: 0 auto;
+      line-height: 1.7;
+    }
+
+    /* ═══════════════════════════════════════
+       📊 PROGRESS BAR
+       ═══════════════════════════════════════ */
+    .progress-section {
+      padding: 30px 40px;
+      background: var(--bg-tertiary);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .progress-steps {
+      display: flex;
+      justify-content: space-between;
+      position: relative;
+    }
+
+    .progress-line {
+      position: absolute;
+      top: 24px;
+      left: 40px;
+      right: 40px;
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      z-index: 0;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--accent), var(--purple), var(--success));
+      border-radius: 2px;
+      transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+    }
+
+    .progress-fill::after {
+      content: '';
+      position: absolute;
+      right: 0;
+      top: -4px;
+      width: 12px;
+      height: 12px;
+      background: white;
+      border-radius: 50%;
+      box-shadow: 0 0 20px var(--accent-glow);
+    }
+
+    .step-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      position: relative;
+      z-index: 1;
+      cursor: pointer;
+      transition: transform 0.3s ease;
+    }
+
+    .step-item:hover { transform: translateY(-2px); }
+
+    .step-circle {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: var(--bg-secondary);
+      border: 3px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .step-item.active .step-circle {
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      border-color: transparent;
+      color: white;
+      transform: scale(1.15);
+      box-shadow: 0 0 30px var(--accent-glow);
+    }
+
+    .step-item.completed .step-circle {
+      background: linear-gradient(135deg, var(--success), #059669);
+      border-color: transparent;
+      color: white;
+    }
+
+    .step-label {
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      text-align: center;
+      max-width: 80px;
+      transition: color 0.3s ease;
+    }
+
+    .step-item.active .step-label { color: var(--accent); }
+    .step-item.completed .step-label { color: var(--success); }
+
+    /* ═══════════════════════════════════════
+       📝 CONTENT
+       ═══════════════════════════════════════ */
+    .wizard-content {
+      padding: 40px;
+      min-height: 450px;
+    }
+
+    .wizard-step {
+      display: none;
+      animation: stepFadeIn 0.5s ease;
+    }
+
+    .wizard-step.active { display: block; }
+
+    @keyframes stepFadeIn {
+      from { opacity: 0; transform: translateX(30px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    .step-header {
+      margin-bottom: 32px;
+    }
+
+    .step-title {
+      font-size: 26px;
+      font-weight: 900;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .step-title-icon {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+
+    .step-description {
+      font-size: 15px;
+      color: var(--text-secondary);
+      line-height: 1.7;
+    }
+
+    /* ═══════════════════════════════════════
+       📋 FORM ELEMENTS
+       ═══════════════════════════════════════ */
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+    }
+
+    .form-group {
+      margin-bottom: 24px;
+    }
+
+    .form-group.full-width {
+      grid-column: 1 / -1;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 10px;
+    }
+
+    .form-label .required {
+      color: var(--danger);
+      margin-right: 4px;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 16px 18px;
+      background: var(--bg-primary);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      color: var(--text-primary);
+      font-size: 15px;
+      font-family: inherit;
+      transition: all 0.3s ease;
+    }
+
+    .form-input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px var(--accent-glow);
+    }
+
+    .form-input::placeholder {
+      color: var(--text-secondary);
+      opacity: 0.6;
+    }
+
+    .form-hint {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    textarea.form-input {
+      min-height: 100px;
+      resize: vertical;
+    }
+
+    select.form-input {
+      cursor: pointer;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%238b93a6' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: left 16px center;
+      padding-left: 40px;
+    }
+
+    /* ═══════════════════════════════════════
+       🖼️ LOGO UPLOAD
+       ═══════════════════════════════════════ */
+    .logo-upload-area {
+      display: flex;
+      gap: 24px;
+      align-items: flex-start;
+    }
+
+    .logo-preview {
+      width: 120px;
+      height: 120px;
+      background: var(--bg-primary);
+      border: 2px dashed var(--border);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .logo-preview.has-image {
+      border-style: solid;
+      border-color: var(--success);
+    }
+
+    .logo-preview img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    .logo-placeholder {
+      text-align: center;
+      color: var(--text-secondary);
+    }
+
+    .logo-placeholder-icon {
+      font-size: 36px;
+      margin-bottom: 8px;
+      opacity: 0.5;
+    }
+
+    .logo-placeholder-text {
+      font-size: 11px;
+    }
+
+    .logo-upload-info {
+      flex: 1;
+    }
+
+    .logo-upload-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      background: var(--bg-primary);
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      color: var(--text-primary);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-family: inherit;
+    }
+
+    .logo-upload-btn:hover {
+      border-color: var(--accent);
+      background: rgba(59, 130, 246, 0.1);
+    }
+
+    .logo-upload-hint {
+      margin-top: 12px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    .logo-remove-btn {
+      margin-top: 12px;
+      padding: 8px 16px;
+      background: transparent;
+      border: 1px solid var(--danger);
+      border-radius: 8px;
+      color: var(--danger);
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-family: inherit;
+    }
+
+    .logo-remove-btn:hover {
+      background: rgba(239, 68, 68, 0.1);
+    }
+
+    /* ═══════════════════════════════════════
+       🔘 OPTION CARDS
+       ═══════════════════════════════════════ */
+    .options-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+    }
+
+    .option-card {
+      position: relative;
+      cursor: pointer;
+    }
+
+    .option-card input {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .option-content {
+      padding: 20px;
+      background: var(--bg-primary);
+      border: 2px solid var(--border);
+      border-radius: 14px;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+
+    .option-card input:checked + .option-content {
+      border-color: var(--accent);
+      background: rgba(59, 130, 246, 0.1);
+    }
+
+    .option-card:hover .option-content {
+      border-color: rgba(59, 130, 246, 0.5);
+      transform: translateY(-2px);
+    }
+
+    .option-icon {
+      font-size: 36px;
+      margin-bottom: 12px;
+    }
+
+    .option-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .option-desc {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    /* ═══════════════════════════════════════
+       ✅ TOGGLE SWITCHES
+       ═══════════════════════════════════════ */
+    .toggle-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .toggle-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px;
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      transition: all 0.3s ease;
+    }
+
+    .toggle-item:hover {
+      border-color: rgba(59, 130, 246, 0.3);
+    }
+
+    .toggle-info {
+      flex: 1;
+    }
+
+    .toggle-title {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .toggle-desc {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .toggle-switch {
+      position: relative;
+      width: 56px;
+      height: 30px;
+      flex-shrink: 0;
+    }
+
+    .toggle-switch input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--border);
+      border-radius: 30px;
+      transition: all 0.3s ease;
+    }
+
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      left: 3px;
+      bottom: 3px;
+      background: white;
+      border-radius: 50%;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    .toggle-switch input:checked + .toggle-slider {
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+    }
+
+    .toggle-switch input:checked + .toggle-slider::before {
+      transform: translateX(26px);
+    }
+
+    /* ═══════════════════════════════════════
+       📊 SUMMARY
+       ═══════════════════════════════════════ */
+    .summary-section {
+      margin-bottom: 24px;
+    }
+
+    .summary-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      margin-bottom: 16px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+
+    .summary-card {
+      padding: 20px;
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .summary-icon {
+      width: 50px;
+      height: 50px;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+
+    .summary-content {
+      flex: 1;
+    }
+
+    .summary-label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-bottom: 4px;
+    }
+
+    .summary-value {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    /* ═══════════════════════════════════════
+       🎉 SUCCESS SCREEN
+       ═══════════════════════════════════════ */
+    .success-screen {
+      text-align: center;
+      padding: 40px 0;
+    }
+
+    .success-animation {
+      width: 140px;
+      height: 140px;
+      margin: 0 auto 32px;
+      background: linear-gradient(135deg, var(--success), #059669);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 64px;
+      color: white;
+      animation: successPop 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+      box-shadow: 0 10px 40px rgba(16, 185, 129, 0.4);
+    }
+
+    @keyframes successPop {
+      0% { transform: scale(0) rotate(-180deg); }
+      60% { transform: scale(1.2) rotate(10deg); }
+      100% { transform: scale(1) rotate(0deg); }
+    }
+
+    .success-title {
+      font-size: 32px;
+      font-weight: 900;
+      color: var(--text-primary);
+      margin-bottom: 12px;
+    }
+
+    .success-message {
+      font-size: 16px;
+      color: var(--text-secondary);
+      margin-bottom: 32px;
+      line-height: 1.7;
+    }
+
+    .success-features {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      flex-wrap: wrap;
+      margin-bottom: 40px;
+    }
+
+    .success-feature {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 20px;
+      background: var(--bg-primary);
+      border-radius: 30px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .success-feature-icon {
+      color: var(--success);
+    }
+
+    .btn-start {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      padding: 18px 48px;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      border: none;
+      border-radius: 14px;
+      color: white;
+      font-size: 18px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-family: inherit;
+    }
+
+    .btn-start:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 40px var(--accent-glow);
+    }
+
+    /* ═══════════════════════════════════════
+       🦶 FOOTER
+       ═══════════════════════════════════════ */
+    .wizard-footer {
+      padding: 24px 40px;
+      background: var(--bg-tertiary);
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .footer-left {
+      display: flex;
+      gap: 12px;
+    }
+
+    .footer-right {
+      display: flex;
+      gap: 12px;
+    }
+
+    .btn {
+      padding: 14px 28px;
+      border: none;
+      border-radius: 12px;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-family: inherit;
+    }
+
+    .btn-secondary {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      border: 2px solid var(--border);
+    }
+
+    .btn-secondary:hover:not(:disabled) {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent-hover));
+      color: white;
+    }
+
+    .btn-primary:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px var(--accent-glow);
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, var(--success), #059669);
+      color: white;
+    }
+
+    .btn-success:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(16, 185, 129, 0.4);
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text-secondary);
+      padding: 14px 20px;
+    }
+
+    .btn-ghost:hover {
+      color: var(--text-primary);
+    }
+
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    /* ═══════════════════════════════════════
+       🔔 TOAST NOTIFICATIONS
+       ═══════════════════════════════════════ */
+    .toast {
+      position: fixed;
+      top: 30px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-20px);
+      padding: 16px 24px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 600;
+      z-index: 10000;
+      animation: toastIn 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateX(-50%) translateY(-40px) scale(0.9); }
+      to { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+    }
+
+    .toast.success { border-color: var(--success); }
+    .toast.error { border-color: var(--danger); }
+    .toast.warning { border-color: var(--warning); }
+
+    /* ═══════════════════════════════════════
+       📱 RESPONSIVE
+       ═══════════════════════════════════════ */
+    @media (max-width: 768px) {
+      .setup-container { padding: 20px 16px; }
+      .wizard-header { padding: 40px 24px 30px; }
+      .wizard-title { font-size: 28px; }
+      .progress-section { padding: 20px; overflow-x: auto; }
+      .progress-steps { min-width: 500px; }
+      .step-label { display: none; }
+      .wizard-content { padding: 24px; }
+      .wizard-footer { padding: 20px; flex-direction: column; gap: 16px; }
+      .footer-left, .footer-right { width: 100%; justify-content: center; }
+      .logo-upload-area { flex-direction: column; align-items: center; text-align: center; }
+    }
+  </style>
+  <link rel="stylesheet" href="responsive.css">
+</head>
+<body>
+  <!-- Animated Background -->
+  <div class="bg-animation">
+    <div class="bg-gradient"></div>
+    <div class="particles" id="particles"></div>
+  </div>
+
+  <div class="setup-container">
+    <div class="wizard-card">
+      <!-- Header -->
+      <div class="wizard-header">
+        <div class="header-glow"></div>
+        <div class="wizard-logo">🚀</div>
+        <h1 class="wizard-title">مرحباً بك في النظام</h1>
+        <p class="wizard-subtitle">دعنا نساعدك في إعداد النظام خلال دقائق قليلة. يمكنك تعديل هذه الإعدادات لاحقاً من صفحة الإعدادات.</p>
+      </div>
+
+      <!-- Progress -->
+      <div class="progress-section">
+        <div class="progress-steps">
+          <div class="progress-line">
+            <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+          </div>
+          
+          <div class="step-item active" data-step="1">
+            <div class="step-circle">1</div>
+            <span class="step-label">الشركة</span>
+          </div>
+          <div class="step-item" data-step="2">
+            <div class="step-circle">2</div>
+            <span class="step-label">الإقليمية</span>
+          </div>
+          <div class="step-item" data-step="3">
+            <div class="step-circle">3</div>
+            <span class="step-label">المخزون</span>
+          </div>
+          <div class="step-item" data-step="4">
+            <div class="step-circle">4</div>
+            <span class="step-label">التفضيلات</span>
+          </div>
+          <div class="step-item" data-step="5">
+            <div class="step-circle">5</div>
+            <span class="step-label">المستخدم</span>
+          </div>
+          <div class="step-item" data-step="6">
+            <div class="step-circle">6</div>
+            <span class="step-label">المراجعة</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Content -->
+      <div class="wizard-content">
+        <!-- Step 1: Company Info -->
+        <div class="wizard-step active" data-step="1">
+          <div class="step-header">
+            <h2 class="step-title">
+              <div class="step-title-icon">🏢</div>
+              معلومات الشركة
+            </h2>
+            <p class="step-description">أدخل معلومات شركتك الأساسية. هذه المعلومات ستظهر في الفواتير والتقارير.</p>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label"><span class="required">*</span>اسم الشركة</label>
+              <input type="text" class="form-input" id="companyName" placeholder="مثال: شركة النجاح للتجارة">
+              <span class="form-hint">💡 هذا الاسم سيظهر في جميع الفواتير والتقارير</span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">الاسم المختصر</label>
+              <input type="text" class="form-input" id="companyShortName" placeholder="مثال: النجاح" maxlength="20">
+              <span class="form-hint">يُستخدم في الأماكن الضيقة</span>
+            </div>
+
+            <div class="form-group full-width">
+              <label class="form-label">شعار الشركة</label>
+              <div class="logo-upload-area">
+                <div class="logo-preview" id="logoPreview">
+                  <div class="logo-placeholder">
+                    <div class="logo-placeholder-icon">🖼️</div>
+                    <div class="logo-placeholder-text">لا يوجد شعار</div>
+                  </div>
+                </div>
+                <div class="logo-upload-info">
+                  <input type="file" id="logoInput" accept="image/*" hidden>
+                  <input type="hidden" id="companyLogo">
+                  <button type="button" class="logo-upload-btn" onclick="document.getElementById('logoInput').click()">
+                    📤 رفع شعار
+                  </button>
+                  <p class="logo-upload-hint">
+                    📌 الصيغ المدعومة: PNG, JPG, WEBP<br>
+                    📌 الحد الأقصى للحجم: 2 ميجابايت<br>
+                    📌 الأبعاد المُوصى بها: 200×200 بكسل
+                  </p>
+                  <button type="button" class="logo-remove-btn" id="logoRemoveBtn" style="display:none" onclick="removeLogo()">
+                    🗑️ إزالة الشعار
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <div class="form-group full-width">
+              <label class="form-label">وصف النشاط</label>
+              <textarea class="form-input" id="companyDescription" placeholder="وصف مختصر لنشاط الشركة (اختياري)"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 2: Regional Settings -->
+        <div class="wizard-step" data-step="2">
+          <div class="step-header">
+            <h2 class="step-title">
+              <div class="step-title-icon">🌍</div>
+              الإعدادات الإقليمية
+            </h2>
+            <p class="step-description">اختر العملة وتنسيق التاريخ المناسب لمنطقتك.</p>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">العملة الافتراضية</label>
+            <div class="options-grid">
+              <label class="option-card">
+                <input type="radio" name="currency" value="EGP" checked>
+                <div class="option-content">
+                  <div class="option-icon">🇪🇬</div>
+                  <div class="option-title">جنيه مصري</div>
+                  <div class="option-desc">EGP - ج.م</div>
+                </div>
+              </label>
+              <label class="option-card">
+                <input type="radio" name="currency" value="SAR">
+                <div class="option-content">
+                  <div class="option-icon">🇸🇦</div>
+                  <div class="option-title">ريال سعودي</div>
+                  <div class="option-desc">SAR - ر.س</div>
+                </div>
+              </label>
+              <label class="option-card">
+                <input type="radio" name="currency" value="AED">
+                <div class="option-content">
+                  <div class="option-icon">🇦🇪</div>
+                  <div class="option-title">درهم إماراتي</div>
+                  <div class="option-desc">AED - د.إ</div>
+                </div>
+              </label>
+              <label class="option-card">
+                <input type="radio" name="currency" value="USD">
+                <div class="option-content">
+                  <div class="option-icon">🇺🇸</div>
+                  <div class="option-title">دولار أمريكي</div>
+                  <div class="option-desc">USD - $</div>
+                </div>
+              </label>
+              <label class="option-card">
+                <input type="radio" name="currency" value="EUR">
+                <div class="option-content">
+                  <div class="option-icon">🇪🇺</div>
+                  <div class="option-title">يورو</div>
+                  <div class="option-desc">EUR - €</div>
+                </div>
+              </label>
+              <label class="option-card">
+                <input type="radio" name="currency" value="KWD">
+                <div class="option-content">
+                  <div class="option-icon">🇰🇼</div>
+                  <div class="option-title">دينار كويتي</div>
+                  <div class="option-desc">KWD - د.ك</div>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <div class="form-grid" style="margin-top: 32px">
+            <div class="form-group">
+              <label class="form-label">تنسيق التاريخ</label>
+              <select class="form-input" id="dateFormat">
+                <option value="DD/MM/YYYY">DD/MM/YYYY (31/12/2025)</option>
+                <option value="MM/DD/YYYY">MM/DD/YYYY (12/31/2025)</option>
+                <option value="YYYY-MM-DD">YYYY-MM-DD (2025-12-31)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">اللغة</label>
+              <select class="form-input" id="language">
+                <option value="ar">العربية</option>
+                <option value="en">English</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 3: Inventory Settings -->
+        <div class="wizard-step" data-step="3">
+          <div class="step-header">
+            <h2 class="step-title">
+              <div class="step-title-icon">📦</div>
+              إعدادات المخزون
+            </h2>
+            <p class="step-description">قم بتخصيص إعدادات المخزون والتنبيهات حسب احتياجاتك.</p>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">حد تنبيه المخزون المنخفض</label>
+              <input type="number" class="form-input" id="lowStockThreshold" value="10" min="1" max="100">
+              <span class="form-hint">سيتم تنبيهك عندما يقل مخزون أي منتج عن هذا الرقم</span>
+            </div>
+            <div class="form-group">
+              <label class="form-label">الحد الأدنى للمخزون الافتراضي</label>
+              <input type="number" class="form-input" id="defaultMinStock" value="5" min="0" max="50">
+              <span class="form-hint">القيمة الافتراضية للحد الأدنى عند إضافة منتج جديد</span>
+            </div>
+          </div>
+
+          <div class="toggle-list" style="margin-top: 32px">
+            <div class="toggle-item">
+              <div class="toggle-info">
+                <div class="toggle-title">🔔 تفعيل تنبيهات المخزون المنخفض</div>
+                <div class="toggle-desc">إرسال إشعار عند انخفاض المخزون عن الحد المحدد</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="lowStockAlert" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="toggle-item">
+              <div class="toggle-info">
+                <div class="toggle-title">🚫 منع البيع بدون مخزون</div>
+                <div class="toggle-desc">لا يمكن إتمام عملية بيع لمنتج نفذ من المخزون</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="preventZeroStock" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="toggle-item">
+              <div class="toggle-info">
+                <div class="toggle-title">📊 تتبع المخزون التلقائي</div>
+                <div class="toggle-desc">تحديث المخزون تلقائياً عند كل عملية بيع أو شراء</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="autoTrackStock" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 4: System Preferences -->
+        <div class="wizard-step" data-step="4">
+          <div class="step-header">
+            <h2 class="step-title">
+              <div class="step-title-icon">⚙️</div>
+              تفضيلات النظام
+            </h2>
+            <p class="step-description">اختر الميزات والخيارات التي تناسب طريقة عملك.</p>
+          </div>
+
+          <div class="toggle-list">
+            <div class="toggle-item">
+              <div class="toggle-info">
+                <div class="toggle-title">🖨️ الطباعة التلقائية للفواتير</div>
+                <div class="toggle-desc">طباعة الفاتورة تلقائياً بعد إتمام عملية البيع</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="autoPrint">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="toggle-item">
+              <div class="toggle-info">
+                <div class="toggle-title">⚠️ تأكيد عمليات الحذف</div>
+                <div class="toggle-desc">طلب تأكيد قبل حذف أي عنصر من النظام</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="confirmDelete" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="toggle-item">
+              <div class="toggle-info">
+                <div class="toggle-title">💾 الحفظ التلقائي</div>
+                <div class="toggle-desc">حفظ التغييرات تلقائياً دون الحاجة للضغط على زر الحفظ</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="autoSave" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="toggle-item">
+              <div class="toggle-info">
+                <div class="toggle-title">🔔 الإشعارات</div>
+                <div class="toggle-desc">عرض إشعارات النظام والتنبيهات</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="notifications" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="toggle-item">
+              <div class="toggle-info">
+                <div class="toggle-title">🔊 الأصوات</div>
+                <div class="toggle-desc">تشغيل أصوات التنبيهات والإشعارات</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="sounds" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="toggle-item">
+              <div class="toggle-info">
+                <div class="toggle-title">☁️ النسخ الاحتياطي التلقائي</div>
+                <div class="toggle-desc">إنشاء نسخة احتياطية يومية من البيانات</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="autoBackup" checked>
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 5: Admin User -->
+        <div class="wizard-step" data-step="5">
+          <div class="step-header">
+            <h2 class="step-title">
+              <div class="step-title-icon">👤</div>
+              المستخدم الرئيسي
+            </h2>
+            <p class="step-description">قم بإعداد حساب المسؤول الرئيسي للنظام. هذا الحساب سيكون له كامل الصلاحيات.</p>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label"><span class="required">*</span>اسم المستخدم</label>
+              <input type="text" class="form-input" id="adminUsername" placeholder="admin" value="admin">
+              <span class="form-hint">سيُستخدم لتسجيل الدخول</span>
+            </div>
+            <div class="form-group">
+              <label class="form-label">الاسم الكامل</label>
+              <input type="text" class="form-input" id="adminFullName" placeholder="مثال: أحمد محمد">
+            </div>
+            <div class="form-group">
+              <label class="form-label"><span class="required">*</span>كلمة المرور</label>
+              <input type="password" class="form-input" id="adminPassword" placeholder="••••••••">
+              <span class="form-hint">8 أحرف على الأقل</span>
+            </div>
+            <div class="form-group">
+              <label class="form-label"><span class="required">*</span>تأكيد كلمة المرور</label>
+              <input type="password" class="form-input" id="adminPasswordConfirm" placeholder="••••••••">
+            </div>
+            <div class="form-group">
+              <label class="form-label">البريد الإلكتروني (اختياري)</label>
+              <input type="email" class="form-input" id="adminEmail" placeholder="admin@company.com">
+              <span class="form-hint">لاستعادة كلمة المرور</span>
+            </div>
+            <div class="form-group">
+              <label class="form-label">رقم الهاتف (اختياري)</label>
+              <input type="tel" class="form-input" id="adminPhone" placeholder="01xxxxxxxxx">
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 6: Summary -->
+        <div class="wizard-step" data-step="6">
+          <div class="step-header">
+            <h2 class="step-title">
+              <div class="step-title-icon">✅</div>
+              مراجعة الإعدادات
+            </h2>
+            <p class="step-description">راجع الإعدادات التي اخترتها قبل الحفظ. يمكنك الرجوع لتعديل أي إعداد.</p>
+          </div>
+
+          <div class="summary-section">
+            <h3 class="summary-title">معلومات الشركة</h3>
+            <div class="summary-grid">
+              <div class="summary-card">
+                <div class="summary-icon">🏢</div>
+                <div class="summary-content">
+                  <div class="summary-label">اسم الشركة</div>
+                  <div class="summary-value" id="summaryCompanyName">-</div>
+                </div>
+              </div>
+              <div class="summary-card">
+                <div class="summary-icon">🖼️</div>
+                <div class="summary-content">
+                  <div class="summary-label">الشعار</div>
+                  <div class="summary-value" id="summaryLogo">لم يتم رفعه</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="summary-section">
+            <h3 class="summary-title">الإعدادات الإقليمية</h3>
+            <div class="summary-grid">
+              <div class="summary-card">
+                <div class="summary-icon">💰</div>
+                <div class="summary-content">
+                  <div class="summary-label">العملة</div>
+                  <div class="summary-value" id="summaryCurrency">-</div>
+                </div>
+              </div>
+              <div class="summary-card">
+                <div class="summary-icon">📅</div>
+                <div class="summary-content">
+                  <div class="summary-label">تنسيق التاريخ</div>
+                  <div class="summary-value" id="summaryDateFormat">-</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="summary-section">
+            <h3 class="summary-title">الإعدادات</h3>
+            <div class="summary-grid">
+              <div class="summary-card">
+                <div class="summary-icon">📦</div>
+                <div class="summary-content">
+                  <div class="summary-label">حد المخزون المنخفض</div>
+                  <div class="summary-value" id="summaryStockThreshold">-</div>
+                </div>
+              </div>
+              <div class="summary-card">
+                <div class="summary-icon">⚙️</div>
+                <div class="summary-content">
+                  <div class="summary-label">الميزات المفعلة</div>
+                  <div class="summary-value" id="summaryFeatures">-</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="summary-section">
+            <h3 class="summary-title">المستخدم الرئيسي</h3>
+            <div class="summary-grid">
+              <div class="summary-card">
+                <div class="summary-icon">👤</div>
+                <div class="summary-content">
+                  <div class="summary-label">اسم المستخدم</div>
+                  <div class="summary-value" id="summaryAdmin">-</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step 7: Success -->
+        <div class="wizard-step" data-step="7">
+          <div class="success-screen">
+            <div class="success-animation">✓</div>
+            <h2 class="success-title">🎉 تم إعداد النظام بنجاح!</h2>
+            <p class="success-message">
+              تهانينا! النظام جاهز للاستخدام الآن.<br>
+              يمكنك البدء في إضافة المنتجات والعملاء وإجراء عمليات البيع.
+            </p>
+            
+            <div class="success-features">
+              <div class="success-feature">
+                <span class="success-feature-icon">✓</span>
+                <span>تم حفظ الإعدادات</span>
+              </div>
+              <div class="success-feature">
+                <span class="success-feature-icon">✓</span>
+                <span>تم إنشاء المستخدم</span>
+              </div>
+              <div class="success-feature">
+                <span class="success-feature-icon">✓</span>
+                <span>النظام جاهز</span>
+              </div>
+            </div>
+
+            <button class="btn-start" onclick="finishSetup()">
+              <span>🚀</span>
+              <span>ابدأ استخدام النظام</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="wizard-footer" id="wizardFooter">
+        <div class="footer-left">
+          <button class="btn btn-ghost" onclick="skipSetup()">تخطي الإعداد</button>
+        </div>
+        <div class="footer-right">
+          <button class="btn btn-secondary" id="prevBtn" onclick="prevStep()" disabled>
+            <span>→</span>
+            <span>السابق</span>
+          </button>
+          <button class="btn btn-primary" id="nextBtn" onclick="nextStep()">
+            <span>التالي</span>
+            <span>←</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ═════════════════════════════════════
+    // 🔄 Fetch Interceptor - Convert elos-db:// to http:// + CLIENT MODE
+    // ═════════════════════════════════════
+    (function() {
+      // 🔗 DYNAMIC CLIENT MODE DETECTION (يتم قراءتها في كل request)
+      function getBaseURL() {
+        const isClientMode = localStorage.getItem('elos_mode') === 'client';
+        const serverIP = localStorage.getItem('elos_server_ip');
+        const serverPort = localStorage.getItem('elos_server_port') || '48572';
+
+        if (isClientMode && serverIP) {
+          return `http://${serverIP}:${serverPort}`;
+        }
+        return 'http://127.0.0.1:48572';
+      }
+
+      function isClientModeActive() {
+        return localStorage.getItem('elos_mode') === 'client' && localStorage.getItem('elos_server_ip');
+      }
+
+      const originalFetch = window.fetch;
+      window.fetch = function(url, options) {
+        const baseURL = getBaseURL();
+        const isClientMode = isClientModeActive();
+
+        if (typeof url === 'string' && url.startsWith('elos-db://')) {
+          url = url.replace('elos-db://', baseURL + '/');
+          console.log('[FETCH-INTERCEPTOR] 🔄 Converted:', url.substring(0, 70));
+        } else if (isClientMode && typeof url === 'string' && url.includes('http://127.0.0.1:48572')) {
+          url = url.replace('http://127.0.0.1:48572', baseURL);
+        }
+        return originalFetch.call(this, url, options);
+      };
+      console.log('[FETCH-INTERCEPTOR] ✅ Installed');
+    })();
+    
+    // ═══════════════════════════════════════════════════════════════
+    // 🚀 FIRST SETUP WIZARD v2.0
+    // ═══════════════════════════════════════════════════════════════
+
+    let currentStep = 1;
+    const totalSteps = 7;
+
+    // ═══════════════════════════════════════════════════════════════
+    // 🌌 PARTICLES ANIMATION
+    // ═══════════════════════════════════════════════════════════════
+    function createParticles() {
+      const container = document.getElementById('particles');
+      // تقليل عدد الـ particles من 30 لـ 8 لتحسين الأداء
+      for (let i = 0; i < 8; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        particle.style.left = Math.random() * 100 + '%';
+        particle.style.animationDelay = Math.random() * 15 + 's';
+        particle.style.animationDuration = (15 + Math.random() * 10) + 's';
+        particle.style.opacity = 0.1 + Math.random() * 0.3;
+        particle.style.width = (2 + Math.random() * 4) + 'px';
+        particle.style.height = particle.style.width;
+        container.appendChild(particle);
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // 🎯 NAVIGATION
+    // ═══════════════════════════════════════════════════════════════
+    function nextStep() {
+      if (!validateStep(currentStep)) return;
+      
+      if (currentStep < totalSteps) {
+        currentStep++;
+        updateUI();
+        
+        if (currentStep === 6) updateSummary();
+        if (currentStep === totalSteps) saveSettings();
+      }
+    }
+
+    function prevStep() {
+      if (currentStep > 1) {
+        currentStep--;
+        updateUI();
+      }
+    }
+
+    function updateUI() {
+      // Update steps display
+      document.querySelectorAll('.wizard-step').forEach(step => {
+        step.classList.remove('active');
+      });
+      document.querySelector(`.wizard-step[data-step="${currentStep}"]`)?.classList.add('active');
+
+      // Update progress indicators
+      document.querySelectorAll('.step-item').forEach((item, index) => {
+        const stepNum = index + 1;
+        item.classList.remove('active', 'completed');
+        if (stepNum < currentStep) item.classList.add('completed');
+        else if (stepNum === currentStep) item.classList.add('active');
+      });
+
+      // Update progress bar
+      const progress = ((currentStep - 1) / (totalSteps - 1)) * 100;
+      document.getElementById('progressFill').style.width = `${progress}%`;
+
+      // Update buttons
+      document.getElementById('prevBtn').disabled = currentStep === 1 || currentStep === totalSteps;
+      
+      const nextBtn = document.getElementById('nextBtn');
+      if (currentStep === totalSteps - 1) {
+        nextBtn.innerHTML = '<span>حفظ وإنهاء</span><span>✓</span>';
+        nextBtn.classList.remove('btn-primary');
+        nextBtn.classList.add('btn-success');
+      } else if (currentStep === totalSteps) {
+        document.getElementById('wizardFooter').style.display = 'none';
+      } else {
+        nextBtn.innerHTML = '<span>التالي</span><span>←</span>';
+        nextBtn.classList.remove('btn-success');
+        nextBtn.classList.add('btn-primary');
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // ✅ VALIDATION
+    // ═══════════════════════════════════════════════════════════════
+    function validateStep(step) {
+      if (step === 1) {
+        const companyName = document.getElementById('companyName').value.trim();
+        if (!companyName) {
+          showToast('⚠️ يرجى إدخال اسم الشركة', 'warning');
+          document.getElementById('companyName').focus();
+          return false;
+        }
+      }
+      
+      if (step === 5) {
+        const username = document.getElementById('adminUsername').value.trim();
+        const password = document.getElementById('adminPassword').value;
+        const confirmPassword = document.getElementById('adminPasswordConfirm').value;
+        
+        if (!username) {
+          showToast('⚠️ يرجى إدخال اسم المستخدم', 'warning');
+          document.getElementById('adminUsername').focus();
+          return false;
+        }
+        
+        if (password.length < 4) {
+          showToast('⚠️ كلمة المرور يجب أن تكون 4 أحرف على الأقل', 'warning');
+          document.getElementById('adminPassword').focus();
+          return false;
+        }
+        
+        if (password !== confirmPassword) {
+          showToast('⚠️ كلمة المرور غير متطابقة', 'warning');
+          document.getElementById('adminPasswordConfirm').focus();
+          return false;
+        }
+      }
+      
+      return true;
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // 📊 UPDATE SUMMARY
+    // ═══════════════════════════════════════════════════════════════
+    function updateSummary() {
+      document.getElementById('summaryCompanyName').textContent = 
+        document.getElementById('companyName').value || 'غير محدد';
+      
+      document.getElementById('summaryLogo').textContent = 
+        document.getElementById('companyLogo').value ? '✓ تم الرفع' : 'لم يتم رفعه';
+      
+      const currency = document.querySelector('input[name="currency"]:checked')?.value || 'EGP';
+      const currencyMap = {
+        'EGP': '🇪🇬 جنيه مصري',
+        'SAR': '🇸🇦 ريال سعودي',
+        'AED': '🇦🇪 درهم إماراتي',
+        'USD': '🇺🇸 دولار أمريكي',
+        'EUR': '🇪🇺 يورو',
+        'KWD': '🇰🇼 دينار كويتي'
+      };
+      document.getElementById('summaryCurrency').textContent = currencyMap[currency];
+      
+      document.getElementById('summaryDateFormat').textContent = 
+        document.getElementById('dateFormat').value;
+      
+      document.getElementById('summaryStockThreshold').textContent = 
+        document.getElementById('lowStockThreshold').value + ' قطعة';
+      
+      const features = [];
+      if (document.getElementById('autoPrint')?.checked) features.push('طباعة تلقائية');
+      if (document.getElementById('confirmDelete')?.checked) features.push('تأكيد الحذف');
+      if (document.getElementById('lowStockAlert')?.checked) features.push('تنبيه المخزون');
+      if (document.getElementById('autoBackup')?.checked) features.push('نسخ احتياطي');
+      if (document.getElementById('notifications')?.checked) features.push('إشعارات');
+      document.getElementById('summaryFeatures').textContent = 
+        features.length ? `${features.length} ميزات مفعلة` : 'لا توجد';
+      
+      document.getElementById('summaryAdmin').textContent = 
+        document.getElementById('adminUsername').value || 'admin';
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // 💾 SAVE SETTINGS
+    // ═══════════════════════════════════════════════════════════════
+    async function saveSettings() {
+      const settings = {
+        companyName: document.getElementById('companyName').value.trim(),
+        companyShortName: document.getElementById('companyShortName').value.trim(),
+        companyLogo: document.getElementById('companyLogo').value,
+        companyDescription: document.getElementById('companyDescription').value.trim(),
+        currency: document.querySelector('input[name="currency"]:checked')?.value || 'EGP',
+        dateFormat: document.getElementById('dateFormat').value,
+        language: document.getElementById('language').value,
+        lowStockThreshold: parseInt(document.getElementById('lowStockThreshold').value) || 10,
+        defaultMinStock: parseInt(document.getElementById('defaultMinStock').value) || 5,
+        lowStockAlert: document.getElementById('lowStockAlert')?.checked ?? true,
+        preventZeroStock: document.getElementById('preventZeroStock')?.checked ?? true,
+        autoTrackStock: document.getElementById('autoTrackStock')?.checked ?? true,
+        autoPrint: document.getElementById('autoPrint')?.checked ?? false,
+        confirmDelete: document.getElementById('confirmDelete')?.checked ?? true,
+        autoSave: document.getElementById('autoSave')?.checked ?? true,
+        notifications: document.getElementById('notifications')?.checked ?? true,
+        sounds: document.getElementById('sounds')?.checked ?? true,
+        autoBackup: document.getElementById('autoBackup')?.checked ?? true,
+        setupCompleted: true,
+        setupDate: new Date().toISOString()
+      };
+
+      // Save to localStorage
+      localStorage.setItem('appSettings', JSON.stringify(settings));
+
+      // Save admin user
+      const adminUser = {
+        username: document.getElementById('adminUsername').value.trim(),
+        fullName: document.getElementById('adminFullName').value.trim(),
+        email: document.getElementById('adminEmail').value.trim(),
+        phone: document.getElementById('adminPhone').value.trim(),
+        password: document.getElementById('adminPassword').value,
+        role: 'admin',
+        isActive: true
+      };
+
+      try {
+        // Save settings to DB
+        await fetch('elos-db://settings/first-setup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(settings)
+        });
+
+        // Save admin user to DB
+        await fetch('elos-db://users/setup-admin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(adminUser)
+        });
+
+        console.log('✅ Settings and admin user saved successfully');
+        showToast('✅ تم حفظ الإعدادات بنجاح', 'success');
+      } catch (error) {
+        console.error('Error saving:', error);
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // 🚀 FINISH & SKIP
+    // ═══════════════════════════════════════════════════════════════
+    async function finishSetup() {
+      // ✅ حفظ الإعدادات أولاً!
+      console.log('[SETUP] 💾 Saving settings before finish...');
+      try {
+        await saveSettings();
+        console.log('[SETUP] ✅ Settings saved successfully');
+      } catch (error) {
+        console.error('[SETUP] ❌ Error saving settings:', error);
+        showToast('⚠️ حدث خطأ أثناء حفظ الإعدادات', 'error');
+        return; // لا تكمل إذا فشل الحفظ
+      }
+
+      // ✅ تنظيف بيانات اللوجن القديمة (admin الافتراضي)
+      // هذا يمنع ظهور بطاقة admin القديمة مع البطاقة الجديدة
+      const newUsername = document.getElementById('adminUsername').value.trim();
+      cleanupOldLoginData(newUsername);
+
+      // إيقاف الـ animations لتسريع الانتقال
+      document.body.style.animation = 'none';
+      document.querySelectorAll('.particle').forEach(p => p.remove());
+
+      // إضافة loading state
+      showToast('✅ تم الإعداد بنجاح! جاري تحميل صفحة تسجيل الدخول...', 'success');
+
+      // الانتقال بعد delay قصير
+      setTimeout(() => {
+        if (window.close) {
+          window.close();
+        } else {
+          window.location.href = './login.html';
+        }
+      }, 1000); // زيادة الوقت لإظهار التوست
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // 🧹 تنظيف بيانات اللوجن القديمة
+    // يمسح admin من قائمة المستخدمين الأخيرين إذا تم إنشاء يوزر جديد
+    // ═══════════════════════════════════════════════════════════════
+    function cleanupOldLoginData(newUsername) {
+      try {
+        // 1. مسح قائمة المستخدمين الأخيرين بالكامل وإضافة اليوزر الجديد فقط
+        const cleanRecentUsers = newUsername ? [newUsername] : [];
+        localStorage.setItem('elos_recent_users', JSON.stringify(cleanRecentUsers));
+        console.log('[SETUP] ✅ Recent users cleaned, set to:', cleanRecentUsers);
+
+        // 2. تحديث اسم المستخدم المحفوظ (لو كان admin نغيره للجديد)
+        const savedUsername = localStorage.getItem('elos_saved_username');
+        if (savedUsername === 'admin' && newUsername && newUsername !== 'admin') {
+          localStorage.setItem('elos_saved_username', newUsername);
+          console.log('[SETUP] ✅ Saved username updated from admin to:', newUsername);
+        } else if (newUsername) {
+          localStorage.setItem('elos_saved_username', newUsername);
+        }
+
+        // 3. مسح محاولات الدخول الفاشلة (بداية جديدة)
+        localStorage.removeItem('elos_login_attempts');
+
+        console.log('[SETUP] 🧹 Old login data cleaned successfully');
+      } catch (error) {
+        console.error('[SETUP] ⚠️ Error cleaning old login data:', error);
+        // لا نوقف العملية حتى لو فشل التنظيف
+      }
+    }
+
+    function skipSetup() {
+      if (confirm('⚠️ هل تريد تخطي الإعداد؟\n\nيمكنك إعداد النظام لاحقاً من صفحة الإعدادات.')) {
+        const minimalSettings = {
+          companyName: 'ELOS System',
+          currency: 'EGP',
+          dateFormat: 'DD/MM/YYYY',
+          lowStockThreshold: 10,
+          setupCompleted: true,
+          setupSkipped: true,
+          setupDate: new Date().toISOString()
+        };
+        
+        localStorage.setItem('appSettings', JSON.stringify(minimalSettings));
+        
+        fetch('elos-db://settings/first-setup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(minimalSettings)
+        }).finally(() => {
+          finishSetup();
+        });
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // 🖼️ LOGO UPLOAD
+    // ═══════════════════════════════════════════════════════════════
+    document.getElementById('logoInput')?.addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      if (!file.type.startsWith('image/')) {
+        showToast('⚠️ يرجى اختيار صورة فقط', 'warning');
+        return;
+      }
+
+      if (file.size > 2 * 1024 * 1024) {
+        showToast('⚠️ حجم الصورة كبير (الحد الأقصى 2MB)', 'warning');
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64 = event.target.result;
+        document.getElementById('companyLogo').value = base64;
+        
+        const preview = document.getElementById('logoPreview');
+        preview.innerHTML = `<img src="${base64}" alt="Logo">`;
+        preview.classList.add('has-image');
+        
+        document.getElementById('logoRemoveBtn').style.display = 'inline-block';
+        showToast('✅ تم رفع الشعار بنجاح', 'success');
+      };
+      reader.readAsDataURL(file);
+    });
+
+    function removeLogo() {
+      document.getElementById('companyLogo').value = '';
+      document.getElementById('logoInput').value = '';
+      
+      const preview = document.getElementById('logoPreview');
+      preview.innerHTML = `
+        <div class="logo-placeholder">
+          <div class="logo-placeholder-icon">🖼️</div>
+          <div class="logo-placeholder-text">لا يوجد شعار</div>
+        </div>
+      `;
+      preview.classList.remove('has-image');
+      document.getElementById('logoRemoveBtn').style.display = 'none';
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // 🔔 TOAST NOTIFICATIONS
+    // ═══════════════════════════════════════════════════════════════
+    function showToast(message, type = 'success') {
+      const existing = document.querySelector('.toast');
+      if (existing) existing.remove();
+
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerHTML = `<span>${message}</span>`;
+      document.body.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.animation = 'toastIn 0.3s reverse';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // 🚀 INITIALIZE
+    // ═══════════════════════════════════════════════════════════════
+    document.addEventListener('DOMContentLoaded', () => {
+      console.log('🚀 First Setup Wizard v2.0 - Initializing...');
+      createParticles();
+      updateUI();
+      console.log('✅ Setup Wizard Ready!');
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   ELOS Accounting System - Light Theme
+   Version: 3.0
+   Description: Light mode component overrides only
+   NOTE: Color variables are defined in tokens.css - this file is for component-specific overrides only
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════
+   COMPONENT OVERRIDES - Light mode specific component styles only
+   ═══════════════════════════════════════ */
+
+/* Note: Most component overrides are now in design-system.css with html[data-theme="light"] selectors
+   This file should only contain light-mode-specific overrides that cannot be handled there */

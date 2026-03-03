@@ -5,13 +5,14 @@ import { getMaintenanceOrders, addMaintenanceOrder, updateMaintenanceOrder, dele
 import { useToast } from '@/hooks/use-toast';
 
 const statusLabels: Record<MaintenanceOrder['status'], string> = {
-    pending: 'انتظار', in_progress: 'قيد الإصلاح', done: 'تم الإصلاح', delivered: 'تم التسليم',
+    pending: '⏳ انتظار', in_progress: '🔧 قيد الإصلاح', done: '✅ تم الإصلاح', delivered: '📦 تم التسليم',
 };
-const statusColors: Record<MaintenanceOrder['status'], string> = {
-    pending: 'bg-amber-100 text-amber-700',
-    in_progress: 'bg-blue-100 text-blue-700',
-    done: 'bg-emerald-100 text-emerald-700',
-    delivered: 'bg-muted text-muted-foreground',
+// ELOS-style status badge styles (dark-mode friendly RGBA)
+const statusStyles: Record<MaintenanceOrder['status'], { bg: string; color: string; border: string }> = {
+    pending: { bg: 'rgba(245,158,11,0.12)', color: '#f59e0b', border: 'rgba(245,158,11,0.3)' },
+    in_progress: { bg: 'rgba(59,130,246,0.12)', color: '#3b82f6', border: 'rgba(59,130,246,0.3)' },
+    done: { bg: 'rgba(16,185,129,0.12)', color: '#10b981', border: 'rgba(16,185,129,0.3)' },
+    delivered: { bg: 'rgba(139,92,246,0.12)', color: '#8b5cf6', border: 'rgba(139,92,246,0.3)' },
 };
 
 const emptyOrder = {
@@ -64,8 +65,23 @@ export default function Maintenance() {
         const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
             const file = e.target.files?.[0];
             if (!file) return;
+            const img = new Image();
             const reader = new FileReader();
-            reader.onload = ev => onChange(ev.target?.result as string);
+            reader.onload = ev => {
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const MAX_DIM = 800;
+                    let w = img.width, h = img.height;
+                    if (w > MAX_DIM || h > MAX_DIM) {
+                        if (w > h) { h = Math.round(h * MAX_DIM / w); w = MAX_DIM; }
+                        else { w = Math.round(w * MAX_DIM / h); h = MAX_DIM; }
+                    }
+                    canvas.width = w; canvas.height = h;
+                    canvas.getContext('2d')?.drawImage(img, 0, 0, w, h);
+                    onChange(canvas.toDataURL('image/jpeg', 0.7));
+                };
+                img.src = ev.target?.result as string;
+            };
             reader.readAsDataURL(file);
         };
         return (
@@ -188,11 +204,11 @@ export default function Maintenance() {
                             </div>
                             <div>
                                 <label className="mb-1 block text-xs font-semibold text-muted-foreground">اسم العميل *</label>
-                                <input value={form.customerName} onChange={e => setForm(f => ({ ...f, customerName: e.target.value }))} className={IC} />
+                                <input data-validation="text-only" value={form.customerName} onChange={e => setForm(f => ({ ...f, customerName: e.target.value }))} className={IC} />
                             </div>
                             <div>
                                 <label className="mb-1 block text-xs font-semibold text-muted-foreground">رقم الموبايل</label>
-                                <input value={form.customerPhone} onChange={e => setForm(f => ({ ...f, customerPhone: e.target.value }))} className={IC} />
+                                <input data-validation="phone" value={form.customerPhone} onChange={e => setForm(f => ({ ...f, customerPhone: e.target.value }))} className={IC} />
                             </div>
                             <div>
                                 <label className="mb-1 block text-xs font-semibold text-muted-foreground">التاريخ</label>
@@ -206,7 +222,7 @@ export default function Maintenance() {
                             </div>
                             <div className="col-span-2 md:col-span-1">
                                 <label className="mb-1 block text-xs font-semibold text-muted-foreground">اسم الجهاز *</label>
-                                <input value={form.deviceName} onChange={e => setForm(f => ({ ...f, deviceName: e.target.value }))} className={IC} />
+                                <input data-validation="text-only" value={form.deviceName} onChange={e => setForm(f => ({ ...f, deviceName: e.target.value }))} className={IC} />
                             </div>
                             <div className="col-span-2 md:col-span-1">
                                 <label className="mb-1 block text-xs font-semibold text-muted-foreground">التصنيف</label>
@@ -231,7 +247,7 @@ export default function Maintenance() {
                                 <span className="text-xs font-normal text-muted-foreground">(التكلفة داخلية — لا تظهر للعميل)</span>
                             </h3>
                             <div className="grid grid-cols-3 gap-2">
-                                <input value={newPart.name} onChange={e => setNewPart(p => ({ ...p, name: e.target.value }))} placeholder="اسم القطعة" className={IC} />
+                                <input data-validation="text-only" value={newPart.name} onChange={e => setNewPart(p => ({ ...p, name: e.target.value }))} placeholder="اسم القطعة" className={IC} />
                                 <input type="number" placeholder="تكلفتها (ج.م)" value={newPart.costPrice || ''} onChange={e => setNewPart(p => ({ ...p, costPrice: +e.target.value }))} className={IC} />
                                 <input type="number" placeholder="سعرها للعميل" value={newPart.salePrice || ''} onChange={e => setNewPart(p => ({ ...p, salePrice: +e.target.value }))} className={IC} />
                             </div>
@@ -360,7 +376,16 @@ export default function Maintenance() {
                                     <td className="px-3 py-3 font-bold text-primary">{o.totalSale.toLocaleString()} ج.م</td>
                                     <td className="px-3 py-3 font-bold text-emerald-600">{o.netProfit.toLocaleString()} ج.م</td>
                                     <td className="px-3 py-3">
-                                        <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${statusColors[o.status]}`}>{statusLabels[o.status]}</span>
+                                        <span
+                                            className="inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold"
+                                            style={{
+                                                background: statusStyles[o.status].bg,
+                                                color: statusStyles[o.status].color,
+                                                border: `1px solid ${statusStyles[o.status].border}`,
+                                            }}
+                                        >
+                                            {statusLabels[o.status]}
+                                        </span>
                                     </td>
                                     <td className="px-3 py-3">
                                         <div className="flex items-center gap-1">

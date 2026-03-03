@@ -24,6 +24,11 @@ import {
   Wallet,
   UserCheck,
   BookOpen,
+  Truck,
+  ShieldAlert,
+  Bell,
+  ClipboardCheck,
+  FileInput,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 // theme & language toggles are handled in TopHeader, not sidebar
@@ -164,6 +169,32 @@ const AppSidebar = () => {
       items: [
         { to: '/wallets', icon: Wallet, label: 'المحافظ والخزنة', perm: 'wallets' },
         { to: '/employees', icon: Users, label: 'الموظفين والرواتب', perm: 'employees' },
+      ],
+    },
+    {
+      title: 'الأطراف',
+      icon: Truck,
+      defaultOpen: false,
+      items: [
+        { to: '/suppliers', icon: Truck, label: 'الموردون', perm: 'suppliers' },
+      ],
+    },
+    {
+      title: 'المالية المتقدمة',
+      icon: FileInput,
+      defaultOpen: false,
+      items: [
+        { to: '/purchase-invoices', icon: FileInput, label: 'فواتير الشراء', perm: 'purchaseInvoices' },
+        { to: '/shift-closing', icon: ClipboardCheck, label: 'إقفال الوردية', perm: 'shiftClosing' },
+      ],
+    },
+    {
+      title: 'أدوات الإدارة',
+      icon: Cog,
+      defaultOpen: false,
+      items: [
+        { to: '/blacklist', icon: ShieldAlert, label: 'القائمة السوداء', perm: 'blacklist' },
+        { to: '/reminders', icon: Bell, label: 'التذكيرات', perm: 'reminders' },
       ],
     },
   ];

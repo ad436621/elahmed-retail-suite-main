@@ -1,0 +1,1621 @@
+/* ═══════════════════════════════════════════════════════════════════
+   ELOS Accessories Inventory - Scoped Styles
+   All classes prefixed with .elos-acc- to prevent CSS collisions
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════
+   BASE & RESET
+   ═══════════════════════════════════════ */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg-primary, #0d1117);
+  color: var(--text-primary, #e6e8ee);
+  font-family: system-ui, 'Cairo', 'Segoe UI', sans-serif;
+  overflow: hidden;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ═══════════════════════════════════════
+   HEADER
+   ═══════════════════════════════════════ */
+.elos-acc-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 10px 24px;
+  background: linear-gradient(135deg, var(--bg-secondary, #151921) 0%, var(--bg-tertiary, #1a1f29) 100%);
+  border-bottom: 1px solid var(--border, #2d3544);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  flex-shrink: 0;
+  height: 65px;
+  z-index: 100;
+}
+
+.elos-acc-back-btn {
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  border-radius: 8px;
+  padding: 8px 16px;
+  color: var(--accent, #3b82f6);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.elos-acc-back-btn:hover {
+  background: rgba(59, 130, 246, 0.2);
+  transform: translateX(4px);
+}
+
+.elos-acc-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.elos-acc-logo {
+  font-weight: 900;
+  font-size: 24px;
+  color: #d1d5db;
+  letter-spacing: 3px;
+  text-shadow: 0 2px 6px rgba(255, 255, 255, 0.1);
+}
+
+.elos-acc-page-title {
+  font-weight: 900;
+  font-size: 24px;
+  background: linear-gradient(135deg, var(--accent, #3b82f6) 0%, var(--purple, #a855f7) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.elos-acc-title-icon {
+  font-size: 28px;
+}
+
+.elos-acc-spacer {
+  flex: 1;
+}
+
+/* Header Stats */
+.elos-acc-stats {
+  display: flex;
+  gap: 12px;
+}
+
+.elos-acc-stat {
+  background: linear-gradient(135deg, var(--bg-tertiary, #1a1f29) 0%, var(--bg-secondary, #151921) 100%);
+  border: 1px solid var(--border, #2d3544);
+  border-radius: 10px;
+  padding: 8px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 100px;
+  transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
+}
+
+.elos-acc-stat:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+}
+
+.elos-acc-stat-value {
+  font-size: 20px;
+  font-weight: 900;
+  color: var(--text-primary, #e6e8ee);
+  line-height: 1;
+  transition: opacity 0.3s ease;
+}
+
+.elos-acc-stat-value.loading {
+  opacity: 0.3;
+}
+
+.elos-acc-stat-label {
+  font-size: 11px;
+  color: var(--text-secondary, #8b93a6);
+  margin-top: 4px;
+}
+
+/* Header Actions */
+.elos-acc-header-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.elos-acc-header-btn {
+  background: var(--bg-tertiary, #1a1f29);
+  border: 1px solid var(--border, #2d3544);
+  border-radius: 8px;
+  padding: 8px 16px;
+  color: var(--text-secondary, #8b93a6);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.elos-acc-header-btn:hover {
+  background: var(--accent, #3b82f6);
+  color: white;
+  border-color: var(--accent, #3b82f6);
+  transform: translateY(-2px);
+}
+
+.elos-acc-btn-primary {
+  background: var(--accent, #3b82f6);
+  color: white;
+  border-color: var(--accent, #3b82f6);
+}
+
+.elos-acc-btn-primary:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+/* ═══════════════════════════════════════
+   MAIN CONTENT
+   ═══════════════════════════════════════ */
+.elos-acc-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 16px 24px;
+  gap: 16px;
+  min-height: 0;
+}
+
+/* ═══════════════════════════════════════
+   FILTERS BAR
+   ═══════════════════════════════════════ */
+.elos-acc-filters-bar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  background: var(--bg-secondary, #151921);
+  border: 1px solid var(--border, #2d3544);
+  border-radius: 12px;
+  padding: 12px 16px;
+}
+
+/* Action Buttons in Filters Bar */
+.elos-acc-action-buttons {
+  display: flex;
+  gap: 8px;
+  margin-right: auto;
+}
+
+.elos-acc-action-btn-main {
+  background: var(--bg-tertiary, #1a1f29);
+  border: 1px solid var(--border, #2d3544);
+  border-radius: 8px;
+  padding: 8px 14px;
+  color: var(--text-secondary, #8b93a6);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.elos-acc-action-btn-main:hover {
+  background: var(--accent, #3b82f6);
+  color: white;
+  border-color: var(--accent, #3b82f6);
+  transform: translateY(-1px);
+}
+
+.elos-acc-action-btn-main.elos-acc-btn-primary {
+  background: var(--accent, #3b82f6);
+  color: white;
+  border-color: var(--accent, #3b82f6);
+}
+
+.elos-acc-action-btn-main.elos-acc-btn-primary:hover {
+  background: #2563eb;
+  border-color: #2563eb;
+}
+
+.elos-acc-action-btn-main.elos-acc-btn-success {
+  background: var(--success, #22c55e);
+  color: white;
+  border-color: var(--success, #22c55e);
+}
+
+.elos-acc-action-btn-main.elos-acc-btn-success:hover {
+  background: #16a34a;
+  border-color: #16a34a;
+}
+
+.elos-acc-search-wrapper {
+  position: relative;
+  flex: 1;
+  min-width: 250px;
+  max-width: 400px;
+}
+
+.elos-acc-search-icon {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+  pointer-events: none;
+}
+
+.elos-acc-search-input {
+  width: 100%;
+  padding: 10px 40px 10px 36px;
+  background: var(--bg-tertiary, #1a1f29);
+  border: 1px solid var(--border, #2d3544);
+  border-radius: 8px;
+  color: var(--text-primary, #e6e8ee);
+  font-size: 14px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.elos-acc-search-input:focus {
+  outline: none;
+  border-color: var(--accent, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.elos-acc-search-input::placeholder {
+  color: var(--text-muted, #6b7280);
+}
+
+.elos-acc-search-clear {
+  position: absolute;
+  left: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: var(--text-secondary, #8b93a6);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+  opacity: 0.6;
+  transition: opacity 0.2s ease;
+}
+
+.elos-acc-search-clear:hover {
+  opacity: 1;
+}
+
+.elos-acc-filter-group {
+  display: flex;
+  gap: 12px;
+}
+
+.elos-acc-filter-select {
+  padding: 10px 12px;
+  background: var(--bg-tertiary, #1a1f29);
+  border: 1px solid var(--border, #2d3544);
+  border-radius: 8px;
+  color: var(--text-primary, #e6e8ee);
+  font-size: 13px;
+  min-width: 140px;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.elos-acc-filter-select:focus {
+  outline: none;
+  border-color: var(--accent, #3b82f6);
+}
+
+/* Selection Actions */
+.elos-acc-selection-actions {
+  display: none;
+  align-items: center;
+  gap: 12px;
+  margin-right: auto;
+  padding-right: 16px;
+  border-right: 1px solid var(--border, #2d3544);
+}
+
+.elos-acc-selection-actions.visible {
+  display: flex;
+}
+
+.elos-acc-selection-count {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--accent, #3b82f6);
+  background: rgba(59, 130, 246, 0.1);
+  padding: 6px 12px;
+  border-radius: 6px;
+}
+
+.elos-acc-btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid transparent;
+}
+
+.elos-acc-btn-secondary {
+  background: var(--bg-tertiary, #1a1f29);
+  border-color: var(--border, #2d3544);
+  color: var(--text-secondary, #8b93a6);
+}
+
+.elos-acc-btn-secondary:hover {
+  background: var(--bg-secondary, #151921);
+  color: var(--text-primary, #e6e8ee);
+}
+
+.elos-acc-btn-danger {
+  background: var(--danger, #ef4444);
+  color: white;
+  border-color: var(--danger, #ef4444);
+}
+
+.elos-acc-btn-danger:hover {
+  background: #dc2626;
+  border-color: #dc2626;
+}
+
+.elos-acc-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ═══════════════════════════════════════
+   TABLE
+   ═══════════════════════════════════════ */
+.elos-acc-table-wrapper {
+  flex: 0 0 auto;
+  position: relative;
+  overflow: visible;
+  border-radius: 12px;
+  border: 1px solid var(--border, #2d3544);
+  background: var(--bg-secondary, #151921);
+}
+
+.elos-acc-table-container {
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+.elos-acc-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  min-width: 1200px;
+}
+
+.elos-acc-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: linear-gradient(135deg, var(--bg-tertiary, #1a1f29) 0%, var(--bg-secondary, #151921) 100%);
+}
+
+.elos-acc-th {
+  padding: 8px 6px;
+  text-align: right;
+  font-weight: 700;
+  font-size: 11px;
+  color: var(--text-secondary, #8b93a6);
+  border-bottom: 2px solid var(--border, #2d3544);
+  white-space: nowrap;
+  user-select: none;
+}
+
+.elos-acc-th.sortable {
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.elos-acc-th.sortable:hover {
+  color: var(--accent, #3b82f6);
+}
+
+.elos-acc-th.sortable::after {
+  content: ' ⇅';
+  opacity: 0.4;
+  font-size: 11px;
+}
+
+.elos-acc-th.sorted-asc::after {
+  content: ' ↑';
+  opacity: 1;
+  color: var(--accent, #3b82f6);
+}
+
+.elos-acc-th.sorted-desc::after {
+  content: ' ↓';
+  opacity: 1;
+  color: var(--accent, #3b82f6);
+}
+
+.elos-acc-th-checkbox {
+  width: 50px;
+  text-align: center;
+}
+
+.elos-acc-th-actions {
+  width: 140px;
+  text-align: center;
+}
+
+/* Table Body */
+.elos-acc-table tbody tr {
+  transition: background 0.15s ease;
+  border-bottom: 1px solid var(--border, #2d3544);
+}
+
+.elos-acc-table tbody tr:hover {
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.elos-acc-table tbody tr.selected-row {
+  background: rgba(59, 130, 246, 0.15);
+}
+
+.elos-acc-table tbody tr.selected-row:hover {
+  background: rgba(59, 130, 246, 0.2);
+}
+
+.elos-acc-table td {
+  padding: 6px 6px;
+  font-size: 11px;
+  color: var(--text-primary, #e6e8ee);
+  vertical-align: middle;
+  line-height: 1.3;
+}
+
+.elos-acc-table td.elos-acc-td-checkbox {
+  text-align: center;
+  width: 50px;
+}
+
+.elos-acc-table td.elos-acc-td-actions {
+  text-align: center;
+}
+
+/* Checkbox Styling */
+.elos-acc-checkbox {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--accent, #3b82f6);
+}
+
+/* Cell Content Styling */
+.elos-acc-cell-name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.elos-acc-cell-name-text {
+  font-weight: 600;
+  color: var(--text-primary, #e6e8ee);
+}
+
+.elos-acc-cell-name-sub {
+  font-size: 11px;
+  color: var(--text-secondary, #8b93a6);
+}
+
+.elos-acc-cell-mono {
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 12px;
+  color: var(--text-secondary, #8b93a6);
+  direction: ltr;
+  text-align: center;
+}
+
+.elos-acc-cell-price {
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-weight: 600;
+  direction: ltr;
+  text-align: center;
+}
+
+.elos-acc-cell-price-purchase {
+  color: var(--text-secondary, #8b93a6);
+}
+
+.elos-acc-cell-price-sale {
+  color: var(--success, #10b981);
+}
+
+/* Quantity Badge */
+.elos-acc-cell-qty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.elos-acc-qty-value {
+  font-weight: 700;
+  font-size: 12px;
+}
+
+.elos-acc-qty-available {
+  color: var(--success, #10b981);
+}
+
+.elos-acc-qty-low {
+  color: var(--warning, #f59e0b);
+}
+
+.elos-acc-qty-out {
+  color: var(--danger, #ef4444);
+}
+
+.elos-acc-qty-badge {
+  font-size: 10px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+}
+
+.elos-acc-qty-badge-out {
+  background: rgba(239, 68, 68, 0.2);
+  color: var(--danger, #ef4444);
+}
+
+.elos-acc-qty-badge-low {
+  background: rgba(245, 158, 11, 0.2);
+  color: var(--warning, #f59e0b);
+}
+
+/* Category Badge */
+.elos-acc-badge {
+  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.elos-acc-badge-category {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--accent, #3b82f6);
+}
+
+.elos-acc-badge-new {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--success, #10b981);
+}
+
+.elos-acc-badge-used {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--warning, #f59e0b);
+}
+
+/* Date Cell */
+.elos-acc-cell-date {
+  font-size: 10px;
+  color: var(--text-secondary, #8b93a6);
+  direction: ltr;
+  text-align: center;
+}
+
+/* Actions Column */
+.elos-acc-actions {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+}
+
+.elos-acc-action-btn {
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+  background: var(--bg-tertiary, #1a1f29);
+}
+
+.elos-acc-action-btn:hover {
+  transform: scale(1.1);
+}
+
+.elos-acc-action-btn-view {
+  color: var(--accent, #3b82f6);
+}
+
+.elos-acc-action-btn-view:hover {
+  background: rgba(59, 130, 246, 0.2);
+}
+
+.elos-acc-action-btn-edit {
+  color: var(--warning, #f59e0b);
+}
+
+.elos-acc-action-btn-edit:hover {
+  background: rgba(245, 158, 11, 0.2);
+}
+
+.elos-acc-action-btn-print {
+  color: var(--purple, #a855f7);
+}
+
+.elos-acc-action-btn-print:hover {
+  background: rgba(168, 85, 247, 0.2);
+}
+
+.elos-acc-action-btn-delete {
+  color: var(--danger, #ef4444);
+}
+
+.elos-acc-action-btn-delete:hover {
+  background: rgba(239, 68, 68, 0.2);
+}
+
+/* Empty State */
+.elos-acc-empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-secondary, #8b93a6);
+}
+
+.elos-acc-empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.elos-acc-empty-text {
+  font-size: 16px;
+  font-weight: 600;
+}
+
+/* Loading Overlay */
+.elos-acc-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(13, 17, 23, 0.8);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 16px;
+  z-index: 20;
+}
+
+.elos-acc-loading-overlay.visible {
+  display: flex;
+}
+
+.elos-acc-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border, #2d3544);
+  border-top-color: var(--accent, #3b82f6);
+  border-radius: 50%;
+  animation: elos-acc-spin 0.8s linear infinite;
+}
+
+@keyframes elos-acc-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ═══════════════════════════════════════
+   KPI CARDS (بطاقات الملخص - مثل مخزن الأجهزة)
+   ═══════════════════════════════════════ */
+.elos-acc-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 16px;
+}
+.elos-acc-kpi-card {
+  background: linear-gradient(135deg, var(--bg-tertiary, #1a1f29) 0%, var(--bg-secondary, #151921) 100%);
+  border: 1px solid var(--border, #2d3544);
+  border-radius: 12px;
+  padding: 18px;
+  text-align: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+.elos-acc-kpi-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.2);
+  border-color: var(--accent, #3b82f6);
+}
+.elos-acc-kpi-card:nth-child(1) { border-top: 3px solid var(--accent, #3b82f6); }
+.elos-acc-kpi-card:nth-child(2) { border-top: 3px solid var(--success, #10b981); }
+.elos-acc-kpi-card:nth-child(3) { border-top: 3px solid var(--purple, #a855f7); }
+.elos-acc-kpi-label {
+  font-size: 12px;
+  color: var(--text-secondary, #8b93a6);
+  margin-bottom: 10px;
+  display: block;
+  font-weight: 600;
+}
+.elos-acc-kpi-value {
+  font-size: 24px;
+  font-weight: 900;
+  line-height: 1;
+}
+.elos-acc-kpi-card:nth-child(1) .elos-acc-kpi-value { color: var(--accent, #3b82f6); }
+.elos-acc-kpi-card:nth-child(2) .elos-acc-kpi-value { color: var(--success, #10b981); }
+.elos-acc-kpi-card:nth-child(3) .elos-acc-kpi-value { color: var(--purple, #a855f7); }
+
+/* ═══════════════════════════════════════
+   PAGINATION
+   ═══════════════════════════════════════ */
+.elos-acc-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--bg-secondary, #151921);
+  border: 1px solid var(--border, #2d3544);
+  border-radius: 12px;
+}
+
+.elos-acc-pagination-info {
+  font-size: 13px;
+  color: var(--text-secondary, #8b93a6);
+}
+
+.elos-acc-pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.elos-acc-page-btn {
+  padding: 8px 16px;
+  background: var(--bg-tertiary, #1a1f29);
+  border: 1px solid var(--border, #2d3544);
+  border-radius: 6px;
+  color: var(--text-primary, #e6e8ee);
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.elos-acc-page-btn:hover:not(:disabled) {
+  background: var(--accent, #3b82f6);
+  border-color: var(--accent, #3b82f6);
+}
+
+.elos-acc-page-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.elos-acc-page-current {
+  font-weight: 700;
+  color: var(--accent, #3b82f6);
+  font-size: 14px;
+  min-width: 30px;
+  text-align: center;
+}
+
+.elos-acc-page-indicator {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 700;
+  font-size: 14px;
+  background: var(--bg-tertiary, #1a1f29);
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid var(--border, #2d3544);
+}
+
+.elos-acc-page-indicator #currentPageDisplay {
+  color: var(--accent, #3b82f6);
+}
+
+.elos-acc-page-indicator #totalPagesDisplay {
+  color: var(--text-secondary, #8b93a6);
+}
+
+.elos-acc-page-separator {
+  color: var(--text-secondary, #8b93a6);
+  opacity: 0.5;
+}
+
+.elos-acc-pagination-size {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-secondary, #8b93a6);
+}
+
+/* ═══════════════════════════════════════
+   MODALS
+   ═══════════════════════════════════════ */
+.elos-acc-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+  backdrop-filter: blur(4px);
+}
+
+.elos-acc-modal-overlay.visible {
+  display: flex;
+}
+
+.elos-acc-modal {
+  background: var(--bg-secondary, #151921);
+  border: 1px solid var(--border, #2d3544);
+  border-radius: 16px;
+  max-height: 90vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  animation: elos-acc-modal-enter 0.3s ease;
+}
+
+@keyframes elos-acc-modal-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.elos-acc-modal-sm {
+  width: 100%;
+  max-width: 400px;
+}
+
+.elos-acc-modal-lg {
+  width: 100%;
+  max-width: 700px;
+}
+
+.elos-acc-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border, #2d3544);
+  background: linear-gradient(135deg, var(--bg-tertiary, #1a1f29) 0%, var(--bg-secondary, #151921) 100%);
+}
+
+.elos-acc-modal-header h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-primary, #e6e8ee);
+  margin: 0;
+}
+
+.elos-acc-modal-header-danger {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.2) 0%, var(--bg-secondary, #151921) 100%);
+}
+
+.elos-acc-modal-header-danger h2 {
+  color: var(--danger, #ef4444);
+}
+
+.elos-acc-modal-close {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary, #8b93a6);
+  font-size: 24px;
+  cursor: pointer;
+  padding: 4px;
+  line-height: 1;
+  transition: color 0.2s ease;
+}
+
+.elos-acc-modal-close:hover {
+  color: var(--text-primary, #e6e8ee);
+}
+
+.elos-acc-modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.elos-acc-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 20px;
+  border-top: 1px solid var(--border, #2d3544);
+  background: var(--bg-tertiary, #1a1f29);
+}
+
+/* Modal Messages */
+.elos-acc-modal-message {
+  font-size: 15px;
+  color: var(--text-primary, #e6e8ee);
+  margin-bottom: 12px;
+}
+
+.elos-acc-modal-item-name {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--accent, #3b82f6);
+  margin-bottom: 16px;
+  padding: 12px;
+  background: rgba(59, 130, 246, 0.1);
+  border-radius: 8px;
+  text-align: center;
+}
+
+.elos-acc-modal-warning {
+  font-size: 13px;
+  color: var(--warning, #f59e0b);
+  font-weight: 600;
+}
+
+/* ═══════════════════════════════════════
+   FORMS
+   ═══════════════════════════════════════ */
+.elos-acc-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.elos-acc-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.elos-acc-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.elos-acc-form-group label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary, #8b93a6);
+}
+
+.elos-acc-form-group input,
+.elos-acc-form-group select,
+.elos-acc-form-group textarea {
+  padding: 10px 12px;
+  background: var(--bg-tertiary, #1a1f29);
+  border: 1px solid var(--border, #2d3544);
+  border-radius: 8px;
+  color: var(--text-primary, #e6e8ee);
+  font-size: 14px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.elos-acc-form-group input:focus,
+.elos-acc-form-group select:focus,
+.elos-acc-form-group textarea:focus {
+  outline: none;
+  border-color: var(--accent, #3b82f6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+}
+
+.elos-acc-form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* ═══════════════════════════════════════
+   TRANSFER MODAL
+   ═══════════════════════════════════════ */
+.elos-acc-transfer-summary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 20px;
+  background: var(--bg-tertiary, #1a1f29);
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.elos-acc-transfer-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.elos-acc-transfer-stat-value {
+  font-size: 32px;
+  font-weight: 900;
+  color: var(--accent, #3b82f6);
+}
+
+.elos-acc-transfer-stat-label {
+  font-size: 13px;
+  color: var(--text-secondary, #8b93a6);
+}
+
+.elos-acc-transfer-arrow {
+  font-size: 32px;
+}
+
+.elos-acc-transfer-target {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.elos-acc-transfer-target label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary, #8b93a6);
+}
+
+.elos-acc-transfer-target select {
+  min-width: 200px;
+}
+
+.elos-acc-transfer-items-container {
+  margin-bottom: 16px;
+}
+
+.elos-acc-transfer-items-container h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-secondary, #8b93a6);
+  margin-bottom: 12px;
+}
+
+.elos-acc-transfer-items-list {
+  max-height: 250px;
+  overflow-y: auto;
+  border: 1px solid var(--border, #2d3544);
+  border-radius: 8px;
+  background: var(--bg-tertiary, #1a1f29);
+}
+
+.elos-acc-transfer-item {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border, #2d3544);
+  gap: 12px;
+}
+
+.elos-acc-transfer-item:last-child {
+  border-bottom: none;
+}
+
+.elos-acc-transfer-item-icon {
+  font-size: 20px;
+}
+
+.elos-acc-transfer-item-info {
+  flex: 1;
+}
+
+.elos-acc-transfer-item-name {
+  font-weight: 600;
+  color: var(--text-primary, #e6e8ee);
+  font-size: 14px;
+}
+
+.elos-acc-transfer-item-meta {
+  font-size: 12px;
+  color: var(--text-secondary, #8b93a6);
+  margin-top: 2px;
+}
+
+.elos-acc-transfer-item-qty {
+  font-weight: 700;
+  color: var(--accent, #3b82f6);
+  font-size: 14px;
+  min-width: 60px;
+  text-align: center;
+}
+
+.elos-acc-transfer-item-remove {
+  background: transparent;
+  border: none;
+  color: var(--danger, #ef4444);
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px;
+  opacity: 0.7;
+  transition: opacity 0.2s ease;
+}
+
+.elos-acc-transfer-item-remove:hover {
+  opacity: 1;
+}
+
+/* ═══════════════════════════════════════
+   VIEW DETAILS MODAL
+   ═══════════════════════════════════════ */
+.elos-acc-details-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.elos-acc-details-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  background: var(--bg-tertiary, #1a1f29);
+  border-radius: 8px;
+}
+
+.elos-acc-details-item.full-width {
+  grid-column: 1 / -1;
+}
+
+.elos-acc-details-label {
+  font-size: 12px;
+  color: var(--text-secondary, #8b93a6);
+  font-weight: 600;
+}
+
+.elos-acc-details-value {
+  font-size: 15px;
+  color: var(--text-primary, #e6e8ee);
+  font-weight: 500;
+}
+
+/* ═══════════════════════════════════════
+   BARCODE PREVIEW
+   ═══════════════════════════════════════ */
+.elos-acc-barcode-preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.elos-acc-barcode-preview #barcodePreview {
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.elos-acc-barcode-preview #barcodePreview svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* ═══════════════════════════════════════
+   BUTTON VARIANTS
+   ═══════════════════════════════════════ */
+.elos-acc-btn-success {
+  background: var(--success, #10b981);
+  color: white;
+  border-color: var(--success, #10b981);
+}
+
+.elos-acc-btn-success:hover {
+  background: #059669;
+  border-color: #059669;
+}
+
+.elos-acc-btn-link {
+  background: transparent;
+  border: none;
+  color: var(--accent, #3b82f6);
+  text-decoration: underline;
+  padding: 4px;
+}
+
+.elos-acc-btn-link:hover {
+  color: #2563eb;
+}
+
+/* زر طباعة الباركود — واضح في الغامق ومميز في الفاتح */
+.elos-acc-btn-barcode {
+  background: linear-gradient(135deg, #06b6d4 0%, #0891b2 50%, #0e7490 100%) !important;
+  color: #fff !important;
+  border: 1px solid rgba(6, 182, 212, 0.6) !important;
+  box-shadow: 0 2px 8px rgba(6, 182, 212, 0.35);
+}
+
+.elos-acc-btn-barcode:hover:not(:disabled) {
+  background: linear-gradient(135deg, #22d3ee 0%, #06b6d4 50%, #0891b2 100%) !important;
+  box-shadow: 0 4px 14px rgba(6, 182, 212, 0.5);
+  border-color: #22d3ee !important;
+}
+
+.elos-acc-btn-barcode:disabled {
+  opacity: 0.6;
+}
+
+/* الوضع الفاتح — زر مميز وواضح */
+html[data-theme="light"] .elos-acc-btn-barcode {
+  background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%) !important;
+  color: #fff !important;
+  border: 1px solid #0e7490 !important;
+  box-shadow: 0 2px 10px rgba(8, 145, 178, 0.4);
+}
+
+html[data-theme="light"] .elos-acc-btn-barcode:hover:not(:disabled) {
+  background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%) !important;
+  box-shadow: 0 4px 16px rgba(8, 145, 178, 0.5);
+}
+
+/* ═══════════════════════════════════════
+   MODAL SIZES
+   ═══════════════════════════════════════ */
+.elos-acc-modal-md {
+  width: 100%;
+  max-width: 550px;
+}
+
+.elos-acc-modal-xl {
+  width: 100%;
+  max-width: 900px;
+}
+
+/* ═══════════════════════════════════════
+   BARCODE PRINT MODAL
+   ═══════════════════════════════════════ */
+.elos-acc-barcode-info {
+  background: var(--bg-tertiary, #1a1f29);
+  border: 1px solid var(--border, #2d3544);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+
+.elos-acc-barcode-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.elos-acc-barcode-info-row:last-child {
+  border-bottom: none;
+}
+
+.elos-acc-barcode-info-label {
+  font-size: 12px;
+  color: var(--text-secondary, #8b93a6);
+  font-weight: 600;
+}
+
+.elos-acc-barcode-info-value {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--text-primary, #e6e8ee);
+}
+
+.elos-acc-barcode-code {
+  font-family: 'Courier New', monospace;
+  background: rgba(59, 130, 246, 0.1);
+  padding: 4px 12px;
+  border-radius: 6px;
+  color: var(--accent, #3b82f6);
+  letter-spacing: 2px;
+}
+
+.elos-acc-label-preview-section {
+  margin-bottom: 16px;
+}
+
+.elos-acc-label-preview-section h4 {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary, #e6e8ee);
+  margin-bottom: 12px;
+}
+
+.elos-acc-label-preview-container {
+  background: white;
+  border: 2px dashed var(--border, #2d3544);
+  border-radius: 8px;
+  padding: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 150px;
+}
+
+/* ملصق الباركود (محاكاة 38×25 مم) */
+.elos-acc-barcode-label {
+  width: 152px; /* 38mm × 4 */
+  height: 100px; /* 25mm × 4 */
+  background: white;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.elos-acc-barcode-label-shop {
+  font-size: 8px;
+  font-weight: 700;
+  color: #333;
+  text-align: center;
+  margin-bottom: 2px;
+  letter-spacing: 0.5px;
+}
+
+.elos-acc-barcode-label-svg {
+  width: 120px;
+  height: 40px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.elos-acc-barcode-label-svg svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.elos-acc-barcode-label-name {
+  font-size: 7px;
+  color: #333;
+  text-align: center;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin: 2px 0;
+}
+
+.elos-acc-barcode-label-price {
+  font-size: 10px;
+  font-weight: 900;
+  color: #000;
+  text-align: center;
+}
+
+.elos-acc-print-options {
+  background: var(--bg-tertiary, #1a1f29);
+  border: 1px solid var(--border, #2d3544);
+  border-radius: 8px;
+  padding: 12px 16px;
+}
+
+/* ═══════════════════════════════════════
+   ADD QUANTITY MODAL
+   ═══════════════════════════════════════ */
+.elos-acc-selected-item {
+  background: var(--bg-tertiary, #1a1f29);
+  border: 1px solid var(--border, #2d3544);
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+
+.elos-acc-selected-item-name {
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--text-primary, #e6e8ee);
+  margin-bottom: 4px;
+}
+
+.elos-acc-selected-item-qty {
+  font-size: 13px;
+  color: var(--text-secondary, #8b93a6);
+}
+
+.elos-acc-selected-item-qty span {
+  font-weight: 700;
+  color: var(--accent, #3b82f6);
+}
+
+/* ═══════════════════════════════════════
+   MOVEMENTS MODAL
+   ═══════════════════════════════════════ */
+.elos-acc-movements-filters {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.elos-acc-filter-input {
+  padding: 10px 12px;
+  background: var(--bg-tertiary, #1a1f29);
+  border: 1px solid var(--border, #2d3544);
+  border-radius: 8px;
+  color: var(--text-primary, #e6e8ee);
+  font-size: 13px;
+}
+
+.elos-acc-movements-table-container {
+  max-height: 400px;
+  overflow-y: auto;
+  border: 1px solid var(--border, #2d3544);
+  border-radius: 8px;
+}
+
+/* Movement Type Badges */
+.elos-acc-mv-type {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.elos-acc-mv-type-purchase {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--success, #10b981);
+}
+
+.elos-acc-mv-type-sale {
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--danger, #ef4444);
+}
+
+.elos-acc-mv-type-transfer_in {
+  background: rgba(59, 130, 246, 0.15);
+  color: var(--accent, #3b82f6);
+}
+
+.elos-acc-mv-type-transfer_out {
+  background: rgba(168, 85, 247, 0.15);
+  color: var(--purple, #a855f7);
+}
+
+.elos-acc-mv-type-adjustment {
+  background: rgba(245, 158, 11, 0.15);
+  color: var(--warning, #f59e0b);
+}
+
+/* ═══════════════════════════════════════
+   IMPORT MODAL
+   ═══════════════════════════════════════ */
+.elos-acc-import-zone {
+  border: 2px dashed var(--border, #2d3544);
+  border-radius: 12px;
+  padding: 40px 20px;
+  text-align: center;
+  transition: all 0.2s ease;
+  margin-bottom: 16px;
+}
+
+.elos-acc-import-zone:hover,
+.elos-acc-import-zone.dragover {
+  border-color: var(--accent, #3b82f6);
+  background: rgba(59, 130, 246, 0.05);
+}
+
+.elos-acc-import-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+}
+
+.elos-acc-import-zone p {
+  color: var(--text-secondary, #8b93a6);
+  margin-bottom: 16px;
+}
+
+.elos-acc-import-info {
+  background: var(--bg-tertiary, #1a1f29);
+  border-radius: 8px;
+  padding: 16px;
+  font-size: 13px;
+}
+
+.elos-acc-import-info ul {
+  margin: 8px 0 12px 20px;
+  color: var(--text-secondary, #8b93a6);
+}
+
+.elos-acc-import-info li {
+  margin-bottom: 4px;
+}
+
+.elos-acc-import-preview {
+  margin-top: 16px;
+  border: 1px solid var(--border, #2d3544);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.elos-acc-import-preview h4 {
+  font-size: 14px;
+  margin-bottom: 12px;
+  color: var(--text-primary, #e6e8ee);
+}
+
+/* ═══════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════ */
+@media (max-width: 1200px) {
+  .elos-acc-stats {
+    display: none;
+  }
+
+  .elos-acc-table {
+    min-width: 900px;
+  }
+}
+
+@media (max-width: 768px) {
+  .elos-acc-header {
+    flex-wrap: wrap;
+    height: auto;
+    padding: 12px 16px;
+  }
+
+  .elos-acc-filters-bar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .elos-acc-search-wrapper {
+    max-width: none;
+  }
+
+  .elos-acc-filter-group {
+    flex-wrap: wrap;
+  }
+
+  .elos-acc-form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .elos-acc-modal-lg {
+    max-width: 95vw;
+  }
+}

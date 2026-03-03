@@ -71,7 +71,7 @@ function OperationModal({ wallet, wallets, type, onClose, onDone }: { wallet: Wa
                     )}
                     <div>
                         <label className="block text-xs font-bold text-muted-foreground mb-1.5">السبب / البيان</label>
-                        <input value={reason} onChange={e => setReason(e.target.value)} placeholder="سبب العملية..."
+                        <input data-validation="text-only" value={reason} onChange={e => setReason(e.target.value)} placeholder="سبب العملية..."
                             className="w-full rounded-xl border border-border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
                     </div>
                     <div className="flex gap-2 pt-1">
@@ -111,7 +111,7 @@ function AddWalletModal({ onClose, onDone }: { onClose: () => void; onDone: () =
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
                     <div>
                         <label className="block text-xs font-bold text-muted-foreground mb-1.5">اسم المحفظة *</label>
-                        <input value={name} onChange={e => setName(e.target.value)} placeholder="الصندوق / البنك / فودافون كاش"
+                        <input data-validation="text-only" value={name} onChange={e => setName(e.target.value)} placeholder="الصندوق / البنك / فودافون كاش"
                             className="w-full rounded-xl border border-border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
                     </div>
                     <div>
@@ -228,18 +228,119 @@ export default function WalletsPage() {
     const refresh = () => setWallets(getWallets());
     const totalBalance = useMemo(() => getTotalBalance(), [wallets]);
 
+    // Compute today's totals
+    const today = new Date().toISOString().slice(0, 10);
+    const { todayIn, todayOut } = useMemo(() => {
+        let todayIn = 0, todayOut = 0;
+        wallets.forEach(w => {
+            getTransactions(w.id).forEach(t => {
+                if (!t.date.startsWith(today)) return;
+                if (t.type === 'deposit' || t.type === 'transfer_in') todayIn += t.amount;
+                else todayOut += t.amount;
+            });
+        });
+        return { todayIn, todayOut };
+    }, [wallets, today]);
+
+    // Default wallet for quick actions
+    const defaultWallet = useMemo(() => wallets.find(w => w.isDefault) || wallets[0], [wallets]);
+
     const handleDeleteWallet = async (w: WalletType) => {
-        const ok = await confirm({ title: 'حذف محفظة', message: `هل أنت متأكد من حذف محفظة "${w.name}"؟ سيتم حذف جميع العمليات المرتبطة.`, confirmLabel: 'حذف', danger: true });
+        const balanceWarning = w.balance > 0 ? `\n⚠️ تحذير: هذه المحفظة تحتوي على رصيد ${fmt(w.balance)} ج.م!` : '';
+        const ok = await confirm({ title: 'حذف محفظة', message: `هل أنت متأكد من حذف محفظة "${w.name}"؟ سيتم حذف جميع العمليات المرتبطة.${balanceWarning}`, confirmLabel: 'حذف', danger: true });
         if (ok) { deleteWallet(w.id); refresh(); }
     };
 
     return (
         <div className="space-y-6 max-w-5xl mx-auto">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <h1 className="text-2xl font-black text-foreground flex items-center gap-2"><Wallet className="h-6 w-6 text-primary" /> المحافظ والخزنة</h1>
-                    <p className="text-sm text-muted-foreground mt-1">إجمالي الرصيد: <span className="font-black text-foreground text-base">{fmt(totalBalance)} ج.م</span></p>
+
+            {/* ── ELOS Hero Balance Section ── */}
+            <div
+                className="relative rounded-2xl p-8 overflow-hidden border"
+                style={{
+                    background: 'linear-gradient(135deg, hsl(var(--card)) 0%, hsl(var(--background)) 100%)',
+                    borderColor: 'hsl(var(--border))',
+                }}
+            >
+                {/* Radial glow decorations */}
+                <div className="absolute -top-1/2 -right-1/5 w-80 h-80 rounded-full pointer-events-none"
+                    style={{ background: 'radial-gradient(circle, rgba(59,130,246,0.08) 0%, transparent 70%)' }} />
+                <div className="absolute -bottom-1/3 -left-1/10 w-60 h-60 rounded-full pointer-events-none"
+                    style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.06) 0%, transparent 70%)' }} />
+
+                <div className="relative grid grid-cols-1 md:grid-cols-[1fr_auto] gap-8 items-center">
+                    {/* Left: balance info */}
+                    <div className="space-y-4">
+                        <p className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+                            <Wallet className="h-4 w-4" /> إجمالي الرصيد الكلي
+                        </p>
+                        <p
+                            className="font-black leading-none tracking-tight"
+                            dir="ltr"
+                            style={{
+                                fontSize: 'clamp(40px, 8vw, 64px)',
+                                background: 'linear-gradient(135deg, #10b981 0%, #06b6d4 100%)',
+                                WebkitBackgroundClip: 'text',
+                                WebkitTextFillColor: 'transparent',
+                                backgroundClip: 'text',
+                            }}
+                        >
+                            {fmt(totalBalance)}
+                            <span className="text-2xl text-muted-foreground mr-2" style={{ WebkitTextFillColor: 'initial', WebkitBackgroundClip: 'initial', backgroundClip: 'initial' }}>ج.م</span>
+                        </p>
+                        {/* Mini stats */}
+                        <div className="flex gap-6 flex-wrap">
+                            <div>
+                                <p className="text-[11px] text-muted-foreground font-semibold">الإيداع اليوم</p>
+                                <p className="text-lg font-black" style={{ color: '#10b981' }}>+{fmt(todayIn)} ج.م</p>
+                            </div>
+                            <div>
+                                <p className="text-[11px] text-muted-foreground font-semibold">السحب اليوم</p>
+                                <p className="text-lg font-black" style={{ color: '#ef4444' }}>-{fmt(todayOut)} ج.م</p>
+                            </div>
+                            <div>
+                                <p className="text-[11px] text-muted-foreground font-semibold">عدد المحافظ</p>
+                                <p className="text-lg font-black text-foreground">{wallets.length}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Right: quick action buttons */}
+                    {defaultWallet && (
+                        <div className="flex flex-col gap-3 shrink-0">
+                            <button
+                                onClick={() => setOpModal({ wallet: defaultWallet, type: 'deposit' })}
+                                className="flex items-center gap-3 px-6 py-3.5 rounded-xl font-bold text-white text-sm transition-all hover:-translate-y-0.5"
+                                style={{ background: 'linear-gradient(135deg,#10b981,#059669)', boxShadow: '0 4px 15px rgba(16,185,129,0.35)' }}
+                            >
+                                <TrendingUp className="h-5 w-5" /> إيداع
+                            </button>
+                            <button
+                                onClick={() => setOpModal({ wallet: defaultWallet, type: 'withdrawal' })}
+                                className="flex items-center gap-3 px-6 py-3.5 rounded-xl font-bold text-white text-sm transition-all hover:-translate-y-0.5"
+                                style={{ background: 'linear-gradient(135deg,#ef4444,#dc2626)', boxShadow: '0 4px 15px rgba(239,68,68,0.35)' }}
+                            >
+                                <TrendingDown className="h-5 w-5" /> سحب
+                            </button>
+                            {wallets.length > 1 && (
+                                <button
+                                    onClick={() => setOpModal({ wallet: defaultWallet, type: 'transfer' })}
+                                    className="flex items-center gap-3 px-6 py-3.5 rounded-xl font-bold text-white text-sm transition-all hover:-translate-y-0.5"
+                                    style={{ background: 'linear-gradient(135deg,#3b82f6,#2563eb)', boxShadow: '0 4px 15px rgba(59,130,246,0.35)' }}
+                                >
+                                    <ArrowLeftRight className="h-5 w-5" /> تحويل
+                                </button>
+                            )}
+                        </div>
+                    )}
                 </div>
+            </div>
+
+            {/* Header row */}
+            <div className="flex items-center justify-between flex-wrap gap-3">
+                <h2 className="text-lg font-extrabold text-foreground flex items-center gap-2">
+                    <Wallet className="h-5 w-5 text-primary" /> المحافظ ({wallets.length})
+                </h2>
                 <button onClick={() => setShowAdd(true)} className="flex items-center gap-2 rounded-2xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-colors shadow-lg">
                     <Plus className="h-4 w-4" /> محفظة جديدة
                 </button>

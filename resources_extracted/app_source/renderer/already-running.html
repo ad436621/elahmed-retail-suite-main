@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>البرنامج مفتوح بالفعل</title>
+  <script>
+    (function(){var p=new URLSearchParams(location.search),t=p.get('theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();
+  </script>
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/tokens-alias.css">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: "Tajawal", "Cairo", system-ui, sans-serif;
+      background: var(--ds-bg, #0f172a);
+      color: var(--ds-text, #f1f5f9);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .dialog {
+      min-width: 360px;
+      max-width: 440px;
+      background: var(--ds-bg-secondary, #1e293b);
+      border: 1px solid var(--ds-border, #334155);
+      border-radius: 16px;
+      box-shadow: 0 24px 48px rgba(0,0,0,0.4);
+      overflow: hidden;
+    }
+    .dialog-header {
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--ds-border, #334155);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: rgba(239, 68, 68, 0.08);
+    }
+    .dialog-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      background: rgba(239, 68, 68, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+    }
+    .dialog-title {
+      font-weight: 700;
+      font-size: 18px;
+      color: var(--ds-text, #f1f5f9);
+    }
+    .dialog-body {
+      padding: 24px;
+      font-size: 15px;
+      line-height: 1.7;
+      color: var(--ds-text-secondary, #94a3b8);
+    }
+    .dialog-footer {
+      padding: 16px 24px;
+      border-top: 1px solid var(--ds-border, #334155);
+    }
+    .btn-ok {
+      padding: 12px 28px;
+      border: none;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 15px;
+      cursor: pointer;
+      background: linear-gradient(135deg, var(--ds-brand, #3b82f6) 0%, #2563eb 100%);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(59,130,246,0.35);
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    .btn-ok:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(59,130,246,0.45);
+    }
+  </style>
+</head>
+<body>
+  <div class="dialog">
+    <div class="dialog-header">
+      <div class="dialog-icon">⚠️</div>
+      <div class="dialog-title" id="title">البرنامج مفتوح بالفعل</div>
+    </div>
+    <div class="dialog-body" id="body">
+      البرنامج يعمل بالفعل على هذا الجهاز.
+      <br><br>
+      إذا لم تجد نافذة البرنامج:
+      <br>• تحقق من شريط المهام
+      <br>• أو أغلق البرنامج من Task Manager
+      <br>• أو أعد تشغيل الكمبيوتر
+    </div>
+    <div class="dialog-footer">
+      <button class="btn-ok" id="btnOk">حسناً</button>
+    </div>
+  </div>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const title = params.get('title') || 'البرنامج مفتوح بالفعل';
+    const body = params.get('body') || document.getElementById('body').innerHTML;
+
+    document.getElementById('title').textContent = title;
+    document.getElementById('body').innerHTML = body.replace(/\n/g, '<br>');
+
+    document.getElementById('btnOk').onclick = () => {
+      if (window.dialogBridge && window.dialogBridge.notifyClosed) {
+        window.dialogBridge.notifyClosed();
+      }
+      window.close();
+    };
+  </script>
+</body>
+</html>

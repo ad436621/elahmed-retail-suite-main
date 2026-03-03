@@ -147,7 +147,7 @@ export default function OtherRevenuePage() {
                             </div>
                             <div>
                                 <label className="mb-1 block text-xs font-semibold text-muted-foreground">الوصف *</label>
-                                <input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="مثال: عمولة سامسونج شهر مارس" className={IC} />
+                                <input data-validation="text-only" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="مثال: عمولة سامسونج شهر مارس" className={IC} />
                             </div>
                             <div>
                                 <label className="mb-1 block text-xs font-semibold text-muted-foreground">التصنيف</label>
@@ -156,7 +156,7 @@ export default function OtherRevenuePage() {
                                         <option value="">اختر تصنيف</option>
                                         {categories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
                                     </select>
-                                    <input value={newCategory} onChange={e => setNewCategory(e.target.value)} onKeyDown={e => e.key === 'Enter' && addNewCategory()} placeholder="تصنيف جديد" className={`${IC} w-32`} />
+                                    <input data-validation="text-only" value={newCategory} onChange={e => setNewCategory(e.target.value)} onKeyDown={e => e.key === 'Enter' && addNewCategory()} placeholder="تصنيف جديد" className={`${IC} w-32`} />
                                 </div>
                             </div>
                         </div>

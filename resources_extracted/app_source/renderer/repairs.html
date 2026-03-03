@@ -1,0 +1,3890 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>الصيانة • ElOs Accounting</title>
+    <script>
+      // ⚡ تطبيق فوري للثيم - يمنع الوميض
+      (function(){var p=new URLSearchParams(location.search),t=p.get('theme')||localStorage.getItem('elos_theme')||localStorage.getItem('elos-theme')||'dark',h=document.documentElement;h.setAttribute('data-theme',t);})();
+    </script>
+
+  <!-- Arabic Font - Tajawal (non-blocking load) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+
+  <!-- NEW DESIGN SYSTEM v3.0 -->
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/tokens-alias.css">
+  <link rel="stylesheet" href="styles/variables.css">
+  <link rel="stylesheet" href="styles/themes/dark.css">
+  <link rel="stylesheet" href="styles/themes/light.css">
+  <link rel="stylesheet" href="styles/base.css">
+  <link rel="stylesheet" href="styles/components.css">
+  <link rel="stylesheet" href="styles/layout.css">
+  <link rel="stylesheet" href="styles/utilities.css">
+  <link rel="stylesheet" href="styles/animations.css">
+  <!-- 📏 Font Sizes - تحسين أحجام الخطوط -->
+  <link rel="stylesheet" href="styles/font-sizes.css">
+
+  <!-- 🔐 SESSION INJECTION - MUST BE FIRST! -->
+  <script src="session-inject.js"></script>
+
+  <!-- 📱 SPA Mode Detection - Hide header when in SPA -->
+  <script src="spa-mode.js"></script>
+
+  <!-- 👤 User Controls - Sets window.currentUser -->
+  <script src="user-controls.js"></script>
+
+  <!-- 🌙 Theme Sync - Receives theme from main app -->
+  <script src="theme-sync.js"></script>
+  <!-- 🔤 Font Scale Manager -->
+  <script src="js/font-scale-manager.js"></script>
+
+    <style>
+    /* خط خاص للنصوص العربية */
+    .arabic-text {
+      font-family: "Tajawal", "Cairo", "Dubai", "Segoe UI", system-ui, sans-serif !important;
+      letter-spacing: 0 !important;
+      font-weight: 700 !important;
+    }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html, body {
+        height: 100% !important;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        background: var(--bg);
+        color: var(--ink);
+        font-family: system-ui, "Cairo", -apple-system, sans-serif;
+        overflow: hidden;
+        line-height: 1.6;
+        position: relative !important;
+      }
+
+      /* Custom Scrollbar */
+      ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+      }
+
+      ::-webkit-scrollbar-track {
+        background: var(--card);
+        border-radius: 4px;
+      }
+
+      ::-webkit-scrollbar-thumb {
+        background: var(--line);
+        border-radius: 4px;
+        transition: background var(--transition-fast);
+      }
+
+      ::-webkit-scrollbar-thumb:hover {
+        background: var(--brand);
+      }
+
+      /* ═══════════════════════════════════════
+         📱 HEADER - Modern Glassmorphism
+         ═══════════════════════════════════════ */
+      .hdr {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 10px 24px;
+        background: linear-gradient(135deg, var(--card-glass) 0%, rgba(26, 31, 41, 0.95) 100%);
+        backdrop-filter: blur(20px);
+        -webkit-backdrop-filter: blur(20px);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        box-shadow: var(--shadow-md);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+        height: 56px;
+        flex-shrink: 0;
+      }
+
+      /* ═══════════════════════════════════════
+         🔧 PAGE TITLE - Centered with Signature
+         ═══════════════════════════════════════ */
+      .page-title-wrapper {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+      }
+
+      .page-title-main {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 0;
+        font-weight: 900;
+        font-size: 22px;
+        background: linear-gradient(135deg, var(--brand) 0%, var(--purple) 50%, var(--cyan) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        animation: titleGlow 3s ease-in-out infinite;
+      }
+
+      @keyframes titleGlow {
+        0%, 100% { filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.3)); }
+        50% { filter: drop-shadow(0 0 16px rgba(168, 85, 247, 0.5)); }
+      }
+
+      .title-icon {
+        font-size: 20px;
+        animation: iconPulse 2s ease-in-out infinite;
+      }
+
+      @keyframes iconPulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+      }
+
+      .title-text {
+        letter-spacing: 2px;
+      }
+
+      /* Developer Signature */
+      .dev-signature {
+        font-size: 9px;
+        font-family: 'Courier New', monospace;
+        opacity: 0.6;
+        transition: all 0.3s ease;
+        cursor: default;
+      }
+
+      .dev-signature:hover {
+        opacity: 1;
+      }
+
+      .sig-prefix {
+        color: var(--purple);
+        font-weight: 600;
+      }
+
+      .sig-name {
+        background: linear-gradient(90deg, var(--brand), var(--purple), var(--cyan));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        font-weight: 700;
+        letter-spacing: 1px;
+      }
+
+      .logo {
+        width: 36px;
+        height: 36px;
+        color: #ffffff;
+        filter: drop-shadow(0 2px 8px rgba(255, 255, 255, 0.2));
+        flex-shrink: 0;
+        transition: transform var(--transition-normal);
+      }
+
+      .logo:hover {
+        transform: scale(1.1) rotate(-5deg);
+      }
+
+      .brand-container {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+      }
+
+      .brand {
+        font-weight: 900;
+        font-size: 26px;
+        color: #ffffff;
+        letter-spacing: 3px;
+        text-shadow: 0 2px 8px rgba(255, 255, 255, 0.15);
+        line-height: 1;
+      }
+
+      .welcome-msg {
+        font-size: 11px;
+        color: var(--muted);
+        font-weight: 500;
+        opacity: 0.8;
+      }
+
+      /* Time Card - Left Side */
+      .time-card {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 18px;
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+        border: 1px solid rgba(59, 130, 246, 0.2);
+        border-radius: 12px;
+        margin-left: auto;
+      }
+
+      .time-card .time-icon {
+        font-size: 18px;
+      }
+
+      .time-card .time-value {
+        font-size: 15px;
+        font-weight: 700;
+        color: var(--ink);
+        font-family: 'Segoe UI', monospace;
+        letter-spacing: 1px;
+      }
+
+      /* User Card in Header */
+      .user-card {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 14px;
+        background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+        border: 1px solid rgba(59, 130, 246, 0.2);
+        border-radius: 12px;
+        cursor: default;
+      }
+
+      .user-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--brand), var(--purple));
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        font-weight: 700;
+        color: white;
+        text-transform: uppercase;
+      }
+
+      .user-info {
+        display: flex;
+        flex-direction: column;
+        gap: 0;
+      }
+
+      .user-name {
+        font-size: 12px;
+        font-weight: 700;
+        color: var(--ink);
+      }
+
+      .user-role {
+        font-size: 10px;
+        color: var(--muted);
+      }
+
+      /* ═══════════════════════════════════════
+         📱 MAIN CONTENT - الأسكرول يعمل هنا للصفحة كاملة
+         ═══════════════════════════════════════ */
+      .main {
+        padding: 16px 20px;
+        position: absolute !important;
+        top: 56px;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+      }
+      /* SPA: header مخفي → main تبدأ من الأعلى */
+      body.spa-active .main { top: 0 !important; }
+
+      .repairs-page {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        padding-bottom: 20px;
+      }
+
+      /* ═══════════════════════════════════════
+         بطاقات الإحصائيات (KPI) - تصميم محسّن
+         ═══════════════════════════════════════ */
+      .stats-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 12px;
+      }
+
+      .stat-card {
+        background: var(--bg-secondary, var(--card));
+        border: 1px solid var(--border, var(--line));
+        border-radius: 14px;
+        padding: 14px 16px;
+        text-align: center;
+        transition: all 0.25s ease;
+        position: relative;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--accent, var(--brand));
+      }
+
+      .stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+      }
+
+      /* ألوان البطاقات - الشريط العلوي */
+      .stat-card.open-tickets::before { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+      .stat-card.ready-delivery::before { background: linear-gradient(90deg, #10b981, #34d399); }
+      .stat-card.today-collections::before { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+      .stat-card.today-revenue::before { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
+      .stat-card.today-parts-cost::before { background: linear-gradient(90deg, #ef4444, #f87171); }
+      .stat-card.today-net-profit::before { background: linear-gradient(90deg, #10b981, #34d399); }
+
+      /* hover glow حسب النوع */
+      .stat-card.open-tickets:hover { border-color: #f59e0b; box-shadow: 0 8px 24px rgba(245,158,11,0.15); }
+      .stat-card.ready-delivery:hover { border-color: #10b981; box-shadow: 0 8px 24px rgba(16,185,129,0.15); }
+      .stat-card.today-collections:hover { border-color: #3b82f6; box-shadow: 0 8px 24px rgba(59,130,246,0.15); }
+      .stat-card.today-revenue:hover { border-color: #8b5cf6; box-shadow: 0 8px 24px rgba(139,92,246,0.15); }
+      .stat-card.today-parts-cost:hover { border-color: #ef4444; box-shadow: 0 8px 24px rgba(239,68,68,0.15); }
+      .stat-card.today-net-profit:hover { border-color: #10b981; box-shadow: 0 8px 24px rgba(16,185,129,0.15); }
+
+      .stat-icon {
+        font-size: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        margin-bottom: 2px;
+      }
+
+      .stat-card.open-tickets .stat-icon { background: rgba(245,158,11,0.12); }
+      .stat-card.ready-delivery .stat-icon { background: rgba(16,185,129,0.12); }
+      .stat-card.today-collections .stat-icon { background: rgba(59,130,246,0.12); }
+      .stat-card.today-revenue .stat-icon { background: rgba(139,92,246,0.12); }
+      .stat-card.today-parts-cost .stat-icon { background: rgba(239,68,68,0.12); }
+      .stat-card.today-net-profit .stat-icon { background: rgba(16,185,129,0.12); }
+
+      .stat-value {
+        font-size: 22px;
+        font-weight: 900;
+        color: var(--text-primary, var(--ink));
+        margin-bottom: 0;
+        font-family: 'Tajawal', sans-serif;
+        line-height: 1.2;
+      }
+
+      .stat-label {
+        font-size: 11px;
+        color: var(--text-secondary, var(--muted));
+        font-weight: 600;
+        line-height: 1.3;
+      }
+
+      .stat-card.open-tickets .stat-value { color: #f59e0b; }
+      .stat-card.ready-delivery .stat-value { color: #10b981; }
+      .stat-card.today-collections .stat-value { color: #3b82f6; }
+      .stat-card.today-revenue .stat-value { color: #8b5cf6; }
+      .stat-card.today-parts-cost .stat-value { color: #ef4444; }
+      .stat-card.today-net-profit .stat-value { color: #10b981; }
+
+      /* ═══════════════════════════════════════
+         جدول تذاكر الصيانة
+         ═══════════════════════════════════════ */
+      .table-section {
+        background: var(--bg-secondary, var(--card));
+        border: 1px solid var(--border, var(--line));
+        border-radius: 14px;
+        padding: 16px 20px;
+        display: flex;
+        flex-direction: column;
+        overflow: visible !important;
+      }
+
+      /* منطقة المحتوى */
+      .repairs-content-wrap {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+
+      .repairs-content-wrap .table-container {
+        flex: 1;
+        border-radius: 10px;
+        border: 1px solid var(--border, var(--line));
+        overflow: visible !important;
+      }
+
+      /* عرض البطاقات: أسكرول أفقي للأعمدة */
+      .repairs-content-wrap .kanban-container {
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+
+      .repairs-content-wrap .kanban-board {
+        overflow-x: auto;
+        overflow-y: visible;
+        padding-bottom: 12px;
+        -webkit-overflow-scrolling: touch;
+      }
+
+      .section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--border, var(--line));
+        flex-wrap: wrap;
+        gap: 10px;
+      }
+
+      .section-title {
+        font-size: 17px;
+        font-weight: 800;
+        color: var(--text-primary, var(--ink));
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .section-title .icon {
+        font-size: 20px;
+      }
+
+      .section-actions {
+        display: flex;
+        gap: 10px;
+      }
+
+      .btn {
+        padding: 8px 16px;
+        border-radius: 10px;
+        border: none;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, var(--brand) 0%, var(--purple) 100%);
+        color: white;
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 20px rgba(59, 130, 246, 0.4);
+      }
+
+      .table-container {
+        flex: 1;
+        overflow: visible !important;
+        border-radius: 10px;
+        border: 1px solid var(--border, var(--line));
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+
+      thead {
+        background: var(--bg-tertiary, rgba(255,255,255,0.05));
+        position: sticky;
+        top: 0;
+        z-index: 10;
+      }
+
+      th {
+        padding: 10px 14px;
+        text-align: right;
+        font-weight: 700;
+        font-size: 13px;
+        color: var(--text-secondary, var(--muted));
+        border-bottom: 1px solid var(--border, var(--line));
+        white-space: nowrap;
+      }
+
+      td {
+        padding: 10px 14px;
+        text-align: right;
+        font-size: 13px;
+        color: var(--text-primary, var(--ink));
+        border-bottom: 1px solid var(--border, var(--line));
+      }
+
+      tbody tr {
+        transition: background 0.2s ease;
+      }
+
+      tbody tr:hover {
+        background: rgba(59, 130, 246, 0.05);
+      }
+
+      /* Quick Search Bar Styles */
+      .repairs-searchbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 8px 12px;
+        margin: 8px 0;
+        background: var(--card);
+        border: 1px solid var(--line);
+        border-radius: 12px;
+      }
+
+      .repairs-searchbar__right {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        flex: 1;
+      }
+
+      .repairs-searchbar__left {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        white-space: nowrap;
+      }
+
+      #repairsQuickSearch {
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        background: var(--bg);
+        color: var(--ink);
+      }
+
+      .btn-clear {
+        padding: 8px 10px;
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        background: var(--bg);
+        color: var(--ink);
+        cursor: pointer;
+      }
+
+      .kbd-hint {
+        padding: 6px 10px;
+        border-radius: 10px;
+        background: rgba(59, 130, 246, 0.12);
+        border: 1px solid rgba(59, 130, 246, 0.25);
+        color: var(--brand);
+        font-weight: 700;
+      }
+
+      .btn-light {
+        padding: 8px 12px;
+        border-radius: 10px;
+        border: 1px solid var(--line);
+        background: var(--bg);
+        color: var(--ink);
+        cursor: pointer;
+      }
+
+      .row-active {
+        outline: 2px solid rgba(59, 130, 246, 0.55);
+        background: rgba(59, 130, 246, 0.08) !important;
+      }
+
+      /* Shortcuts Modal - uses repairs-modal class */
+      #shortcutsModal .modal-body ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      #shortcutsModal .modal-body ul li {
+        padding: 8px 0;
+      }
+
+      .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 60px 20px;
+        color: var(--text-secondary, var(--muted));
+      }
+
+      .empty-state .icon {
+        font-size: 64px;
+        margin-bottom: 16px;
+        opacity: 0.5;
+      }
+
+      .empty-state .title {
+        font-size: 18px;
+        font-weight: 700;
+        margin-bottom: 8px;
+        color: var(--text-primary, var(--ink));
+      }
+
+      .empty-state .subtitle {
+        font-size: 14px;
+        opacity: 0.8;
+      }
+
+      /* Status Badges */
+      .status-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+      }
+
+      .status-badge.pending {
+        background: rgba(245, 158, 11, 0.15);
+        color: var(--warning);
+      }
+
+      .status-badge.in-progress {
+        background: rgba(59, 130, 246, 0.15);
+        color: var(--brand);
+      }
+
+      .status-badge.ready {
+        background: rgba(16, 185, 129, 0.15);
+        color: var(--success);
+      }
+
+      .status-badge.delivered {
+        background: rgba(168, 85, 247, 0.15);
+        color: var(--purple);
+      }
+
+      .status-badge.cancelled {
+        background: rgba(239, 68, 68, 0.15);
+        color: var(--danger);
+      }
+
+      /* Action Buttons */
+      .btn-action {
+        padding: 6px 12px;
+        font-size: 12px;
+        border-radius: 6px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        font-weight: 600;
+        border: none;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .btn-action:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      }
+
+      .btn-action.view {
+        background: linear-gradient(135deg, var(--brand) 0%, var(--purple) 100%);
+        color: white;
+      }
+
+      /* ═══════════════════════════════════════
+         MODAL STYLES
+         ═══════════════════════════════════════ */
+      .repairs-modal {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0,0,0,.65);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        z-index: 9999;
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity .2s ease, visibility .2s ease;
+      }
+
+      .repairs-modal.active {
+        opacity: 1;
+        visibility: visible;
+      }
+
+      .repairs-modal .modal-content {
+        background: var(--card, #1e2530);
+        border: 1px solid var(--line, #2a3441);
+        border-radius: 20px;
+        width: min(900px, 92vw);
+        max-height: 90vh;
+        margin: 0;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
+        transform: translateZ(0) scale(.98);
+        transition: transform .2s ease;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+
+      .repairs-modal .modal-content.large {
+        max-width: 900px;
+      }
+
+      .repairs-modal.active .modal-content {
+        transform: translateZ(0) scale(1);
+      }
+
+      .modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 24px 24px 16px 24px;
+        border-bottom: 2px solid var(--line, #2a3441);
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        background: var(--card, #1e2530);
+        flex-shrink: 0;
+        border-radius: 20px 20px 0 0;
+      }
+
+      .modal-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--brand);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .modal-close {
+        background: none;
+        border: none;
+        color: var(--muted);
+        font-size: 20px;
+        cursor: pointer;
+        padding: 4px;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+      }
+
+      .modal-close:hover {
+        background: rgba(239, 68, 68, 0.2);
+        color: var(--danger);
+      }
+
+      .form-group {
+        margin-bottom: 14px;
+      }
+
+      .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      .form-label {
+        display: block;
+        margin-bottom: 6px;
+        font-weight: 600;
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .form-label .required {
+        color: var(--danger);
+      }
+
+      .form-control {
+        width: 100%;
+        padding: 10px 12px;
+        background: var(--bg, #0a0e14);
+        border: 2px solid var(--line, #2a3441);
+        border-radius: 10px;
+        color: var(--ink, #f1f5f9);
+        font-size: 13px;
+        transition: all 0.2s ease;
+      }
+
+      .form-control:focus {
+        outline: none;
+        border-color: var(--brand);
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+      }
+
+      .form-control::placeholder {
+        color: var(--muted);
+        opacity: 0.6;
+      }
+
+      .form-control:read-only {
+        background: rgba(255,255,255,0.02);
+        cursor: default;
+      }
+
+      textarea.form-control {
+        min-height: 80px;
+        resize: vertical;
+      }
+
+      /* ═══════════════════════════════════════
+         Dark Mode Select/Option Fix
+         ═══════════════════════════════════════ */
+      [data-theme="dark"] .repairs-modal select,
+      [data-theme="dark"] .repairs-modal select.form-control {
+        background-color: #1e293b;
+        color: #e5e7eb;
+      }
+
+      [data-theme="dark"] .repairs-modal option {
+        background-color: #1e293b;
+        color: #e5e7eb;
+      }
+
+      [data-theme="dark"] .repairs-modal option:hover,
+      [data-theme="dark"] .repairs-modal option:checked,
+      [data-theme="dark"] .repairs-modal option:focus {
+        background-color: #2563eb;
+        color: #ffffff;
+      }
+
+      /* Deposit Section Styling */
+      .deposit-section {
+        margin: 16px 0;
+        padding: 16px;
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.05) 0%, rgba(59, 130, 246, 0.05) 100%);
+        border: 1px solid rgba(16, 185, 129, 0.2);
+        border-radius: 12px;
+      }
+
+      .deposit-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+        padding-bottom: 8px;
+        border-bottom: 1px solid rgba(16, 185, 129, 0.15);
+      }
+
+      .deposit-icon {
+        font-size: 18px;
+      }
+
+      .deposit-title {
+        font-weight: 600;
+        font-size: 14px;
+        color: var(--success, #10b981);
+      }
+
+      .deposit-section .form-row {
+        margin-bottom: 0;
+      }
+
+      .deposit-section .form-group {
+        margin-bottom: 0;
+      }
+
+      /* ═══════════════════════════════════════
+         ⚡ QUICK TEMPLATES STYLING
+         ═══════════════════════════════════════ */
+      .quick-template-btn:hover {
+        background: var(--accent) !important;
+        color: white !important;
+        border-color: var(--accent) !important;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+      }
+
+      .quick-template-btn.active {
+        background: var(--success) !important;
+        color: white !important;
+        border-color: var(--success) !important;
+      }
+
+      /* ═══════════════════════════════════════
+         ✅ QUICK ACCESSORIES STYLING
+         ═══════════════════════════════════════ */
+      .quick-accessory-checkbox:hover {
+        background: var(--surface-hover) !important;
+        border-color: var(--accent) !important;
+      }
+
+      .quick-accessory-checkbox:has(input:checked) {
+        background: rgba(59, 130, 246, 0.15) !important;
+        border-color: var(--accent) !important;
+        color: var(--accent);
+      }
+
+      .quick-accessory-checkbox input[type="checkbox"] {
+        accent-color: var(--accent);
+      }
+
+      /* ═══════════════════════════════════════
+         ➕ EXTRA DETAILS TOGGLE
+         ═══════════════════════════════════════ */
+      #toggleExtraDetails:hover {
+        background: var(--surface-hover) !important;
+        border-color: var(--accent) !important;
+        color: var(--accent) !important;
+      }
+
+      #extraDetailsContent {
+        animation: slideDown 0.3s ease;
+      }
+
+      @keyframes slideDown {
+        from {
+          opacity: 0;
+          transform: translateY(-10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* ═══════════════════════════════════════
+         ⚡ QUICK STATUS BUTTONS STYLING
+         ═══════════════════════════════════════ */
+      .quick-status-btn:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      .quick-status-btn:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+        transform: none !important;
+      }
+
+      .quick-status-btn.current-status {
+        background: var(--accent) !important;
+        color: white !important;
+        border-color: var(--accent) !important;
+        cursor: default;
+      }
+
+      .quick-status-btn[data-status="ready"]:hover:not(:disabled) {
+        background: var(--success) !important;
+        color: white !important;
+        border-color: var(--success) !important;
+      }
+
+      .quick-status-btn[data-status="delivered"]:hover:not(:disabled) {
+        background: var(--accent) !important;
+        color: white !important;
+        border-color: var(--accent) !important;
+      }
+
+      /* ═══════════════════════════════════════
+         🔀 VIEW TOGGLE BUTTONS
+         ═══════════════════════════════════════ */
+      .view-toggle-btn {
+        padding: 6px 10px;
+        background: transparent;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 14px;
+        transition: all 0.2s;
+        color: var(--text-secondary);
+      }
+
+      .view-toggle-btn:hover {
+        background: var(--surface-hover);
+        color: var(--text-primary);
+      }
+
+      .view-toggle-btn.active {
+        background: var(--accent);
+        color: white;
+      }
+
+      /* ═══════════════════════════════════════
+         📊 KANBAN VIEW STYLING
+         ═══════════════════════════════════════ */
+      .kanban-container {
+        padding: 12px 0;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .kanban-board {
+        display: flex;
+        gap: 16px;
+        padding-bottom: 16px;
+        align-items: flex-start;
+        flex-shrink: 0;
+      }
+
+      .kanban-column {
+        flex: 0 0 260px;
+        min-width: 260px;
+        background: var(--card);
+        border-radius: 12px;
+        border: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+      }
+
+      .kanban-column-header {
+        padding: 12px 16px;
+        border-radius: 12px 12px 0 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border-bottom: 2px solid;
+        flex-shrink: 0;
+        z-index: 1;
+      }
+
+      .kanban-column-icon {
+        font-size: 16px;
+      }
+
+      .kanban-column-title {
+        font-weight: 600;
+        font-size: 13px;
+        color: var(--text-primary);
+        flex: 1;
+        min-width: 0;
+      }
+
+      .kanban-column-count {
+        background: rgba(255, 255, 255, 0.2);
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--text-primary);
+        flex-shrink: 0;
+      }
+
+      .kanban-column-body {
+        padding: 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .kanban-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 12px;
+        cursor: pointer;
+        transition: border-color 0.2s, box-shadow 0.2s;
+        flex-shrink: 0;
+        min-width: 0;
+      }
+
+      .kanban-card:hover {
+        border-color: var(--accent);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      .kanban-card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 8px;
+        gap: 8px;
+        min-width: 0;
+      }
+
+      .kanban-card-ticket {
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--accent);
+        font-family: monospace;
+        flex-shrink: 0;
+      }
+
+      .kanban-card-date {
+        font-size: 10px;
+        color: var(--text-secondary);
+        flex-shrink: 0;
+      }
+
+      .kanban-card-customer {
+        font-weight: 600;
+        font-size: 13px;
+        color: var(--text-primary);
+        margin-bottom: 4px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        min-width: 0;
+      }
+
+      .kanban-card-device {
+        font-size: 11px;
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        min-width: 0;
+      }
+
+      .kanban-card-device span:last-child {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .kanban-card-issue {
+        font-size: 11px;
+        color: var(--text-secondary);
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px dashed var(--border);
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        word-break: break-word;
+        line-height: 1.35;
+      }
+
+      .kanban-card-tech {
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .kanban-empty {
+        text-align: center;
+        padding: 24px;
+        color: var(--text-secondary);
+        font-size: 12px;
+        flex-shrink: 0;
+      }
+
+      .modal-body {
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: 20px 24px;
+        min-height: 0;
+      }
+
+      /* Custom scrollbar for modal body */
+      .modal-body::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      .modal-body::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      .modal-body::-webkit-scrollbar-thumb {
+        background: var(--line, #2a3441);
+        border-radius: 4px;
+      }
+
+      .modal-body::-webkit-scrollbar-thumb:hover {
+        background: var(--brand);
+      }
+
+      .modal-footer {
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+        padding: 20px 24px;
+        border-top: 2px solid var(--line, #2a3441);
+        position: sticky;
+        bottom: 0;
+        z-index: 5;
+        background: var(--card, #1e2530);
+        flex-shrink: 0;
+        border-radius: 0 0 20px 20px;
+      }
+
+      .btn-secondary {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid var(--line, #2a3441);
+        color: var(--ink, #f1f5f9);
+      }
+
+      .btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      .btn-success {
+        background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+        color: white;
+      }
+
+      .btn-success:hover {
+        box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+      }
+
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        transform: none !important;
+      }
+
+      /* Accessories List Input */
+      .accessories-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        margin-top: 8px;
+      }
+
+      .accessory-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        background: rgba(59, 130, 246, 0.15);
+        border: 1px solid rgba(59, 130, 246, 0.3);
+        border-radius: 16px;
+        font-size: 12px;
+        color: var(--brand);
+      }
+
+      .accessory-tag .remove {
+        cursor: pointer;
+        opacity: 0.7;
+        transition: opacity 0.2s;
+      }
+
+      .accessory-tag .remove:hover {
+        opacity: 1;
+        color: var(--danger);
+      }
+
+      .add-accessory-input {
+        display: flex;
+        gap: 8px;
+      }
+
+      .add-accessory-input input {
+        flex: 1;
+      }
+
+      .add-accessory-input button {
+        padding: 10px 16px;
+        background: var(--brand);
+        border: none;
+        border-radius: 10px;
+        color: white;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .add-accessory-input button:hover {
+        background: var(--brand-hover, #2563eb);
+      }
+
+      /* Details Modal - History List */
+      .history-list {
+        max-height: 300px;
+        overflow-y: auto;
+      }
+
+      .history-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 12px;
+        background: rgba(255, 255, 255, 0.03);
+        border-radius: 10px;
+        margin-bottom: 8px;
+        border-right: 3px solid var(--brand);
+      }
+
+      .history-item:last-child {
+        margin-bottom: 0;
+      }
+
+      .history-icon {
+        font-size: 18px;
+        flex-shrink: 0;
+      }
+
+      .history-content {
+        flex: 1;
+      }
+
+      .history-title {
+        font-weight: 600;
+        font-size: 13px;
+        color: var(--ink, #f1f5f9);
+        margin-bottom: 2px;
+      }
+
+      .history-meta {
+        font-size: 11px;
+        color: var(--muted);
+      }
+
+      .detail-section {
+        margin-bottom: 20px;
+      }
+
+      .detail-section-title {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--brand);
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      /* ═══════════════════════════════════════
+         ↩️ REFUND SECTION
+         ═══════════════════════════════════════ */
+      .refund-section {
+        background: linear-gradient(135deg, rgba(239,68,68,0.06) 0%, rgba(245,158,11,0.04) 100%);
+        border: 1px solid rgba(239,68,68,0.2);
+        border-radius: 12px;
+        padding: 16px;
+      }
+
+      .refund-section-title {
+        color: #ef4444 !important;
+      }
+
+      .refund-info-box {
+        background: var(--card, #1a1f2e);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 14px;
+        margin-bottom: 14px;
+      }
+
+      .refund-info-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 6px 0;
+        font-size: 13px;
+      }
+
+      .refund-info-row .refund-info-label {
+        color: var(--text-secondary);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .refund-info-row .refund-info-value {
+        font-weight: 700;
+        color: var(--text-primary);
+      }
+
+      .refund-warranty-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 12px;
+        border-radius: 8px;
+        font-size: 12px;
+        font-weight: 600;
+        margin-top: 8px;
+      }
+
+      .refund-warranty-badge.active {
+        background: rgba(16,185,129,0.12);
+        color: #059669;
+        border: 1px solid rgba(16,185,129,0.25);
+      }
+
+      .refund-warranty-badge.expired {
+        background: rgba(239,68,68,0.12);
+        color: #dc2626;
+        border: 1px solid rgba(239,68,68,0.25);
+      }
+
+      .refund-confirm-btn {
+        width: 100%;
+        padding: 14px 20px;
+        border: none;
+        border-radius: 10px;
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        color: #fff;
+        font-size: 15px;
+        font-weight: 700;
+        font-family: inherit;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        transition: all 0.2s ease;
+        box-shadow: 0 2px 8px rgba(239,68,68,0.3);
+      }
+
+      .refund-confirm-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(239,68,68,0.4);
+      }
+
+      .refund-confirm-btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .detail-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      .detail-item {
+        background: rgba(255, 255, 255, 0.03);
+        padding: 12px;
+        border-radius: 10px;
+      }
+
+      .detail-item .label {
+        font-size: 11px;
+        color: var(--muted);
+        margin-bottom: 4px;
+      }
+
+      .detail-item .value {
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--ink, #f1f5f9);
+      }
+
+      /* Responsive */
+      @media (max-width: 1200px) {
+        .stats-row {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+
+      @media (max-width: 768px) {
+        .stats-row {
+          grid-template-columns: 1fr;
+        }
+
+        .main {
+          padding: 12px;
+        }
+
+        .section-header {
+          flex-direction: column;
+          gap: 12px;
+          align-items: stretch;
+        }
+      }
+
+      /* فوتر صفحة الصيانة - يظهر عند نزول المستخدم للأسفل */
+      .repairs-page-footer {
+        margin-top: 24px;
+        padding: 14px 20px;
+        background: var(--bg-secondary, var(--card));
+        border: 1px solid var(--border, var(--line));
+        border-radius: 12px;
+        text-align: center;
+      }
+
+      .repairs-footer-inner {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+        flex-wrap: wrap;
+        font-size: 12px;
+        color: var(--text-secondary, var(--muted));
+      }
+
+      /* ترقيم الصفحات */
+      .repairs-pagination .repairs-pagination-controls button {
+        padding: 6px 12px;
+        border-radius: 8px;
+        border: 1px solid var(--border);
+        background: var(--bg);
+        color: var(--ink);
+        font-size: 12px;
+        cursor: pointer;
+      }
+
+      .repairs-pagination .repairs-pagination-controls button:hover:not(:disabled) {
+        background: var(--accent);
+        color: white;
+        border-color: var(--accent);
+      }
+
+      .repairs-pagination .repairs-pagination-controls button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .repairs-pagination .repairs-pagination-controls button.active {
+        background: var(--accent);
+        color: white;
+        border-color: var(--accent);
+      }
+
+      /* ═══════════════════════════════════════
+         📋 TICKET SUMMARY CARD
+         ═══════════════════════════════════════ */
+      .ticket-summary-card {
+        display: flex;
+        gap: 4px;
+        padding: 10px 14px;
+        background: var(--surface-hover);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        margin-bottom: 14px;
+        flex-wrap: wrap;
+      }
+      .summary-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 1;
+        min-width: 110px;
+        padding: 6px 10px;
+        background: var(--card);
+        border-radius: 8px;
+        border: 1px solid var(--border);
+      }
+      .summary-icon {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 15px;
+        background: rgba(59, 130, 246, 0.1);
+        border-radius: 8px;
+        flex-shrink: 0;
+      }
+      .summary-label { font-size: 10px; color: var(--muted); font-weight: 600; line-height: 1.2; }
+      .summary-value { font-size: 13px; color: var(--ink); font-weight: 600; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px; }
+
+      /* ═══════════════════════════════════════
+         🚀 STATUS STEPPER
+         ═══════════════════════════════════════ */
+      .ticket-stepper {
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 12px 4px;
+        margin-bottom: 14px;
+        background: var(--surface-hover);
+        border-radius: 12px;
+        border: 1px solid var(--border);
+      }
+      .stepper-step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        min-width: 48px;
+        position: relative;
+      }
+      .stepper-circle {
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 13px;
+        background: var(--card);
+        border: 2px solid var(--border);
+        transition: all 0.3s ease;
+        position: relative;
+        z-index: 1;
+      }
+      .stepper-label {
+        font-size: 9px;
+        color: var(--muted);
+        font-weight: 600;
+        text-align: center;
+        white-space: nowrap;
+      }
+      .stepper-step.completed .stepper-circle {
+        background: var(--success);
+        border-color: var(--success);
+        color: white;
+      }
+      .stepper-step.completed .stepper-label { color: var(--success); }
+      .stepper-step.current .stepper-circle {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: white;
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2);
+        animation: stepperPulse 2s ease-in-out infinite;
+      }
+      .stepper-step.current .stepper-label { color: var(--accent); font-weight: 700; }
+      .stepper-step.future .stepper-circle { opacity: 0.35; }
+      .stepper-step.future .stepper-label { opacity: 0.4; }
+      .stepper-step.cancelled-all .stepper-circle {
+        background: var(--danger);
+        border-color: var(--danger);
+        opacity: 0.4;
+        color: white;
+      }
+      .stepper-line {
+        flex: 1;
+        height: 2px;
+        background: var(--border);
+        min-width: 12px;
+        margin-top: 15px;
+        transition: background 0.3s ease;
+      }
+      .stepper-line.completed { background: var(--success); }
+      @keyframes stepperPulse {
+        0%, 100% { box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2); }
+        50% { box-shadow: 0 0 0 8px rgba(59, 130, 246, 0.08); }
+      }
+
+      /* ═══════════════════════════════════════
+         📑 DETAILS TABS
+         ═══════════════════════════════════════ */
+      .details-tabs {
+        display: flex;
+        gap: 2px;
+        border-bottom: 2px solid var(--border);
+        margin-bottom: 16px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+      }
+      .details-tabs::-webkit-scrollbar { height: 0; }
+      .details-tab {
+        position: relative;
+        padding: 10px 14px;
+        background: transparent;
+        border: none;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border-bottom: 3px solid transparent;
+        margin-bottom: -2px;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        white-space: nowrap;
+        font-family: inherit;
+      }
+      .details-tab:hover:not(.active) { color: var(--ink); background: var(--surface-hover); }
+      .details-tab.active {
+        color: var(--accent);
+        border-bottom-color: var(--accent);
+        background: rgba(59, 130, 246, 0.05);
+      }
+      .details-tab .tab-dot {
+        position: absolute;
+        top: 5px;
+        left: 5px;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--danger);
+        display: none;
+      }
+      .details-tab-content { display: none; }
+      .details-tab-content.active { display: block; }
+
+      /* ═══════════════════════════════════════
+         🔧 FOOTER OPERATIONS
+         ═══════════════════════════════════════ */
+      .footer-ops-group {
+        display: flex;
+        gap: 4px;
+        align-items: center;
+        margin-left: auto;
+      }
+      .footer-op-btn {
+        width: 34px;
+        height: 34px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--surface-hover);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 15px;
+        transition: all 0.2s ease;
+      }
+      .footer-op-btn:hover {
+        background: var(--accent);
+        border-color: var(--accent);
+        transform: translateY(-1px);
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+      }
+
+      /* ═══════════════════════════════════════
+         ☀️ LIGHT MODE SUPPORT
+         ═══════════════════════════════════════ */
+      html[data-theme="light"] .ticket-summary-card { background: #f8fafc; border-color: #e2e8f0; }
+      html[data-theme="light"] .summary-item { background: #fff; border-color: #e2e8f0; }
+      html[data-theme="light"] .summary-icon { background: rgba(59, 130, 246, 0.08); }
+      html[data-theme="light"] .ticket-stepper { background: #f8fafc; border-color: #e2e8f0; }
+      html[data-theme="light"] .stepper-circle { background: #fff; border-color: #cbd5e1; }
+      html[data-theme="light"] .details-tab:hover:not(.active) { background: #f1f5f9; }
+      html[data-theme="light"] .details-tab.active { background: rgba(59, 130, 246, 0.06); }
+      html[data-theme="light"] .footer-op-btn { background: #f1f5f9; border-color: #e2e8f0; }
+      html[data-theme="light"] .footer-op-btn:hover { background: #3b82f6; border-color: #3b82f6; }
+    </style>
+  </head>
+
+  <body>
+    <div class="app">
+      <!-- Header -->
+      <div class="hdr">
+        <svg class="logo" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+        </svg>
+        <div class="brand-container">
+          <span class="brand">ELOS</span>
+          <span class="welcome-msg">نظام الصيانة</span>
+        </div>
+
+        <!-- Page Title - Centered -->
+        <div class="page-title-wrapper">
+          <h1 class="page-title-main">
+            <span class="title-icon">🔧</span>
+            <span class="title-text arabic-text">إدارة الصيانة</span>
+          </h1>
+          <span class="dev-signature">
+            <span class="sig-prefix">by</span>
+            <span class="sig-name">ELOS SYSTEM</span>
+          </span>
+        </div>
+
+        <!-- Time Card -->
+        <div class="time-card">
+          <span class="time-icon">🕐</span>
+          <span class="time-value" id="headerTime">--:--:--</span>
+        </div>
+
+        <!-- User Card -->
+        <div class="user-card">
+          <div class="user-avatar" id="userAvatar">U</div>
+          <div class="user-info">
+            <span class="user-name" id="userName">المستخدم</span>
+            <span class="user-role" id="userRole">مدير</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Main Content -->
+      <div class="main">
+        <div class="repairs-page">
+          <!-- Summary Cards -->
+          <div class="stats-row">
+            <div class="stat-card open-tickets">
+              <span class="stat-icon">📋</span>
+              <div class="stat-value" id="openTicketsCount">0</div>
+              <div class="stat-label">تذاكر مفتوحة</div>
+            </div>
+            <div class="stat-card ready-delivery">
+              <span class="stat-icon">✅</span>
+              <div class="stat-value" id="readyCount">0</div>
+              <div class="stat-label">جاهز للتسليم</div>
+            </div>
+            <div class="stat-card today-collections">
+              <span class="stat-icon">💰</span>
+              <div class="stat-value" id="todayCollections">0</div>
+              <div class="stat-label">تحصيلات اليوم</div>
+            </div>
+            <div class="stat-card today-revenue">
+              <span class="stat-icon">📊</span>
+              <div class="stat-value" id="todayRevenue">0</div>
+              <div class="stat-label">إيراد الصيانة اليوم</div>
+            </div>
+          </div>
+          
+          <!-- Financial KPIs Row - Admin Only -->
+          <div class="stats-row" id="financialKPIsRow" style="grid-template-columns: repeat(2, 1fr); display: none;">
+            <div class="stat-card today-parts-cost">
+              <span class="stat-icon">🔧</span>
+              <div class="stat-value" id="todayPartsCost">0</div>
+              <div class="stat-label">تكلفة قطع الغيار اليوم</div>
+            </div>
+            <div class="stat-card today-net-profit">
+              <span class="stat-icon">💵</span>
+              <div class="stat-value" id="todayNetProfit">0</div>
+              <div class="stat-label">صافي ربح الصيانة اليوم</div>
+            </div>
+          </div>
+
+          <!-- Tickets Table Section -->
+          <div class="table-section">
+            <div class="section-header">
+              <div class="section-title">
+                <span class="icon">🎫</span>
+                <span>قائمة تذاكر الصيانة</span>
+              </div>
+              <div class="section-actions">
+                <div style="display: flex; align-items: center; gap: 12px; margin-left: 12px;">
+                  <select id="adjustmentsFilter" class="form-control" style="width: auto; min-width: 140px; padding: 6px 12px;">
+                    <option value="original">الأصل فقط</option>
+                    <option value="adjustments">التعديلات فقط</option>
+                    <option value="all">الكل</option>
+                  </select>
+                </div>
+                <button class="btn btn-secondary" id="btnClosingDay" style="background: linear-gradient(135deg, var(--warning) 0%, #d97706 100%);">
+                  <span>📊</span>
+                  <span>تقفيل اليومية</span>
+                </button>
+                <button class="btn btn-primary" id="btnNewTicket">
+                  <span>➕</span>
+                  <span>استلام جديد</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Quick Search Bar -->
+            <div class="repairs-searchbar">
+              <div class="repairs-searchbar__right">
+                <span class="kbd-hint">Ctrl+K</span>
+                <input id="repairsQuickSearch" type="text" autocomplete="off"
+                  placeholder="بحث سريع: رقم التذكرة / اسم العميل / نوع الجهاز / موديل / رقم موبايل…" />
+                <button id="repairsQuickSearchClear" class="btn-clear" type="button" title="مسح البحث">✕</button>
+              </div>
+              <div class="repairs-searchbar__left">
+                <label for="technicianFilter" style="font-size: 12px; color: var(--text-secondary); margin-left: 10px;">الفني:</label>
+                <select id="technicianFilter" class="form-control" style="width: auto; min-width: 120px; padding: 6px 10px; margin-left: 6px;">
+                  <option value="">الكل</option>
+                  <!-- يُملأ من التذاكر عبر repairs.js -->
+                </select>
+                <span id="repairsSearchCounter" class="muted" style="margin-right: 8px;">عدد النتائج: 0</span>
+                <!-- View Toggle Buttons -->
+                <div class="view-toggle-group" style="display: inline-flex; gap: 4px; margin-left: 12px; padding: 4px; background: var(--surface); border-radius: 8px; border: 1px solid var(--border);">
+                  <button id="btnTableView" class="view-toggle-btn active" type="button" title="عرض الجدول" onclick="switchRepairsView('table')">
+                    <span>📋</span>
+                  </button>
+                  <button id="btnKanbanView" class="view-toggle-btn" type="button" title="عرض Kanban" onclick="switchRepairsView('kanban')">
+                    <span>📊</span>
+                  </button>
+                </div>
+                <button id="repairsShortcutsBtn" class="btn-light" type="button" title="اختصارات لوحة المفاتيح">؟</button>
+              </div>
+            </div>
+
+            <!-- ═══════════════════════════════════════
+                 منطقة المحتوى: جدول أو كانبان (أسكرول ثابت)
+                 ═══════════════════════════════════════ -->
+            <div class="repairs-content-wrap">
+            <!-- 📊 KANBAN VIEW - عرض البطاقات -->
+            <div id="kanbanView" class="kanban-container" style="display: none;">
+              <div class="kanban-board" id="kanbanBoard">
+                <!-- Column: Received -->
+                <div class="kanban-column" data-status="received">
+                  <div class="kanban-column-header" style="background: linear-gradient(135deg, rgba(107, 114, 128, 0.2), rgba(107, 114, 128, 0.1)); border-color: #6b7280;">
+                    <span class="kanban-column-icon">📥</span>
+                    <span class="kanban-column-title">مستلم</span>
+                    <span class="kanban-column-count" id="kanbanCountReceived">0</span>
+                  </div>
+                  <div class="kanban-column-body" id="kanbanReceived"></div>
+                </div>
+
+                <!-- Column: Diagnosing -->
+                <div class="kanban-column" data-status="diagnosing">
+                  <div class="kanban-column-header" style="background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(59, 130, 246, 0.1)); border-color: #3b82f6;">
+                    <span class="kanban-column-icon">🔍</span>
+                    <span class="kanban-column-title">قيد الفحص</span>
+                    <span class="kanban-column-count" id="kanbanCountDiagnosing">0</span>
+                  </div>
+                  <div class="kanban-column-body" id="kanbanDiagnosing"></div>
+                </div>
+
+                <!-- Column: Waiting Approval -->
+                <div class="kanban-column" data-status="waiting_approval">
+                  <div class="kanban-column-header" style="background: linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(245, 158, 11, 0.1)); border-color: #f59e0b;">
+                    <span class="kanban-column-icon">⏳</span>
+                    <span class="kanban-column-title">انتظار الموافقة</span>
+                    <span class="kanban-column-count" id="kanbanCountWaiting">0</span>
+                  </div>
+                  <div class="kanban-column-body" id="kanbanWaiting"></div>
+                </div>
+
+                <!-- Column: In Repair -->
+                <div class="kanban-column" data-status="in_repair">
+                  <div class="kanban-column-header" style="background: linear-gradient(135deg, rgba(139, 92, 246, 0.2), rgba(139, 92, 246, 0.1)); border-color: #8b5cf6;">
+                    <span class="kanban-column-icon">🔧</span>
+                    <span class="kanban-column-title">تحت الصيانة</span>
+                    <span class="kanban-column-count" id="kanbanCountInRepair">0</span>
+                  </div>
+                  <div class="kanban-column-body" id="kanbanInRepair"></div>
+                </div>
+
+                <!-- Column: Ready -->
+                <div class="kanban-column" data-status="ready">
+                  <div class="kanban-column-header" style="background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(16, 185, 129, 0.1)); border-color: #10b981;">
+                    <span class="kanban-column-icon">✅</span>
+                    <span class="kanban-column-title">جاهز للتسليم</span>
+                    <span class="kanban-column-count" id="kanbanCountReady">0</span>
+                  </div>
+                  <div class="kanban-column-body" id="kanbanReady"></div>
+                </div>
+
+                <!-- Column: Delivered -->
+                <div class="kanban-column" data-status="delivered">
+                  <div class="kanban-column-header" style="background: linear-gradient(135deg, rgba(34, 197, 94, 0.2), rgba(34, 197, 94, 0.1)); border-color: #22c55e;">
+                    <span class="kanban-column-icon">📦</span>
+                    <span class="kanban-column-title">تم التسليم</span>
+                    <span class="kanban-column-count" id="kanbanCountDelivered">0</span>
+                  </div>
+                  <div class="kanban-column-body" id="kanbanDelivered"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- 📋 TABLE VIEW - عرض الجدول -->
+            <div class="table-container" id="tableView">
+              <table id="ticketsTable">
+                <thead>
+                  <tr>
+                    <th>رقم التذكرة</th>
+                    <th>اسم العميل</th>
+                    <th>نوع الجهاز</th>
+                    <th>الحالة</th>
+                    <th>الفني</th>
+                    <th>تاريخ الاستلام</th>
+                    <th>الإجراءات</th>
+                  </tr>
+                </thead>
+                <tbody id="ticketsBody">
+                  <!-- Tickets will be loaded here -->
+                </tbody>
+              </table>
+
+              <!-- Empty State -->
+              <div class="empty-state" id="emptyState">
+                <span class="icon">🔧</span>
+                <div class="title">لا توجد تذاكر صيانة</div>
+                <div class="subtitle">اضغط على "استلام جديد" لإنشاء تذكرة صيانة</div>
+              </div>
+            </div>
+
+            <!-- ترقيم الصفحات - يظهر مع عرض الجدول فقط -->
+            <div id="repairsPagination" class="repairs-pagination" style="display: none; margin-top: 12px; padding: 12px 0; border-top: 1px solid var(--border); flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between;">
+              <div class="repairs-pagination-info" style="font-size: 13px; color: var(--text-secondary);"></div>
+              <div class="repairs-pagination-controls" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;"></div>
+            </div>
+            </div>
+          </div>
+
+          <!-- فوتر الصفحة - يظهر عند نزول الأسكرول -->
+          <footer id="repairsPageFooter" class="repairs-page-footer">
+            <div class="repairs-footer-inner">
+              <span>صفحة الصيانة</span>
+              <span>•</span>
+              <span>نظام ELOS للمحاسبة</span>
+              <span>•</span>
+              <span id="repairsFooterCount">0 تذكرة</span>
+            </div>
+          </footer>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         INTAKE MODAL - استلام جديد
+         ═══════════════════════════════════════ -->
+    <div class="repairs-modal" id="intakeModal">
+      <div class="modal-content large">
+        <div class="modal-header">
+          <div class="modal-title">
+            <span>📋</span>
+            <span>استلام جهاز للصيانة</span>
+          </div>
+          <button class="modal-close" id="intakeModalClose">&times;</button>
+        </div>
+
+        <div class="modal-body">
+          <form id="intakeForm">
+
+          <!-- ═══════════════════════════════════════
+               ⚡ QUICK TEMPLATES - قوالب سريعة
+               ═══════════════════════════════════════ -->
+          <div class="quick-templates-section" style="margin-bottom: 20px; padding: 16px; background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.05) 100%); border-radius: 12px; border: 1px solid rgba(59, 130, 246, 0.2);">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+              <span style="font-size: 16px;">⚡</span>
+              <span style="font-weight: 600; color: var(--text-primary); font-size: 14px;">أعطال شائعة (اضغط للتعبئة التلقائية)</span>
+            </div>
+            <div class="quick-templates-grid" style="display: flex; flex-wrap: wrap; gap: 8px;">
+              <button type="button" class="quick-template-btn" onclick="applyQuickTemplate('screen_broken')" style="padding: 8px 14px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 12px; color: var(--text-primary); transition: all 0.2s; display: flex; align-items: center; gap: 6px;">
+                <span>📱</span> شاشة مكسورة
+              </button>
+              <button type="button" class="quick-template-btn" onclick="applyQuickTemplate('battery_replace')" style="padding: 8px 14px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 12px; color: var(--text-primary); transition: all 0.2s; display: flex; align-items: center; gap: 6px;">
+                <span>🔋</span> تغيير بطارية
+              </button>
+              <button type="button" class="quick-template-btn" onclick="applyQuickTemplate('not_charging')" style="padding: 8px 14px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 12px; color: var(--text-primary); transition: all 0.2s; display: flex; align-items: center; gap: 6px;">
+                <span>🔌</span> لا يشحن
+              </button>
+              <button type="button" class="quick-template-btn" onclick="applyQuickTemplate('water_damage')" style="padding: 8px 14px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 12px; color: var(--text-primary); transition: all 0.2s; display: flex; align-items: center; gap: 6px;">
+                <span>💧</span> سقط في الماء
+              </button>
+              <button type="button" class="quick-template-btn" onclick="applyQuickTemplate('software_issue')" style="padding: 8px 14px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 12px; color: var(--text-primary); transition: all 0.2s; display: flex; align-items: center; gap: 6px;">
+                <span>⚙️</span> مشكلة سوفتوير
+              </button>
+              <button type="button" class="quick-template-btn" onclick="applyQuickTemplate('speaker_mic')" style="padding: 8px 14px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 12px; color: var(--text-primary); transition: all 0.2s; display: flex; align-items: center; gap: 6px;">
+                <span>🔊</span> سماعة / مايك
+              </button>
+              <button type="button" class="quick-template-btn" onclick="applyQuickTemplate('camera_issue')" style="padding: 8px 14px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 12px; color: var(--text-primary); transition: all 0.2s; display: flex; align-items: center; gap: 6px;">
+                <span>📷</span> مشكلة كاميرا
+              </button>
+              <button type="button" class="quick-template-btn" onclick="applyQuickTemplate('buttons_issue')" style="padding: 8px 14px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 12px; color: var(--text-primary); transition: all 0.2s; display: flex; align-items: center; gap: 6px;">
+                <span>🔘</span> أزرار لا تعمل
+              </button>
+            </div>
+          </div>
+
+          <!-- ═══════════════════════════════════════
+               📝 ESSENTIAL FIELDS - الحقول الأساسية
+               ═══════════════════════════════════════ -->
+          <div class="essential-fields-section" style="padding: 16px; background: var(--card); border-radius: 12px; border: 1px solid var(--border); margin-bottom: 16px;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
+              <span style="font-size: 16px;">📝</span>
+              <span style="font-weight: 600; color: var(--text-primary); font-size: 14px;">البيانات الأساسية</span>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">اسم العميل <span class="required">*</span></label>
+              <input type="text" class="form-control" id="customerName" required placeholder="أدخل اسم العميل...">
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">نوع الجهاز <span class="required">*</span></label>
+                <select class="form-control" id="deviceCategory" required>
+                  <option value="">اختر نوع الجهاز...</option>
+                  <option value="mobile">📱 موبايل</option>
+                  <option value="tablet">📟 تابلت</option>
+                  <option value="laptop">💻 لابتوب</option>
+                  <option value="desktop">🖥️ كمبيوتر</option>
+                  <option value="printer">🖨️ طابعة</option>
+                  <option value="other">📦 أخرى</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">رقم الهاتف</label>
+                <input type="tel" class="form-control" id="customerPhone" placeholder="01012345678">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">وصف المشكلة <span class="required">*</span></label>
+              <textarea class="form-control" id="issueDescription" required placeholder="اشرح المشكلة التي يعاني منها الجهاز..." rows="3"></textarea>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">الفني (اختياري)</label>
+              <select class="form-control" id="intakeTechnicianSelect">
+                <option value="">— لا يوجد —</option>
+                <!-- يُملأ من قائمة الموظفين عبر repairs.js -->
+              </select>
+            </div>
+          </div>
+
+          <!-- ═══════════════════════════════════════
+               ✅ QUICK ACCESSORIES - الملحقات السريعة
+               ═══════════════════════════════════════ -->
+          <div class="quick-accessories-section" style="padding: 16px; background: var(--card); border-radius: 12px; border: 1px solid var(--border); margin-bottom: 16px;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 12px;">
+              <span style="font-size: 16px;">📦</span>
+              <span style="font-weight: 600; color: var(--text-primary); font-size: 14px;">الملحقات المستلمة</span>
+              <span style="font-size: 11px; color: var(--text-secondary);">(اضغط لتحديد)</span>
+            </div>
+            <div class="quick-accessories-grid" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
+              <label class="quick-accessory-checkbox" style="display: flex; align-items: center; gap: 6px; padding: 8px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 12px; transition: all 0.2s;">
+                <input type="checkbox" class="accessory-quick-check" value="شاحن" style="width: 16px; height: 16px; cursor: pointer;">
+                <span>🔌 شاحن</span>
+              </label>
+              <label class="quick-accessory-checkbox" style="display: flex; align-items: center; gap: 6px; padding: 8px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 12px; transition: all 0.2s;">
+                <input type="checkbox" class="accessory-quick-check" value="سماعات" style="width: 16px; height: 16px; cursor: pointer;">
+                <span>🎧 سماعات</span>
+              </label>
+              <label class="quick-accessory-checkbox" style="display: flex; align-items: center; gap: 6px; padding: 8px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 12px; transition: all 0.2s;">
+                <input type="checkbox" class="accessory-quick-check" value="علبة" style="width: 16px; height: 16px; cursor: pointer;">
+                <span>📦 علبة</span>
+              </label>
+              <label class="quick-accessory-checkbox" style="display: flex; align-items: center; gap: 6px; padding: 8px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 12px; transition: all 0.2s;">
+                <input type="checkbox" class="accessory-quick-check" value="كفر" style="width: 16px; height: 16px; cursor: pointer;">
+                <span>🛡️ كفر</span>
+              </label>
+              <label class="quick-accessory-checkbox" style="display: flex; align-items: center; gap: 6px; padding: 8px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 12px; transition: all 0.2s;">
+                <input type="checkbox" class="accessory-quick-check" value="حامي شاشة" style="width: 16px; height: 16px; cursor: pointer;">
+                <span>🔲 حامي شاشة</span>
+              </label>
+              <label class="quick-accessory-checkbox" style="display: flex; align-items: center; gap: 6px; padding: 8px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 12px; transition: all 0.2s;">
+                <input type="checkbox" class="accessory-quick-check" value="كابل بيانات" style="width: 16px; height: 16px; cursor: pointer;">
+                <span>🔗 كابل بيانات</span>
+              </label>
+              <label class="quick-accessory-checkbox" style="display: flex; align-items: center; gap: 6px; padding: 8px 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 12px; transition: all 0.2s;">
+                <input type="checkbox" class="accessory-quick-check" value="بطاقة ذاكرة" style="width: 16px; height: 16px; cursor: pointer;">
+                <span>💾 بطاقة ذاكرة</span>
+              </label>
+            </div>
+            <!-- إضافة ملحق يدوياً -->
+            <div class="add-accessory-input" style="display: flex; gap: 8px;">
+              <input type="text" class="form-control" id="accessoryInput" placeholder="أو اكتب ملحق آخر..." style="flex: 1;">
+              <button type="button" id="btnAddAccessory" style="padding: 8px 16px; background: var(--accent); color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 12px;">+ إضافة</button>
+            </div>
+            <div class="accessories-list" id="accessoriesList" style="margin-top: 8px;">
+              <!-- Accessories tags will be added here -->
+            </div>
+            <input type="hidden" id="accessoriesReceived">
+          </div>
+
+          <!-- ═══════════════════════════════════════
+               ➕ EXTRA DETAILS - تفاصيل إضافية (قابلة للطي)
+               ═══════════════════════════════════════ -->
+          <div class="extra-details-section" style="margin-bottom: 16px;">
+            <button type="button" id="toggleExtraDetails" onclick="toggleIntakeExtraDetails()" style="width: 100%; padding: 12px 16px; background: var(--surface); border: 1px dashed var(--border); border-radius: 8px; cursor: pointer; font-size: 13px; color: var(--text-secondary); display: flex; align-items: center; justify-content: center; gap: 8px; transition: all 0.2s;">
+              <span id="extraDetailsIcon">➕</span>
+              <span id="extraDetailsText">إظهار تفاصيل إضافية (الماركة، الموديل، IMEI، كلمة السر...)</span>
+            </button>
+
+            <div id="extraDetailsContent" style="display: none; margin-top: 12px; padding: 16px; background: var(--card); border-radius: 12px; border: 1px solid var(--border);">
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">الماركة</label>
+                  <input type="text" class="form-control" id="deviceBrand" placeholder="مثال: Samsung, Apple...">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">الموديل</label>
+                  <input type="text" class="form-control" id="deviceModel" placeholder="مثال: Galaxy S21, iPhone 14...">
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">IMEI / الرقم التسلسلي</label>
+                <input type="text" class="form-control" id="imeiOrSerial" placeholder="أدخل IMEI أو الرقم التسلسلي...">
+              </div>
+
+              <div class="form-row">
+                <div class="form-group">
+                  <label class="form-label">كلمة مرور الجهاز</label>
+                  <input type="password" class="form-control" id="devicePasscode" placeholder="••••••">
+                </div>
+                <div class="form-group">
+                  <label class="form-label">&nbsp;</label>
+                  <button type="button" class="btn btn-secondary" id="togglePasscode" style="width: 100%;">
+                    <span>👁️</span> إظهار
+                  </button>
+                </div>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label">ملاحظات إضافية</label>
+                <textarea class="form-control" id="intakeNotes" placeholder="أي ملاحظات أخرى..."></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- ═══════════════════════════════════════
+               💰 DEPOSIT - عربون
+               ═══════════════════════════════════════ -->
+          <div class="deposit-section">
+            <div class="deposit-header">
+              <span class="deposit-icon">💰</span>
+              <span class="deposit-title">عربون (اختياري)</span>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">مبلغ العربون</label>
+                <input type="number" class="form-control" id="intakeDepositAmount" min="0" step="0.01" placeholder="0.00">
+              </div>
+              <div class="form-group">
+                <label class="form-label">طريقة الدفع</label>
+                <select class="form-control" id="intakeDepositWallet" onchange="updateIntakeDepositWalletsList()">
+                  <option value="cash">💵 كاش سائل</option>
+                  <option value="mobile_wallet">📱 محفظة إلكترونية</option>
+                  <option value="bank">🏦 حساب بنكي / إنستاباي</option>
+                </select>
+              </div>
+            </div>
+            <!-- ✅ Dropdown للمحافظ المحددة -->
+            <div class="form-group" id="intakeDepositWalletSelectGroup" style="display: none; margin-top: 8px;">
+              <label class="form-label">اختر المحفظة</label>
+              <select class="form-control" id="intakeDepositWalletSelect">
+                <option value="">جاري التحميل...</option>
+              </select>
+            </div>
+          </div>
+          </form>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btnCancelIntake">إلغاء</button>
+          <button type="submit" class="btn btn-success" id="btnSubmitIntake" form="intakeForm">
+            <span>✅</span>
+            <span>تسجيل الاستلام</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         DETAILS MODAL - تفاصيل التذكرة
+         ═══════════════════════════════════════ -->
+    <div class="repairs-modal" id="detailsModal">
+      <div class="modal-content large">
+        <div class="modal-header">
+          <div class="modal-title">
+            <span>📄</span>
+            <span>تفاصيل تذكرة الصيانة</span>
+            <span id="detailsTicketNo" style="font-weight: 400; font-size: 14px; color: var(--muted);"></span>
+            <span id="adjustmentBadge" style="display: none; margin-right: 8px; padding: 4px 8px; background: var(--warning); color: white; border-radius: 4px; font-size: 11px; font-weight: 600;">
+              ✏️ تذكرة تعديل
+            </span>
+            <button type="button" id="btnOpenOriginalTicket" style="display: none; margin-right: 8px; padding: 4px 12px; background: var(--accent); color: white; border: none; border-radius: 4px; font-size: 11px; cursor: pointer; font-weight: 600;">
+              🔗 فتح التذكرة الأصلية
+            </button>
+          </div>
+          <button class="modal-close" id="detailsModalClose">&times;</button>
+        </div>
+
+        <div class="modal-body" id="detailsContent">
+
+          <!-- ═══════════════════════════════════════
+               📋 TICKET SUMMARY CARD - بطاقة ملخص
+               ═══════════════════════════════════════ -->
+          <div class="ticket-summary-card" id="ticketSummaryCard">
+            <div class="summary-item">
+              <span class="summary-icon">👤</span>
+              <div>
+                <div class="summary-label">العميل</div>
+                <div class="summary-value" id="summaryCustomerName">-</div>
+              </div>
+            </div>
+            <div class="summary-item">
+              <span class="summary-icon">📞</span>
+              <div>
+                <div class="summary-label">الهاتف</div>
+                <div class="summary-value" id="summaryCustomerPhone" style="direction:ltr; text-align:right;">-</div>
+              </div>
+            </div>
+            <div class="summary-item">
+              <span class="summary-icon">📱</span>
+              <div>
+                <div class="summary-label">الجهاز</div>
+                <div class="summary-value" id="summaryDevice">-</div>
+              </div>
+            </div>
+            <div class="summary-item">
+              <span class="summary-icon">📊</span>
+              <div>
+                <div class="summary-label">الحالة</div>
+                <div class="summary-value" id="summaryStatus">-</div>
+              </div>
+            </div>
+            <div class="summary-item">
+              <span class="summary-icon">🔧</span>
+              <div>
+                <div class="summary-label">الفني</div>
+                <div class="summary-value" id="summaryTechnician">-</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- ═══════════════════════════════════════
+               🚀 STATUS STEPPER - شريط التقدم
+               ═══════════════════════════════════════ -->
+          <div class="ticket-stepper" id="ticketStepper">
+            <!-- سيتم ملؤه ديناميكياً بـ updateStatusStepper() -->
+          </div>
+
+          <!-- ═══════════════════════════════════════
+               🔒 LOCKED BANNER - بانر التذكرة المقفلة (محسّن)
+               ═══════════════════════════════════════ -->
+          <div class="detail-section" id="lockedBanner" style="display: none; background: linear-gradient(135deg, rgba(251, 191, 36, 0.15) 0%, rgba(245, 158, 11, 0.1) 100%); border: 2px solid #f59e0b; border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+            <!-- Header with icon and title -->
+            <div style="display: flex; align-items: flex-start; gap: 16px;">
+              <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #f59e0b, #d97706); border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                <span style="font-size: 24px;">🔒</span>
+              </div>
+              <div style="flex: 1;">
+                <div style="font-weight: 700; color: #92400e; font-size: 16px; margin-bottom: 4px;">تذكرة مقفلة مالياً</div>
+                <div style="font-size: 13px; color: #78350f; line-height: 1.6;">
+                  هذه التذكرة تم إقفالها ضمن فترة محاسبية سابقة ولا يمكن تعديلها مباشرة للحفاظ على سلامة السجلات المالية.
+                </div>
+              </div>
+            </div>
+
+            <!-- Details Grid -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; margin-top: 16px; padding: 12px; background: rgba(255, 255, 255, 0.5); border-radius: 8px;">
+              <div style="display: flex; flex-direction: column; gap: 2px;">
+                <span style="font-size: 11px; color: #92400e; font-weight: 500;">📅 تاريخ الإقفال</span>
+                <span id="lockedCloseDate" style="font-size: 13px; color: #78350f; font-weight: 600;">-</span>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 2px;">
+                <span style="font-size: 11px; color: #92400e; font-weight: 500;">🔢 رقم الإقفال</span>
+                <span id="lockedCloseId" style="font-size: 13px; color: #78350f; font-weight: 600;">-</span>
+              </div>
+              <div id="lockedCloseByContainer" style="display: none; flex-direction: column; gap: 2px;">
+                <span style="font-size: 11px; color: #92400e; font-weight: 500;">👤 بواسطة</span>
+                <span id="lockedCloseBy" style="font-size: 13px; color: #78350f; font-weight: 600;">-</span>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 2px;">
+                <span style="font-size: 11px; color: #92400e; font-weight: 500;">📊 الحالة</span>
+                <span id="lockedStatusReason" style="font-size: 13px; color: #78350f; font-weight: 600;">تم التسليم</span>
+              </div>
+            </div>
+
+            <!-- What can you do section -->
+            <div style="margin-top: 16px; padding: 12px; background: rgba(59, 130, 246, 0.1); border-radius: 8px; border: 1px solid rgba(59, 130, 246, 0.2);">
+              <div style="font-size: 12px; color: var(--accent); font-weight: 600; margin-bottom: 8px; display: flex; align-items: center; gap: 6px;">
+                <span>💡</span>
+                <span>ماذا يمكنك أن تفعل؟</span>
+              </div>
+              <ul style="font-size: 12px; color: var(--text-secondary); margin: 0; padding-right: 20px; line-height: 1.8;">
+                <li>يمكنك <strong>عرض</strong> جميع بيانات التذكرة والمدفوعات</li>
+                <li>يمكنك <strong>طباعة</strong> الفاتورة أو الباركود</li>
+                <li id="adjustmentHint" style="display: none;">يمكنك إنشاء <strong>تذكرة تعديل</strong> لإجراء تغييرات إضافية (للأدمن فقط)</li>
+              </ul>
+            </div>
+
+            <!-- Action button -->
+            <div style="margin-top: 16px; display: flex; justify-content: flex-end;">
+              <button type="button" class="btn btn-warning" id="btnCreateAdjustment" style="display: none; padding: 10px 20px; font-size: 13px; font-weight: 600; border-radius: 8px; background: linear-gradient(135deg, #f59e0b, #d97706); border: none; color: white; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s;">
+                <span>✏️</span>
+                <span>إنشاء تعديل</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- ═══════════════════════════════════════
+               📑 DETAILS TABS - شريط التابات
+               ═══════════════════════════════════════ -->
+          <div class="details-tabs" id="detailsTabs">
+            <button type="button" class="details-tab active" data-tab="tabInfo" onclick="switchDetailsTab('tabInfo')">
+              <span>📋</span> المعلومات
+              <span class="tab-dot"></span>
+            </button>
+            <button type="button" class="details-tab" data-tab="tabStatus" onclick="switchDetailsTab('tabStatus')">
+              <span>🔄</span> الحالة
+              <span class="tab-dot"></span>
+            </button>
+            <button type="button" class="details-tab" data-tab="tabFinancial" onclick="switchDetailsTab('tabFinancial')">
+              <span>💰</span> المالية
+              <span class="tab-dot" id="tabDotFinancial"></span>
+            </button>
+            <button type="button" class="details-tab" data-tab="tabParts" onclick="switchDetailsTab('tabParts')">
+              <span>🔧</span> قطع الغيار
+              <span class="tab-dot" id="tabDotParts"></span>
+            </button>
+            <button type="button" class="details-tab" data-tab="tabHistory" onclick="switchDetailsTab('tabHistory')">
+              <span>📜</span> السجل
+              <span class="tab-dot"></span>
+            </button>
+          </div>
+
+          <!-- ═══════════════════════════════════════
+               TAB 1: المعلومات
+               ═══════════════════════════════════════ -->
+          <div class="details-tab-content active" id="tabInfo">
+
+          <!-- Linked Adjustments Section (only shown for original tickets) - منقول هنا -->
+          <div class="detail-section" id="linkedAdjustmentsSection" style="display: none;">
+            <div class="detail-section-title">
+              <span>🔗</span>
+              <span>التعديلات المرتبطة</span>
+            </div>
+            <div id="linkedAdjustmentsList" style="margin-top: 12px;">
+              <!-- Adjustment tickets will be loaded here -->
+            </div>
+          </div>
+
+          <!-- Ticket Info Section -->
+          <div class="detail-section">
+            <div class="detail-section-title">
+              <span>👤</span>
+              <span>معلومات العميل</span>
+            </div>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <div class="label">اسم العميل</div>
+                <div class="value" id="detailCustomerName">-</div>
+              </div>
+              <div class="detail-item">
+                <div class="label">رقم الهاتف</div>
+                <div class="value" id="detailCustomerPhone">-</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Device Info Section -->
+          <div class="detail-section">
+            <div class="detail-section-title">
+              <span>📱</span>
+              <span>معلومات الجهاز</span>
+            </div>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <div class="label">نوع الجهاز</div>
+                <div class="value" id="detailDeviceCategory">-</div>
+              </div>
+              <div class="detail-item">
+                <div class="label">الماركة والموديل</div>
+                <div class="value" id="detailDeviceBrandModel">-</div>
+              </div>
+              <div class="detail-item">
+                <div class="label">IMEI / الرقم التسلسلي</div>
+                <div class="value" id="detailImei">-</div>
+              </div>
+              <div class="detail-item">
+                <div class="label">الحالة</div>
+                <div class="value" id="detailStatus">-</div>
+              </div>
+              <div class="detail-item">
+                <div class="label">الفني</div>
+                <div class="value" id="detailTechnicianDisplay">-</div>
+                <select class="form-control" id="detailTechnicianSelect" style="margin-top: 6px; display: none;">
+                  <option value="">— لا يوجد —</option>
+                </select>
+                <button type="button" id="btnEditTechnician" class="btn btn-sm btn-secondary" style="margin-top: 6px; padding: 4px 10px; font-size: 11px;">
+                  <span>✏️</span> تعديل
+                </button>
+                <button type="button" id="btnSaveTechnician" style="display: none; margin-top: 6px; padding: 4px 10px; font-size: 11px;" class="btn btn-sm btn-primary">حفظ</button>
+                <button type="button" id="btnCancelTechnician" style="display: none; margin-top: 6px; margin-right: 4px; padding: 4px 10px; font-size: 11px;" class="btn btn-sm btn-secondary">إلغاء</button>
+              </div>
+            </div>
+            <!-- باركود التذكرة -->
+            <div class="detail-item" style="grid-column: span 2; margin-top: 12px; padding: 16px; background: var(--surface-hover); border-radius: 8px; border: 1px solid var(--border); text-align: center;">
+              <div class="label" style="margin-bottom: 8px; font-size: 12px; color: var(--text-secondary);">🏷️ باركود التذكرة</div>
+              <div id="ticketBarcodeContainer" style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+                <div id="ticketBarcodeSVG" style="background: white; padding: 8px; border-radius: 4px; border: 1px solid var(--border);">
+                  <!-- سيتم ملؤه ديناميكياً -->
+                </div>
+                <div id="ticketBarcodeNumber" style="font-family: monospace; font-size: 14px; font-weight: 700; color: var(--text-primary);">
+                  -
+                </div>
+                <!-- زر طباعة الباركود V2.0 -->
+                <button type="button" id="printRepairBarcodeBtn" class="btn-action" style="margin-top: 8px; padding: 6px 16px; background: var(--accent); color: white; border: none; border-radius: 6px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; transition: all 0.2s ease;">
+                  <span>🖨️</span>
+                  <span>طباعة الباركود</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Issue Section -->
+          <div class="detail-section">
+            <div class="detail-section-title">
+              <span>🔧</span>
+              <span>المشكلة</span>
+            </div>
+            <div class="detail-item" style="grid-column: span 2;">
+              <div class="value" id="detailIssue">-</div>
+            </div>
+          </div>
+
+          </div><!-- /tabInfo -->
+
+          <!-- ═══════════════════════════════════════
+               TAB 2: الحالة
+               ═══════════════════════════════════════ -->
+          <div class="details-tab-content" id="tabStatus">
+
+          <!-- Status Change Section -->
+          <div class="detail-section" id="changeStatusSection">
+            <div class="detail-section-title">
+              <span>🔄</span>
+              <span>تغيير حالة التذكرة</span>
+            </div>
+
+            <!-- ═══════════════════════════════════════
+                 ⚡ QUICK STATUS BUTTONS - أزرار الحالة السريعة
+                 ═══════════════════════════════════════ -->
+            <div class="quick-status-section" id="quickStatusSection" style="margin-bottom: 16px; padding: 12px; background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(139, 92, 246, 0.05) 100%); border-radius: 10px; border: 1px solid rgba(59, 130, 246, 0.15);">
+              <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+                <span>⚡</span>
+                <span>تغيير سريع (ضغطة واحدة)</span>
+              </div>
+              <div class="quick-status-buttons" id="quickStatusButtons" style="display: flex; flex-wrap: wrap; gap: 8px;">
+                <button type="button" class="quick-status-btn" data-status="diagnosing" onclick="quickChangeStatus('diagnosing')" style="padding: 8px 14px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 12px; color: var(--text-primary); transition: all 0.2s; display: flex; align-items: center; gap: 6px;">
+                  <span>🔍</span> بدء الفحص
+                </button>
+                <button type="button" class="quick-status-btn" data-status="waiting_approval" onclick="quickChangeStatus('waiting_approval')" style="padding: 8px 14px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 12px; color: var(--text-primary); transition: all 0.2s; display: flex; align-items: center; gap: 6px;">
+                  <span>⏳</span> انتظار الموافقة
+                </button>
+                <button type="button" class="quick-status-btn" data-status="in_repair" onclick="quickChangeStatus('in_repair')" style="padding: 8px 14px; background: var(--card); border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 12px; color: var(--text-primary); transition: all 0.2s; display: flex; align-items: center; gap: 6px;">
+                  <span>🔧</span> بدء الإصلاح
+                </button>
+                <button type="button" class="quick-status-btn" data-status="ready" onclick="quickChangeStatus('ready')" style="padding: 8px 14px; background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.05) 100%); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 8px; cursor: pointer; font-size: 12px; color: var(--success); transition: all 0.2s; display: flex; align-items: center; gap: 6px; font-weight: 600;">
+                  <span>✅</span> جاهز للتسليم
+                </button>
+                <button type="button" class="quick-status-btn" data-status="delivered" onclick="quickChangeStatus('delivered')" style="padding: 8px 14px; background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.05) 100%); border: 1px solid rgba(59, 130, 246, 0.3); border-radius: 8px; cursor: pointer; font-size: 12px; color: var(--accent); transition: all 0.2s; display: flex; align-items: center; gap: 6px; font-weight: 600;">
+                  <span>📦</span> تم التسليم
+                </button>
+              </div>
+            </div>
+
+            <!-- Divider -->
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+              <div style="flex: 1; height: 1px; background: var(--border);"></div>
+              <span style="font-size: 11px; color: var(--text-secondary);">أو اختر من القائمة</span>
+              <div style="flex: 1; height: 1px; background: var(--border);"></div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">الحالة</label>
+              <select class="form-control" id="changeStatusSelect">
+                <option value="received">مستلم</option>
+                <option value="diagnosing">قيد الفحص</option>
+                <option value="waiting_approval">في انتظار موافقة العميل</option>
+                <option value="in_repair">تحت الصيانة</option>
+                <option value="ready">جاهز للتسليم</option>
+                <option value="delivered">تم التسليم</option>
+                <option value="cancelled">ملغي / لم يتم الإصلاح</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">ملاحظة (اختياري)</label>
+              <textarea class="form-control" id="changeStatusNote" placeholder="ملاحظة (اختياري)" rows="2"></textarea>
+            </div>
+            <div class="form-group" style="margin-bottom: 0;">
+              <button type="button" class="btn btn-primary" id="btnChangeStatus">
+                <span>🔄</span>
+                <span>تحديث الحالة</span>
+              </button>
+              <div id="statusChangeMessage" style="margin-top: 8px; font-size: 12px; color: var(--muted); display: none;">
+                لا يمكن تعديل الحالة بعد الإغلاق
+              </div>
+            </div>
+          </div>
+
+          <!-- ═══════════════════════════════════════
+               ↩️ REFUND SECTION - يظهر فقط للتذاكر المُسلَّمة
+               ═══════════════════════════════════════ -->
+          <div class="detail-section refund-section" id="refundSection" style="display: none;">
+            <div class="detail-section-title refund-section-title">
+              <span>↩️</span>
+              <span>مرتجع / استرداد</span>
+            </div>
+
+            <!-- معلومات التسليم والضمان -->
+            <div class="refund-info-box" id="refundInfoBox">
+              <!-- يُملأ ديناميكياً -->
+            </div>
+
+            <!-- سبب المرتجع -->
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label class="form-label" style="font-weight: 600;">
+                <span>📝</span> سبب المرتجع <span style="color: var(--danger);">*</span>
+              </label>
+              <textarea class="form-control" id="refundReason" placeholder="اكتب سبب المرتجع هنا... (إجباري)" rows="2" style="resize: vertical;"></textarea>
+            </div>
+
+            <!-- اختيار المحفظة -->
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label class="form-label" style="font-weight: 600;">
+                <span>💰</span> استرداد المبلغ من
+              </label>
+              <select class="form-control" id="refundWalletTypeSelect" onchange="onRefundWalletTypeChange()">
+                <option value="cash">💵 الكاش (الخزينة)</option>
+                <option value="mobile_wallet">📱 المحفظة الإلكترونية</option>
+                <option value="bank">🏦 الحساب البنكي</option>
+              </select>
+            </div>
+
+            <!-- اختيار المحفظة المحددة (يظهر عند اختيار محفظة/بنك) -->
+            <div class="form-group" id="refundWalletIdGroup" style="display: none; margin-bottom: 12px;">
+              <label class="form-label">اختر المحفظة</label>
+              <select class="form-control" id="refundWalletIdSelect">
+                <option value="">جاري التحميل...</option>
+              </select>
+            </div>
+
+            <!-- زر التأكيد -->
+            <button type="button" class="refund-confirm-btn" id="btnConfirmRefund" onclick="confirmRefund()">
+              <span>↩️</span>
+              <span>تأكيد المرتجع والاسترداد</span>
+            </button>
+          </div>
+
+          </div><!-- /tabStatus -->
+
+          <!-- ═══════════════════════════════════════
+               TAB 3: المالية
+               ═══════════════════════════════════════ -->
+          <div class="details-tab-content" id="tabFinancial">
+
+          <!-- Payment Section -->
+          <div class="detail-section">
+            <div class="detail-section-title">
+              <span>💰</span>
+              <span>التحصيل</span>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label">تكلفة الصيانة فقط</label>
+              <input type="number" class="form-control" id="repairTotalCost" min="0" step="0.01" placeholder="0.00" onblur="updateRepairTotalCost()">
+              <div style="font-size: 11px; color: var(--muted); margin-top: 4px;">
+                💡 ملاحظة: قطع الغيار المحجوزة تُضاف تلقائياً على التكلفة الإجمالية
+              </div>
+            </div>
+
+            <div class="detail-grid">
+              <div class="detail-item">
+                <div class="label">المدفوع حتى الآن</div>
+                <div class="value" id="repairPaidTotal" style="color: var(--success);">0.00 ج.م</div>
+              </div>
+              <div class="detail-item">
+                <div class="label">المتبقي</div>
+                <div class="value" id="repairRemaining" style="color: var(--warning);">0.00 ج.م</div>
+              </div>
+            </div>
+
+            <!-- Aggregated Totals Section (only shown for original tickets with adjustments) -->
+            <div id="aggregatedTotalsSection" style="display: none; margin-top: 16px; padding: 16px; background: var(--surface-hover); border-radius: 8px; border: 1px solid var(--border);">
+              <div style="font-weight: 600; margin-bottom: 12px; color: var(--text-primary); font-size: 14px;">
+                <span>📊</span>
+                <span style="margin-right: 8px;">ملخص نهائي</span>
+              </div>
+              <div class="detail-grid" style="grid-template-columns: repeat(2, 1fr); gap: 12px;">
+                <div class="detail-item">
+                  <div class="label">إجمالي الأصل</div>
+                  <div class="value" id="aggOriginalTotal" style="color: var(--text-primary);">0.00 ج.م</div>
+                </div>
+                <div class="detail-item">
+                  <div class="label">إجمالي التعديلات</div>
+                  <div class="value" id="aggAdjustmentsDelta" style="color: var(--accent);">0.00 ج.م</div>
+                </div>
+                <div class="detail-item">
+                  <div class="label">الإجمالي النهائي</div>
+                  <div class="value" id="aggFinalTotal" style="color: var(--success); font-weight: 700; font-size: 16px;">0.00 ج.م</div>
+                </div>
+                <div class="detail-item">
+                  <div class="label">المدفوع (أصل + تعديل)</div>
+                  <div class="value" id="aggFinalPaid" style="color: var(--success);">0.00 ج.م</div>
+                </div>
+                <div class="detail-item" style="grid-column: span 2;">
+                  <div class="label">المتبقي النهائي</div>
+                  <div class="value" id="aggFinalRemaining" style="color: var(--warning); font-weight: 700; font-size: 16px;">0.00 ج.م</div>
+                </div>
+              </div>
+            </div>
+
+            <div style="height: 1px; background: var(--line); margin: 16px 0;"></div>
+
+            <div class="form-group">
+              <label class="form-label">مبلغ الدفع</label>
+              <input type="number" class="form-control" id="repairPayAmount" min="0" step="0.01" placeholder="0.00">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">طريقة الدفع</label>
+              <select class="form-control" id="repairPayMethod" onchange="updateRepairWalletsList()">
+                <option value="cash">كاش</option>
+                <option value="mobile_wallet">محفظة إلكترونية</option>
+                <option value="bank">تحويل بنكي</option>
+              </select>
+            </div>
+            
+            <div class="form-group" id="repairWalletSelectGroup" style="display: none;">
+              <label class="form-label">اختر المحفظة</label>
+              <select class="form-control" id="repairWalletSelect">
+                <option value="">جاري التحميل...</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">ملاحظة (اختياري)</label>
+              <input type="text" class="form-control" id="repairPayNote" placeholder="ملاحظة اختيارية...">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <button type="button" class="btn btn-success" id="btnRepairPay">
+                <span>💰</span>
+                <span>تحصيل</span>
+              </button>
+              <div id="repairPayError" style="margin-top: 8px; font-size: 12px; color: var(--danger); display: none;"></div>
+            </div>
+
+            <div class="history-list" id="repairPaymentsList" style="margin-top: 16px; max-height: 200px;">
+              <!-- Payments list will be loaded here -->
+            </div>
+          </div>
+
+          </div><!-- /tabFinancial -->
+
+          <!-- ═══════════════════════════════════════
+               TAB 4: قطع الغيار
+               ═══════════════════════════════════════ -->
+          <div class="details-tab-content" id="tabParts">
+
+          <!-- Repair Parts Section -->
+          <div class="detail-section">
+            <div class="detail-section-title">
+              <span>🔧</span>
+              <span>قطع الغيار</span>
+            </div>
+
+            <!-- Reserve Part Form -->
+            <div class="form-group">
+              <label class="form-label">القطعة</label>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <select class="form-control" id="repairPartSelect" style="flex: 1;">
+                  <option value="">اختر قطعة...</option>
+                </select>
+                <button type="button" class="btn btn-success" id="btnAddNewPart" title="إضافة قطعة جديدة" style="padding: 8px 12px; min-width: 40px;">
+                  <span style="font-size: 16px; font-weight: bold;">+</span>
+                </button>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">الكمية</label>
+              <input type="number" class="form-control" id="repairPartQty" min="0.01" step="0.01" placeholder="1.00">
+            </div>
+
+            <div class="form-group" style="margin-bottom: 16px;">
+              <button type="button" class="btn btn-primary" id="btnReservePart">
+                <span>🔒</span>
+                <span>حجز</span>
+              </button>
+              <div id="repairPartError" style="margin-top: 8px; font-size: 12px; color: var(--danger); display: none;"></div>
+            </div>
+
+            <!-- Reserved Parts Table -->
+            <div style="margin-top: 12px;">
+              <div class="table-container" style="max-height: 300px; overflow-y: auto;">
+                <table id="repairPartsTable" style="width: 100%; border-collapse: collapse;">
+                  <thead>
+                    <tr>
+                      <th style="padding: 10px; text-align: right; font-size: 12px; font-weight: 700; border-bottom: 1px solid var(--line);">اسم القطعة</th>
+                      <th style="padding: 10px; text-align: right; font-size: 12px; font-weight: 700; border-bottom: 1px solid var(--line);">الكمية</th>
+                      <th style="padding: 10px; text-align: right; font-size: 12px; font-weight: 700; border-bottom: 1px solid var(--line);">سعر الوحدة</th>
+                      <th style="padding: 10px; text-align: right; font-size: 12px; font-weight: 700; border-bottom: 1px solid var(--line);">الإجمالي</th>
+                      <th style="padding: 10px; text-align: right; font-size: 12px; font-weight: 700; border-bottom: 1px solid var(--line);">الحالة</th>
+                      <th style="padding: 10px; text-align: right; font-size: 12px; font-weight: 700; border-bottom: 1px solid var(--line);">التاريخ</th>
+                      <th style="padding: 10px; text-align: right; font-size: 12px; font-weight: 700; border-bottom: 1px solid var(--line);">الإجراءات</th>
+                    </tr>
+                  </thead>
+                  <tbody id="repairPartsList">
+                    <!-- Parts rows will be loaded here -->
+                  </tbody>
+                </table>
+                <div class="empty-state" id="repairPartsEmpty" style="padding: 20px; display: none;">
+                  <span class="icon" style="font-size: 32px;">📦</span>
+                  <div class="title" style="font-size: 14px;">لا توجد قطع محجوزة</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          </div><!-- /tabParts -->
+
+          <!-- ═══════════════════════════════════════
+               TAB 5: السجل
+               ═══════════════════════════════════════ -->
+          <div class="details-tab-content" id="tabHistory">
+
+          <!-- History Section -->
+          <div class="detail-section">
+            <div class="detail-section-title">
+              <span>📜</span>
+              <span>سجل الأحداث</span>
+            </div>
+            <div class="history-list" id="detailHistoryList">
+              <!-- History items will be loaded here -->
+              <div class="empty-state" style="padding: 20px;">
+                <span class="icon" style="font-size: 32px;">📋</span>
+                <div class="title" style="font-size: 14px;">لا يوجد سجل أحداث</div>
+              </div>
+            </div>
+          </div>
+
+          </div><!-- /tabHistory -->
+
+        </div><!-- /modal-body -->
+
+        <!-- ═══════════════════════════════════════
+             FOOTER - فوتر معدّل مع عمليات سريعة
+             ═══════════════════════════════════════ -->
+        <div class="modal-footer" style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <!-- أزرار العمليات السريعة (مضغوطة) -->
+          <div class="footer-ops-group">
+            <button type="button" class="footer-op-btn" id="btnPrintIntake" title="إيصال استلام">📄</button>
+            <button type="button" class="footer-op-btn" id="btnPrintLabel" title="ملصق الجهاز">🏷️</button>
+            <button type="button" class="footer-op-btn" id="btnPrintInvoiceOps" title="طباعة فاتورة">🧾</button>
+            <button type="button" class="footer-op-btn" id="btnCopyTicketNo" title="نسخ رقم التذكرة">📋</button>
+            <button type="button" class="footer-op-btn" id="btnCopyPhone" title="نسخ رقم العميل">📱</button>
+          </div>
+          <div style="flex: 1;"></div>
+          <!-- زر إنشاء فاتورة - بارز بلون أخضر -->
+          <button type="button" class="btn btn-success" id="btnGenerateInvoice" style="display: none; padding: 8px 16px; font-size: 13px; font-weight: 600; border-radius: 8px; background: linear-gradient(135deg, #10b981, #059669); border: none; color: white; cursor: pointer; align-items: center; gap: 6px;">
+            <span>📝</span>
+            <span>إنشاء فاتورة</span>
+          </button>
+          <button type="button" class="btn btn-primary" id="btnPrintInvoice" style="display: none;">
+            <span>🖨️</span>
+            <span>طباعة فاتورة</span>
+          </button>
+          <button type="button" class="btn btn-secondary" id="btnCloseDetails">إغلاق</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- 📊 DAILY CLOSING MODAL - تقفيل يومية الصيانة -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <div id="dayClosingModal" class="day-closing-modal-overlay">
+      <div class="day-closing-modal-content">
+        <!-- ═══ HEADER مع date picker inline ═══ -->
+        <div class="modal-header" style="display: flex; align-items: center; gap: 12px;">
+          <h3 class="modal-title" style="flex: 1; margin: 0;">📊 تقفيل يومية الصيانة</h3>
+          <input type="date" class="form-control" id="closingDate" style="width: auto; max-width: 170px; font-size: 13px; padding: 6px 10px; border-radius: 8px; text-align: center;">
+          <button class="modal-close" id="closeDayClosingModal">&times;</button>
+        </div>
+
+        <div class="modal-body">
+          <!-- ═══ LOADING STATE (يظهر أولاً) ═══ -->
+          <div id="closingLoading" style="text-align: center; padding: 60px 20px;">
+            <div style="font-size: 40px; animation: spin 1s linear infinite;">⏳</div>
+            <div style="margin-top: 16px; color: var(--text-secondary); font-size: 14px;">جاري تحميل بيانات اليوم...</div>
+          </div>
+
+          <!-- ═══ PREVIEW CONTENT (يظهر بعد التحميل) ═══ -->
+          <div id="closingPreview" style="display: none;">
+
+            <!-- بطاقات الإحصائيات -->
+            <div class="dc-stats-row">
+              <div class="dc-stat-card">
+                <div class="dc-stat-icon" style="background: rgba(139, 92, 246, 0.15); color: #8b5cf6;">📋</div>
+                <div class="dc-stat-value" id="closingNewTickets" style="color: #8b5cf6;">0</div>
+                <div class="dc-stat-label">تذاكر جديدة</div>
+              </div>
+              <div class="dc-stat-card">
+                <div class="dc-stat-icon" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">✅</div>
+                <div class="dc-stat-value" id="closingDelivered" style="color: #10b981;">0</div>
+                <div class="dc-stat-label">تم التسليم</div>
+              </div>
+              <div class="dc-stat-card">
+                <div class="dc-stat-icon" style="background: rgba(239, 68, 68, 0.15); color: #ef4444;">❌</div>
+                <div class="dc-stat-value" id="closingCancelled" style="color: #ef4444;">0</div>
+                <div class="dc-stat-label">ملغاة</div>
+              </div>
+              <div class="dc-stat-card">
+                <div class="dc-stat-icon" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b;">📂</div>
+                <div class="dc-stat-value" id="closingOpen" style="color: #f59e0b;">0</div>
+                <div class="dc-stat-label">مفتوحة</div>
+              </div>
+            </div>
+
+            <!-- ═══ الصندوق المالي الرئيسي ═══ -->
+            <div class="dc-financial-box">
+              <div class="dc-financial-header">
+                <span>💰</span>
+                <span>الملخص المالي</span>
+              </div>
+
+              <!-- إيرادات + تحصيلات -->
+              <div class="dc-financial-main">
+                <div class="dc-financial-item">
+                  <div class="dc-financial-label">إيرادات اليوم</div>
+                  <div class="dc-financial-value" id="closingRevenue" style="color: #10b981;">0.00 ج.م</div>
+                </div>
+                <div class="dc-financial-divider"></div>
+                <div class="dc-financial-item">
+                  <div class="dc-financial-label">التحصيلات</div>
+                  <div class="dc-financial-value" id="closingCollections" style="color: #8b5cf6;">0.00 ج.م</div>
+                </div>
+              </div>
+
+              <!-- Adjustment Breakdown (مشروط) -->
+              <div id="closingAdjustmentsBreakdown" style="display: none; margin-top: 12px; padding: 10px; background: rgba(139,92,246,0.05); border-radius: 8px; border: 1px dashed rgba(139,92,246,0.3);">
+                <div style="font-weight: 600; margin-bottom: 8px; font-size: 12px; color: var(--text-secondary);">📊 تفصيل الإيرادات</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+                  <div style="text-align: center;">
+                    <div style="font-size: 11px; color: var(--text-muted);">التذاكر الأصلية</div>
+                    <div id="closingOriginalRevenue" style="font-weight: 600; font-size: 14px;">0.00 ج.م</div>
+                  </div>
+                  <div style="text-align: center;">
+                    <div style="font-size: 11px; color: var(--text-muted);">التعديلات</div>
+                    <div id="closingAdjustmentsRevenue" style="font-weight: 600; font-size: 14px; color: #8b5cf6;">0.00 ج.م</div>
+                  </div>
+                </div>
+                <div style="text-align: center; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border);">
+                  <div style="font-size: 11px; color: var(--text-muted);">الإجمالي النهائي</div>
+                  <div id="closingFinalRevenue" style="font-weight: 700; font-size: 16px; color: #10b981;">0.00 ج.م</div>
+                </div>
+              </div>
+
+              <!-- ═══ تفصيل التحصيلات (عربونات / دفعات / تحصيل نهائي) ═══ -->
+              <div id="closingKindBreakdown" class="dc-kind-breakdown" style="display: none;">
+                <div class="dc-kind-title">📋 تفصيل التحصيلات</div>
+                <div class="dc-kind-items" id="closingKindItems">
+                  <!-- يُملأ ديناميكياً -->
+                </div>
+              </div>
+
+              <!-- توزيع المحافظ -->
+              <div class="dc-wallets-row">
+                <div class="dc-wallet-item">
+                  <span class="dc-wallet-icon">💵</span>
+                  <span class="dc-wallet-label">كاش</span>
+                  <span class="dc-wallet-value" id="closingCash" style="color: #10b981;">0.00</span>
+                </div>
+                <div class="dc-wallet-item">
+                  <span class="dc-wallet-icon">📱</span>
+                  <span class="dc-wallet-label">محفظة</span>
+                  <span class="dc-wallet-value" id="closingMobile" style="color: #8b5cf6;">0.00</span>
+                </div>
+                <div class="dc-wallet-item">
+                  <span class="dc-wallet-icon">🏦</span>
+                  <span class="dc-wallet-label">بنك</span>
+                  <span class="dc-wallet-value" id="closingBank" style="color: #06b6d4;">0.00</span>
+                </div>
+              </div>
+
+              <!-- Admin-only: Parts Cost & Net Profit -->
+              <div id="closingAdminKpis" style="display: none;">
+                <div class="dc-admin-kpis">
+                  <div class="dc-admin-kpi-item">
+                    <span class="dc-admin-kpi-icon">🔧</span>
+                    <div>
+                      <div class="dc-admin-kpi-label">تكلفة القطع</div>
+                      <div class="dc-admin-kpi-value" id="closingPartsCost" style="color: #ef4444;">0.00 ج.م</div>
+                    </div>
+                  </div>
+                  <div class="dc-admin-kpi-item">
+                    <span class="dc-admin-kpi-icon">💵</span>
+                    <div>
+                      <div class="dc-admin-kpi-label">صافي الربح</div>
+                      <div class="dc-admin-kpi-value" id="closingNetProfit" style="color: #10b981;">0.00 ج.م</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div><!-- /dc-financial-box -->
+
+            <!-- ملاحظات -->
+            <div style="margin-top: 16px;">
+              <label style="font-size: 12px; font-weight: 600; color: var(--text-secondary); margin-bottom: 6px; display: block;">📝 ملاحظات (اختياري)</label>
+              <textarea class="form-control" id="closingNotes" rows="2" placeholder="ملاحظات إضافية..." style="resize: none; font-size: 13px;"></textarea>
+            </div>
+
+            <!-- Already Closed Warning -->
+            <div id="closingAlreadyClosed" style="display: none; margin-top: 16px; padding: 14px; background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.3); border-radius: 10px; text-align: center;">
+              <span style="font-size: 28px;">🔒</span>
+              <div style="color: #ef4444; font-weight: 700; margin-top: 6px; font-size: 14px;">تم تقفيل هذا اليوم مسبقاً</div>
+              <div style="color: var(--text-secondary); font-size: 12px; margin-top: 4px;">بواسطة: <span id="closingClosedBy"></span> - <span id="closingClosedAt"></span></div>
+            </div>
+
+          </div><!-- /closingPreview -->
+
+          <!-- ═══ ERROR STATE ═══ -->
+          <div id="closingError" style="display: none; text-align: center; padding: 40px 20px;">
+            <div style="font-size: 40px;">⚠️</div>
+            <div style="margin-top: 12px; color: var(--danger); font-weight: 600;">فشل في تحميل البيانات</div>
+            <button type="button" class="btn btn-secondary" onclick="loadClosingPreview()" style="margin-top: 12px; font-size: 13px;">🔄 إعادة المحاولة</button>
+          </div>
+        </div>
+
+        <!-- ═══ FOOTER ═══ -->
+        <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+          <button type="button" class="btn btn-secondary" id="btnCancelClosing" style="font-size: 13px;">إغلاق</button>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <button type="button" class="btn btn-primary" id="btnPrintClosingReport" style="display: none; font-size: 13px;">
+              <span>🖨️</span>
+              <span>طباعة التقرير</span>
+            </button>
+            <button type="button" class="btn btn-success dc-confirm-btn" id="btnConfirmClosing" style="display: none;">
+              <span>✅</span>
+              <span>تأكيد تقفيل اليوم</span>
+            </button>
+          </div>
+          <!-- Hidden preview button (kept for JS compatibility) -->
+          <button type="button" id="btnLoadClosingPreview" style="display: none;"></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- ⚠️ CUSTOM CONFIRM DIALOG - نافذة تأكيد مخصصة                    -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <div id="customConfirmOverlay" class="custom-confirm-overlay">
+      <div class="custom-confirm-box">
+        <div class="custom-confirm-icon" id="confirmIcon">⚠️</div>
+        <div class="custom-confirm-title" id="confirmTitle">تأكيد</div>
+        <div class="custom-confirm-message" id="confirmMessage">هل أنت متأكد؟</div>
+        <div class="custom-confirm-buttons">
+          <button type="button" class="custom-confirm-btn cancel" id="confirmCancelBtn">إلغاء</button>
+          <button type="button" class="custom-confirm-btn ok" id="confirmOkBtn">تأكيد</button>
+        </div>
+      </div>
+    </div>
+
+    <style>
+      /* ═══════════════════════════════════════════════════════════════ */
+      /* ⚠️ CUSTOM CONFIRM DIALOG                                       */
+      /* ═══════════════════════════════════════════════════════════════ */
+      .custom-confirm-overlay {
+        display: none;
+        position: fixed;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        z-index: 9999999;
+        justify-content: center;
+        align-items: center;
+        animation: confirmFadeIn 0.2s ease;
+      }
+
+      .custom-confirm-overlay.show {
+        display: flex;
+      }
+
+      @keyframes confirmFadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+
+      @keyframes confirmSlideIn {
+        from { transform: scale(0.85) translateY(20px); opacity: 0; }
+        to { transform: scale(1) translateY(0); opacity: 1; }
+      }
+
+      .custom-confirm-box {
+        background: #1e2530;
+        border: 1px solid #3b82f6;
+        border-radius: 16px;
+        padding: 32px 28px 24px;
+        max-width: 380px;
+        width: 90%;
+        text-align: center;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+        animation: confirmSlideIn 0.25s ease;
+      }
+
+      .custom-confirm-icon {
+        font-size: 48px;
+        margin-bottom: 12px;
+        line-height: 1;
+      }
+
+      .custom-confirm-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: #e5e7eb;
+        margin-bottom: 8px;
+      }
+
+      .custom-confirm-message {
+        font-size: 13px;
+        color: #9ca3af;
+        line-height: 1.6;
+        margin-bottom: 24px;
+      }
+
+      .custom-confirm-buttons {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+      }
+
+      .custom-confirm-btn {
+        padding: 10px 28px;
+        border-radius: 10px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        border: none;
+        transition: all 0.2s;
+        min-width: 110px;
+      }
+
+      .custom-confirm-btn.cancel {
+        background: #374151;
+        color: #d1d5db;
+      }
+
+      .custom-confirm-btn.cancel:hover {
+        background: #4b5563;
+      }
+
+      .custom-confirm-btn.ok {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+      }
+
+      .custom-confirm-btn.ok:hover {
+        box-shadow: 0 4px 16px rgba(16, 185, 129, 0.5);
+        transform: translateY(-1px);
+      }
+
+      .custom-confirm-btn.ok.danger {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);
+      }
+
+      .custom-confirm-btn.ok.danger:hover {
+        box-shadow: 0 4px 16px rgba(239, 68, 68, 0.5);
+      }
+
+      /* ☀️ Light theme */
+      html[data-theme="light"] .custom-confirm-box {
+        background: #ffffff;
+        border-color: #e5e7eb;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.2);
+      }
+
+      html[data-theme="light"] .custom-confirm-title {
+        color: #1f2937;
+      }
+
+      html[data-theme="light"] .custom-confirm-message {
+        color: #6b7280;
+      }
+
+      html[data-theme="light"] .custom-confirm-btn.cancel {
+        background: #f3f4f6;
+        color: #374151;
+        border: 1px solid #d1d5db;
+      }
+
+      html[data-theme="light"] .custom-confirm-btn.cancel:hover {
+        background: #e5e7eb;
+      }
+
+      /* ═══════════════════════════════════════════════════════════════ */
+      /* 📊 DAY CLOSING MODAL - تقفيل يومية الصيانة                       */
+      /* ═══════════════════════════════════════════════════════════════ */
+      .day-closing-modal-overlay {
+        display: none !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        bottom: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        background-color: rgba(0, 0, 0, 0.85) !important;
+        z-index: 999999 !important;
+        justify-content: center !important;
+        align-items: center !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+
+      .day-closing-modal-overlay.show {
+        display: flex !important;
+      }
+
+      .day-closing-modal-content {
+        background-color: #1e2530 !important;
+        border: 2px solid #3b82f6 !important;
+        border-radius: 16px !important;
+        padding: 0 !important;
+        max-width: 580px !important;
+        width: 92% !important;
+        max-height: 85vh !important;
+        overflow: hidden !important;
+        box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255,255,255,0.1) !important;
+        display: flex !important;
+        flex-direction: column !important;
+      }
+
+      .day-closing-modal-content .modal-header {
+        padding: 16px 20px !important;
+        border-bottom: 1px solid #2d3748 !important;
+        background-color: #1a1f29 !important;
+        border-radius: 16px 16px 0 0 !important;
+      }
+
+      .day-closing-modal-content .modal-body {
+        padding: 16px 20px !important;
+        overflow-y: auto !important;
+        flex: 1 !important;
+        background-color: #1e2530 !important;
+      }
+
+      .day-closing-modal-content .modal-footer {
+        padding: 12px 20px !important;
+        border-top: 1px solid #2d3748 !important;
+        background-color: #1a1f29 !important;
+        border-radius: 0 0 16px 16px !important;
+      }
+
+      /* ═══ بطاقات الإحصائيات ═══ */
+      .dc-stats-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+        margin-bottom: 16px;
+      }
+
+      .dc-stat-card {
+        text-align: center;
+        padding: 12px 6px;
+        background: var(--surface-hover, #252d3a);
+        border-radius: 10px;
+        border: 1px solid var(--border, #2d3748);
+        transition: transform 0.15s;
+      }
+
+      .dc-stat-card:hover {
+        transform: translateY(-2px);
+      }
+
+      .dc-stat-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        margin-bottom: 6px;
+      }
+
+      .dc-stat-value {
+        font-size: 22px;
+        font-weight: 800;
+        line-height: 1.1;
+      }
+
+      .dc-stat-label {
+        font-size: 10px;
+        color: var(--text-muted, #9ca3af);
+        margin-top: 2px;
+        font-weight: 500;
+      }
+
+      /* ═══ الصندوق المالي ═══ */
+      .dc-financial-box {
+        background: var(--surface-hover, #252d3a);
+        border: 1px solid var(--border, #2d3748);
+        border-radius: 12px;
+        padding: 16px;
+      }
+
+      .dc-financial-header {
+        font-weight: 700;
+        font-size: 14px;
+        color: var(--text-primary, #e5e7eb);
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .dc-financial-main {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 14px;
+      }
+
+      .dc-financial-item {
+        flex: 1;
+        text-align: center;
+      }
+
+      .dc-financial-label {
+        font-size: 11px;
+        color: var(--text-muted, #9ca3af);
+        margin-bottom: 4px;
+      }
+
+      .dc-financial-value {
+        font-size: 20px;
+        font-weight: 800;
+      }
+
+      .dc-financial-divider {
+        width: 1px;
+        height: 40px;
+        background: var(--border, #2d3748);
+      }
+
+      /* ═══ توزيع المحافظ ═══ */
+      .dc-wallets-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 6px;
+        padding-top: 12px;
+        border-top: 1px solid var(--border, #2d3748);
+      }
+
+      .dc-wallet-item {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+        padding: 8px 4px;
+        background: var(--surface, #1e2530);
+        border-radius: 8px;
+      }
+
+      .dc-wallet-icon {
+        font-size: 16px;
+      }
+
+      .dc-wallet-label {
+        font-size: 10px;
+        color: var(--text-muted, #9ca3af);
+      }
+
+      .dc-wallet-value {
+        font-size: 14px;
+        font-weight: 700;
+      }
+
+      /* ═══ Admin KPIs ═══ */
+      .dc-admin-kpis {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid var(--border, #2d3748);
+      }
+
+      .dc-admin-kpi-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px;
+        background: var(--surface, #1e2530);
+        border-radius: 8px;
+      }
+
+      .dc-admin-kpi-icon {
+        font-size: 20px;
+      }
+
+      .dc-admin-kpi-label {
+        font-size: 10px;
+        color: var(--text-muted, #9ca3af);
+      }
+
+      .dc-admin-kpi-value {
+        font-size: 16px;
+        font-weight: 700;
+      }
+
+      /* ═══ تفصيل التحصيلات ═══ */
+      .dc-kind-breakdown {
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px dashed var(--border, #2d3748);
+      }
+
+      .dc-kind-title {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-secondary, #9ca3af);
+        margin-bottom: 8px;
+      }
+
+      .dc-kind-items {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .dc-kind-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 5px 10px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        border: 1px solid;
+      }
+
+      .dc-kind-tag.deposit {
+        background: rgba(245, 158, 11, 0.1);
+        border-color: rgba(245, 158, 11, 0.3);
+        color: #f59e0b;
+      }
+
+      .dc-kind-tag.partial {
+        background: rgba(59, 130, 246, 0.1);
+        border-color: rgba(59, 130, 246, 0.3);
+        color: #3b82f6;
+      }
+
+      .dc-kind-tag.final {
+        background: rgba(16, 185, 129, 0.1);
+        border-color: rgba(16, 185, 129, 0.3);
+        color: #10b981;
+      }
+
+      .dc-kind-tag.refund {
+        background: rgba(239, 68, 68, 0.1);
+        border-color: rgba(239, 68, 68, 0.3);
+        color: #ef4444;
+      }
+
+      .dc-kind-count {
+        font-size: 10px;
+        opacity: 0.8;
+      }
+
+      /* ═══ زر التأكيد الكبير ═══ */
+      .dc-confirm-btn {
+        padding: 10px 24px !important;
+        font-size: 14px !important;
+        font-weight: 700 !important;
+        border-radius: 10px !important;
+        background: linear-gradient(135deg, #10b981, #059669) !important;
+        border: none !important;
+        color: white !important;
+        cursor: pointer !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 6px !important;
+        transition: all 0.2s !important;
+      }
+
+      .dc-confirm-btn:hover {
+        box-shadow: 0 4px 16px rgba(16, 185, 129, 0.5) !important;
+        transform: translateY(-1px) !important;
+      }
+
+      /* ═══════════════════════════════════════════════════════════════ */
+      /* ☀️ LIGHT THEME - Day Closing Modal                              */
+      /* ═══════════════════════════════════════════════════════════════ */
+      html[data-theme="light"] .day-closing-modal-overlay {
+        background-color: rgba(0, 0, 0, 0.5) !important;
+      }
+
+      html[data-theme="light"] .day-closing-modal-content {
+        background-color: #ffffff !important;
+        border: 1px solid #e5e7eb !important;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.25) !important;
+      }
+
+      html[data-theme="light"] .day-closing-modal-content .modal-header {
+        background-color: #f9fafb !important;
+        border-bottom: 1px solid #e5e7eb !important;
+      }
+
+      html[data-theme="light"] .day-closing-modal-content .modal-header .modal-title {
+        color: #1f2937 !important;
+      }
+
+      html[data-theme="light"] .day-closing-modal-content .modal-body {
+        background-color: #ffffff !important;
+      }
+
+      html[data-theme="light"] .day-closing-modal-content .modal-footer {
+        background-color: #f9fafb !important;
+        border-top: 1px solid #e5e7eb !important;
+      }
+
+      html[data-theme="light"] .dc-stat-card {
+        background: #f9fafb;
+        border-color: #e5e7eb;
+      }
+
+      html[data-theme="light"] .dc-financial-box {
+        background: #f9fafb;
+        border-color: #e5e7eb;
+      }
+
+      html[data-theme="light"] .dc-financial-header {
+        color: #1f2937;
+      }
+
+      html[data-theme="light"] .dc-financial-divider {
+        background: #e5e7eb;
+      }
+
+      html[data-theme="light"] .dc-wallets-row {
+        border-top-color: #e5e7eb;
+      }
+
+      html[data-theme="light"] .dc-wallet-item {
+        background: #ffffff;
+      }
+
+      html[data-theme="light"] .dc-admin-kpis {
+        border-top-color: #e5e7eb;
+      }
+
+      html[data-theme="light"] .dc-admin-kpi-item {
+        background: #ffffff;
+      }
+
+      html[data-theme="light"] .day-closing-modal-content .form-control {
+        background-color: #f9fafb !important;
+        border: 1px solid #d1d5db !important;
+        color: #1f2937 !important;
+      }
+
+      html[data-theme="light"] .day-closing-modal-content .form-control:focus {
+        border-color: #3b82f6 !important;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
+      }
+
+      html[data-theme="light"] .day-closing-modal-content .btn-secondary {
+        background-color: #f3f4f6 !important;
+        border: 1px solid #d1d5db !important;
+        color: #374151 !important;
+      }
+
+      html[data-theme="light"] .day-closing-modal-content .btn-secondary:hover {
+        background-color: #e5e7eb !important;
+      }
+
+      html[data-theme="light"] .day-closing-modal-content .modal-close {
+        color: #6b7280 !important;
+        background: #f3f4f6 !important;
+        border-radius: 6px !important;
+      }
+
+      html[data-theme="light"] .day-closing-modal-content .modal-close:hover {
+        background: #fecaca !important;
+        color: #dc2626 !important;
+      }
+
+      /* ═══════════════════════════════════════════════════════════════ */
+      /* 🖨️ PRINT PROMPT MODAL - نافذة طباعة بعد الاستلام                */
+      /* ═══════════════════════════════════════════════════════════════ */
+      .print-prompt-modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100vw;
+        height: 100vh;
+        background-color: rgba(0, 0, 0, 0.75);
+        z-index: 999999;
+        justify-content: center;
+        align-items: center;
+      }
+
+      .print-prompt-modal-overlay.show {
+        display: flex;
+      }
+
+      .print-prompt-modal-content {
+        background-color: #1e2530;
+        border: 2px solid #10b981;
+        border-radius: 16px;
+        padding: 0;
+        max-width: 450px;
+        width: 90%;
+        box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7);
+        animation: printPromptSlideIn 0.3s ease;
+      }
+
+      @keyframes printPromptSlideIn {
+        from { transform: scale(0.9); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
+      }
+
+      .print-prompt-header {
+        text-align: center;
+        padding: 24px 24px 16px;
+        border-bottom: 1px solid #2d3748;
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%);
+        border-radius: 14px 14px 0 0;
+      }
+
+      .print-prompt-icon {
+        font-size: 48px;
+        display: block;
+        margin-bottom: 12px;
+      }
+
+      .print-prompt-header h3 {
+        font-size: 18px;
+        font-weight: 700;
+        color: #10b981;
+        margin: 0 0 8px 0;
+      }
+
+      .print-prompt-ticket-no {
+        font-size: 14px;
+        color: #8b93a6;
+        font-weight: 600;
+        background: rgba(59, 130, 246, 0.1);
+        padding: 6px 12px;
+        border-radius: 6px;
+        display: inline-block;
+      }
+
+      .print-prompt-body {
+        padding: 20px 24px;
+      }
+
+      .print-prompt-body > p {
+        text-align: center;
+        color: #8b93a6;
+        margin-bottom: 16px;
+        font-size: 14px;
+      }
+
+      .print-prompt-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .print-prompt-buttons .btn {
+        padding: 14px 20px;
+        font-size: 14px;
+        justify-content: center;
+      }
+
+      .print-prompt-buttons .btn-primary {
+        background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+      }
+
+      .print-prompt-buttons .btn-secondary {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        border: none;
+      }
+
+      .print-prompt-footer {
+        padding: 16px 24px;
+        border-top: 1px solid #2d3748;
+        text-align: center;
+      }
+
+      .print-prompt-footer .btn-ghost {
+        background: transparent;
+        border: 1px solid #4b5563;
+        color: #9ca3af;
+        padding: 10px 24px;
+      }
+
+      .print-prompt-footer .btn-ghost:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: #6b7280;
+      }
+
+      /* ☀️ Light Theme - Print Prompt Modal */
+      html[data-theme="light"] .print-prompt-modal-overlay {
+        background-color: rgba(0, 0, 0, 0.4);
+      }
+
+      html[data-theme="light"] .print-prompt-modal-content {
+        background-color: #ffffff;
+        border: 1px solid #10b981;
+        box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
+      }
+
+      html[data-theme="light"] .print-prompt-header {
+        border-bottom: 1px solid #e5e7eb;
+        background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(59, 130, 246, 0.04) 100%);
+      }
+
+      html[data-theme="light"] .print-prompt-header h3 {
+        color: #059669;
+      }
+
+      html[data-theme="light"] .print-prompt-ticket-no {
+        color: #1f2937;
+        background: rgba(59, 130, 246, 0.1);
+      }
+
+      html[data-theme="light"] .print-prompt-body > p {
+        color: #6b7280;
+      }
+
+      html[data-theme="light"] .print-prompt-footer {
+        border-top: 1px solid #e5e7eb;
+      }
+
+      html[data-theme="light"] .print-prompt-buttons .btn-primary {
+        background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%);
+        color: #ffffff;
+      }
+
+      html[data-theme="light"] .print-prompt-buttons .btn-secondary {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: #ffffff;
+      }
+
+      html[data-theme="light"] .print-prompt-footer .btn-ghost {
+        background: #f3f4f6;
+        border: 1px solid #d1d5db;
+        color: #4b5563;
+      }
+
+      html[data-theme="light"] .print-prompt-footer .btn-ghost:hover {
+        background: #e5e7eb;
+      }
+    </style>
+
+    <!-- Shared Scripts (defer ensures DOM is fully parsed before execution) -->
+    <script src="shared.js" defer></script>
+    <script src="utils.js" defer></script>
+    <!-- JsBarcode library (required for barcode generation) -->
+    <script src="jsbarcode.min.js"></script>
+    <script src="barcode-service.js"></script>
+    <!-- Backward compatibility -->
+    <script src="barcode-generator.js" defer></script>
+    <script src="repairs.js" defer></script>
+    <script>
+      // 🔧 FIX: ضمان عمل الـ scroll في الـ main
+      document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(function() {
+          var mainEl = document.querySelector('.main');
+          var hdr = document.querySelector('.hdr');
+          var isSpa = window.isSpaMode || new URLSearchParams(location.search).get('spa') === '1';
+
+          if (isSpa) {
+            document.body.classList.add('spa-active');
+          }
+
+          if (mainEl) {
+            // Position absolute approach - لا يتأثر بأي height chain
+            mainEl.style.setProperty('position', 'absolute', 'important');
+            mainEl.style.setProperty('left', '0', 'important');
+            mainEl.style.setProperty('right', '0', 'important');
+            mainEl.style.setProperty('bottom', '0', 'important');
+            mainEl.style.setProperty('overflow-y', 'auto', 'important');
+            // في SPA الـ header مخفي
+            var topOffset = (isSpa || !hdr || hdr.offsetHeight === 0) ? '0' : (hdr.offsetHeight + 'px');
+            mainEl.style.setProperty('top', topOffset, 'important');
+            // Clear any height that spa-mode.js may have set
+            mainEl.style.setProperty('height', 'auto', 'important');
+            mainEl.style.setProperty('max-height', 'none', 'important');
+
+            void mainEl.offsetHeight;
+            console.log('[REPAIRS] Scroll fix: top=' + topOffset + ', clientHeight=' + mainEl.clientHeight + ', scrollHeight=' + mainEl.scrollHeight + ', isSpa=' + isSpa);
+          }
+        }, 150);
+      });
+    </script>
+    <style>
+      @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+      /* Day closing locked indicator */
+      .day-locked-indicator {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 8px;
+        background: rgba(239,68,68,0.1);
+        border: 1px solid var(--danger);
+        border-radius: 4px;
+        font-size: 11px;
+        color: var(--danger);
+      }
+      /* Skeleton loading rows */
+      .skeleton-row td {
+        background: linear-gradient(90deg, var(--surface) 25%, var(--surface-hover) 50%, var(--surface) 75%);
+        background-size: 200% 100%;
+        animation: skeleton-loading 1.5s infinite;
+      }
+      @keyframes skeleton-loading {
+        0% { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+      }
+      .skeleton-cell {
+        height: 16px;
+        border-radius: 4px;
+        background: var(--surface-hover);
+      }
+    </style>
+
+  <!-- Adjustment Reason Modal (Phase 4) -->
+  <div class="repairs-modal" id="adjustmentReasonModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-title">
+          <span>✏️</span>
+          <span>إنشاء تذكرة تعديل</span>
+        </div>
+        <button class="modal-close" id="adjustmentReasonModalClose">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">سبب التعديل (إلزامي - 20 حرف على الأقل)</label>
+          <textarea 
+            class="form-control" 
+            id="adjustmentReason" 
+            placeholder="أدخل سبب التعديل (20 حرف على الأقل)..."
+            rows="4"
+            style="resize: vertical; min-height: 100px;"
+          ></textarea>
+          <div id="adjustmentReasonError" style="margin-top: 8px; font-size: 12px; color: var(--danger); display: none;"></div>
+        </div>
+        <div class="form-group" style="margin-bottom: 0;">
+          <button type="button" class="btn btn-primary" id="btnConfirmAdjustment">
+            <span>✅</span>
+            <span>إنشاء التعديل</span>
+          </button>
+          <button type="button" class="btn btn-secondary" id="btnCancelAdjustment" style="margin-right: 8px;">
+            <span>❌</span>
+            <span>إلغاء</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       ⌨️ SHORTCUTS MODAL - اختصارات لوحة المفاتيح
+       ═══════════════════════════════════════ -->
+  <div id="shortcutsModal" class="repairs-modal">
+    <div class="modal-content" style="max-width:520px;">
+      <div class="modal-header">
+        <h3 class="arabic-text">اختصارات لوحة المفاتيح</h3>
+        <button class="modal-close" id="shortcutsModalClose">✕</button>
+      </div>
+      <div class="modal-body" style="padding:14px;">
+        <div class="muted" style="margin-bottom:10px;">هدفنا تسريع التشغيل اليومي بدون ما نغيّر منطق النظام.</div>
+        <ul style="line-height:2;">
+          <li><strong>Ctrl + K</strong> — بحث سريع</li>
+          <li><strong>↑ / ↓</strong> — تنقل بين التذاكر</li>
+          <li><strong>Enter</strong> — فتح التذكرة المحددة</li>
+          <li><strong>Esc</strong> — مسح البحث (أثناء الوقوف عليه)</li>
+          <li><strong>Ctrl + N</strong> — استلام جديد</li>
+          <li><strong>Ctrl + R</strong> — تحديث القائمة</li>
+          <li><strong>?</strong> — هذه النافذة</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🔄 Real-time Sync Client -->
+  <script src="sync-client.js"></script>
+  </body>
+</html>

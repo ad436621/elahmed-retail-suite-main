@@ -11,6 +11,7 @@ export interface BackupSettings {
 const BACKUP_SETTINGS_KEY = 'gx_backup_settings';
 
 import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
+import { STORAGE_KEYS } from '@/config';
 
 export function getBackupSettings(): BackupSettings {
     return getStorageItem<BackupSettings>(BACKUP_SETTINGS_KEY, { autoBackupEnabled: false, intervalHours: 12, lastBackupDate: null });

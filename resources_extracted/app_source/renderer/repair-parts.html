@@ -1,0 +1,1722 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>مخزن قطع الغيار • ElOs Accounting</title>
+    <script>
+      // ⚡ تطبيق فوري للثيم - يمنع الوميض
+      (function(){var p=new URLSearchParams(location.search),t=p.get('theme')||localStorage.getItem('elos_theme')||localStorage.getItem('elos-theme')||'dark',h=document.documentElement;h.setAttribute('data-theme',t==='light'?'light':'dark');})();
+    </script>
+    <!-- 🔐 SESSION INJECTION - MUST BE FIRST! -->
+    <script src="session-inject.js"></script>
+    <!-- 📱 SPA Mode Detection -->
+    <script src="spa-mode.js"></script>
+    <!-- 🔊 Shared Sound & Toast System -->
+    <script src="shared.js"></script>
+    <!-- 🌙 Theme Sync -->
+    <script src="theme-sync.js"></script>
+    <!-- 🔤 Font Scale Manager -->
+    <script src="js/font-scale-manager.js"></script>
+    <!-- 🎨 Design System Tokens (theme colors - MUST BE FIRST) -->
+    <link rel="stylesheet" href="styles/tokens.css">
+    <link rel="stylesheet" href="styles/tokens-alias.css">
+    <!-- 🎨 Design System (component styles) -->
+    <link rel="stylesheet" href="styles/design-system.css">
+    <!-- 🎨 Theme Governance Layer (load LAST to override legacy styles) -->
+    <link rel="stylesheet" href="styles/theme-fixes.css">
+    <!-- 📏 Font Sizes - تحسين أحجام الخطوط -->
+    <link rel="stylesheet" href="styles/font-sizes.css">
+
+    <style>
+      /* ═══════════════════════════════════════
+         RESET & BASE
+         ═══════════════════════════════════════ */
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        font-family: system-ui, "Cairo", "Segoe UI", sans-serif;
+        overflow: hidden;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* ═══════════════════════════════════════
+         📱 HEADER
+         ═══════════════════════════════════════ */
+      .header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 10px 24px;
+        background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+        border-bottom: 1px solid var(--border);
+        box-shadow: var(--shadow);
+        flex-shrink: 0;
+        height: 65px;
+      }
+
+      .page-title {
+        font-weight: 900;
+        font-size: 26px;
+        background: linear-gradient(135deg, var(--accent) 0%, var(--purple) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 0 auto;
+      }
+
+      .spacer {
+        flex: 1;
+      }
+
+      /* ═══════════════════════════════════════
+         📊 MAIN CONTENT
+         ═══════════════════════════════════════ */
+      .main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        padding: 20px 24px;
+        overflow-y: auto;
+        overflow-x: hidden;
+        min-height: 0;
+      }
+
+      /* ═══════════════════════════════════════
+         📊 KPI CARDS (مثل مخزن الأجهزة)
+         ═══════════════════════════════════════ */
+      .kpi-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 14px;
+        margin-bottom: 16px;
+      }
+      .kpi-card {
+        background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 18px;
+        text-align: center;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      }
+      .kpi-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(59,130,246,0.2);
+        border-color: var(--accent);
+      }
+      .kpi-card:nth-child(1) { border-top: 3px solid var(--accent); }
+      .kpi-card:nth-child(2) { border-top: 3px solid var(--warning, #f59e0b); }
+      .kpi-card:nth-child(3) { border-top: 3px solid var(--success); }
+      .kpi-card:nth-child(4) { border-top: 3px solid var(--purple); }
+      .kpi-label {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-bottom: 10px;
+        display: block;
+        font-weight: 600;
+      }
+      .kpi-value {
+        font-size: 24px;
+        font-weight: 900;
+        line-height: 1;
+      }
+      .kpi-card:nth-child(1) .kpi-value { color: var(--accent); }
+      .kpi-card:nth-child(2) .kpi-value { color: var(--warning, #f59e0b); }
+      .kpi-card:nth-child(3) .kpi-value { color: var(--success); }
+      .kpi-card:nth-child(4) .kpi-value { color: var(--purple); }
+
+      /* ═══════════════════════════════════════
+         📋 TABLE SECTION
+         ═══════════════════════════════════════ */
+      .table-section {
+        flex: 0 0 auto;
+        display: flex;
+        flex-direction: column;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        overflow: visible;
+        min-height: 0;
+      }
+
+      .section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border);
+        background: var(--bg-tertiary);
+      }
+
+      .section-title {
+        font-size: 16px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .section-actions {
+        display: flex;
+        gap: 8px;
+      }
+
+      .search-box {
+        display: flex;
+        gap: 8px;
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border);
+        background: var(--bg-tertiary);
+      }
+
+      .search-input {
+        flex: 1;
+        padding: 10px 16px;
+        background: var(--bg-primary);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--text-primary);
+        font-size: 14px;
+        transition: all 0.2s ease;
+      }
+
+      .search-input:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+      }
+
+      .table-container {
+        overflow-x: auto;
+        overflow-y: visible;
+      }
+
+      .table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+
+      .table thead {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: var(--bg-tertiary);
+      }
+
+      .table th {
+        padding: 12px 16px;
+        text-align: right;
+        font-weight: 700;
+        font-size: 12px;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 2px solid var(--border);
+        white-space: nowrap;
+      }
+
+      .table tbody tr {
+        border-bottom: 1px solid var(--border);
+        transition: all 0.15s ease;
+      }
+
+      .table tbody tr:hover {
+        background: rgba(59,130,246,0.05);
+      }
+
+      .table td {
+        padding: 12px 16px;
+        color: var(--text-primary);
+      }
+
+      /* ═══════════════════════════════════════
+         🏷️ BADGES & STATUS
+         ═══════════════════════════════════════ */
+      .badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 700;
+        white-space: nowrap;
+      }
+
+      .badge-low-stock {
+        background: rgba(239,68,68,0.15);
+        color: var(--danger);
+        border: 1px solid rgba(239,68,68,0.3);
+      }
+
+      .badge-in-stock {
+        background: rgba(16,185,129,0.15);
+        color: var(--success);
+        border: 1px solid rgba(16,185,129,0.3);
+      }
+
+      .badge-out-of-stock {
+        background: rgba(239,68,68,0.15);
+        color: var(--danger);
+        border: 1px solid rgba(239,68,68,0.3);
+      }
+
+      /* ═══════════════════════════════════════
+         🔘 BUTTONS
+         ═══════════════════════════════════════ */
+      .btn {
+        padding: 10px 16px;
+        border: none;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        text-decoration: none;
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+        color: white;
+      }
+
+      .btn-primary:hover {
+        box-shadow: 0 4px 16px rgba(59,130,246,0.4);
+        transform: translateY(-1px);
+      }
+
+      .btn-sm {
+        padding: 6px 12px;
+        font-size: 12px;
+      }
+
+      .btn-secondary {
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        color: var(--text-primary);
+      }
+
+      .btn-secondary:hover {
+        background: var(--bg-primary);
+      }
+
+      .btn-success {
+        background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+        color: white;
+      }
+
+      .btn-success:hover {
+        box-shadow: 0 4px 16px rgba(16,185,129,0.4);
+      }
+
+      .btn-warning {
+        background: linear-gradient(135deg, var(--warning) 0%, #d97706 100%);
+        color: white;
+      }
+
+      .btn-warning:hover {
+        box-shadow: 0 4px 16px rgba(245,158,11,0.4);
+      }
+
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .btn-group {
+        display: flex;
+        gap: 6px;
+      }
+
+      /* زر طباعة الباركود — واضح في الغامق ومميز في الفاتح */
+      .btn-print-barcode {
+        background: linear-gradient(135deg, #06b6d4 0%, #0891b2 50%, #0e7490 100%) !important;
+        color: #fff !important;
+        border: 1px solid rgba(6, 182, 212, 0.6) !important;
+        box-shadow: 0 2px 8px rgba(6, 182, 212, 0.35);
+      }
+
+      .btn-print-barcode:hover:not(:disabled) {
+        background: linear-gradient(135deg, #22d3ee 0%, #06b6d4 50%, #0891b2 100%) !important;
+        box-shadow: 0 4px 14px rgba(6, 182, 212, 0.5);
+        border-color: #22d3ee !important;
+      }
+
+      .btn-print-barcode:disabled {
+        opacity: 0.6;
+      }
+
+      html[data-theme="light"] .btn-print-barcode {
+        background: linear-gradient(135deg, #0891b2 0%, #0e7490 100%) !important;
+        color: #fff !important;
+        border: 1px solid #0e7490 !important;
+        box-shadow: 0 2px 10px rgba(8, 145, 178, 0.4);
+      }
+
+      html[data-theme="light"] .btn-print-barcode:hover:not(:disabled) {
+        background: linear-gradient(135deg, #06b6d4 0%, #0891b2 100%) !important;
+        box-shadow: 0 4px 16px rgba(8, 145, 178, 0.5);
+      }
+
+      /* ═══════════════════════════════════════
+         🪟 MODAL
+         ═══════════════════════════════════════ */
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.7);
+        z-index: 10000;
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+
+      .modal-overlay.active {
+        display: flex;
+      }
+
+      .modal {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        width: 100%;
+        max-width: 600px;
+        max-height: 90vh;
+        display: flex;
+        flex-direction: column;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+      }
+
+      .modal-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 20px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .modal-title {
+        font-size: 18px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .modal-close {
+        background: none;
+        border: none;
+        font-size: 24px;
+        color: var(--text-secondary);
+        cursor: pointer;
+        padding: 0;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+      }
+
+      .modal-close:hover {
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+      }
+
+      .modal-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+      }
+
+      .modal-footer {
+        display: flex;
+        gap: 12px;
+        justify-content: flex-end;
+        padding: 20px;
+        border-top: 1px solid var(--border);
+      }
+
+      /* ═══════════════════════════════════════
+         📝 FORM CONTROLS
+         ═══════════════════════════════════════ */
+      .form-group {
+        margin-bottom: 16px;
+      }
+
+      .form-label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 6px;
+      }
+
+      .form-label .required {
+        color: var(--danger);
+      }
+
+      .form-input,
+      .form-select,
+      .form-textarea {
+        width: 100%;
+        padding: 10px 14px;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--text-primary);
+        font-size: 14px;
+        font-family: inherit;
+        transition: all 0.2s ease;
+      }
+
+      /* تحسين وضوح الحقول في الوضع الداكن - دائماً مرئية */
+      [data-theme="dark"] .form-input,
+      [data-theme="dark"] .form-select,
+      [data-theme="dark"] .form-textarea {
+        background: #2a3441;
+        border: 2px solid #4a5568;
+      }
+
+      .form-input:focus,
+      .form-select:focus,
+      .form-textarea:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(59,130,246,0.3);
+        background: #323d4d;
+      }
+
+      /* Placeholder أوضح */
+      [data-theme="dark"] .form-input::placeholder,
+      [data-theme="dark"] .form-textarea::placeholder {
+        color: #8896a6;
+      }
+
+      /* إخفاء أسهم الأرقام (spinners) */
+      .form-input[type="number"]::-webkit-outer-spin-button,
+      .form-input[type="number"]::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+      }
+      .form-input[type="number"] {
+        -moz-appearance: textfield;
+        appearance: textfield;
+      }
+
+      .form-textarea {
+        resize: vertical;
+        min-height: 80px;
+      }
+
+      .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+
+      /* ═══════════════════════════════════════
+         📭 EMPTY STATE
+         ═══════════════════════════════════════ */
+      .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: var(--text-secondary);
+      }
+
+      .empty-state .icon {
+        font-size: 48px;
+        display: block;
+        margin-bottom: 16px;
+      }
+
+      .empty-state .title {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+      }
+
+      .empty-state .subtitle {
+        font-size: 13px;
+        color: var(--text-secondary);
+      }
+
+      /* ═══════════════════════════════════════
+         🔢 NUMBERS
+         ═══════════════════════════════════════ */
+      .number {
+        font-family: 'Courier New', monospace;
+        font-weight: 600;
+      }
+
+      /* ═══════════════════════════════════════
+         📄 PAGINATION
+         ═══════════════════════════════════════ */
+      .pagination-controls {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 16px;
+        background: var(--bg-secondary);
+        border-radius: 0 0 12px 12px;
+        border-top: 1px solid var(--border);
+        margin-top: -1px;
+      }
+      .pagination-info {
+        font-size: 13px;
+        color: var(--text-secondary);
+        font-weight: 500;
+      }
+      .pagination-buttons {
+        display: flex;
+        gap: 4px;
+        align-items: center;
+        direction: ltr;
+      }
+      .pagination-btn {
+        min-width: 36px;
+        height: 36px;
+        border: 1px solid var(--border);
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 600;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .pagination-btn:hover:not(.disabled):not(.active) {
+        background: var(--accent);
+        color: white;
+        border-color: var(--accent);
+      }
+      .pagination-btn.active {
+        background: var(--accent);
+        color: white;
+        border-color: var(--accent);
+      }
+      .pagination-btn.disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+      .pagination-dots {
+        color: var(--text-secondary);
+        font-size: 14px;
+        padding: 0 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Header -->
+    <header class="header">
+      <div class="spacer"></div>
+      <h1 class="page-title">
+        <span>🔧</span>
+        <span>مخزن قطع الغيار</span>
+      </h1>
+      <div class="spacer"></div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+      <!-- KPI Summary (مثل مخزن الأجهزة: قيمة البيع المتوقعة، التكلفة، القطع المعروضة) -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <span class="kpi-label">📊 القطع المعروضة</span>
+          <div class="kpi-value" id="kpiCount">—</div>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">📦 إجمالي القطع</span>
+          <div class="kpi-value" id="kpiTotalQty">—</div>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">💰 قيمة التكلفة</span>
+          <div class="kpi-value" id="kpiCost">—</div>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">💵 قيمة البيع المتوقعة</span>
+          <div class="kpi-value" id="kpiSale">—</div>
+        </div>
+      </div>
+
+      <!-- Table Section -->
+      <div class="table-section">
+        <div class="section-header">
+          <div class="section-title">
+            <span>📋</span>
+            <span>قائمة قطع الغيار</span>
+          </div>
+          <div class="section-actions">
+            <!-- Selection Actions - يظهر عند التحديد -->
+            <div class="selection-actions" id="selectionActions">
+              <span class="selection-count" id="selectionCount">تم تحديد: 0</span>
+              <button class="btn btn-secondary btn-sm" id="btnClearSelection" title="إلغاء التحديد">
+                <span>❌</span>
+                <span>إلغاء</span>
+              </button>
+              <button class="btn btn-sm" id="btnBulkTransfer" disabled title="تحويل المحدد" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white;">
+                <span>📦</span>
+                <span>تحويل المحدد</span>
+              </button>
+              <button class="btn btn-sm" id="btnAveragePrices" disabled title="توحيد الأسعار" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white;">
+                <span>📊</span>
+                <span>توحيد الأسعار</span>
+              </button>
+              <button class="btn btn-sm btn-print-barcode" id="btnPrintBarcodesSelection" disabled title="طباعة باركود للقطع المحددة (حسب الكمية في المخزن)">
+                <span>🖨️</span>
+                <span>طباعة باركود</span>
+              </button>
+            </div>
+            <button class="btn btn-primary" id="btnAddPart">
+              <span>➕</span>
+              <span>إضافة قطعة</span>
+            </button>
+            <button class="btn" onclick="exportRepairPartsToExcel()" style="background: linear-gradient(135deg, #10b981, #059669); color: white; border: none;">
+              <span>📊</span>
+              <span>تصدير Excel</span>
+            </button>
+            <button class="btn" onclick="openRepairPartsImportModal()" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; border: none;">
+              <span>📥</span>
+              <span>استيراد Excel</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="search-box">
+          <input type="text" class="search-input" id="searchInput" placeholder="🔍 بحث بالاسم، الفئة، أو SKU...">
+        </div>
+
+        <div class="table-container">
+          <table class="table" id="partsTable">
+            <thead>
+              <tr>
+                <th class="th-checkbox">
+                  <input type="checkbox" id="selectAll" class="row-checkbox" title="تحديد الكل">
+                </th>
+                <th data-sort="name" onclick="sortTable('name')" style="cursor:pointer;">الاسم<span class="sort-icon" style="font-size:11px;"> ⇅</span></th>
+                <th data-sort="category" onclick="sortTable('category')" style="cursor:pointer;">الفئة<span class="sort-icon" style="font-size:11px;"> ⇅</span></th>
+                <th data-sort="sku" onclick="sortTable('sku')" style="cursor:pointer;">SKU<span class="sort-icon" style="font-size:11px;"> ⇅</span></th>
+                <th data-sort="unit_cost" onclick="sortTable('unit_cost')" style="cursor:pointer;">سعر التكلفة<span class="sort-icon" style="font-size:11px;"> ⇅</span></th>
+                <th data-sort="sell_price" onclick="sortTable('sell_price')" style="cursor:pointer;">سعر البيع<span class="sort-icon" style="font-size:11px;"> ⇅</span></th>
+                <th data-sort="qty" onclick="sortTable('qty')" style="cursor:pointer;">الكمية<span class="sort-icon" style="font-size:11px;"> ⇅</span></th>
+                <th data-sort="min_qty" onclick="sortTable('min_qty')" style="cursor:pointer;">الحد الأدنى<span class="sort-icon" style="font-size:11px;"> ⇅</span></th>
+                <th>الحالة</th>
+                <th>الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="partsTableBody">
+              <!-- Parts will be loaded here -->
+            </tbody>
+          </table>
+
+          <div class="empty-state" id="emptyState" style="display: none;">
+            <span class="icon">📦</span>
+            <div class="title">لا توجد قطع غيار</div>
+            <div class="subtitle">اضغط على "إضافة قطعة" لإنشاء قطعة جديدة</div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- ═══════════════════════════════════════
+         ➕ ADD/EDIT PART MODAL
+         ═══════════════════════════════════════ -->
+    <div class="modal-overlay" id="partModal">
+      <div class="modal">
+        <div class="modal-header">
+          <h3 class="modal-title" id="partModalTitle">
+            <span>➕</span>
+            <span>إضافة قطعة جديدة</span>
+          </h3>
+          <button class="modal-close" id="partModalClose">✕</button>
+        </div>
+        <div class="modal-body">
+          <form id="partForm">
+            <input type="hidden" id="partId">
+            
+            <div class="form-group">
+              <label class="form-label">اسم القطعة <span class="required">*</span></label>
+              <input type="text" class="form-input" id="partName" required placeholder="أدخل اسم القطعة...">
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">الفئة</label>
+                <input type="text" class="form-input" id="partCategory" placeholder="مثال: بطارية، شاشة، كاميرا...">
+              </div>
+              <div class="form-group">
+                <label class="form-label">SKU</label>
+                <input type="text" class="form-input" id="partSku" placeholder="رمز الصنف">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">📊 الباركود</label>
+              <div style="display: flex; gap: 12px; margin-bottom: 8px;">
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                  <input type="radio" name="partBarcodeType" value="auto" checked onchange="togglePartBarcodeField()">
+                  <span style="font-size: 13px;">🔄 تلقائي</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                  <input type="radio" name="partBarcodeType" value="manual" onchange="togglePartBarcodeField()">
+                  <span style="font-size: 13px;">📷 يدوي/سكان</span>
+                </label>
+              </div>
+              <div id="partBarcodeManualField" style="display: none;">
+                <input type="text" class="form-input" id="partBarcode" placeholder="امسح الباركود أو أدخله يدوياً...">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label">سعر التكلفة (ج.م) <span class="required">*</span></label>
+                <input type="number" class="form-input" id="partUnitCost" required min="0" step="0.01" placeholder="0.00">
+              </div>
+              <div class="form-group">
+                <label class="form-label">سعر البيع (ج.م)</label>
+                <input type="number" class="form-input" id="partSellPrice" min="0" step="0.01" placeholder="0.00" value="0">
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group" id="initialQtyGroup">
+                <label class="form-label">الكمية الأولية</label>
+                <input type="number" class="form-input" id="partInitialQty" min="0" step="0.01" placeholder="0.00" value="0">
+              </div>
+              <div class="form-group">
+                <!-- Empty space to maintain grid layout -->
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">الحد الأدنى للمخزون</label>
+              <input type="number" class="form-input" id="partMinQty" min="0" step="0.01" placeholder="0.00" value="0">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">ملاحظات</label>
+              <textarea class="form-textarea" id="partNotes" placeholder="ملاحظات إضافية..."></textarea>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btnCancelPart">إلغاء</button>
+          <button type="submit" form="partForm" class="btn btn-success" id="btnSavePart">
+            <span>💾</span>
+            <span>حفظ</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         🔢 ADJUST STOCK MODAL
+         ═══════════════════════════════════════ -->
+    <div class="modal-overlay" id="adjustModal">
+      <div class="modal">
+        <div class="modal-header">
+          <h3 class="modal-title">
+            <span>🔢</span>
+            <span>تعديل الرصيد</span>
+          </h3>
+          <button class="modal-close" id="adjustModalClose">✕</button>
+        </div>
+        <div class="modal-body">
+          <form id="adjustForm">
+            <input type="hidden" id="adjustPartId">
+            
+            <div class="form-group">
+              <label class="form-label">اسم القطعة</label>
+              <input type="text" class="form-input" id="adjustPartName" readonly style="background: var(--bg-tertiary);">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">الكمية الحالية</label>
+              <input type="text" class="form-input" id="adjustCurrentQty" readonly style="background: var(--bg-tertiary); font-weight: 700; font-size: 16px;">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">التغيير (يمكن أن يكون موجب أو سالب) <span class="required">*</span></label>
+              <input type="number" class="form-input" id="adjustDeltaQty" required step="0.01" placeholder="مثال: +10 أو -5">
+              <small style="color: var(--text-secondary); font-size: 12px; margin-top: 4px; display: block;">
+                أدخل قيمة موجبة للإضافة أو سالبة للنقصان
+              </small>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">الكمية بعد التعديل</label>
+              <input type="text" class="form-input" id="adjustNewQty" readonly style="background: var(--bg-tertiary); font-weight: 700; font-size: 16px; color: var(--accent);">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">ملاحظة <span class="required">*</span></label>
+              <textarea class="form-textarea" id="adjustNote" required placeholder="سبب التعديل..."></textarea>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="btnCancelAdjust">إلغاء</button>
+          <button type="submit" form="adjustForm" class="btn btn-warning" id="btnSaveAdjust">
+            <span>✅</span>
+            <span>تأكيد التعديل</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         📥 IMPORT MODAL
+         ═══════════════════════════════════════ -->
+    <div class="modal-overlay" id="repairPartsImportModal" style="display: none;">
+      <div class="modal" style="max-width: 600px;">
+        <div class="modal-header">
+          <h3 class="modal-title">
+            <span>📥</span>
+            <span>استيراد قطع غيار من Excel</span>
+          </h3>
+          <button class="modal-close" onclick="closeRepairPartsImportModal()">✕</button>
+        </div>
+        <div class="modal-body" style="padding: 24px;">
+          <div id="repairPartsDropZone" style="border: 2px dashed var(--border); border-radius: 12px; padding: 40px; text-align: center; cursor: pointer; transition: all 0.3s ease; background: var(--bg-tertiary);" onclick="document.getElementById('repairPartsFileInput').click()">
+            <div style="font-size: 48px; margin-bottom: 16px;">📂</div>
+            <div style="font-size: 16px; font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">اسحب ملف CSV هنا أو اضغط للاختيار</div>
+            <div style="font-size: 13px; color: var(--text-secondary);">يدعم ملفات CSV فقط</div>
+            <input type="file" id="repairPartsFileInput" accept=".csv" style="display: none;" onchange="handleRepairPartsFileSelect(event)">
+          </div>
+          <div id="repairPartsSelectedFileInfo" style="display: none; margin-top: 16px; padding: 12px; background: rgba(59,130,246,0.1); border-radius: 8px; border: 1px solid rgba(59,130,246,0.2);">
+            <span style="color: var(--accent); font-weight: 600;">📄 الملف المحدد: </span>
+            <span id="repairPartsSelectedFileName" style="color: var(--text-primary);"></span>
+          </div>
+          <!-- شريط التقدم -->
+          <div id="repairPartsImportProgress" style="display: none; margin-top: 16px;">
+            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+              <span id="repairPartsProgressLabel" style="font-size: 13px; font-weight: 600; color: var(--text-primary);">جاري الاستيراد...</span>
+              <span id="repairPartsProgressPercent" style="font-size: 13px; font-weight: 600; color: var(--accent);">0%</span>
+            </div>
+            <div style="width: 100%; height: 8px; background: var(--bg-tertiary); border-radius: 4px; overflow: hidden;">
+              <div id="repairPartsProgressBar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--accent), #10b981); border-radius: 4px; transition: width 0.3s ease;"></div>
+            </div>
+            <div id="repairPartsProgressDetails" style="margin-top: 6px; font-size: 12px; color: var(--text-secondary);"></div>
+          </div>
+          <div style="margin-top: 20px; padding: 16px; background: var(--bg-secondary); border-radius: 8px;">
+            <div style="font-weight: 600; margin-bottom: 8px; color: var(--text-primary);">💡 تعليمات:</div>
+            <ul style="color: var(--text-secondary); font-size: 13px; padding-right: 20px; margin: 0;">
+              <li>قم بتحميل القالب الجاهز وملئه بالبيانات</li>
+              <li>الأعمدة المطلوبة: Part Name, Category, SKU, Purchase Price, Sell Price, Quantity, Min Quantity, Notes</li>
+              <li>تأكد من حفظ الملف بصيغة CSV</li>
+            </ul>
+            <button onclick="downloadRepairPartsTemplate()" style="margin-top: 12px; padding: 8px 16px; background: var(--accent); color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;">
+              📥 تحميل القالب
+            </button>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeRepairPartsImportModal()">إلغاء</button>
+          <button type="button" class="btn btn-primary" id="executeRepairPartsImportBtn" onclick="executeRepairPartsImport()" disabled style="opacity: 0.5;">
+            استيراد البيانات
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         📊 EXCEL EXPORT/IMPORT FUNCTIONS
+         ═══════════════════════════════════════ -->
+    <script>
+      // متغير لتخزين بيانات الملف المحدد
+      let repairPartsImportData = [];
+
+      // تصدير قطع الغيار إلى Excel
+      async function exportRepairPartsToExcel() {
+        try {
+          showToast('جاري تصدير البيانات...', 'info');
+
+          // الحصول على warehouse_id من URL أو localStorage
+          const urlParams = new URLSearchParams(window.location.search);
+          const warehouseId = urlParams.get('warehouse_id') || localStorage.getItem('currentRepairPartsWarehouseId');
+
+          let url = 'elos-db://repair-parts';
+          if (warehouseId) {
+            url += `?warehouse_id=${warehouseId}`;
+          }
+
+          const res = await fetch(url);
+          if (!res.ok) throw new Error('فشل في تحميل البيانات');
+          const parts = await res.json();
+
+          if (!parts || parts.length === 0) {
+            showToast('لا توجد بيانات للتصدير', 'warning');
+            return;
+          }
+
+          // إنشاء محتوى CSV (Barcode = نحافظ عليه عند الاستيراد)
+          const headers = ['Part Name', 'Category', 'SKU', 'Barcode', 'Purchase Price', 'Sell Price', 'Quantity', 'Min Quantity', 'Notes'];
+          let csvContent = '\uFEFF'; // BOM for UTF-8
+          csvContent += headers.join(',') + '\n';
+
+          parts.forEach(part => {
+            const barcode = part.barcode || '';
+            const row = [
+              `"${(part.name || '').replace(/"/g, '""')}"`,
+              `"${(part.category || '').replace(/"/g, '""')}"`,
+              `"${(part.sku || '').replace(/"/g, '""')}"`,
+              `"${String(barcode).replace(/"/g, '""')}"`,
+              part.cost_price || part.purchase_price || part.unit_cost || 0,
+              part.sale_price || part.sell_price || 0,
+              part.quantity || part.qty || 0,
+              part.min_quantity || part.min_qty || 0,
+              `"${(part.notes || '').replace(/"/g, '""')}"`
+            ];
+            csvContent += row.join(',') + '\n';
+          });
+
+          // تحميل الملف
+          const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+          const url2 = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url2;
+          const date = new Date().toISOString().split('T')[0];
+          link.download = `repair_parts_export_${date}.csv`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url2);
+
+          showToast(`تم تصدير ${parts.length} قطعة بنجاح`, 'success');
+        } catch (err) {
+          console.error('Export error:', err);
+          showToast('خطأ في تصدير البيانات: ' + err.message, 'error');
+        }
+      }
+
+      // فتح modal الاستيراد
+      function openRepairPartsImportModal() {
+        document.getElementById('repairPartsImportModal').style.display = 'flex';
+        repairPartsImportData = [];
+        document.getElementById('repairPartsFileInput').value = '';
+        document.getElementById('repairPartsSelectedFileInfo').style.display = 'none';
+        document.getElementById('repairPartsImportProgress').style.display = 'none';
+        document.getElementById('executeRepairPartsImportBtn').disabled = true;
+        document.getElementById('executeRepairPartsImportBtn').style.opacity = '0.5';
+        document.getElementById('executeRepairPartsImportBtn').textContent = 'استيراد البيانات';
+      }
+
+      // إغلاق modal الاستيراد
+      function closeRepairPartsImportModal() {
+        document.getElementById('repairPartsImportModal').style.display = 'none';
+        repairPartsImportData = [];
+      }
+
+      // معالجة اختيار الملف
+      function handleRepairPartsFileSelect(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        if (!file.name.endsWith('.csv')) {
+          showToast('يرجى اختيار ملف CSV', 'warning');
+          return;
+        }
+
+        document.getElementById('repairPartsSelectedFileName').textContent = file.name;
+        document.getElementById('repairPartsSelectedFileInfo').style.display = 'block';
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const content = e.target.result;
+          repairPartsImportData = parseRepairPartsCSV(content);
+
+          if (repairPartsImportData.length > 0) {
+            document.getElementById('executeRepairPartsImportBtn').disabled = false;
+            document.getElementById('executeRepairPartsImportBtn').style.opacity = '1';
+            showToast(`تم قراءة ${repairPartsImportData.length} قطعة من الملف`, 'success');
+          } else {
+            showToast('الملف فارغ أو غير صالح', 'warning');
+          }
+        };
+        reader.readAsText(file, 'UTF-8');
+      }
+
+      // تحليل ملف CSV
+      function parseRepairPartsCSV(content) {
+        const lines = content.split('\n').filter(line => line.trim());
+        if (lines.length < 2) return [];
+
+        const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, '').toLowerCase());
+        const data = [];
+
+        for (let i = 1; i < lines.length; i++) {
+          const values = [];
+          let current = '';
+          let inQuotes = false;
+
+          for (let char of lines[i]) {
+            if (char === '"') {
+              inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+              values.push(current.trim());
+              current = '';
+            } else {
+              current += char;
+            }
+          }
+          values.push(current.trim());
+
+          if (values.length >= 2) {
+            const item = {};
+            headers.forEach((header, index) => {
+              item[header] = values[index] || '';
+            });
+            data.push(item);
+          }
+        }
+
+        return data;
+      }
+
+      // تحميل قالب قطع الغيار
+      function downloadRepairPartsTemplate() {
+        const headers = ['Part Name', 'Category', 'SKU', 'Barcode', 'Purchase Price', 'Sell Price', 'Quantity', 'Min Quantity', 'Notes'];
+        let csvContent = '\uFEFF';
+        csvContent += headers.join(',') + '\n';
+        csvContent += 'iPhone 14 Pro Screen,Screens,SCR-IP14P,90001,1500,2500,10,3,Original\n';
+        csvContent += 'Samsung S23 Battery,Batteries,BAT-SS23,90002,300,500,20,5,\n';
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'repair_parts_template.csv';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        showToast('تم تحميل القالب', 'success');
+      }
+
+      // تنفيذ الاستيراد (Bulk API - دفعة واحدة)
+      async function executeRepairPartsImport() {
+        if (repairPartsImportData.length === 0) {
+          showToast('لا توجد بيانات للاستيراد', 'warning');
+          return;
+        }
+
+        const btn = document.getElementById('executeRepairPartsImportBtn');
+        const progressDiv = document.getElementById('repairPartsImportProgress');
+        const progressBar = document.getElementById('repairPartsProgressBar');
+        const progressPercent = document.getElementById('repairPartsProgressPercent');
+        const progressLabel = document.getElementById('repairPartsProgressLabel');
+        const progressDetails = document.getElementById('repairPartsProgressDetails');
+
+        btn.disabled = true;
+        btn.textContent = 'جاري الاستيراد...';
+        progressDiv.style.display = 'block';
+        progressBar.style.width = '0%';
+        progressPercent.textContent = '0%';
+        progressLabel.textContent = 'جاري تجهيز البيانات...';
+        progressDetails.textContent = `إجمالي: ${repairPartsImportData.length} صنف`;
+
+        // الحصول على warehouse_id
+        const urlParams = new URLSearchParams(window.location.search);
+        const warehouseId = urlParams.get('warehouse_id') || localStorage.getItem('currentRepairPartsWarehouseId');
+
+        // تجهيز كل الأصناف لإرسالها دفعة واحدة
+        const items = repairPartsImportData.map(item => {
+          const part = {
+            name: item['part name'] || item.name || '',
+            category: item.category || '',
+            sku: item.sku || '',
+            unit_cost: parseFloat(item['purchase price'] || item.unit_cost || item.cost_price || 0),
+            sell_price: parseFloat(item['sell price'] || item.sell_price || item.sale_price || 0),
+            qty: parseInt(item.quantity || item.qty || 0),
+            min_qty: parseInt(item['min quantity'] || item.min_qty || item.min_quantity || 0),
+            notes: item.notes || ''
+          };
+          const barcodeFromFile = (item.barcode || item['barcode'] || '').trim();
+          if (barcodeFromFile) part.barcode = barcodeFromFile;
+          return part;
+        });
+
+        // تحديث شريط التقدم
+        progressBar.style.width = '30%';
+        progressPercent.textContent = '30%';
+        progressLabel.textContent = 'جاري إرسال البيانات للخادم...';
+
+        try {
+          const payload = { items };
+          if (warehouseId) payload.warehouse_id = parseInt(warehouseId);
+
+          const res = await fetch('elos-db://repair-parts-bulk-import', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          progressBar.style.width = '90%';
+          progressPercent.textContent = '90%';
+          progressLabel.textContent = 'جاري معالجة النتائج...';
+
+          if (!res.ok) {
+            const errorData = await res.json().catch(() => ({}));
+            throw new Error(errorData.error || 'فشل في الاستيراد');
+          }
+
+          const result = await res.json();
+
+          progressBar.style.width = '100%';
+          progressPercent.textContent = '100%';
+
+          if (result.added > 0) {
+            progressLabel.textContent = 'تم الاستيراد بنجاح!';
+            progressBar.style.background = 'linear-gradient(90deg, #10b981, #059669)';
+            progressDetails.textContent = `نجح: ${result.added} صنف` + (result.failed > 0 ? ` | فشل: ${result.failed}` : '');
+
+            // عرض تفاصيل الأصناف الفاشلة
+            if (result.errors && result.errors.length > 0) {
+              const errorList = result.errors.map(e =>
+                `سطر ${e.index + 2}: ${e.name || 'بدون اسم'} — ${e.error}`
+              );
+              progressDetails.innerHTML = `<div style="margin-bottom:8px;">نجح: <b>${result.added}</b> | فشل: <b style="color:#ef4444;">${result.failed}</b></div>`
+                + `<div style="max-height:150px;overflow-y:auto;background:var(--bg-tertiary);border-radius:6px;padding:8px;font-size:12px;text-align:right;">`
+                + `<div style="font-weight:600;margin-bottom:4px;color:#ef4444;">الأصناف التي فشلت:</div>`
+                + errorList.map(e => `<div style="padding:3px 0;border-bottom:1px solid var(--border);">⚠️ ${e}</div>`).join('')
+                + `</div>`;
+            }
+
+            showToast(`تم استيراد ${result.added} قطعة بنجاح${result.failed > 0 ? ` (${result.failed} فشل)` : ''}`, 'success');
+
+            // إعادة تحميل البيانات - تأخير أطول لو فيه أخطاء عشان المستخدم يقرأها
+            const delay = result.failed > 0 ? 0 : 1500;
+            if (result.failed > 0) {
+              btn.disabled = false;
+              btn.textContent = 'إغلاق';
+              btn.onclick = () => {
+                closeRepairPartsImportModal();
+                if (typeof loadParts === 'function') { loadParts(); } else { location.reload(); }
+                btn.onclick = executeRepairPartsImport;
+              };
+            } else {
+              setTimeout(() => {
+                closeRepairPartsImportModal();
+                if (typeof loadParts === 'function') { loadParts(); } else { location.reload(); }
+              }, 1500);
+            }
+          } else {
+            progressLabel.textContent = 'فشل في الاستيراد';
+            progressBar.style.background = '#ef4444';
+            if (result.errors && result.errors.length > 0) {
+              const errorList = result.errors.map(e =>
+                `سطر ${e.index + 2}: ${e.name || 'بدون اسم'} — ${e.error}`
+              );
+              progressDetails.innerHTML = `<div style="max-height:200px;overflow-y:auto;background:var(--bg-tertiary);border-radius:6px;padding:8px;font-size:12px;text-align:right;">`
+                + errorList.map(e => `<div style="padding:3px 0;border-bottom:1px solid var(--border);">⚠️ ${e}</div>`).join('')
+                + `</div>`;
+            } else {
+              progressDetails.textContent = 'خطأ غير معروف';
+            }
+            showToast('فشل في استيراد البيانات', 'error');
+            btn.disabled = false;
+            btn.textContent = 'إعادة المحاولة';
+          }
+        } catch (err) {
+          console.error('Bulk import error:', err);
+          progressBar.style.width = '100%';
+          progressBar.style.background = '#ef4444';
+          progressLabel.textContent = 'حدث خطأ!';
+          progressDetails.textContent = err.message;
+          showToast('خطأ في الاستيراد: ' + err.message, 'error');
+          btn.disabled = false;
+          btn.textContent = 'إعادة المحاولة';
+        }
+      }
+
+      // دعم السحب والإفلات
+      document.addEventListener('DOMContentLoaded', function() {
+        const dropZone = document.getElementById('repairPartsDropZone');
+        if (dropZone) {
+          dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = 'var(--accent)';
+            dropZone.style.background = 'rgba(59,130,246,0.1)';
+          });
+
+          dropZone.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = 'var(--border)';
+            dropZone.style.background = 'var(--bg-tertiary)';
+          });
+
+          dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.style.borderColor = 'var(--border)';
+            dropZone.style.background = 'var(--bg-tertiary)';
+
+            const file = e.dataTransfer.files[0];
+            if (file && file.name.endsWith('.csv')) {
+              const input = document.getElementById('repairPartsFileInput');
+              const dataTransfer = new DataTransfer();
+              dataTransfer.items.add(file);
+              input.files = dataTransfer.files;
+              handleRepairPartsFileSelect({ target: { files: [file] } });
+            } else {
+              showToast('يرجى اختيار ملف CSV', 'warning');
+            }
+          });
+        }
+      });
+    </script>
+
+    <!-- Shared Scripts -->
+    <script src="utils.js"></script>
+    <!-- 🔗 WAREHOUSE ID HANDLER -->
+    <script src="js/warehouse-handler.js"></script>
+    <script>
+      (function() {
+        // حفظ warehouse_id من URL عند فتح الصفحة
+        const urlParams = new URLSearchParams(window.location.search);
+        const warehouseId = urlParams.get('warehouse_id');
+
+        if (warehouseId) {
+          // حفظ في localStorage للمخزن الحالي
+          localStorage.setItem('currentRepairPartsWarehouseId', warehouseId);
+          console.log('[REPAIR-PARTS] Warehouse ID set from URL:', warehouseId);
+        }
+      })();
+    </script>
+    <!-- 🏷️ Barcode Scripts -->
+    <script src="jsbarcode.min.js"></script>
+    <script src="barcode-service.js"></script>
+    <script src="barcode-generator.js"></script>
+    <link rel="stylesheet" href="barcode-styles.css">
+    <!-- Main Script -->
+    <script src="repair-parts.js"></script>
+
+    <!-- 📋 Part Details Modal (Barcode Scan Result) -->
+    <div class="modal-overlay" id="partDetailsModal">
+      <div class="modal" style="max-width:500px;">
+        <div class="modal-header">
+          <h3 class="modal-title">
+            <span>📋</span>
+            <span>تفاصيل القطعة</span>
+          </h3>
+          <button type="button" class="modal-close" id="partDetailsModalClose">&times;</button>
+        </div>
+        <div class="modal-body" id="partDetailsBody">
+          <!-- Part details will be rendered here -->
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn" onclick="closePartDetailsModal()">إغلاق</button>
+          <button type="button" class="btn btn-primary" id="btnEditFromDetails" onclick="editFromDetails()">
+            <span>✏️</span>
+            <span>تعديل</span>
+          </button>
+          <button type="button" class="btn btn-info" id="btnPrintFromDetails" onclick="printFromDetails()">
+            <span>🏷️</span>
+            <span>طباعة باركود</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <style>
+      /* Part Details Modal Styles */
+      #partDetailsBody .detail-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-bottom: 1px solid var(--border);
+      }
+      #partDetailsBody .detail-row:last-child {
+        border-bottom: none;
+      }
+      #partDetailsBody .detail-label {
+        font-weight: 600;
+        color: var(--text-secondary);
+      }
+      #partDetailsBody .detail-value {
+        font-weight: 700;
+        color: var(--text-primary);
+        font-family: 'Courier New', monospace;
+      }
+      #partDetailsBody .detail-value.price {
+        color: var(--success);
+      }
+      #partDetailsBody .detail-value.warning {
+        color: var(--warning);
+      }
+      #partDetailsBody .detail-value.danger {
+        color: var(--danger);
+      }
+      #partDetailsBody .part-header {
+        text-align: center;
+        padding: 15px;
+        background: var(--bg-tertiary);
+        border-radius: 8px;
+        margin-bottom: 15px;
+      }
+      #partDetailsBody .part-header .part-name {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--accent);
+        margin-bottom: 5px;
+      }
+      #partDetailsBody .part-header .part-barcode {
+        font-family: monospace;
+        font-size: 14px;
+        color: var(--text-secondary);
+      }
+
+      /* ═══════════════════════════════════════
+         ✅ SELECTION & TRANSFER STYLES
+         ═══════════════════════════════════════ */
+      .th-checkbox,
+      .td-checkbox {
+        width: 50px;
+        padding: 8px !important;
+        text-align: center;
+      }
+
+      .row-checkbox {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+        accent-color: var(--accent);
+      }
+
+      .selected-row {
+        background: rgba(139, 92, 246, 0.15) !important;
+      }
+
+      .selected-row td {
+        border-color: rgba(139, 92, 246, 0.3);
+      }
+
+      .selection-actions {
+        display: none;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px;
+        background: rgba(139, 92, 246, 0.15);
+        border: 1px solid rgba(139, 92, 246, 0.3);
+        border-radius: 8px;
+        margin-left: 8px;
+      }
+
+      .selection-actions.visible {
+        display: flex;
+      }
+
+      .selection-count {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--accent);
+      }
+
+      /* Transfer Modal */
+      .transfer-items-list {
+        max-height: 300px;
+        overflow-y: auto;
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        margin: 16px 0;
+      }
+
+      .transfer-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px;
+        border-bottom: 1px solid var(--border);
+        transition: background 0.2s;
+      }
+
+      .transfer-item:last-child {
+        border-bottom: none;
+      }
+
+      .transfer-item:hover {
+        background: var(--bg-tertiary);
+      }
+
+      .transfer-item-icon {
+        font-size: 24px;
+      }
+
+      .transfer-item-info {
+        flex: 1;
+      }
+
+      .transfer-item-name {
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 2px;
+      }
+
+      .transfer-item-meta {
+        font-size: 12px;
+        color: var(--text-secondary);
+      }
+
+      .transfer-item-qty {
+        font-family: monospace;
+        font-weight: 600;
+        color: var(--accent);
+        background: rgba(59, 130, 246, 0.1);
+        padding: 4px 8px;
+        border-radius: 4px;
+      }
+
+      .transfer-item-remove {
+        background: none;
+        border: none;
+        color: var(--danger);
+        font-size: 18px;
+        cursor: pointer;
+        padding: 4px 8px;
+        border-radius: 4px;
+        transition: background 0.2s;
+      }
+
+      .transfer-item-remove:hover {
+        background: rgba(239, 68, 68, 0.1);
+      }
+
+      .transfer-count-badge {
+        background: var(--accent);
+        color: white;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-weight: 700;
+        font-size: 14px;
+      }
+    </style>
+
+    <!-- ═══════════════════════════════════════
+         📦 BULK TRANSFER MODAL
+         ═══════════════════════════════════════ -->
+    <div class="modal-overlay" id="bulkTransferModal">
+  <div class="modal" style="max-width: 650px;">
+    <div class="modal-header">
+      <h3 class="modal-title">
+        <span>📦</span>
+        <span>تحويل قطع الغيار</span>
+        <span class="transfer-count-badge" id="transferItemsCount">0</span>
+      </h3>
+      <button class="modal-close" onclick="closeBulkTransferModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">المخزن الوجهة <span class="required">*</span></label>
+        <select class="form-select" id="targetWarehouse">
+          <option value="">-- اختر المخزن الوجهة --</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">القطع المحددة للتحويل</label>
+        <div class="transfer-items-list" id="transferItemsList">
+          <!-- Items will be rendered here -->
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">ملاحظات (اختياري)</label>
+        <textarea class="form-textarea" id="transferNotes" placeholder="أي ملاحظات إضافية..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-secondary" onclick="closeBulkTransferModal()">إلغاء</button>
+      <button type="button" class="btn" id="btnExecuteTransfer" onclick="executeBulkTransfer()" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white;">
+        <span>📦</span>
+        <span>تنفيذ التحويل</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+    <!-- ═══════════════════════════════════════
+         📊 AVERAGE PRICES MODAL
+         ═══════════════════════════════════════ -->
+    <div class="modal-overlay" id="averagePricesModal">
+      <div class="modal" style="max-width: 700px;">
+        <div class="modal-header" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+          <h3 class="modal-title" style="color: white;">
+            <span>📊</span>
+            <span>توحيد أسعار قطع الغيار</span>
+          </h3>
+          <button class="modal-close" onclick="closeAveragePricesModal()" style="color: white;">✕</button>
+        </div>
+        <div class="modal-body">
+          <!-- شرح الخاصية -->
+          <div style="background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.2); border-radius: 10px; padding: 14px; margin-bottom: 16px;">
+            <div style="display: flex; align-items: flex-start; gap: 10px;">
+              <span style="font-size: 22px;">💡</span>
+              <div style="font-size: 13px; color: var(--text-primary); line-height: 1.6;">
+                هذه الخاصية تقوم بحساب <strong>متوسط سعر الشراء</strong> و<strong>متوسط سعر البيع</strong> للقطع المحددة،
+                ثم تطبيق هذا المتوسط على جميع القطع لتوحيد الأسعار.
+              </div>
+            </div>
+          </div>
+
+          <!-- ملخص القطع المحددة -->
+          <div style="margin-bottom: 20px;">
+            <label style="font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; color: var(--text-primary);">
+              <span style="font-size: 20px;">🔧</span>
+              القطع المحددة (<span id="avgPartsCount">0</span> قطعة)
+            </label>
+            <div id="avgPartsList" style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 10px; max-height: 180px; overflow-y: auto;">
+              <!-- سيتم ملؤها ديناميكياً -->
+            </div>
+          </div>
+
+          <!-- الأسعار الحالية والمتوسط -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+            <!-- سعر الشراء -->
+            <div style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); border-radius: 10px; padding: 16px;">
+              <div style="font-weight: 700; color: var(--danger); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                <span>💰</span> سعر الشراء
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <div style="display: flex; justify-content: space-between; font-size: 13px;">
+                  <span style="color: var(--text-secondary);">أقل سعر:</span>
+                  <span id="avgPartMinPurchase" style="color: var(--text-primary);">0</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 13px;">
+                  <span style="color: var(--text-secondary);">أعلى سعر:</span>
+                  <span id="avgPartMaxPurchase" style="color: var(--text-primary);">0</span>
+                </div>
+                <div style="border-top: 1px dashed var(--border-color); padding-top: 8px; margin-top: 4px;">
+                  <div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: 700;">
+                    <span style="color: var(--danger);">المتوسط:</span>
+                    <span id="avgPartAvgPurchase" style="color: var(--danger);">0</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- سعر البيع -->
+            <div style="background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2); border-radius: 10px; padding: 16px;">
+              <div style="font-weight: 700; color: var(--success); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                <span>🏷️</span> سعر البيع
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <div style="display: flex; justify-content: space-between; font-size: 13px;">
+                  <span style="color: var(--text-secondary);">أقل سعر:</span>
+                  <span id="avgPartMinSale" style="color: var(--text-primary);">0</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 13px;">
+                  <span style="color: var(--text-secondary);">أعلى سعر:</span>
+                  <span id="avgPartMaxSale" style="color: var(--text-primary);">0</span>
+                </div>
+                <div style="border-top: 1px dashed var(--border-color); padding-top: 8px; margin-top: 4px;">
+                  <div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: 700;">
+                    <span style="color: var(--success);">المتوسط:</span>
+                    <span id="avgPartAvgSale" style="color: var(--success);">0</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- خيارات التوحيد -->
+          <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 10px; padding: 16px; margin-bottom: 16px;">
+            <div style="font-weight: 700; margin-bottom: 12px; color: var(--text-primary);">⚙️ خيارات التوحيد</div>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+              <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                <input type="checkbox" id="avgPartApplyPurchase" checked style="width: 18px; height: 18px; accent-color: var(--accent);">
+                <span style="color: var(--text-primary);">توحيد سعر الشراء</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                <input type="checkbox" id="avgPartApplySale" checked style="width: 18px; height: 18px; accent-color: var(--accent);">
+                <span style="color: var(--text-primary);">توحيد سعر البيع</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- الربح المتوقع -->
+          <div style="background: linear-gradient(135deg, rgba(245,158,11,0.1), rgba(234,88,12,0.1)); border: 1px solid rgba(245,158,11,0.2); border-radius: 10px; padding: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <div style="font-weight: 700; color: var(--text-primary); margin-bottom: 4px;">📈 الربح المتوقع للوحدة</div>
+                <div style="font-size: 12px; color: var(--text-secondary);">سعر البيع - سعر الشراء</div>
+              </div>
+              <div id="avgPartExpectedProfit" style="font-size: 24px; font-weight: 700; color: var(--warning);">0 ج.م</div>
+            </div>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="closeAveragePricesModal()">إلغاء</button>
+          <button type="button" class="btn" id="btnApplyPartAveragePrices" onclick="applyPartAveragePrices()" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white;">
+            <span>✅</span>
+            <span>تطبيق المتوسط</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         🗑️ DELETE CONFIRM MODAL
+         ═══════════════════════════════════════ -->
+    <div class="modal-overlay" id="deleteConfirmModal">
+      <div class="modal" style="max-width: 450px;">
+        <div class="modal-header" style="background: linear-gradient(135deg, #ef4444, #dc2626);">
+          <h3 class="modal-title" style="color: white;">
+            <span>⚠️</span>
+            <span>تأكيد الحذف</span>
+          </h3>
+          <button class="modal-close" onclick="closeDeleteConfirmModal()" style="color: white;">✕</button>
+        </div>
+        <div class="modal-body" style="text-align: center; padding: 30px;">
+          <div style="font-size: 48px; margin-bottom: 16px;">🗑️</div>
+          <p style="font-size: 16px; color: var(--text-primary); margin-bottom: 12px;">
+            هل أنت متأكد من حذف القطعة؟
+          </p>
+          <p style="font-size: 18px; font-weight: 700; color: var(--danger); margin-bottom: 16px;" id="deletePartName">
+            اسم القطعة
+          </p>
+          <div id="deleteQtyWarning" style="display: none; padding: 12px; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; margin-bottom: 16px;">
+            <!-- Warning message will be inserted here -->
+          </div>
+          <p style="font-size: 13px; color: var(--text-secondary);">
+            هذا الإجراء لا يمكن التراجع عنه!
+          </p>
+        </div>
+        <div class="modal-footer" style="justify-content: center; gap: 16px;">
+          <button type="button" class="btn btn-secondary" onclick="closeDeleteConfirmModal()" style="min-width: 120px;">
+            <span>❌</span>
+            <span>إلغاء</span>
+          </button>
+          <button type="button" class="btn btn-danger" id="btnConfirmDelete" style="min-width: 120px;">
+            <span>🗑️</span>
+            <span>حذف نهائي</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

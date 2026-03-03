@@ -1,7 +1,8 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import AppSidebar from '@/components/AppSidebar';
-import MobileNavBar from '@/components/MobileNavBar';
 import TopHeader from '@/components/TopHeader';
+import MobileNavBar from '@/components/MobileNavBar';
+import { cn } from '@/lib/utils';
 
 const MainLayout = () => {
   const location = useLocation();
@@ -10,10 +11,16 @@ const MainLayout = () => {
     <div className="flex h-screen overflow-hidden bg-background">
       <AppSidebar />
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        <TopHeader />
+        {location.pathname !== '/pos' && <TopHeader />}
         {/* pb-16 to clear the bottom nav on mobile */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 pb-20 md:pb-6 relative z-0">
-          <div key={location.pathname} className="animate-fade-in h-full">
+        <main className={cn(
+          "flex-1 overflow-y-auto relative z-0",
+          location.pathname === '/pos' ? "p-0" : "p-4 md:p-8 pb-20 md:pb-8"
+        )}>
+          <div key={location.pathname} className={cn(
+            "animate-fade-in h-full mx-auto",
+            location.pathname === '/pos' ? "w-full max-w-none" : "max-w-screen-2xl"
+          )}>
             <Outlet />
           </div>
         </main>

@@ -4,8 +4,9 @@
 
 import { OtherRevenue } from '@/domain/types';
 import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
+import { STORAGE_KEYS } from '@/config';
 
-const KEY = 'gx_other_revenue';
+const KEY = STORAGE_KEYS.OTHER_REVENUE;
 
 export function getOtherRevenues(): OtherRevenue[] {
     return getStorageItem<OtherRevenue[]>(KEY, []);

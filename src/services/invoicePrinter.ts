@@ -4,6 +4,7 @@
 // ============================================================
 
 import { Sale } from '@/domain/types';
+import { STORAGE_KEYS } from '@/config';
 
 interface ShopInfo {
   nameAr: string;
@@ -20,7 +21,7 @@ const DEFAULT_SHOP_INFO: ShopInfo = {
 };
 
 export function printInvoice(sale: Sale) {
-  const settingsRaw = localStorage.getItem('app_settings');
+  const settingsRaw = localStorage.getItem(STORAGE_KEYS.APP_SETTINGS);
   const settings = settingsRaw ? JSON.parse(settingsRaw) : {};
 
   const shopInfo: ShopInfo = {

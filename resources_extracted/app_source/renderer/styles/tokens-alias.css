@@ -1,0 +1,102 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   LEGACY VARIABLES ALIAS BRIDGE
+   Maps old variable names to new DS tokens for backward compatibility
+   This file is included after tokens.css
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Background aliases */
+  --bg: var(--ds-bg);
+  --bg-primary: var(--ds-bg);
+  --bg-secondary: var(--ds-bg-secondary);
+  --bg-tertiary: var(--ds-bg-tertiary);
+  --bg-glass: var(--ds-bg-glass);
+  --bg-hover: var(--ds-bg-hover);
+  --bg-elevated: var(--ds-bg-elevated);
+
+  /* Card aliases */
+  --card: var(--ds-bg-card);
+  --card-hover: var(--ds-bg-hover);
+  --card-glass: var(--ds-card-glass);
+
+  /* Text aliases */
+  --ink: var(--ds-text);
+  --muted: var(--ds-text-muted);
+  --text-primary: var(--ds-text);
+  --text-secondary: var(--ds-text-secondary);
+  --text-muted: var(--ds-text-muted);
+  --text-inverse: var(--ds-text-inverse);
+  --text-disabled: var(--ds-text-disabled);
+
+  /* Border aliases */
+  --line: var(--ds-border);
+  --border: var(--ds-border);
+  --border-primary: var(--ds-border);
+  --border-secondary: var(--ds-border-light);
+  --border-focus: var(--ds-border-focus);
+  --border-hover: var(--ds-border-hover);
+
+  /* Brand/Accent aliases */
+  --brand: var(--ds-brand);
+  --brand-hover: var(--ds-brand-hover);
+  --brand-active: var(--ds-brand-active);
+  --brand-glow: var(--ds-brand-glow);
+  --accent: var(--ds-brand);
+  --accent-hover: var(--ds-brand-hover);
+  --accent-active: var(--ds-brand-active);
+  --accent-light: var(--ds-brand-light);
+  --accent-lighter: var(--ds-brand-lighter);
+
+  /* Status color aliases */
+  --success: var(--ds-success);
+  --success-hover: var(--ds-success-hover);
+  --success-light: var(--ds-success-bg);
+  --success-lighter: var(--ds-success-light);
+  --success-glow: var(--ds-success-glow);
+
+  --warning: var(--ds-warning);
+  --warning-hover: var(--ds-warning-hover);
+  --warning-light: var(--ds-warning-bg);
+  --warning-lighter: var(--ds-warning-light);
+  --warning-glow: var(--ds-warning-glow);
+
+  --danger: var(--ds-danger);
+  --danger-hover: var(--ds-danger-hover);
+  --danger-light: var(--ds-danger-bg);
+  --danger-lighter: var(--ds-danger-light);
+  --danger-glow: var(--ds-danger-glow);
+
+  --info: var(--ds-info);
+  --info-hover: var(--ds-info-hover);
+  --info-light: var(--ds-info-bg);
+  --info-lighter: var(--ds-info-light);
+  --info-glow: var(--ds-info-glow);
+
+  --purple: var(--ds-purple);
+  --purple-light: var(--ds-purple-bg);
+  --pink: var(--ds-pink);
+  --pink-light: var(--ds-pink-bg);
+  --cyan: var(--ds-cyan);
+  --orange: var(--ds-orange);
+
+  /* Shadow aliases */
+  --shadow: var(--ds-shadow-md);
+  --shadow-sm: var(--ds-shadow-sm);
+  --shadow-md: var(--ds-shadow-md);
+  --shadow-lg: var(--ds-shadow-lg);
+  --shadow-xl: var(--ds-shadow-xl);
+  --shadow-glow: var(--ds-shadow-glow);
+
+  /* Radius aliases */
+  --radius-sm: var(--ds-radius-sm);
+  --radius-md: var(--ds-radius-md);
+  --radius-lg: var(--ds-radius-lg);
+  --radius-xl: var(--ds-radius-xl);
+  --radius-full: var(--ds-radius-full);
+
+  /* Overlay alias */
+  --overlay-bg: var(--ds-overlay);
+}
+
+/* Light theme specific legacy overrides - no longer needed, handled in tokens.css */
+

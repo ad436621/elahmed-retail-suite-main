@@ -4,15 +4,16 @@
 // ============================================================
 
 import { AuditAction, AuditEntry } from './types';
+import { STORAGE_KEYS } from '@/config';
 
 let machineId: string | null = null;
 
 function getMachineId(): string {
   if (!machineId) {
-    machineId = localStorage.getItem('elahmed-machine-id');
+    machineId = localStorage.getItem(STORAGE_KEYS.MACHINE_ID);
     if (!machineId) {
       machineId = crypto.randomUUID();
-      localStorage.setItem('elahmed-machine-id', machineId);
+      localStorage.setItem(STORAGE_KEYS.MACHINE_ID, machineId);
     }
   }
   return machineId;

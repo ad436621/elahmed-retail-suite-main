@@ -4,22 +4,19 @@
 // ============================================================
 
 import { AuditEntry } from '@/domain/types';
+import { STORAGE_KEYS } from '@/config';
+import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
 
-const AUDIT_STORAGE_KEY = 'elahmed_audit_logs';
+const AUDIT_STORAGE_KEY = STORAGE_KEYS.AUDIT_LOGS;
 
 function loadAuditLogs(): AuditEntry[] {
-  try {
-    const data = localStorage.getItem(AUDIT_STORAGE_KEY);
-    return data ? JSON.parse(data) : [];
-  } catch {
-    return [];
-  }
+  return getStorageItem<AuditEntry[]>(AUDIT_STORAGE_KEY, []);
 }
 
 let auditStore: AuditEntry[] = loadAuditLogs();
 
 function saveToStorage() {
-  localStorage.setItem(AUDIT_STORAGE_KEY, JSON.stringify(auditStore));
+  setStorageItem(AUDIT_STORAGE_KEY, auditStore);
 }
 
 /** Append-only: no update or delete operations */

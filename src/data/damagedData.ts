@@ -4,8 +4,9 @@
 
 import { DamagedItem, DamagedItemCategory } from '@/domain/types';
 import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
+import { STORAGE_KEYS } from '@/config';
 
-const KEY = 'gx_damaged_items';
+const KEY = STORAGE_KEYS.DAMAGED_ITEMS;
 
 export function getDamagedItems(): DamagedItem[] {
     return getStorageItem<DamagedItem[]>(KEY, []);

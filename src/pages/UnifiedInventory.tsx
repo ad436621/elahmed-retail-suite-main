@@ -32,6 +32,7 @@ import { ProductFormDialog } from '@/components/ProductFormDialog';
 import { ExcelImportDialog } from '@/components/ExcelImportDialog';
 import { ProductBatchesModal } from '@/components/ProductBatchesModal';
 import { BarcodeSVG } from '@/components/BarcodeSVG';
+import { STORAGE_KEYS } from '@/config';
 
 // Category configuration
 const CATEGORIES = {
@@ -142,7 +143,7 @@ export default function UnifiedInventory() {
                 const endpoint = DATA_ENDPOINTS[category as CategorySlug] || DATA_ENDPOINTS.mobiles;
                 const response = await fetch(endpoint, {
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('token')}`
+                        'Authorization': `Bearer ${localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN)}`
                     }
                 });
 
@@ -183,7 +184,7 @@ export default function UnifiedInventory() {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN)}`
                 },
                 body: JSON.stringify(product),
             });
@@ -206,7 +207,7 @@ export default function UnifiedInventory() {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN)}`
                 },
                 body: JSON.stringify(product),
             });
@@ -231,7 +232,7 @@ export default function UnifiedInventory() {
             const response = await fetch(`${endpoint}/${id}`, {
                 method: 'DELETE',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN)}`
                 }
             });
 

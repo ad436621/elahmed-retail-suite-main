@@ -1,0 +1,2537 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ELOS V2 - نظام المحاسبة</title>
+
+  <!-- Shared Sound & Toast System -->
+  <script src="shared.js"></script>
+
+  <!-- Arabic Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- Theme Sync Script (must be before styles to prevent flash) -->
+  <script src="theme-sync.js"></script>
+  <!-- 🔤 Font Scale Manager -->
+  <script src="js/font-scale-manager.js"></script>
+  <!-- Theme Debug Harness (enable with ?theme_debug=1) -->
+  <script src="js/theme-debug.js"></script>
+
+  <!-- Design System Tokens (theme colors) -->
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/tokens-alias.css">
+  <!-- Responsive Styles (load before theme-fixes) -->
+  <link rel="stylesheet" href="styles/responsive.css">
+  <!-- Theme Governance Layer (load LAST to override legacy styles) -->
+  <link rel="stylesheet" href="styles/theme-fixes.css">
+  <!-- نوافذ تأكيد/تحذير بتصميم البرنامج -->
+  <script src="js/modal-dialogs.js"></script>
+
+  <style>
+    /* ═══════════════════════════════════════
+       APP-SPECIFIC VARIABLES (Layout only, not theme colors)
+       Theme colors come from tokens.css
+       ═══════════════════════════════════════ */
+    :root {
+      --sidebar-width: 260px;
+      --header-height: 60px;
+    }
+
+    /* ═══════════════════════════════════════
+       RESET & BASE
+       ═══════════════════════════════════════ */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: "Tajawal", "Cairo", "Segoe UI", system-ui, sans-serif;
+      background: var(--ds-bg);
+      color: var(--ds-text);
+      min-height: 100vh;
+      overflow: hidden;
+    }
+
+    /* Background Pattern */
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background:
+        radial-gradient(circle at 20% 20%, rgba(59,130,246,0.05) 0%, transparent 40%),
+        radial-gradient(circle at 80% 80%, rgba(168,85,247,0.05) 0%, transparent 40%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ═══════════════════════════════════════
+       LAYOUT
+       ═══════════════════════════════════════ */
+    .app-container {
+      display: flex;
+      height: calc(100vh - 44px); /* Titlebar only, footer is inside main-content */
+      position: relative;
+      z-index: 1;
+      min-width: 0; /* Allow shrinking for responsive */
+    }
+
+    /* ═══════════════════════════════════════
+       SIDEBAR
+       ═══════════════════════════════════════ */
+    .sidebar {
+      width: var(--sidebar-width);
+      height: calc(100vh - 44px); /* Adjusted for 44px titlebar */
+      background: var(--shell-sidebar-bg);
+      border-left: 1px solid var(--shell-sidebar-border);
+      display: flex;
+      flex-direction: column;
+      position: fixed;
+      right: 0;
+      top: 44px; /* Start below title bar */
+      z-index: 100;
+      box-shadow: var(--shell-sidebar-shadow);
+    }
+
+    /* Sidebar Header */
+    .sidebar-header {
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      border-bottom: 1px solid var(--shell-sidebar-border);
+      background: var(--shell-sidebar-header-bg);
+    }
+
+    .sidebar-logo {
+      width: 62px;
+      height: 62px;
+      background: transparent;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+
+    .sidebar-logo img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+
+    /* الـ fallback يظهر عند عدم وجود صورة */
+    .sidebar-logo #companyLogoFallback {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--purple) 100%);
+      border-radius: 10px;
+      font-size: 20px;
+      font-weight: 900;
+      color: white;
+    }
+
+    .sidebar-brand {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .sidebar-brand h1 {
+      font-size: 27px; /* Increased by ~17% from 23px for consistency with title bar */
+      font-weight: 800;
+      color: var(--sidebar-text);
+      letter-spacing: normal; /* 🔧 إصلاح الخط العربي */
+      margin: 0;
+      line-height: 1.3;
+      word-spacing: 2px;
+    }
+
+    .sidebar-brand span {
+      font-size: 14px;
+      color: var(--sidebar-text-muted);
+      font-weight: 500;
+    }
+
+    /* Sidebar Navigation */
+    .sidebar-nav {
+      flex: 1;
+      overflow-y: auto;
+      padding: 15px 12px;
+    }
+
+    .sidebar-nav::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .sidebar-nav::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .sidebar-nav::-webkit-scrollbar-thumb {
+      background: var(--sidebar-border);
+      border-radius: 4px;
+    }
+
+    .nav-group {
+      margin-bottom: 20px;
+    }
+
+    .nav-group-title {
+      font-size: 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--sidebar-text-muted);
+      padding: 0 14px;
+      margin-bottom: 10px;
+      letter-spacing: 1px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border-radius: var(--radius-sm);
+      color: var(--sidebar-text-muted);
+      text-decoration: none;
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 4px;
+      transition: all var(--transition);
+      cursor: pointer;
+      border: 1px solid transparent;
+    }
+
+    .nav-item:hover {
+      background: var(--sidebar-hover);
+      color: var(--sidebar-text);
+      border-color: var(--sidebar-border);
+    }
+
+    .nav-item.active {
+      background: var(--sidebar-active);
+      color: var(--ds-brand);
+      border-color: var(--ds-border-focus);
+      box-shadow: var(--shell-nav-active-shadow);
+    }
+
+    .nav-item.active .nav-icon {
+      transform: scale(1.1);
+    }
+
+    .nav-icon {
+      font-size: 22px;
+      width: 28px;
+      text-align: center;
+      transition: transform var(--transition);
+    }
+
+    .nav-text {
+      flex: 1;
+    }
+
+    .nav-badge {
+      background: var(--danger);
+      color: white;
+      font-size: 13px;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 10px;
+      min-width: 20px;
+      text-align: center;
+    }
+
+    /* Nav Dropdown */
+    .nav-dropdown {
+      margin-bottom: 4px;
+    }
+
+    .nav-dropdown-toggle {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1px solid transparent;
+      transition: all var(--transition);
+      background: transparent;
+      width: 100%;
+    }
+
+    .nav-dropdown-toggle:hover {
+      background: var(--shell-nav-hover-bg);
+      color: var(--text-primary);
+      border-color: var(--shell-nav-hover-border);
+    }
+
+    .nav-dropdown.open .nav-dropdown-toggle {
+      background: rgba(255,255,255,0.03);
+      color: var(--text-primary);
+    }
+
+    .nav-dropdown-arrow {
+      font-size: 10px;
+      transition: transform 0.2s ease;
+      margin-right: auto;
+    }
+
+    .nav-dropdown.open .nav-dropdown-arrow {
+      transform: rotate(180deg);
+    }
+
+    .nav-dropdown-menu {
+      display: none;
+      padding: 4px 0 4px 20px;
+    }
+
+    .nav-dropdown.open .nav-dropdown-menu {
+      display: block;
+    }
+
+    .nav-dropdown-menu .nav-item {
+      padding: 10px 14px;
+      font-size: 15px;
+    }
+
+    .nav-dropdown-menu .nav-icon {
+      font-size: 16px;
+      width: 22px;
+    }
+
+    /* Sidebar Footer */
+    .sidebar-footer {
+      padding: 15px;
+      border-top: 1px solid var(--shell-sidebar-border);
+      background: var(--shell-sidebar-footer-bg);
+    }
+
+    .user-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-sm);
+      margin-bottom: 10px;
+    }
+
+    .user-avatar {
+      width: 36px;
+      height: 36px;
+      background: var(--shell-user-avatar-bg);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      font-weight: 800;
+      color: white;
+    }
+
+    .user-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .user-name {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .user-role {
+      font-size: 14px;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .logout-btn {
+      background: var(--shell-btn-danger-bg);
+      border: 1px solid var(--shell-btn-danger-border);
+      color: var(--danger);
+      padding: 12px;
+      border-radius: var(--radius-sm);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all var(--transition);
+      width: 100%;
+    }
+
+    .logout-btn:hover {
+      background: var(--shell-btn-danger-hover-bg);
+      border-color: var(--shell-btn-danger-hover-border);
+    }
+
+    /* ═══════════════════════════════════════
+       LOGOUT CONFIRMATION MODAL
+       ═══════════════════════════════════════ */
+    .logout-modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      opacity: 0;
+      animation: fadeIn 0.2s ease forwards;
+    }
+
+    @keyframes fadeIn {
+      to { opacity: 1; }
+    }
+
+    .logout-modal {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      width: 90%;
+      max-width: 360px;
+      text-align: center;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+      transform: scale(0.9) translateY(20px);
+      animation: modalSlideIn 0.3s ease forwards;
+    }
+
+    @keyframes modalSlideIn {
+      to {
+        transform: scale(1) translateY(0);
+      }
+    }
+
+    .logout-modal-icon {
+      font-size: 56px;
+      margin-bottom: 16px;
+      animation: wave 1s ease-in-out infinite;
+    }
+
+    @keyframes wave {
+      0%, 100% { transform: rotate(0deg); }
+      25% { transform: rotate(20deg); }
+      75% { transform: rotate(-15deg); }
+    }
+
+    .logout-modal-title {
+      font-size: 22px;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin: 0 0 8px;
+    }
+
+    .logout-modal-text {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin: 0 0 20px;
+    }
+
+    .logout-modal-user {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 12px 20px;
+      background: var(--bg-tertiary);
+      border-radius: 10px;
+      margin-bottom: 24px;
+    }
+
+    .logout-user-avatar {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      font-size: 14px;
+      color: white;
+    }
+
+    .logout-user-name {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .logout-modal-actions {
+      display: flex;
+      gap: 12px;
+    }
+
+    .logout-modal-btn {
+      flex: 1;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: none;
+    }
+
+    .logout-modal-btn.cancel {
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+    }
+
+    .logout-modal-btn.cancel:hover {
+      background: var(--bg-primary);
+      color: var(--text-primary);
+    }
+
+    .logout-modal-btn.confirm {
+      background: var(--shell-logout-confirm-bg);
+      color: white;
+    }
+
+    .logout-modal-btn.confirm:hover {
+      background: var(--shell-logout-confirm-hover-bg);
+      transform: translateY(-1px);
+      box-shadow: var(--shell-logout-confirm-shadow);
+    }
+
+    /* ═══════════════════════════════════════
+       MAIN CONTENT
+       ═══════════════════════════════════════ */
+    .main-content {
+      flex: 1;
+      margin-right: var(--sidebar-width);
+      display: flex;
+      flex-direction: column;
+      height: calc(100vh - 44px); /* Adjusted for 44px titlebar */
+      overflow: hidden;
+      min-width: 0; /* Allow shrinking for responsive */
+      padding-bottom: 0; /* Footer is inside main-content */
+    }
+
+    #page-container {
+      flex: 1;
+      overflow-y: auto;
+      overflow-x: hidden;
+      min-height: 0;
+    }
+
+    /* Top Header */
+    .top-header {
+      height: var(--header-height);
+      background: var(--topbar-bg);
+      border-bottom: 1px solid var(--topbar-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      flex-shrink: 0;
+    }
+
+    .page-title {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .page-title h1 {
+      font-size: 20px;
+      font-weight: 800;
+      color: var(--topbar-text);
+      margin: 0;
+    }
+
+    .page-title-icon {
+      font-size: 24px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .header-btn {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      padding: 8px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all var(--transition);
+    }
+
+    .header-btn:hover {
+      background: var(--bg-card);
+      color: var(--text-primary);
+      border-color: var(--border-light);
+    }
+
+    .header-btn.danger {
+      background: rgba(239,68,68,0.1);
+      border-color: rgba(239,68,68,0.2);
+      color: var(--danger);
+    }
+
+    .header-btn.danger:hover {
+      background: rgba(239,68,68,0.2);
+      border-color: rgba(239,68,68,0.4);
+    }
+
+    .header-btn.theme-toggle {
+      background: var(--shell-btn-theme-bg);
+      border-color: var(--shell-btn-theme-border);
+      color: white;
+    }
+
+    .header-btn.theme-toggle:hover {
+      background: var(--shell-btn-theme-hover-bg);
+      box-shadow: var(--shell-btn-theme-shadow);
+    }
+
+    /* ═══════════════════════════════════════
+       LIGHT THEME OVERRIDES
+       Removed - sidebar tokens now handle light mode correctly in tokens.css
+       ═══════════════════════════════════════ */
+
+    html[data-theme="light"] .top-header {
+      background: var(--shell-topbar-bg);
+      border-bottom-color: var(--shell-topbar-border);
+      box-shadow: var(--shell-topbar-shadow, 0 2px 8px rgba(0, 0, 0, 0.08));
+    }
+
+    html[data-theme="light"] .top-header .header-btn {
+      background: #f1f5f9;
+      border-color: #e2e8f0;
+      color: #334155;
+    }
+
+    html[data-theme="light"] .top-header .header-btn:hover {
+      background: #e2e8f0;
+      border-color: #cbd5e1;
+      color: #0f172a;
+    }
+
+    html[data-theme="light"] .app-footer {
+      background: #ffffff;
+      border-top-color: #e2e8f0;
+      color: #64748b;
+    }
+
+    /* POS Action Buttons - Styled like the old header buttons */
+    .pos-actions {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      margin-left: 16px;
+      padding-left: 16px;
+      border-left: 1px solid var(--border);
+    }
+
+    .pos-actions.visible {
+      display: flex;
+    }
+
+    .pos-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 14px;
+      border-radius: var(--radius-sm);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all var(--transition);
+      border: 1px solid transparent;
+      white-space: nowrap;
+    }
+
+    .pos-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+
+    .pos-btn.purchase {
+      background: var(--success);
+      border-color: var(--success);
+      color: white;
+    }
+
+    .pos-btn.return {
+      background: var(--warning);
+      border-color: var(--warning);
+      color: white;
+    }
+
+    .pos-btn.receive {
+      background: var(--shell-pos-receive-bg);
+      border-color: var(--shell-pos-receive-bg);
+      color: white;
+    }
+
+    .pos-btn.barcode {
+      background: var(--shell-pos-barcode-bg);
+      border-color: var(--shell-pos-barcode-bg);
+      color: white;
+    }
+
+    .pos-btn.fullscreen {
+      background: var(--shell-pos-fullscreen-bg);
+      border-color: var(--shell-pos-fullscreen-bg);
+      color: white;
+    }
+
+    .pos-btn.fullscreen.active {
+      background: var(--shell-pos-fullscreen-active-bg);
+      border-color: var(--shell-pos-fullscreen-active-bg);
+    }
+
+    /* وضع ملء الشاشة */
+    body.fullscreen-mode .sidebar {
+      display: none !important;
+    }
+
+    body.fullscreen-mode .main-content {
+      margin-right: 0 !important;
+    }
+
+    body.fullscreen-mode .main-header {
+      right: 0 !important;
+    }
+
+    .pos-btn .btn-icon {
+      font-size: 14px;
+    }
+
+    /* Time Display */
+    .time-display {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: var(--shell-time-bg);
+      border: 1px solid var(--shell-time-border);
+      border-radius: var(--radius-sm);
+      font-family: 'Segoe UI', monospace;
+    }
+
+    .time-display .time-icon {
+      font-size: 16px;
+    }
+
+    .time-display .time-value {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: 1px;
+    }
+
+    .time-display .time-date {
+      font-size: 14px; /* Minimum 14px enforced for readability */
+      color: var(--text-secondary);
+      margin-right: 8px;
+      padding-right: 8px;
+      border-right: 1px solid var(--border);
+    }
+
+    /* Page Container */
+    #page-container {
+      flex: 1;
+      overflow: auto;
+      padding: 0;
+      transition: opacity 0.15s ease, transform 0.15s ease;
+    }
+
+    /* عند وجود iframe: ملء المساحة فوق الفوتر بدون فراغ */
+    #page-container:has(iframe) {
+      padding: 0;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    #page-container:has(iframe) > iframe {
+      flex: 1;
+      min-height: 0;
+      display: block;
+    }
+
+    /* للصفحات العادية (بدون iframe) */
+    #page-container:not(:has(iframe)) {
+      padding: 24px;
+    }
+
+    /* ═══════════════════════════════════════
+       LOADING OVERLAY
+       ═══════════════════════════════════════ */
+    .page-loader {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(10,14,20,0.8);
+      backdrop-filter: blur(4px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      opacity: 1;
+      transition: opacity 0.2s ease;
+    }
+
+    .page-loader.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .loader-spinner {
+      width: 48px;
+      height: 48px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* Progress Bar */
+    .progress-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 3px;
+      background: transparent;
+      z-index: 10000;
+      overflow: hidden;
+    }
+
+    .progress-bar.active::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 30%;
+      background: linear-gradient(90deg, var(--accent), var(--purple), var(--cyan));
+      animation: progress 1s ease-in-out infinite;
+    }
+
+    @keyframes progress {
+      0% { left: -30%; }
+      100% { left: 100%; }
+    }
+
+    /* ═══════════════════════════════════════
+       PAGE TRANSITIONS
+       ═══════════════════════════════════════ */
+    .page-enter {
+      animation: pageEnter 0.25s ease forwards;
+    }
+
+    .page-exit {
+      animation: pageExit 0.15s ease forwards;
+    }
+
+    @keyframes pageEnter {
+      from {
+        opacity: 0;
+        transform: translateY(15px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes pageExit {
+      from {
+        opacity: 1;
+        transform: translateY(0);
+      }
+      to {
+        opacity: 0;
+        transform: translateY(-10px);
+      }
+    }
+
+    /* ═══════════════════════════════════════
+       RESPONSIVE
+       ═══════════════════════════════════════ */
+    @media (max-width: 1024px) {
+      :root {
+        --sidebar-width: 220px;
+      }
+    }
+
+    @media (max-width: 768px) {
+      .sidebar {
+        transform: translateX(100%);
+      }
+
+      .sidebar.open {
+        transform: translateX(0);
+      }
+
+      .main-content {
+        margin-right: 0;
+      }
+    }
+
+    /* ═══════════════════════════════════════
+       FOOTER
+       ═══════════════════════════════════════ */
+    .app-footer {
+      height: var(--footer-height);
+      min-height: var(--footer-height);
+      background: linear-gradient(180deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      font-size: 14px; /* Minimum 14px enforced for readability */
+      color: var(--text-muted);
+      flex-shrink: 0;
+      position: relative;
+      z-index: 10;
+    }
+
+    .footer-section {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .footer-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .footer-item .icon {
+      font-size: 12px;
+    }
+
+    .footer-status {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      animation: pulse-dot 2s ease-in-out infinite;
+    }
+
+    .status-dot.warning {
+      background: var(--warning);
+    }
+
+    .status-dot.error {
+      background: var(--danger);
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .footer-brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-secondary);
+    }
+
+    .footer-brand span {
+      font-weight: 600;
+      background: linear-gradient(135deg, var(--accent), var(--purple));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .footer-version {
+      padding: 2px 8px;
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.2);
+      border-radius: 4px;
+      font-size: 10px;
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    /* ═══════════════════════════════════════
+       CUSTOM TITLE BAR (Premium Design)
+       ═══════════════════════════════════════ */
+    .custom-titlebar {
+      height: 44px;
+      background: var(--titlebar-bg);
+      border-bottom: 1px solid var(--titlebar-border);
+      box-shadow: var(--ds-shadow-sm);
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      padding: 0 12px;
+      -webkit-app-region: drag; /* Entire bar is draggable */
+      color: var(--titlebar-text);
+      font-family: "Tajawal", "Cairo", "Segoe UI", system-ui, sans-serif;
+      font-size: 13px;
+      position: relative;
+      z-index: 1000;
+      direction: ltr; /* Windows standard: controls on right */
+    }
+
+    /* Brand Section (Left) */
+    .titlebar-brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      -webkit-app-region: drag; /* Brand area is draggable */
+    }
+
+    .titlebar-logo {
+      height: 20px;
+      width: auto;
+      filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.1));
+    }
+
+    .titlebar-company {
+      font-weight: 700;
+      font-size: 17px; /* Increased by ~15% from typical 14-15px */
+      color: var(--titlebar-text);
+      letter-spacing: normal;
+    }
+
+    /* Center Section (Page Title) */
+    .titlebar-center {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      -webkit-app-region: drag; /* Center area is draggable */
+    }
+
+    .titlebar-page-title {
+      font-weight: 500;
+      font-size: 13px;
+      color: var(--titlebar-muted);
+      text-align: center;
+    }
+
+    /* Controls Section (Right) */
+    .titlebar-controls {
+      display: flex;
+      align-items: center;
+      -webkit-app-region: no-drag; /* Controls are not draggable */
+    }
+
+    .titlebar-btn {
+      background: transparent;
+      border: none;
+      color: var(--titlebar-text);
+      width: 34px;
+      height: 26px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      font-weight: 300;
+      cursor: pointer;
+      transition: background-color 0.15s ease, color 0.15s ease;
+      -webkit-app-region: no-drag; /* Ensure buttons are not draggable */
+      padding: 0;
+      margin: 0;
+      border-radius: 2px;
+    }
+
+    .titlebar-btn:hover {
+      background-color: var(--control-hover);
+    }
+
+    .titlebar-btn.close:hover {
+      background-color: var(--control-close-hover);
+      color: var(--ds-text-inverse);
+    }
+
+    .titlebar-btn span {
+      line-height: 1;
+      user-select: none;
+    }
+  </style>
+  </head>
+  <body>
+    <!-- Custom Title Bar -->
+    <div class="custom-titlebar">
+      <div class="titlebar-brand">
+        <img src="assets/logo.ico" alt="ELOS" class="titlebar-logo" onerror="this.style.display='none'">
+        <span class="titlebar-company" id="titlebarCompanyName">ELOS</span>
+      </div>
+      <div class="titlebar-center">
+        <span class="titlebar-page-title" id="titlebarPageTitle">الرئيسية</span>
+      </div>
+      <div class="titlebar-controls">
+        <button class="titlebar-btn" id="titlebarMinimize" title="تصغير" style="-webkit-app-region: no-drag;">
+          <span>─</span>
+        </button>
+        <button class="titlebar-btn" id="titlebarMaximize" title="تكبير" style="-webkit-app-region: no-drag;">
+          <span>☐</span>
+        </button>
+        <button class="titlebar-btn close" id="titlebarClose" title="إغلاق" style="-webkit-app-region: no-drag;">
+          <span>✕</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="app-sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo" id="sidebarLogo">
+          <img id="companyLogoImg" src="" alt="" style="width: 100%; height: 100%; object-fit: cover; border-radius: 10px; display: none;">
+          <span id="companyLogoFallback">E</span>
+        </div>
+        <div class="sidebar-brand">
+          <h1 id="companyNameDisplay">ELOS</h1>
+          <span id="greetingMessage">نظام المحاسبة المتكامل</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <!-- الرئيسية -->
+        <div class="nav-group">
+          <a class="nav-item active" data-route="home">
+            <span class="nav-icon">🏠</span>
+            <span class="nav-text">الرئيسية</span>
+          </a>
+          <a class="nav-item" data-route="pos">
+            <span class="nav-icon">🛒</span>
+            <span class="nav-text">نقطة البيع</span>
+          </a>
+          <a class="nav-item" data-route="repairs">
+            <span class="nav-icon">🔧</span>
+            <span class="nav-text">الصيانة</span>
+          </a>
+        </div>
+
+        <!-- المخزون -->
+        <div class="nav-group" data-permission="inventory">
+          <div class="nav-group-title">المخزون</div>
+          <a class="nav-item" data-route="warehouses">
+            <span class="nav-icon">🏭</span>
+            <span class="nav-text">المخازن</span>
+          </a>
+          <a class="nav-item" data-route="inventory">
+            <span class="nav-icon">📱</span>
+            <span class="nav-text">الأجهزة</span>
+          </a>
+          <a class="nav-item" data-route="accessories">
+            <span class="nav-icon">🎧</span>
+            <span class="nav-text">الإكسسوارات</span>
+          </a>
+          <a class="nav-item" data-route="repair-parts" data-permission="admin">
+            <span class="nav-icon">🔧</span>
+            <span class="nav-text">مخزن قطع الغيار</span>
+          </a>
+        </div>
+
+        <!-- العمليات -->
+        <div class="nav-group" data-permission="sales">
+          <div class="nav-group-title">العمليات</div>
+
+          <!-- المبيعات Dropdown -->
+          <div class="nav-dropdown" id="salesDropdown">
+            <div class="nav-dropdown-toggle" onclick="toggleDropdown('salesDropdown')">
+              <span class="nav-icon">📈</span>
+              <span class="nav-text">المبيعات</span>
+              <span class="nav-dropdown-arrow">▼</span>
+            </div>
+            <div class="nav-dropdown-menu">
+              <a class="nav-item" data-route="sales-general">
+                <span class="nav-icon">📊</span>
+                <span class="nav-text">المبيعات العامة</span>
+              </a>
+              <a class="nav-item" data-route="sales">
+                <span class="nav-icon">📱</span>
+                <span class="nav-text">مبيعات الأجهزة</span>
+              </a>
+              <a class="nav-item" data-route="accessory-sales">
+                <span class="nav-icon">🎧</span>
+                <span class="nav-text">مبيعات الإكسسوارات</span>
+              </a>
+              <a class="nav-item" data-route="repair-parts-sales">
+                <span class="nav-icon">🔧</span>
+                <span class="nav-text">مبيعات قطع الغيار</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- المشتريات Dropdown -->
+          <div class="nav-dropdown" id="purchasesDropdown" data-permission="purchases">
+            <div class="nav-dropdown-toggle" onclick="toggleDropdown('purchasesDropdown')">
+              <span class="nav-icon">📥</span>
+              <span class="nav-text">المشتريات</span>
+              <span class="nav-dropdown-arrow">▼</span>
+            </div>
+            <div class="nav-dropdown-menu">
+              <a class="nav-item" data-route="purchases-general">
+                <span class="nav-icon">📊</span>
+                <span class="nav-text">المشتريات العامة</span>
+              </a>
+              <a class="nav-item" data-route="purchases">
+                <span class="nav-icon">📱</span>
+                <span class="nav-text">مشتريات الأجهزة</span>
+              </a>
+              <a class="nav-item" data-route="accessory-purchases">
+                <span class="nav-icon">🎧</span>
+                <span class="nav-text">مشتريات الإكسسوارات</span>
+              </a>
+              <a class="nav-item" data-route="repair-parts-purchases">
+                <span class="nav-icon">🔧</span>
+                <span class="nav-text">مشتريات قطع الغيار</span>
+              </a>
+            </div>
+          </div>
+        </div>
+
+        <!-- الحسابات -->
+        <div class="nav-group">
+          <div class="nav-group-title">الحسابات</div>
+          <a class="nav-item" data-route="general-accounts" data-permission="admin">
+            <span class="nav-icon">📊</span>
+            <span class="nav-text">الحسابات العامة</span>
+          </a>
+          <a class="nav-item" data-route="safe" data-permission="safe">
+            <span class="nav-icon">🏦</span>
+            <span class="nav-text">الخزينة</span>
+          </a>
+          <a class="nav-item" data-route="clients">
+            <span class="nav-icon">👥</span>
+            <span class="nav-text">العملاء</span>
+          </a>
+          <a class="nav-item" data-route="suppliers" data-permission="suppliers">
+            <span class="nav-icon">🚚</span>
+            <span class="nav-text">الموردين</span>
+          </a>
+        </div>
+
+        <!-- الإدارة -->
+        <div class="nav-group" data-permission="admin">
+          <div class="nav-group-title">الإدارة</div>
+          <a class="nav-item" data-route="employees">
+            <span class="nav-icon">👨‍💼</span>
+            <span class="nav-text">الموظفين</span>
+          </a>
+          <a class="nav-item" data-route="users">
+            <span class="nav-icon">🔐</span>
+            <span class="nav-text">المستخدمين</span>
+          </a>
+          <a class="nav-item" data-route="partners">
+            <span class="nav-icon">🤝</span>
+            <span class="nav-text">الشركاء</span>
+          </a>
+          <a class="nav-item" data-route="reports">
+            <span class="nav-icon">📊</span>
+            <span class="nav-text">التقارير</span>
+          </a>
+          <a class="nav-item" data-route="settings">
+            <span class="nav-icon">⚙️</span>
+            <span class="nav-text">الإعدادات</span>
+          </a>
+        </div>
+
+        <!-- أدوات -->
+        <div class="nav-group">
+          <div class="nav-group-title">أدوات</div>
+          <a class="nav-item" data-route="reminders">
+            <span class="nav-icon">⏰</span>
+            <span class="nav-text">التذكيرات</span>
+          </a>
+          <a class="nav-item" data-route="archive" data-permission="archive">
+            <span class="nav-icon">🗄️</span>
+            <span class="nav-text">الأرشيف</span>
+          </a>
+          <a class="nav-item" data-route="blacklist">
+            <span class="nav-icon">🚫</span>
+            <span class="nav-text">البلاك ليست</span>
+          </a>
+          <a class="nav-item" data-route="help">
+            <span class="nav-icon">📖</span>
+            <span class="nav-text">دليل المستخدم</span>
+          </a>
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div class="user-card">
+          <div class="user-avatar" id="userAvatar">A</div>
+          <div class="user-info">
+            <div class="user-name" id="userName">المستخدم</div>
+            <div class="user-role" id="userRole">مدير</div>
+          </div>
+        </div>
+        <button class="logout-btn" onclick="showLogoutConfirm()">
+          <span>🚪</span>
+          <span>تسجيل الخروج</span>
+        </button>
+      </div>
+    </aside>
+
+    <!-- Logout Confirmation Modal -->
+    <div id="logoutModal" class="logout-modal-overlay" style="display: none;">
+      <div class="logout-modal">
+        <div class="logout-modal-icon">👋</div>
+        <h3 class="logout-modal-title">تسجيل الخروج</h3>
+        <p class="logout-modal-text">سيتم إغلاق البرنامج وتسجيل خروجك</p>
+        <div class="logout-modal-user">
+          <span class="logout-user-avatar" id="logoutUserAvatar">A</span>
+          <span class="logout-user-name" id="logoutUserName">المستخدم</span>
+        </div>
+        <div class="logout-modal-actions">
+          <button class="logout-modal-btn cancel" onclick="hideLogoutConfirm()">
+            البقاء
+          </button>
+          <button class="logout-modal-btn confirm" onclick="confirmLogout()">
+            خروج
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="main-content">
+      <!-- Top Header -->
+      <header class="top-header">
+        <div class="page-title">
+          <span class="page-title-icon" id="pageIcon">🏠</span>
+          <h1 id="pageTitle">الرئيسية</h1>
+        </div>
+        <div class="header-actions">
+          <!-- POS Actions - تظهر فقط في صفحة نقطة البيع -->
+          <div class="pos-actions" id="posActions">
+            <button class="pos-btn fullscreen" id="btnPosFullscreen" title="وضع ملء الشاشة (F11)" onclick="toggleFullscreenMode()">
+              <span class="btn-icon" id="fullscreenIcon">⛶</span>
+              <span id="fullscreenText">ملء الشاشة</span>
+            </button>
+            <button class="pos-btn purchase" id="btnPosPurchase" title="شراء جهاز من عميل">
+              <span class="btn-icon">📥</span>
+              <span>شراء جهاز</span>
+            </button>
+            <button class="pos-btn return" id="btnPosReturn" title="مرتجع">
+              <span class="btn-icon">↩️</span>
+              <span>مرتجع</span>
+            </button>
+            <button class="pos-btn receive" id="btnPosReceive" title="استلام من عميل">
+              <span class="btn-icon">💰</span>
+              <span>استلام من عميل</span>
+            </button>
+            <button class="pos-btn barcode" id="btnPosBarcode" title="طباعة باركود">
+              <span class="btn-icon">🏷️</span>
+              <span>طباعة باركود</span>
+            </button>
+          </div>
+
+          <!-- Search Button (Admin only) -->
+          <button class="header-btn" data-permission="search" onclick="window.globalSearch && window.globalSearch.open()" title="بحث (Ctrl+K)">
+            <span>🔍</span>
+            <span>بحث</span>
+            <kbd style="margin-right: 6px; font-size: 10px; padding: 2px 6px; background: var(--bg-card); border-radius: 4px;">Ctrl+K</kbd>
+          </button>
+
+          <!-- Time Display -->
+          <div class="time-display">
+            <span class="time-date" id="currentDate">--</span>
+            <span class="time-icon">🕐</span>
+            <span class="time-value" id="currentTime">--:-- --</span>
+          </div>
+
+          <!-- Blacklist Button -->
+          <button class="header-btn danger" onclick="router.navigate('blacklist')" title="البلاك ليست - الأجهزة المسروقة">
+            <span>🚫</span>
+            <span>البلاك ليست</span>
+          </button>
+
+          <!-- Theme Toggle Button -->
+          <button class="header-btn theme-toggle" id="themeToggleBtn" onclick="toggleTheme()" title="تبديل الوضع الليلي/النهاري">
+            <span id="themeIcon">🌙</span>
+            <span id="themeText">وضع فاتح</span>
+          </button>
+
+          <!-- Back Button -->
+          <button class="header-btn" onclick="router.back()">
+            <span>←</span>
+            <span>رجوع</span>
+          </button>
+        </div>
+      </header>
+
+      <!-- Page Content Container -->
+      <div id="page-container">
+        <!-- الصفحات تُحمل هنا ديناميكياً -->
+      </div>
+
+      <!-- Footer -->
+      <footer class="app-footer">
+        <div class="footer-section">
+          <div class="footer-status">
+            <div class="status-dot" id="connectionStatus"></div>
+            <span id="connectionText">متصل</span>
+          </div>
+          <div class="footer-item">
+            <span class="icon">💾</span>
+            <span id="dbStatus">قاعدة البيانات: نشطة</span>
+          </div>
+        </div>
+
+        <div class="footer-brand">
+          <span>ELOS</span>
+          <span style="-webkit-text-fill-color: var(--text-muted); background: none;">Accounting System</span>
+          <div class="footer-version" id="appVersion">V 2.0</div>
+        </div>
+
+        <div class="footer-section">
+          <div class="footer-item">
+            <span class="icon">📅</span>
+            <span id="footerDate">--</span>
+          </div>
+          <div class="footer-item">
+            <span class="icon">👤</span>
+            <span id="footerUser">--</span>
+          </div>
+        </div>
+      </footer>
+    </main>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div class="page-loader hidden" id="pageLoader">
+    <div class="loader-spinner"></div>
+  </div>
+
+  <!-- Progress Bar -->
+  <div class="progress-bar" id="progressBar"></div>
+
+  <!-- SPA Scripts -->
+  <!-- Fetch Interceptor - MUST be first + CLIENT MODE SUPPORT -->
+  <script>
+    // ═════════════════════════════════════
+    // 🔄 Fetch Interceptor - Convert elos-db:// to http:// + CLIENT MODE
+    // ═════════════════════════════════════
+    (function() {
+      // 🔗 DYNAMIC CLIENT MODE DETECTION (يتم قراءتها في كل request)
+      function getBaseURL() {
+        const isClientMode = localStorage.getItem('elos_mode') === 'client';
+        const serverIP = localStorage.getItem('elos_server_ip');
+        const serverPort = localStorage.getItem('elos_server_port') || '48572';
+
+        if (isClientMode && serverIP) {
+          return `http://${serverIP}:${serverPort}`;
+        }
+        return 'http://127.0.0.1:48572';
+      }
+
+      function isClientModeActive() {
+        return localStorage.getItem('elos_mode') === 'client' && localStorage.getItem('elos_server_ip');
+      }
+
+      const originalFetch = window.fetch;
+      window.fetch = function(url, options) {
+        // قراءة الإعدادات بشكل ديناميكي في كل request
+        const baseURL = getBaseURL();
+        const isClientMode = isClientModeActive();
+
+        // Convert elos-db:// URLs to HTTP
+        if (typeof url === 'string' && url.startsWith('elos-db://')) {
+          url = url.replace('elos-db://', baseURL + '/');
+          console.log('[FETCH] 🔄 Converted:', url.substring(0, 70));
+        }
+        // Convert 127.0.0.1 to remote server in client mode
+        else if (isClientMode && typeof url === 'string' && url.includes('http://127.0.0.1:48572')) {
+          url = url.replace('http://127.0.0.1:48572', baseURL);
+          console.log('[FETCH] 🔄 Redirected to remote:', url.substring(0, 70));
+        }
+
+        // Auto-add x-session-id header if available
+        const sessionId = localStorage.getItem('sessionId');
+
+        // DEBUG: Log session status
+        if (!sessionId) {
+          console.warn('[FETCH] ⚠️ No sessionId in localStorage!');
+        }
+
+        if (sessionId && (url.includes(baseURL) || url.includes('127.0.0.1:48572'))) {
+          options = options || {};
+          options.headers = options.headers || {};
+
+          // Convert Headers object to plain object if needed
+          if (options.headers instanceof Headers) {
+            const plainHeaders = {};
+            options.headers.forEach((value, key) => {
+              plainHeaders[key] = value;
+            });
+            options.headers = plainHeaders;
+          }
+
+          // Add session header if not already present
+          if (!options.headers['x-session-id']) {
+            options.headers['x-session-id'] = sessionId;
+            console.log('[FETCH] 🔑 Session header added:', sessionId.substring(0, 16) + '...');
+          }
+        }
+
+        return originalFetch.call(this, url, options);
+      };
+      console.log('[FETCH] ✅ Fetch interceptor installed');
+      console.log('[FETCH] Initial Mode:', isClientModeActive() ? 'CLIENT' : 'LOCAL');
+      console.log('[FETCH] Initial Target:', getBaseURL());
+    })();
+  </script>
+
+  <!-- Logout Confirmation Script -->
+  <script>
+    // ═════════════════════════════════════
+    // 🚪 Logout Confirmation Modal
+    // ═════════════════════════════════════
+    function showLogoutConfirm() {
+      const modal = document.getElementById('logoutModal');
+      const user = window.currentUser || {};
+
+      // تحديث بيانات المستخدم في الـ modal
+      const avatarEl = document.getElementById('logoutUserAvatar');
+      const nameEl = document.getElementById('logoutUserName');
+      const displayName = user.display_name || user.username || 'المستخدم';
+
+      if (avatarEl) {
+        avatarEl.textContent = displayName.charAt(0).toUpperCase();
+      }
+      if (nameEl) {
+        nameEl.textContent = displayName;
+      }
+
+      modal.style.display = 'flex';
+
+      // إغلاق بـ Escape
+      document.addEventListener('keydown', handleLogoutEscape);
+    }
+
+    function hideLogoutConfirm() {
+      const modal = document.getElementById('logoutModal');
+      modal.style.display = 'none';
+      document.removeEventListener('keydown', handleLogoutEscape);
+    }
+
+    function handleLogoutEscape(e) {
+      if (e.key === 'Escape') {
+        hideLogoutConfirm();
+      }
+    }
+
+    function confirmLogout() {
+      hideLogoutConfirm();
+      // استدعاء دالة logout الأصلية
+      if (typeof logout === 'function') {
+        logout();
+      }
+    }
+
+    // إغلاق عند النقر خارج الـ modal
+    document.addEventListener('click', function(e) {
+      const modal = document.getElementById('logoutModal');
+      if (e.target === modal) {
+        hideLogoutConfirm();
+      }
+    });
+  </script>
+
+  <!-- Dropdown Toggle Script -->
+  <script>
+    // ═════════════════════════════════════
+    // 📂 Toggle Dropdown menus
+    // ═════════════════════════════════════
+    function toggleDropdown(dropdownId) {
+      const dropdown = document.getElementById(dropdownId);
+      if (dropdown) {
+        dropdown.classList.toggle('open');
+      }
+    }
+
+    // Auto-open dropdown when a sub-item is active
+    document.addEventListener('DOMContentLoaded', function() {
+      // Watch for route changes to auto-open relevant dropdown
+      const salesRoutes = ['sales-general', 'accessory-sales', 'repair-parts-sales'];
+      const purchasesRoutes = ['purchases-general', 'accessory-purchases'];
+
+      function checkAndOpenDropdowns() {
+        const activeItem = document.querySelector('.nav-dropdown-menu .nav-item.active');
+        if (activeItem) {
+          const dropdown = activeItem.closest('.nav-dropdown');
+          if (dropdown) {
+            dropdown.classList.add('open');
+          }
+        }
+      }
+
+      // Check on load
+      setTimeout(checkAndOpenDropdowns, 500);
+
+      // Watch for class changes on nav-items
+      const observer = new MutationObserver(checkAndOpenDropdowns);
+      document.querySelectorAll('.nav-dropdown-menu .nav-item').forEach(item => {
+        observer.observe(item, { attributes: true, attributeFilter: ['class'] });
+      });
+    });
+  </script>
+
+  <!-- Time Update Script -->
+  <script>
+    // ═════════════════════════════════════
+    // 🕐 تحديث الوقت والتاريخ
+    // ═════════════════════════════════════
+    function updateDateTime() {
+      const now = new Date();
+
+      // Time in 12-hour format with AM/PM
+      let hours = now.getHours();
+      const minutes = now.getMinutes().toString().padStart(2, '0');
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12;
+      hours = hours ? hours : 12; // 0 becomes 12
+      const timeStr = `${hours}:${minutes} ${ampm}`;
+
+      // Date in Arabic format
+      const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+      const months = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+      const dayName = days[now.getDay()];
+      const day = now.getDate();
+      const month = months[now.getMonth()];
+      const dateStr = `${dayName} ${day} ${month}`;
+
+      // Update DOM
+      const timeEl = document.getElementById('currentTime');
+      const dateEl = document.getElementById('currentDate');
+      if (timeEl) timeEl.textContent = timeStr;
+      if (dateEl) dateEl.textContent = dateStr;
+    }
+
+    // Start updating
+    updateDateTime();
+    setInterval(updateDateTime, 1000);
+  </script>
+
+  <!-- Footer Update Script -->
+  <script>
+    // ═════════════════════════════════════
+    // 📊 تحديث بيانات الـ Footer
+    // ═════════════════════════════════════
+    (function() {
+      'use strict';
+
+      // تحديث التاريخ في الـ footer
+      function updateFooterDate() {
+        const now = new Date();
+        const options = { year: 'numeric', month: 'short', day: 'numeric' };
+        const dateStr = now.toLocaleDateString('ar-EG', options);
+        const footerDateEl = document.getElementById('footerDate');
+        if (footerDateEl) footerDateEl.textContent = dateStr;
+      }
+
+      // تحديث اسم المستخدم في الـ footer
+      function updateFooterUser() {
+        const footerUserEl = document.getElementById('footerUser');
+        if (footerUserEl) {
+          const user = window.currentUser;
+          if (user && user.username) {
+            footerUserEl.textContent = user.username;
+          } else {
+            footerUserEl.textContent = 'مستخدم';
+          }
+        }
+      }
+
+      // الحصول على إصدار التطبيق
+      async function updateAppVersion() {
+        const versionEl = document.getElementById('appVersion');
+        if (versionEl) {
+          try {
+            // محاولة الحصول على الإصدار من package.json أو من الـ main process
+            if (window.electronAPI && window.electronAPI.getAppVersion) {
+              const version = await window.electronAPI.getAppVersion();
+              versionEl.textContent = version && String(version).startsWith('V ') ? version : `V ${version}`;
+            } else {
+              versionEl.textContent = 'V 2.0';
+            }
+          } catch (e) {
+            versionEl.textContent = 'V 2.0';
+          }
+        }
+      }
+
+      // فحص حالة الاتصال
+      function updateConnectionStatus() {
+        const statusDot = document.getElementById('connectionStatus');
+        const statusText = document.getElementById('connectionText');
+        const dbStatus = document.getElementById('dbStatus');
+
+        // فحص اتصال الـ API (سيتم تحويله تلقائياً للسيرفر الصحيح)
+        fetch('elos-db://health', { method: 'GET' })
+          .then(res => {
+            if (res.ok) {
+              if (statusDot) statusDot.className = 'status-dot';
+              if (statusText) statusText.textContent = 'متصل';
+              if (dbStatus) dbStatus.textContent = 'قاعدة البيانات: نشطة';
+            } else {
+              throw new Error('Not OK');
+            }
+          })
+          .catch(() => {
+            if (statusDot) statusDot.className = 'status-dot error';
+            if (statusText) statusText.textContent = 'غير متصل';
+            if (dbStatus) dbStatus.textContent = 'قاعدة البيانات: غير متصلة';
+          });
+      }
+
+      // تهيئة الـ footer
+      function initFooter() {
+        updateFooterDate();
+        updateAppVersion();
+        updateConnectionStatus();
+
+        // تحديث المستخدم بعد تأخير للتأكد من تحميله
+        setTimeout(updateFooterUser, 500);
+
+        // تحديث حالة الاتصال كل 30 ثانية
+        setInterval(updateConnectionStatus, 30000);
+
+        // تحديث المستخدم عند تغيير الصفحة
+        if (window.router) {
+          window.router.on('afterNavigate', updateFooterUser);
+        }
+      }
+
+      // بدء التهيئة
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initFooter);
+      } else {
+        initFooter();
+      }
+
+      // تصدير للاستخدام الخارجي
+      window.updateFooter = {
+        date: updateFooterDate,
+        user: updateFooterUser,
+        version: updateAppVersion,
+        connection: updateConnectionStatus
+      };
+    })();
+  </script>
+
+  <!-- Fullscreen Mode Controller -->
+  <script>
+    // ═════════════════════════════════════
+    // ⛶ Fullscreen Mode Controller
+    // ═════════════════════════════════════
+    let isFullscreenMode = false;
+
+    function toggleFullscreenMode() {
+      isFullscreenMode = !isFullscreenMode;
+      document.body.classList.toggle('fullscreen-mode', isFullscreenMode);
+
+      const btn = document.getElementById('btnPosFullscreen');
+      const icon = document.getElementById('fullscreenIcon');
+      const text = document.getElementById('fullscreenText');
+
+      if (isFullscreenMode) {
+        if (btn) btn.classList.add('active');
+        if (icon) icon.textContent = '⛶';
+        if (text) text.textContent = 'إنهاء ملء الشاشة';
+      } else {
+        if (btn) btn.classList.remove('active');
+        if (icon) icon.textContent = '⛶';
+        if (text) text.textContent = 'ملء الشاشة';
+      }
+
+      console.log('[Fullscreen]', isFullscreenMode ? 'Enabled' : 'Disabled');
+    }
+
+    // إلغاء وضع ملء الشاشة تلقائياً
+    function exitFullscreenMode() {
+      if (isFullscreenMode) {
+        isFullscreenMode = false;
+        document.body.classList.remove('fullscreen-mode');
+
+        const btn = document.getElementById('btnPosFullscreen');
+        const icon = document.getElementById('fullscreenIcon');
+        const text = document.getElementById('fullscreenText');
+
+        if (btn) btn.classList.remove('active');
+        if (icon) icon.textContent = '⛶';
+        if (text) text.textContent = 'ملء الشاشة';
+
+        console.log('[Fullscreen] Auto-disabled on navigation');
+      }
+    }
+
+    // إظهار/إخفاء زر fullscreen بناءً على نوع المستخدم
+    function updateFullscreenButtonVisibility() {
+      const user = window.currentUser || {};
+      const btn = document.getElementById('btnPosFullscreen');
+
+      if (btn) {
+        // إظهار زر ملء الشاشة للكاشير فقط
+        if (user.role === 'cashier') {
+          btn.style.display = '';
+        } else {
+          btn.style.display = 'none';
+        }
+      }
+    }
+
+    // اختصار F11 للتبديل (للكاشير فقط في صفحة POS)
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'F11') {
+        e.preventDefault();
+        const user = window.currentUser || {};
+        const posActions = document.getElementById('posActions');
+
+        // فقط للكاشير وفي صفحة POS
+        if (user.role === 'cashier' && posActions && posActions.classList.contains('visible')) {
+          toggleFullscreenMode();
+        }
+      }
+    });
+
+    // تهيئة عند تحميل الصفحة
+    document.addEventListener('DOMContentLoaded', () => {
+      setTimeout(updateFullscreenButtonVisibility, 500);
+    });
+  </script>
+
+  <!-- Theme Toggle Controller -->
+  <script>
+    // ═════════════════════════════════════
+    // 🌙 Theme Toggle Controller
+    // ═════════════════════════════════════
+    function toggleTheme() {
+      // Telemetry removed for production
+      // Use ThemeSync if available, otherwise fallback
+      if (window.ThemeSync) {
+        const currentTheme = window.ThemeSync.getTheme();
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        window.ThemeSync.setTheme(newTheme);
+        updateThemeUI(newTheme);
+        broadcastThemeToIframes(newTheme);
+      } else {
+        // Fallback if ThemeSync not loaded yet
+        const THEME_KEY = 'elos_theme';
+        const currentTheme = localStorage.getItem(THEME_KEY) || 'dark';
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        localStorage.setItem(THEME_KEY, newTheme);
+        document.documentElement.setAttribute('data-theme', newTheme);
+        updateThemeUI(newTheme);
+        broadcastThemeToIframes(newTheme);
+      }
+    }
+
+    function updateThemeUI(theme) {
+      const icon = document.getElementById('themeIcon');
+      const text = document.getElementById('themeText');
+
+      if (theme === 'light') {
+        if (icon) icon.textContent = '☀️';
+        if (text) text.textContent = 'وضع داكن';
+      } else {
+        if (icon) icon.textContent = '🌙';
+        if (text) text.textContent = 'وضع فاتح';
+      }
+    }
+
+    function broadcastThemeToIframes(theme) {
+      // إرسال الـ theme للـ iframes
+      const iframe = document.getElementById('page-iframe');
+      if (iframe && iframe.contentWindow) {
+        try {
+          iframe.contentWindow.postMessage({ type: 'theme-change', theme: theme }, '*');
+        } catch (e) {
+          console.warn('[Theme] Could not broadcast to iframe:', e);
+        }
+      }
+    }
+
+    // تطبيق الـ theme عند تحميل الصفحة
+    document.addEventListener('DOMContentLoaded', () => {
+      const savedTheme = window.ThemeSync ? window.ThemeSync.getTheme() : (localStorage.getItem('elos_theme') || 'dark');
+      updateThemeUI(savedTheme);
+    });
+
+    // الاستماع لتغييرات localStorage من صفحات أخرى
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'elos_theme' || e.key === 'elos-theme') {
+        const newTheme = e.newValue || 'dark';
+        if (window.ThemeSync) {
+          window.ThemeSync.setTheme(newTheme);
+        } else {
+          document.documentElement.setAttribute('data-theme', newTheme);
+        }
+        updateThemeUI(newTheme);
+      }
+    });
+
+    // Listen for theme changes from ThemeSync
+    window.addEventListener('themechange', (e) => {
+      if (e.detail && e.detail.theme) {
+        updateThemeUI(e.detail.theme);
+      }
+    });
+  </script>
+
+  <!-- SPA Scripts -->
+  <script src="./spa/router.js"></script>
+  <script src="./spa/page-loader.js"></script>
+  <script src="./spa/skeleton.js"></script>
+  <script src="./spa/toast.js"></script>
+  <script src="./spa/global-search.js"></script>
+  <script src="./spa/shortcuts-tips.js"></script>
+  <script src="./spa/onboarding-tips.js"></script>
+  <script src="./spa/tabs-manager.js"></script>
+  <script src="./spa/app.js"></script>
+
+  <!-- Title Bar Controller -->
+  <script>
+    (function() {
+      'use strict';
+
+      // الاستماع لطلبات إعادة التشغيل من الصفحات الفرعية (مثل إعداد الشبكة في iframe)
+      window.addEventListener('message', (e) => {
+        if (e.data && e.data.type === 'elos-restart-app' && window.authBridge && typeof window.authBridge.restartApp === 'function') {
+          window.authBridge.restartApp();
+        }
+      });
+      
+      // Initialize title bar controls
+      const minimizeBtn = document.getElementById('titlebarMinimize');
+      const maximizeBtn = document.getElementById('titlebarMaximize');
+      const closeBtn = document.getElementById('titlebarClose');
+      const pageTitleEl = document.getElementById('titlebarPageTitle');
+      const companyNameEl = document.getElementById('titlebarCompanyName');
+
+      if (minimizeBtn && window.authBridge) {
+        minimizeBtn.addEventListener('click', () => {
+          window.authBridge.minimizeWindow();
+        });
+      }
+
+      if (maximizeBtn && window.authBridge) {
+        let isMaximized = false;
+        maximizeBtn.addEventListener('click', () => {
+          window.authBridge.maximizeToggleWindow();
+          isMaximized = !isMaximized;
+          maximizeBtn.querySelector('span').textContent = isMaximized ? '❐' : '□';
+        });
+      }
+
+      if (closeBtn && window.authBridge) {
+        closeBtn.addEventListener('click', () => {
+          // ✅ الإغلاق يمر عبر main process الذي يتحقق من السلة تلقائياً
+          window.authBridge.closeWindow();
+        });
+      }
+
+      // Sync page title from router or pageTitle element
+      if (pageTitleEl) {
+        const updateTitle = () => {
+          const pageTitle = document.getElementById('pageTitle');
+          if (pageTitle) {
+            pageTitleEl.textContent = pageTitle.textContent || 'الرئيسية';
+          }
+        };
+        
+        // Update on route change
+        if (window.router && window.router.on) {
+          window.router.on('afterNavigate', () => {
+            setTimeout(updateTitle, 100);
+          });
+        }
+        
+        // Initial update
+        setTimeout(updateTitle, 500);
+        
+        // Also watch for pageTitle changes
+        const observer = new MutationObserver(updateTitle);
+        const pageTitle = document.getElementById('pageTitle');
+        if (pageTitle) {
+          observer.observe(pageTitle, { childList: true, subtree: true });
+        }
+
+        // Watch for iframe title changes
+        const iframeObserver = new MutationObserver(() => {
+          const iframe = document.querySelector('#page-container iframe');
+          if (iframe && iframe.contentDocument) {
+            try {
+              const iframeTitle = iframe.contentDocument.title;
+              if (iframeTitle && !iframeTitle.includes('ELOS')) {
+                pageTitleEl.textContent = iframeTitle.split('•')[0].trim() || 'الرئيسية';
+              }
+            } catch (e) {}
+          }
+        });
+        
+        const pageContainer = document.getElementById('page-container');
+        if (pageContainer) {
+          iframeObserver.observe(pageContainer, { childList: true, subtree: true });
+        }
+      }
+
+      // Load company name from settings
+      if (companyNameEl) {
+        fetch('elos-db://settings')
+          .then(res => res.json())
+          .then(data => {
+            if (data && data.company_name) {
+              companyNameEl.textContent = data.company_name;
+            }
+          })
+          .catch(() => {});
+      }
+
+      console.log('[TitleBar] Custom title bar initialized');
+    })();
+  </script>
+
+  <!-- POS Actions Controller -->
+  <script>
+    // ═════════════════════════════════════
+    // 🛒 POS Header Actions Controller
+    // ═════════════════════════════════════
+    (function() {
+      'use strict';
+
+      const posActionsEl = document.getElementById('posActions');
+
+      // إظهار/إخفاء أزرار POS بناءً على الصفحة الحالية
+      function updatePosActionsVisibility(route) {
+        if (posActionsEl) {
+          if (route && route.path === 'pos') {
+            posActionsEl.classList.add('visible');
+            // تحديث ظهور زر fullscreen للكاشير فقط
+            if (typeof updateFullscreenButtonVisibility === 'function') {
+              updateFullscreenButtonVisibility();
+            }
+          } else {
+            posActionsEl.classList.remove('visible');
+            // إلغاء وضع ملء الشاشة عند الخروج من POS
+            if (typeof exitFullscreenMode === 'function') {
+              exitFullscreenMode();
+            }
+          }
+        }
+      }
+
+      // استدعاء دالة في الـ iframe
+      function callIframeFunction(fnName) {
+        const iframe = document.getElementById('page-iframe');
+        if (iframe && iframe.contentWindow) {
+          try {
+            const fn = iframe.contentWindow[fnName];
+            if (typeof fn === 'function') {
+              fn();
+            } else {
+              console.warn('[POS] Function not found in iframe:', fnName);
+            }
+          } catch (e) {
+            console.error('[POS] Error calling iframe function:', e);
+          }
+        }
+      }
+
+      // ربط أحداث الأزرار
+      document.getElementById('btnPosPurchase')?.addEventListener('click', () => {
+        callIframeFunction('openPurchaseModal');
+      });
+
+      document.getElementById('btnPosReturn')?.addEventListener('click', () => {
+        callIframeFunction('openReturnModal');
+      });
+
+      document.getElementById('btnPosReceive')?.addEventListener('click', () => {
+        callIframeFunction('openReceiveClientModal');
+      });
+
+      document.getElementById('btnPosBarcode')?.addEventListener('click', () => {
+        callIframeFunction('openBarcodePrintModal');
+      });
+
+      // الاستماع لأحداث الـ router
+      function initPosActions() {
+        if (window.router) {
+          // إظهار/إخفاء الأزرار عند التنقل
+          window.router.on('afterNavigate', (data) => {
+            updatePosActionsVisibility(data.route);
+          });
+
+          // فحص الصفحة الحالية
+          const currentRoute = window.router.getCurrentRoute();
+          updatePosActionsVisibility(currentRoute);
+        }
+      }
+
+      // تهيئة
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+          setTimeout(initPosActions, 200);
+        });
+      } else {
+        setTimeout(initPosActions, 200);
+      }
+
+      console.log('[POS Actions] Controller initialized');
+    })();
+  </script>
+
+  <!-- Company Info & Greeting -->
+  <script>
+    // ═════════════════════════════════════
+    // 🏢 تحميل بيانات الشركة ورسالة الترحيب
+    // ═════════════════════════════════════
+    (function() {
+      'use strict';
+
+      // تحديث رسالة الترحيب حسب الوقت
+      function updateGreetingMessage() {
+        const hour = new Date().getHours();
+        let greeting = '';
+
+        if (hour >= 5 && hour < 12) {
+          greeting = '☀️ صباح الخير';
+        } else if (hour >= 12 && hour < 17) {
+          greeting = '🌤️ مساء الخير';
+        } else if (hour >= 17 && hour < 21) {
+          greeting = '🌆 مساء النور';
+        } else {
+          greeting = '🌙 ليلة سعيدة';
+        }
+
+        const greetingEl = document.getElementById('greetingMessage');
+        if (greetingEl) {
+          greetingEl.textContent = greeting;
+        }
+      }
+
+      // تحميل بيانات الشركة من الإعدادات
+      async function loadCompanyInfo() {
+        try {
+          // أولاً: جرب من localStorage (متاح دائماً)
+          const saved = localStorage.getItem('appSettings');
+          let settings = null;
+
+          if (saved) {
+            settings = JSON.parse(saved);
+          } else {
+            // إذا localStorage فارغ، جرب من API
+            const res = await fetch('elos-db://settings?category=company');
+            if (res.ok) {
+              settings = await res.json();
+            }
+          }
+
+          if (!settings) {
+            console.log('[Company Info] No settings found');
+            return;
+          }
+
+          const companyName = settings.companyName || settings.company_name;
+          const companyLogo = settings.companyLogo || settings.company_logo;
+
+          // تحديث اسم الشركة في الـ Sidebar
+          const nameEl = document.getElementById('companyNameDisplay');
+          if (nameEl && companyName) {
+            nameEl.textContent = companyName;
+          }
+          // تحديث اسم الشركة في الـ Titlebar (شريط النافذة)
+          const titlebarNameEl = document.getElementById('titlebarCompanyName');
+          if (titlebarNameEl) {
+            titlebarNameEl.textContent = companyName || 'ELOS';
+          }
+
+          // تحديث اللوجو
+          const logoImg = document.getElementById('companyLogoImg');
+          const logoFallback = document.getElementById('companyLogoFallback');
+
+          if (companyLogo && logoImg && logoFallback) {
+            logoImg.src = companyLogo;
+            logoImg.style.display = 'block';
+            logoFallback.style.display = 'none';
+
+            // في حالة خطأ تحميل الصورة
+            logoImg.onerror = function() {
+              logoImg.style.display = 'none';
+              logoFallback.style.display = 'flex';
+              // استخدام أول حرف من اسم الشركة
+              if (companyName) {
+                logoFallback.textContent = companyName.charAt(0).toUpperCase();
+              }
+            };
+          } else if (logoFallback && companyName) {
+            // استخدام أول حرف من اسم الشركة كـ fallback
+            logoFallback.textContent = companyName.charAt(0).toUpperCase();
+          }
+
+          console.log('[Company Info] Loaded:', companyName, companyLogo ? '(with logo)' : '(no logo)');
+        } catch (e) {
+          console.log('[Company Info] Could not load company settings:', e.message);
+        }
+      }
+
+      // تهيئة
+      function init() {
+        updateGreetingMessage();
+        loadCompanyInfo();
+
+        // تحديث رسالة الترحيب كل ساعة
+        setInterval(updateGreetingMessage, 3600000);
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
+      } else {
+        init();
+      }
+
+      // تصدير للاستخدام الخارجي (لتحديث البيانات بعد حفظ الإعدادات)
+      window.refreshCompanyInfo = loadCompanyInfo;
+
+      console.log('[Company Info] Controller initialized');
+    })();
+  </script>
+
+  <!-- Window Visibility & Resize Handler - Fix Layout Issues -->
+  <script>
+    // ═════════════════════════════════════
+    // 🔄 Window Visibility & Resize Handler
+    // إصلاح مشكلة تغير التنسيق بعد minimize/restore
+    // ═════════════════════════════════════
+    (function() {
+      'use strict';
+
+      let resizeTimeout = null;
+      let lastWidth = window.innerWidth;
+      let lastHeight = window.innerHeight;
+
+      // دالة لإعادة حساب أبعاد الـ iframe (100% من الـ container = لا فراغ فوق الفوتر)
+      function recalculateIframeLayout() {
+        const iframe = document.getElementById('page-iframe');
+        if (iframe) {
+          iframe.style.height = '0px';
+          requestAnimationFrame(() => {
+            iframe.style.height = '100%';
+            console.log('[Layout] Iframe height recalculated (100%)');
+          });
+        }
+      }
+
+      // دالة لإعادة حساب layout الصفحة
+      function recalculatePageLayout() {
+        const container = document.getElementById('page-container');
+        if (container) {
+          // Force reflow
+          container.style.display = 'none';
+          container.offsetHeight; // Trigger reflow
+          container.style.display = '';
+        }
+
+        recalculateIframeLayout();
+
+        // إرسال resize event للـ iframe content
+        const iframe = document.getElementById('page-iframe');
+        if (iframe && iframe.contentWindow) {
+          try {
+            iframe.contentWindow.dispatchEvent(new Event('resize'));
+          } catch (e) {
+            // تجاهل أخطاء الـ cross-origin
+          }
+        }
+      }
+
+      // معالج visibility change (minimize/restore)
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+          console.log('[Layout] Window restored, recalculating layout...');
+          // تأخير صغير للتأكد من اكتمال الرسم
+          setTimeout(recalculatePageLayout, 100);
+          setTimeout(recalculatePageLayout, 300); // تأكيد ثاني
+        }
+      });
+
+      // معالج focus (عند العودة للنافذة)
+      window.addEventListener('focus', () => {
+        // فحص إذا تغير الحجم
+        if (window.innerWidth !== lastWidth || window.innerHeight !== lastHeight) {
+          console.log('[Layout] Window size changed, recalculating...');
+          lastWidth = window.innerWidth;
+          lastHeight = window.innerHeight;
+          recalculatePageLayout();
+        }
+      });
+
+      // معالج resize مع debounce
+      window.addEventListener('resize', () => {
+        if (resizeTimeout) {
+          clearTimeout(resizeTimeout);
+        }
+
+        resizeTimeout = setTimeout(() => {
+          lastWidth = window.innerWidth;
+          lastHeight = window.innerHeight;
+          recalculatePageLayout();
+        }, 150);
+      });
+
+      // تصدير للاستخدام الخارجي
+      window.recalculateLayout = recalculatePageLayout;
+
+      console.log('[Layout] Window visibility handler initialized');
+    })();
+  </script>
+
+  <!-- Global Keyboard Shortcuts -->
+  <script>
+    // ═════════════════════════════════════
+    // ⌨️ Global Keyboard Shortcuts
+    // اختصارات لوحة المفاتيح العامة
+    // مع فحص صلاحيات المستخدم
+    // ═════════════════════════════════════
+    (function() {
+      'use strict';
+
+      // دالة فحص صلاحية الوصول للصفحة
+      function canAccessPage(page) {
+        const user = window.currentUser || {};
+        if (user.role === 'admin') return true;
+
+        // الصفحات المسموحة للكاشير
+        const cashierPages = ['pos', 'sales', 'clients', 'inventory', 'repairs'];
+        if (user.role === 'cashier') {
+          return cashierPages.includes(page);
+        }
+
+        return false;
+      }
+
+      // دالة التنقل الآمن مع فحص الصلاحيات
+      function safeNavigate(page) {
+        if (canAccessPage(page)) {
+          router?.navigate(page);
+        } else {
+          console.log('[Shortcuts] Access denied to:', page);
+          if (typeof showToast === 'function') {
+            showToast('ليس لديك صلاحية للوصول لهذه الصفحة', 'warning');
+          }
+        }
+      }
+
+      // قائمة الاختصارات
+      const shortcuts = {
+        // التنقل السريع (مع فحص الصلاحيات)
+        'Alt+H': { action: () => safeNavigate('home'), desc: 'الرئيسية', adminOnly: true },
+        'Alt+P': { action: () => safeNavigate('pos'), desc: 'نقطة البيع' },
+        'Alt+I': { action: () => safeNavigate('inventory'), desc: 'المخزون' },
+        'Alt+S': { action: () => safeNavigate('sales'), desc: 'المبيعات' },
+        'Alt+B': { action: () => safeNavigate('purchases'), desc: 'المشتريات', adminOnly: true },
+        'Alt+C': { action: () => safeNavigate('clients'), desc: 'العملاء' },
+        'Alt+R': { action: () => safeNavigate('reports'), desc: 'التقارير', adminOnly: true },
+
+        // البحث السريع
+        'Ctrl+F': { action: openGlobalSearch, desc: 'بحث' },
+        'Ctrl+K': { action: openGlobalSearch, desc: 'بحث سريع' },
+
+        // إجراءات سريعة
+        'Ctrl+N': { action: openNewItemModal, desc: 'إضافة جديد' },
+        'Ctrl+P': { action: printCurrentPage, desc: 'طباعة' },
+
+        // التنقل
+        'Alt+Left': { action: () => router?.back(), desc: 'رجوع' },
+        'Alt+Right': { action: () => router?.back(), desc: 'رجوع (عربي)' },
+        'Escape': { action: closeAllModals, desc: 'إغلاق' },
+
+        // تحديث
+        'F5': { action: refreshCurrentPage, desc: 'تحديث الصفحة' },
+        'Ctrl+R': { action: refreshCurrentPage, desc: 'تحديث' },
+      };
+
+      // دالة فتح البحث السريع
+      function openGlobalSearch() {
+        const searchInput = document.querySelector('#globalSearch, #qText, .search-input, input[type="search"]');
+        if (searchInput) {
+          searchInput.focus();
+          searchInput.select();
+        }
+      }
+
+      // دالة فتح modal إضافة جديد
+      function openNewItemModal() {
+        const currentRoute = router?.currentRoute?.path;
+        switch (currentRoute) {
+          case 'inventory':
+            if (typeof openAddModal === 'function') openAddModal();
+            break;
+          case 'clients':
+            if (typeof openAddClientModal === 'function') openAddClientModal();
+            break;
+          case 'purchases':
+            if (typeof openQuickPurchaseModal === 'function') openQuickPurchaseModal();
+            break;
+          case 'pos':
+            // في POS لا نحتاج modal إضافة
+            break;
+          default:
+            console.log('[Shortcuts] No add action for:', currentRoute);
+        }
+      }
+
+      // دالة الطباعة
+      function printCurrentPage() {
+        const printBtn = document.querySelector('.btn-print, [onclick*="print"], button:contains("طباعة")');
+        if (printBtn) {
+          printBtn.click();
+        } else {
+          window.print();
+        }
+      }
+
+      // دالة إغلاق جميع الـ modals
+      function closeAllModals() {
+        document.querySelectorAll('.modal.show, .modal-overlay.show, .modal[style*="display: flex"]').forEach(modal => {
+          modal.classList.remove('show');
+          modal.style.display = 'none';
+        });
+        document.body.style.overflow = '';
+      }
+
+      // دالة تحديث الصفحة الحالية
+      function refreshCurrentPage() {
+        const iframe = document.getElementById('page-iframe');
+        if (iframe) {
+          iframe.contentWindow.location.reload();
+        } else {
+          // محاولة استدعاء دالة التحديث الموجودة
+          const refreshFns = ['loadData', 'loadPurchases', 'loadInventory', 'loadSales', 'loadClients', 'refresh'];
+          for (const fn of refreshFns) {
+            if (typeof window[fn] === 'function') {
+              window[fn]();
+              return;
+            }
+          }
+        }
+      }
+
+      // معالج الاختصارات
+      document.addEventListener('keydown', (e) => {
+        // تجاهل إذا كان المستخدم يكتب في input
+        const isTyping = ['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName);
+
+        // بناء مفتاح الاختصار
+        let key = '';
+        if (e.ctrlKey || e.metaKey) key += 'Ctrl+';
+        if (e.altKey) key += 'Alt+';
+        if (e.shiftKey) key += 'Shift+';
+        key += e.key.length === 1 ? e.key.toUpperCase() : e.key;
+
+        // التحقق من وجود الاختصار
+        const shortcut = shortcuts[key];
+        if (shortcut) {
+          // السماح بـ Escape و F5 حتى أثناء الكتابة
+          if (key !== 'Escape' && key !== 'F5' && isTyping) return;
+
+          e.preventDefault();
+          e.stopPropagation();
+
+          try {
+            shortcut.action();
+            console.log('[Shortcuts]', shortcut.desc);
+          } catch (err) {
+            console.error('[Shortcuts] Error:', err);
+          }
+        }
+      });
+
+      // عرض قائمة الاختصارات (حسب صلاحيات المستخدم)
+      window.showShortcuts = function() {
+        const user = window.currentUser || {};
+        const isAdmin = user.role === 'admin';
+
+        let html = '<div style="font-family: monospace; direction: rtl; text-align: right;">';
+        html += '<h3 style="margin-bottom: 15px;">⌨️ اختصارات لوحة المفاتيح</h3>';
+        html += '<table style="width: 100%; border-collapse: collapse;">';
+
+        for (const [key, info] of Object.entries(shortcuts)) {
+          // إخفاء الاختصارات المخصصة للمدير فقط
+          if (info.adminOnly && !isAdmin) continue;
+
+          html += `<tr style="border-bottom: 1px solid #333;">
+            <td style="padding: 8px; color: #3b82f6; font-weight: bold;">${key}</td>
+            <td style="padding: 8px;">${info.desc}</td>
+          </tr>`;
+        }
+
+        html += '</table></div>';
+
+        // عرض في modal بسيط
+        const overlay = document.createElement('div');
+        overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;z-index:99999;';
+        overlay.innerHTML = `<div style="background:#1a1f29;padding:30px;border-radius:12px;max-width:500px;max-height:80vh;overflow:auto;">${html}<button onclick="this.closest('div').parentElement.remove()" style="margin-top:20px;padding:10px 30px;background:#3b82f6;color:white;border:none;border-radius:8px;cursor:pointer;">إغلاق</button></div>`;
+        document.body.appendChild(overlay);
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) overlay.remove(); });
+      };
+
+      // Alt+? لعرض الاختصارات
+      document.addEventListener('keydown', (e) => {
+        if (e.altKey && e.key === '/') {
+          e.preventDefault();
+          window.showShortcuts();
+        }
+      });
+
+      console.log('[Shortcuts] Keyboard shortcuts initialized. Press Alt+/ to see all shortcuts.');
+    })();
+  </script>
+
+  <!-- 🔄 Real-time Sync Client -->
+  <script src="sync-client.js"></script>
+</body>
+</html>

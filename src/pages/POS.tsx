@@ -1,17 +1,22 @@
+// ============================================================
+// نقطة البيع — POS Page V3 — with Wallet-linked Transfers
+// ============================================================
+
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { Search, Plus, Minus, Trash2, CreditCard, Banknote, ArrowLeftRight, Printer, ShoppingCart, Sparkles, Package, Tag, Percent, Keyboard, Scan, Smartphone, Monitor, Tv, Car, Layers, X, Loader2, User, FileText, PauseCircle, Clock, ChevronDown, ChevronUp, StickyNote, Receipt, Headphones, Wrench, Send, HelpCircle, RotateCcw, Calculator } from 'lucide-react';
-import { getCustomers, Customer } from '@/data/customersData';
-import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
-import { useBarcodeScanner } from '@/hooks/useBarcodeScanner';
-import { useLanguage } from '@/contexts/LanguageContext';
+import {
+  Search, Plus, Minus, Trash2, CreditCard,
+  ShoppingCart, Lock, RotateCcw, Calculator, ArrowLeft, Moon, Sun,
+  Clock, Barcode, Download, Smartphone, Headphones, Car, Send,
+  PauseCircle, FileText, HelpCircle, Receipt, Percent, X,
+  CheckCircle, Wallet, ChevronRight, TrendingDown
+} from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { useTheme } from '@/contexts/ThemeContext';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
-import { CartItem, PaymentMethod } from '@/domain/types';
-import { validateStock } from '@/domain/stock';
-import { StockError } from '@/domain/stock';
-import { getCartTotals, processSale } from '@/services/saleService';
-import { searchProducts, lookupBarcode } from '@/services/productService';
-import { getActiveSalePrice, getAvailableBatchesCount } from '@/domain/batchLogic';
+import { CartItem, Product } from '@/domain/types';
+import { processSale } from '@/services/saleService';
+import { searchProducts } from '@/services/productService';
 import { getAllInventoryProducts } from '@/repositories/productRepository';
 import { saveSale } from '@/repositories/saleRepository';
 import { saveMovements } from '@/repositories/stockRepository';
@@ -19,954 +24,788 @@ import { saveAuditEntries } from '@/repositories/auditRepository';
 import { updateProductQuantity } from '@/repositories/productRepository';
 import { printInvoice } from '@/services/invoicePrinter';
 import { useAuth } from '@/contexts/AuthContext';
+import { useCart } from '@/contexts/CartContext';
+import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
+import {
+  getWallets, deposit,
+  type Wallet as WalletType, getTransactions,
+} from '@/data/walletsData';
 
-// ── Sub-components ──────────────────────────────────────────
+// ── Constants ─────────────────────────────────────────────────
+const TABS = [
+  { id: 'mobiles', label: 'الأجهزة', icon: Smartphone },
+  { id: 'accessories', label: 'الإكسسوارات', icon: Headphones },
+  { id: 'cars', label: 'عربيات', icon: Car },
+  { id: 'transfers', label: 'تحويلات', icon: Send },
+] as const;
 
-const CartItemRow = ({ item, onUpdateQty, onRemove, onLineDiscount }: {
+type TabId = typeof TABS[number]['id'];
+
+// Brand chips — only relevant for mobiles
+const MOBILE_BRANDS = ['الكل', 'Apple', 'Samsung', 'Oppo', 'Xiaomi', 'Realme', 'Vivo', 'Huawei', 'Nokia', 'أخرى'];
+
+// Accessory categories
+const ACC_CATS = ['الكل', 'سماعات', 'شواحن', 'كفرات', 'كابلات', 'لاسلكي', 'أخرى'];
+
+// Car categories
+const CAR_CATS = ['الكل', 'إكسسوار', 'قطع غيار', 'صوتيات', 'شاشات', 'أخرى'];
+
+// Transfer types with emoji icons
+const TRANSFER_TYPES = [
+  { label: 'فودافون كاش', icon: '📱' },
+  { label: 'اتصالات كاش', icon: '🟠' },
+  { label: 'اورنج كاش', icon: '🟠' },
+  { label: 'ويي', icon: '🔵' },
+  { label: 'انستاباي', icon: '💜' },
+  { label: 'تحويل بنكي', icon: '🏦' },
+];
+
+const TRANSFER_KEY = 'elos_pos_transfers';
+
+// ── Cart Item Row ─────────────────────────────────────────────
+const CartItemRow = ({
+  item, onUpdateQty, onRemove, onLineDiscount,
+}: {
   item: CartItem;
   onUpdateQty: (id: string, delta: number) => void;
   onRemove: (id: string) => void;
   onLineDiscount: (id: string, discount: number) => void;
 }) => {
-  const [showDiscount, setShowDiscount] = useState(false);
-  const lineTotal = item.product.sellingPrice * item.qty - item.lineDiscount;
+  const [showDisc, setShowDisc] = useState(false);
+  const maxDiscount = Math.max(0, (item.product.sellingPrice - item.product.costPrice) * item.qty);
+  const lineDiscount = item.lineDiscount ?? 0;
+  const lineTotal = item.product.sellingPrice * item.qty - lineDiscount;
+
   return (
-    <div className="group rounded-xl bg-gradient-to-l from-muted/40 to-transparent border border-border/30 p-3 transition-all duration-300 hover:from-muted/60">
+    <div className="group rounded-xl bg-white dark:bg-card border border-border/50 p-3 mb-2 shadow-sm transition-all hover:border-primary/30">
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-card-foreground truncate">{item.product.name}</p>
-          <p className="text-xs text-muted-foreground mt-0.5">{item.product.sellingPrice.toLocaleString('ar-EG')} EGP × {item.qty}</p>
+          <p className="text-sm font-bold text-foreground truncate">{item.product.name}</p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <span className="text-xs font-semibold text-emerald-600">{item.product.sellingPrice.toLocaleString('ar-EG')} ج.م</span>
+            {lineDiscount > 0 && <span className="text-[10px] font-bold text-amber-500 bg-amber-50 px-1.5 rounded">-{lineDiscount} خصم</span>}
+          </div>
         </div>
-        <div className="flex gap-1">
-          <button onClick={() => setShowDiscount(!showDiscount)} title="خصم" className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:text-amber-500 hover:bg-amber-500/10 transition-all">
+        <div className="flex items-center gap-1">
+          <button onClick={() => setShowDisc(s => !s)} title="خصم على الصنف"
+            className={cn('flex h-7 w-7 items-center justify-center rounded-lg transition-all', showDisc || lineDiscount > 0 ? 'bg-amber-100 text-amber-600' : 'text-gray-400 hover:text-amber-500 hover:bg-amber-50 opacity-0 group-hover:opacity-100')}>
             <Percent className="h-3.5 w-3.5" />
           </button>
-          <button onClick={() => onRemove(item.product.id)} className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all opacity-0 group-hover:opacity-100">
+          <button onClick={() => onRemove(item.product.id)}
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100">
             <Trash2 className="h-3.5 w-3.5" />
           </button>
         </div>
       </div>
-      {showDiscount && (
-        <div className="mt-2 flex items-center gap-2">
-          <Percent className="h-3 w-3 text-amber-500" />
-          <input type="number" min={0} value={item.lineDiscount || ''} onChange={e => onLineDiscount(item.product.id, +e.target.value)}
-            placeholder="0" className="w-20 rounded-lg border border-border/50 bg-background/50 px-2 py-1 text-xs text-end focus:outline-none focus:ring-1 focus:ring-primary/30" />
-          <span className="text-[10px] text-muted-foreground">ج.م خصم</span>
+
+      {showDisc && (
+        <div className="mt-2 p-2 rounded-lg bg-amber-50 dark:bg-amber-900/10 border border-amber-100">
+          <p className="text-[10px] text-amber-700 font-bold mb-1.5">خصم الصنف (حتى {maxDiscount.toFixed(0)} ج.م بحد أقصى)</p>
+          <div className="flex items-center gap-2">
+            <input type="number" min={0} max={maxDiscount} step={0.5} value={lineDiscount || ''} onChange={e => onLineDiscount(item.product.id, Math.min(Number(e.target.value), maxDiscount))}
+              placeholder="0" className="flex-1 rounded-lg border border-amber-200 bg-white px-2 py-1 text-xs text-center font-bold focus:outline-none focus:ring-1 focus:ring-amber-400" />
+            <span className="text-[10px] text-amber-600 font-bold">ج.م</span>
+            {lineDiscount > 0 && <button onClick={() => onLineDiscount(item.product.id, 0)} className="text-red-400 hover:text-red-600"><X className="h-3.5 w-3.5" /></button>}
+          </div>
         </div>
       )}
-      <div className="mt-2 flex items-center justify-between">
-        <div className="flex items-center gap-1.5">
-          <button onClick={() => onUpdateQty(item.product.id, -1)} className="flex h-7 w-7 items-center justify-center rounded-lg bg-muted/50 text-card-foreground hover:bg-primary hover:text-primary-foreground transition-all shadow-sm">
-            <Minus className="h-3 w-3" />
-          </button>
-          <span className="w-8 text-center text-sm font-bold text-card-foreground">{item.qty}</span>
-          <button onClick={() => onUpdateQty(item.product.id, 1)} className="flex h-7 w-7 items-center justify-center rounded-lg bg-muted/50 text-card-foreground hover:bg-primary hover:text-primary-foreground transition-all shadow-sm">
-            <Plus className="h-3 w-3" />
-          </button>
+
+      <div className="mt-3 flex items-center justify-between">
+        <div className="flex items-center gap-1">
+          <button onClick={() => onUpdateQty(item.product.id, -1)} className="flex h-7 w-7 items-center justify-center rounded border bg-gray-50 dark:bg-muted text-gray-600 hover:bg-gray-100 shadow-sm"><Minus className="h-3 w-3" /></button>
+          <span className="w-8 text-center text-sm font-bold">{item.qty}</span>
+          <button onClick={() => onUpdateQty(item.product.id, 1)} className="flex h-7 w-7 items-center justify-center rounded border bg-blue-50 text-blue-600 hover:bg-blue-100 shadow-sm"><Plus className="h-3 w-3" /></button>
         </div>
-        <div className="text-end">
-          <span className="text-sm font-bold text-primary">{lineTotal.toLocaleString('ar-EG')} EGP</span>
-          {item.lineDiscount > 0 && <p className="text-[9px] text-amber-500">-{item.lineDiscount} خصم</p>}
-        </div>
+        <span className={cn('text-sm font-black', lineDiscount > 0 ? 'text-amber-600' : 'text-emerald-600')}>
+          {lineTotal.toLocaleString('ar-EG')} ج.م
+        </span>
       </div>
     </div>
   );
 };
 
-// ── Main POS Component ──────────────────────────────────────
+// ── Transfer Tab — linked to Wallet system ───────────────────
+interface PosTransfer {
+  id: string;
+  customer: string;
+  phone: string;
+  type: string;
+  amount: number;
+  commission: number;
+  walletId: string;
+  walletName: string;
+  date: string;
+}
 
-// Held invoices storage
-const HELD_KEY = 'elos_held_invoices';
-interface HeldInvoice { id: string; cart: CartItem[]; customer: string; notes: string; discount: number; heldAt: string; }
-
-const POS = () => {
-  const { t } = useLanguage();
+const TransferTab = () => {
   const { toast } = useToast();
-  const { user } = useAuth();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [invoiceDiscount, setInvoiceDiscount] = useState(0);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [selectedPayment, setSelectedPayment] = useState<PaymentMethod>('cash');
-  const [selectedMainCategory, setSelectedMainCategory] = useState<string>('all');
-  const [selectedSubCategory, setSelectedSubCategory] = useState<string>('all');
-  const searchRef = useRef<HTMLInputElement>(null);
-  const [refreshKey, setRefreshKey] = useState(0);
-  const [scannerActive, setScannerActive] = useState(false);
-  const scannerTimer = useRef<ReturnType<typeof setTimeout>>();
+  const [wallets, setWallets] = useState<WalletType[]>([]);
+  const [todayTransfers, setTodayTransfers] = useState<PosTransfer[]>([]);
+  const [customer, setCustomer] = useState('');
+  const [phone, setPhone] = useState('');
+  const [type, setType] = useState(TRANSFER_TYPES[0].label);
+  const [amount, setAmount] = useState('');
+  const [commission, setCommission] = useState('');
+  const [walletId, setWalletId] = useState('');
 
-  // ── New POS Features State ──
-  const [customerSearch, setCustomerSearch] = useState('');
-  const [selectedCustomer, setSelectedCustomer] = useState('');
-  const [showCustomerPicker, setShowCustomerPicker] = useState(false);
-  const [invoiceNotes, setInvoiceNotes] = useState('');
-  const [amountPaid, setAmountPaid] = useState(0);
-  const [showHeld, setShowHeld] = useState(false);
-  const [showRecent, setShowRecent] = useState(false);
-  const [heldInvoices, setHeldInvoices] = useState<HeldInvoice[]>(() => getStorageItem<HeldInvoice[]>(HELD_KEY, []));
-  const customers = useMemo(() => getCustomers(), [refreshKey]);
-  const filteredCustomers = useMemo(() => {
-    if (!customerSearch) return customers.slice(0, 5);
-    const q = customerSearch.toLowerCase();
-    return customers.filter(c => c.name.toLowerCase().includes(q) || c.phone?.includes(q)).slice(0, 8);
-  }, [customers, customerSearch]);
-  const recentSales = useMemo(() => getStorageItem<any[]>('gx_sales', []).slice(-8).reverse(), [refreshKey]);
+  // Load wallets + today's transfers
+  useEffect(() => {
+    const ws = getWallets();
+    setWallets(ws);
+    if (ws.length > 0) setWalletId(ws[0].id);
 
-  // ── Transfers State ──
-  const TRANSFER_KEY = 'elos_transfers';
-  interface Transfer { id: string; customer: string; phone: string; type: string; amount: number; commission: number; date: string; }
-  const [transferCustomer, setTransferCustomer] = useState('');
-  const [transferPhone, setTransferPhone] = useState('');
-  const [transferType, setTransferType] = useState('فودافون كاش');
-  const [transferAmount, setTransferAmount] = useState(0);
-  const [transferCommission, setTransferCommission] = useState(0);
-  const [shiftTransfers, setShiftTransfers] = useState<Transfer[]>(() => {
-    const saved = getStorageItem<Transfer[]>(TRANSFER_KEY, []);
-    // Only keep today's transfers
+    const all = getStorageItem<PosTransfer[]>(TRANSFER_KEY, []);
     const today = new Date().toDateString();
-    return saved.filter(t => new Date(t.date).toDateString() === today);
-  });
-  const transferTypes = ['فودافون كاش', 'اتصالات كاش', 'اورنج كاش', 'ويي', 'انستاباي', 'تحويل بنكي'];
-
-  const registerTransfer = () => {
-    if (transferAmount <= 0) { toast({ title: 'أدخل مبلغ التحويل', variant: 'destructive' }); return; }
-    const t: Transfer = { id: Date.now().toString(), customer: transferCustomer, phone: transferPhone, type: transferType, amount: transferAmount, commission: transferCommission, date: new Date().toISOString() };
-    const updated = [...shiftTransfers, t];
-    setShiftTransfers(updated); setStorageItem(TRANSFER_KEY, updated);
-    setTransferCustomer(''); setTransferPhone(''); setTransferAmount(0); setTransferCommission(0);
-    toast({ title: '✅ تم تسجيل التحويل', description: `${transferType} — ${transferAmount} ج.م` });
-  };
-  const totalTransferCommissions = useMemo(() => shiftTransfers.reduce((s, t) => s + t.commission, 0), [shiftTransfers]);
-
-  // ── Brand filter for products ──
-  const [selectedBrand, setSelectedBrand] = useState('الكل');
-  const brands = ['الكل', 'Apple', 'Samsung', 'Xiaomi', 'Realme', 'Vivo', 'Huawei', 'Nokia', 'أخرى'];
-
-  // Stats
-  const todaySales = useMemo(() => {
-    const today = new Date().toDateString();
-    return getStorageItem<any[]>('gx_sales', []).filter((s: any) => new Date(s.date).toDateString() === today);
-  }, [refreshKey]);
-  const todayTotal = useMemo(() => todaySales.reduce((s: number, sale: any) => s + (sale.total || 0), 0), [todaySales]);
-
-  // Hold invoice
-  const holdInvoice = () => {
-    if (cart.length === 0) return;
-    const h: HeldInvoice = { id: Date.now().toString(), cart: [...cart], customer: selectedCustomer, notes: invoiceNotes, discount: invoiceDiscount, heldAt: new Date().toISOString() };
-    const updated = [...heldInvoices, h];
-    setHeldInvoices(updated); setStorageItem(HELD_KEY, updated);
-    setCart([]); setInvoiceDiscount(0); setInvoiceNotes(''); setSelectedCustomer('');
-    toast({ title: '✉️ تم تعليق الفاتورة', description: `عدد المعلقات: ${updated.length}` });
-  };
-  const resumeInvoice = (id: string) => {
-    const h = heldInvoices.find(x => x.id === id);
-    if (!h) return;
-    setCart(h.cart); setInvoiceDiscount(h.discount); setInvoiceNotes(h.notes); setSelectedCustomer(h.customer);
-    const updated = heldInvoices.filter(x => x.id !== id);
-    setHeldInvoices(updated); setStorageItem(HELD_KEY, updated);
-    setShowHeld(false);
-    toast({ title: '✅ تم استرجاع الفاتورة' });
-  };
-  const deleteHeld = (id: string) => {
-    const updated = heldInvoices.filter(x => x.id !== id);
-    setHeldInvoices(updated); setStorageItem(HELD_KEY, updated);
-  };
-  const updateLineDiscount = useCallback((id: string, discount: number) => {
-    setCart(prev => prev.map(c => c.product.id === id ? { ...c, lineDiscount: Math.max(0, discount) } : c));
+    setTodayTransfers(all.filter(t => new Date(t.date).toDateString() === today));
   }, []);
 
-  // Main categories configuration
-  const mainCategories = [
-    { id: 'all', label: 'الكل', icon: Layers },
-    { id: 'mobiles', label: 'موبيلات', icon: Smartphone },
-    { id: 'computers', label: 'كمبيوترات', icon: Monitor },
-    { id: 'devices', label: 'أجهزة', icon: Tv },
-    { id: 'cars', label: 'سيارات', icon: Car },
+  const totalCommission = todayTransfers.reduce((s, t) => s + t.commission, 0);
+  const totalAmount = todayTransfers.reduce((s, t) => s + t.amount, 0);
+  const selectedWallet = wallets.find(w => w.id === walletId);
+
+  const handleRegister = () => {
+    const amt = Number(amount);
+    const com = Number(commission);
+    if (amt <= 0) { toast({ title: '⚠️ أدخل مبلغ التحويل', variant: 'destructive' }); return; }
+    if (!walletId) { toast({ title: '⚠️ اختر المحفظة', variant: 'destructive' }); return; }
+
+    // Deposit commission to the wallet
+    if (com > 0) {
+      deposit(walletId, com, `عمولة تحويل ${type} — ${customer || 'عميل'}`);
+    }
+
+    // Save transfer record
+    const newTransfer: PosTransfer = {
+      id: Date.now().toString(),
+      customer, phone, type, amount: amt, commission: com,
+      walletId,
+      walletName: selectedWallet?.name ?? '',
+      date: new Date().toISOString(),
+    };
+    const allSaved = getStorageItem<PosTransfer[]>(TRANSFER_KEY, []);
+    setStorageItem(TRANSFER_KEY, [...allSaved, newTransfer]);
+    setTodayTransfers(prev => [...prev, newTransfer]);
+
+    // Reset form
+    setCustomer(''); setPhone(''); setAmount(''); setCommission('');
+
+    // Reload wallets to show updated balance
+    setWallets(getWallets());
+
+    toast({
+      title: '✅ تم تسجيل التحويل',
+      description: `${type} — ${amt.toLocaleString('ar-EG')} ج.م${com > 0 ? ` + ${com} ج.م عمولة في ${selectedWallet?.name}` : ''}`,
+    });
+  };
+
+  // Action mode tabs
+  type ActionMode = 'withdraw' | 'deposit' | 'deferred';
+  const [actionMode, setActionMode] = useState<ActionMode>('withdraw');
+
+  const ACTION_TABS: { id: ActionMode; label: string; activeClass: string }[] = [
+    { id: 'withdraw', label: 'سحب', activeClass: 'bg-emerald-500 text-white' },
+    { id: 'deposit', label: 'إيداع', activeClass: 'bg-blue-500 text-white' },
+    { id: 'deferred', label: 'تحويل أجل (عميل مسجل)', activeClass: 'bg-gray-700 text-white' },
   ];
 
-  // Subcategories based on main category
-  const getSubCategories = (mainCat: string) => {
-    const subs: Record<string, { id: string; label: string }[]> = {
-      all: [
-        { id: 'all', label: 'الكل' },
-        { id: 'new', label: 'جديد' },
-        { id: 'used', label: 'مستعمل' },
-        { id: 'accessory', label: 'إكسسوار' },
-      ],
-      mobiles: [
-        { id: 'all', label: 'الكل' },
-        { id: 'mobile-new', label: 'موبايلات جديد' },
-        { id: 'mobile-used', label: 'موبايلات مستعمل' },
-        { id: 'tablet', label: 'تابلت' },
-        { id: 'maccessory', label: 'إكسسوارات' },
-      ],
-      computers: [
-        { id: 'all', label: 'الكل' },
-        { id: 'laptop', label: 'لابتوب' },
-        { id: 'desktop', label: 'كمبيوتر مكتبى' },
-        { id: 'caccessory', label: 'إكسسوارات' },
-      ],
-      devices: [
-        { id: 'all', label: 'الكل' },
-        { id: 'screen', label: 'شاشات' },
-        { id: 'gaming', label: 'أجهزة ألعاب' },
-        { id: 'daccessory', label: 'إكسسوارات' },
-      ],
-      cars: [
-        { id: 'all', label: 'الكل' },
-        { id: 'car-new', label: 'جديد' },
-        { id: 'car-used', label: 'مستعمل' },
-      ],
-    };
-    return subs[mainCat] || subs.all;
-  };
+  return (
+    <div className="space-y-4 max-w-xl mx-auto pt-1">
 
-  // Flash scanner indicator on scan
-  const flashScanner = useCallback(() => {
-    setScannerActive(true);
-    clearTimeout(scannerTimer.current);
-    scannerTimer.current = setTimeout(() => setScannerActive(false), 1200);
-  }, []);
+      {/* Action Tabs */}
+      <div className="flex rounded-2xl overflow-hidden border border-border/60 bg-white dark:bg-card shadow-sm">
+        {ACTION_TABS.map(tab => (
+          <button key={tab.id} onClick={() => setActionMode(tab.id)}
+            className={cn('flex-1 py-3 text-sm font-bold transition-all',
+              actionMode === tab.id ? tab.activeClass : 'text-muted-foreground hover:bg-muted/50'
+            )}>
+            {tab.label}
+          </button>
+        ))}
+      </div>
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const allProducts = useMemo(() => getAllInventoryProducts(), [refreshKey]);
+      {/* Deferred mode: redirect banner to installments */}
+      {actionMode === 'deferred' && (
+        <Link to="/installments?type=transfer"
+          className="flex items-center justify-between rounded-2xl border-2 border-gray-500 bg-gray-50 dark:bg-gray-900/30 px-5 py-4 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors">
+          <div className="flex items-center gap-3">
+            <CreditCard className="h-6 w-6 text-gray-600" />
+            <div>
+              <p className="text-sm font-bold">إنشاء عقد أجل للعميل</p>
+              <p className="text-xs opacity-70">سيتم نقلك لصفحة التقسيط لتسجيل تحويل بالأجل</p>
+            </div>
+          </div>
+          <ChevronRight className="h-5 w-5 opacity-60" />
+        </Link>
+      )}
 
-  useEffect(() => {
-    const handleStorage = (e: StorageEvent | CustomEvent) => {
-      const key = 'key' in e ? e.key : e.detail?.key;
-      if (key && key.startsWith('gx_')) {
-        setRefreshKey(k => k + 1);
-      }
-    };
-    window.addEventListener('storage', handleStorage as EventListener);
-    window.addEventListener('local-storage', handleStorage as EventListener);
-    return () => {
-      window.removeEventListener('storage', handleStorage as EventListener);
-      window.removeEventListener('local-storage', handleStorage as EventListener);
-    };
-  }, []);
+      {/* Info banner */}
+      <div className="rounded-xl border border-amber-200 bg-amber-50 dark:bg-amber-900/10 px-4 py-3 text-sm font-bold text-amber-700 dark:text-amber-400">
+        💡 سجّل هنا على محفظتك وهتلاقي الفلوس كلها من الدرج
+      </div>
 
-  // Auto-focus search on mount
-  useEffect(() => { searchRef.current?.focus(); }, []);
+      {/* Customer info */}
+      <div className="rounded-2xl border border-border/60 bg-white dark:bg-card overflow-hidden">
+        <div className="px-4 py-3 bg-gray-50 dark:bg-muted/20 border-b border-border/50">
+          <span className="text-sm font-bold text-muted-foreground">👤 بيانات العميل (اختياري)</span>
+        </div>
+        <div className="p-4 space-y-3">
+          <input value={customer} onChange={e => setCustomer(e.target.value)}
+            placeholder="اكتب اسم العميل أو رقم الواتساب..."
+            className="w-full h-11 rounded-xl border border-border/60 bg-background px-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/40" />
+          <input value={phone} onChange={e => setPhone(e.target.value)}
+            placeholder="رقم الهاتف..."
+            className="w-full h-11 rounded-xl border border-border/60 bg-background px-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/40" />
+        </div>
+      </div>
 
-  // ── Hardware barcode scanner (USB/Laser) ─────────────────
-  useBarcodeScanner({
-    onScan: useCallback((code: string) => {
-      flashScanner();
-      const match = lookupBarcode(allProducts, code);
-      if (match) {
-        addToCart(match);
-        toast({ title: `📦 ${match.name}`, description: `باركود: ${code}` });
-      } else {
-        toast({ title: '⚠️ باركود غير موجود', description: code, variant: 'destructive' });
-      }
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [allProducts, flashScanner]),
-    minLength: 3,
-    maxGap: 60,
-  });
+      {/* Transfer type dropdown */}
+      <div className="rounded-2xl border border-border/60 bg-white dark:bg-card p-4">
+        <label className="flex items-center gap-2 text-sm font-bold text-muted-foreground mb-2">🔄 نوع التحويل</label>
+        <select value={type} onChange={e => setType(e.target.value)}
+          className="w-full h-11 rounded-xl border border-border/60 bg-background px-4 text-sm font-bold focus:outline-none focus:ring-2 focus:ring-blue-500/40">
+          {TRANSFER_TYPES.map(t => <option key={t.label} value={t.label}>{t.icon} {t.label}</option>)}
+        </select>
+      </div>
 
+      {/* Wallet selector */}
+      {wallets.length > 0 && (
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {wallets.map(w => (
+            <button key={w.id} onClick={() => setWalletId(w.id)}
+              className={cn(
+                'flex-shrink-0 rounded-2xl px-4 py-3 text-sm font-bold transition-all border-2',
+                walletId === w.id
+                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 shadow-md'
+                  : 'border-border bg-white dark:bg-card text-gray-600 dark:text-gray-300 hover:border-blue-300'
+              )}
+            >
+              <div className="text-lg leading-none mb-1">{w.icon}</div>
+              <div className="text-xs font-bold whitespace-nowrap">{w.name}</div>
+              <div className="text-[11px] text-emerald-600 font-black mt-0.5">{w.balance.toLocaleString('ar-EG')} ج.م</div>
+            </button>
+          ))}
+          <Link to="/wallets"
+            className="flex-shrink-0 rounded-2xl border-2 border-dashed border-border px-4 py-3 text-xs font-bold text-gray-400 hover:text-blue-500 hover:border-blue-300 flex flex-col items-center justify-center gap-1 transition-colors"
+          >
+            <Wallet className="h-5 w-5" />
+            إدارة
+          </Link>
+        </div>
+      )}
 
-  // Keyboard shortcuts
-  useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'F2') { searchRef.current?.focus(); e.preventDefault(); }
-      if (e.key === 'F9') { handleCheckout(); e.preventDefault(); }
-      if (e.key === 'Escape') { setSearchTerm(''); searchRef.current?.focus(); }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cart, invoiceDiscount, selectedPayment]);
+      {/* Amounts */}
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block text-sm font-bold text-foreground mb-1.5 text-end">مبلغ التحويل:</label>
+          <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="0" min={0}
+            className="w-full h-14 rounded-xl border border-border/60 bg-background px-3 text-center text-2xl font-black focus:outline-none focus:ring-2 focus:ring-blue-500/40" />
+        </div>
+        <div>
+          <label className="block text-sm font-bold text-amber-600 mb-1.5 text-end">⭐ العمولة (الربح):</label>
+          <input type="number" value={commission} onChange={e => setCommission(e.target.value)} placeholder="0" min={0}
+            className="w-full h-14 rounded-xl border-2 border-amber-300 bg-amber-50 dark:bg-amber-900/10 px-3 text-center text-2xl font-black text-amber-700 focus:outline-none focus:ring-2 focus:ring-amber-400" />
+        </div>
+      </div>
 
-  const addToCart = useCallback((product: typeof allProducts[0]) => {
-    setCart(prev => {
-      const existing = prev.find(c => c.product.id === product.id);
-      const currentQty = existing ? existing.qty : 0;
+      {/* Wallet confirm hint */}
+      {selectedWallet && Number(commission) > 0 && (
+        <div className="flex items-center gap-2 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-2.5">
+          <CheckCircle className="h-4 w-4 text-emerald-600 shrink-0" />
+          <p className="text-sm font-bold text-emerald-700">{commission} ج.م ستُضاف إلى {selectedWallet.icon} {selectedWallet.name}</p>
+        </div>
+      )}
 
-      try {
-        validateStock(product, currentQty + 1);
-      } catch (err) {
-        if (err instanceof StockError) {
-          toast({ title: 'Stock limit reached', description: err.message, variant: 'destructive' });
-        }
-        return prev;
-      }
+      {/* Register button */}
+      <button onClick={handleRegister}
+        className="w-full rounded-xl bg-emerald-500 hover:bg-emerald-600 py-4 text-base font-bold text-white transition-all active:scale-[0.98] flex items-center justify-center gap-2 shadow-md">
+        <CheckCircle className="h-5 w-5" /> تسجيل التحويل
+      </button>
 
-      if (existing) {
-        return prev.map(c => c.product.id === product.id ? { ...c, qty: c.qty + 1 } : c);
-      }
-      return [...prev, { product, qty: 1, lineDiscount: 0 }];
-    });
-    setSearchTerm('');
-    searchRef.current?.focus();
-  }, [toast]);
+      {/* Shift summary */}
+      <div className="flex items-center justify-between rounded-xl border border-border/50 bg-white dark:bg-card px-5 py-3">
+        <div className="flex items-center gap-2 text-sm font-bold text-muted-foreground">
+          <Send className="h-4 w-4" /> تحويلات الشفت
+          <span className="flex h-5 w-6 items-center justify-center rounded-full bg-blue-100 text-blue-700 text-xs font-black">{todayTransfers.length}</span>
+        </div>
+        <span className="text-sm font-black text-emerald-600">{totalCommission.toLocaleString('ar-EG')} ج.م عمولات</span>
+      </div>
 
-  const updateQty = useCallback((id: string, delta: number) => {
-    setCart(prev => prev.map(c => {
-      if (c.product.id !== id) return c;
-      const newQty = c.qty + delta;
-      if (newQty <= 0) return c;
-      try {
-        validateStock(c.product, newQty);
-      } catch {
-        toast({ title: 'Stock limit', variant: 'destructive' });
-        return c;
-      }
-      return { ...c, qty: newQty };
-    }));
-  }, [toast]);
+      {/* Transfer history */}
+      {todayTransfers.length > 0 && (
+        <div className="space-y-2 max-h-52 overflow-y-auto">
+          {[...todayTransfers].reverse().map(t => (
+            <div key={t.id} className="flex items-center justify-between rounded-xl bg-gray-50 dark:bg-muted/30 border border-border/30 px-4 py-3">
+              <div>
+                <p className="text-sm font-bold">{t.type} — {t.customer || 'عميل'}</p>
+                <p className="text-xs text-muted-foreground">{new Date(t.date).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })} · {t.walletName}</p>
+              </div>
+              <div className="text-end">
+                <p className="text-sm font-bold">{t.amount.toLocaleString('ar-EG')} ج.م</p>
+                {t.commission > 0 && <p className="text-xs text-emerald-600 font-bold">+{t.commission} ج.م</p>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
-  const removeFromCart = useCallback((id: string) => {
-    setCart(prev => prev.filter(c => c.product.id !== id));
-  }, []);
-
-  // Real-time totals via service layer
-  const totals = useMemo(() => getCartTotals(cart, invoiceDiscount), [cart, invoiceDiscount]);
-
-  // Filter products by category selection
-  const categoryFilteredProducts = useMemo(() => {
-    if (selectedMainCategory === 'all' && selectedSubCategory === 'all') {
-      return allProducts;
-    }
-
-    return allProducts.filter(p => {
-      const category = p.category?.toLowerCase() || '';
-      const isUsed = false; // Product type doesn't have isUsed field
-
-      // Main category filter
-      if (selectedMainCategory !== 'all') {
-        switch (selectedMainCategory) {
-          case 'mobiles':
-            if (!category.includes('موبيل') && !category.includes('موبايل') && !category.includes('تبل') && !category.includes('سماع') && !category.includes('شاحن') && !category.includes('كفر') && !category.includes(' aux') && category !== 'mobile accessory' && category !== 'mobile') {
-              // Check for car products - exclude
-              if (category.includes('سيارة') || category.includes('car')) return false;
-              // Check for computer products - exclude
-              if (category.includes('لابتوب') || category.includes('كمبيوتر') || category.includes('ماوس') || category.includes('كيبورد') || category.includes('شاشة') || category.includes('computer') || category.includes('laptop') || category.includes('desktop') || category.includes('mouse') || category.includes('keyboard') || category.includes('monitor')) return false;
-              // Check for devices
-              if (category.includes('شاشة') || category.includes('جهاز') || category.includes('ألعاب') || category.includes('device') || category.includes('gaming')) return false;
-              return true; // Allow if no specific match (might be mobile related)
-            }
-            break;
-          case 'computers':
-            if (!category.includes('لابتوب') && !category.includes('كمبيوتر') && !category.includes('ماوس') && !category.includes('كيبورد') && !category.includes('computer') && !category.includes('laptop') && !category.includes('desktop') && !category.includes('mouse') && !category.includes('keyboard')) {
-              // Check for car products - exclude
-              if (category.includes('سيارة') || category.includes('car')) return false;
-              // Check for mobile products - exclude
-              if (category.includes('موبيل') || category.includes('موبايل') || category.includes('تبل') || category.includes('سماع') || category.includes('شاحن') || category.includes('mobile') || category.includes('phone')) return false;
-              // Check for devices
-              if (category.includes('شاشة') || category.includes('جهاز') || category.includes('ألعاب') || category.includes('device') || category.includes('gaming')) return false;
-              return true;
-            }
-            break;
-          case 'devices':
-            if (!category.includes('شاشة') && !category.includes('جهاز') && !category.includes('ألعاب') && !category.includes('device') && !category.includes('gaming') && !category.includes('شاش') && !category.includes('تلفزيون') && !category.includes('tv')) {
-              // Check for car products - exclude
-              if (category.includes('سيارة') || category.includes('car')) return false;
-              // Check for mobile products - exclude
-              if (category.includes('موبيل') || category.includes('موبايل') || category.includes('تبل') || category.includes('mobile') || category.includes('phone')) return false;
-              // Check for computer products - exclude
-              if (category.includes('لابتوب') || category.includes('كمبيوتر') || category.includes('computer') || category.includes('laptop') || category.includes('desktop')) return false;
-              return true;
-            }
-            break;
-          case 'cars':
-            if (!category.includes('سيارة') && !category.includes('car')) {
-              // Exclude non-car products
-              if (category.includes('موبيل') || category.includes('موبايل') || category.includes('لابتوب') || category.includes('كمبيوتر') || category.includes('شاشة') || category.includes('device') || category.includes('mobile') || category.includes('computer') || category.includes('laptop')) return false;
-              return true;
-            }
-            break;
-        }
-      }
-
-      // Subcategory filter
-      if (selectedSubCategory !== 'all') {
-        switch (selectedSubCategory) {
-          case 'new':
-            if (isUsed) return false;
-            break;
-          case 'used':
-            if (!isUsed) return false;
-            break;
-          case 'accessory':
-            if (!category.includes('إكسسوار') && !category.includes('accessory') && !category.includes('سماع') && !category.includes('شاحن') && !category.includes('كفر') && !category.includes('ماوس') && !category.includes('كيبورد') && !category.includes('mouse') && !category.includes('keyboard')) return false;
-            break;
-          case 'mobile-new':
-            if (isUsed) return false;
-            if (!category.includes('موبيل') && !category.includes('موبايل') && category !== 'mobile') return false;
-            break;
-          case 'mobile-used':
-            if (!isUsed) return false;
-            if (!category.includes('موبيل') && !category.includes('موبايل') && category !== 'mobile') return false;
-            break;
-          case 'tablet':
-            if (!category.includes('تبل') && !category.includes('tablet')) return false;
-            break;
-          case 'maccessory':
-            if (!category.includes('إكسسوار') && !category.includes('accessory') && !category.includes('سماع') && !category.includes('شاحن') && !category.includes('كفر') && category !== 'mobile accessory') return false;
-            break;
-          case 'laptop':
-            if (!category.includes('لابتوب') && !category.includes('laptop')) return false;
-            break;
-          case 'desktop':
-            if (!category.includes('مكتبى') && !category.includes('desktop') && !category.includes('كمبيوتر')) return false;
-            break;
-          case 'caccessory':
-            if (!category.includes('إكسسوار') && !category.includes('accessory') && !category.includes('ماوس') && !category.includes('كيبورد') && !category.includes('mouse') && !category.includes('keyboard') && category !== 'computer accessory') return false;
-            break;
-          case 'screen':
-            if (!category.includes('شاشة') && !category.includes('screen') && !category.includes('monitor') && !category.includes('تلفزيون') && !category.includes('tv')) return false;
-            break;
-          case 'gaming':
-            if (!category.includes('لعب') && !category.includes('gaming') && !category.includes('جهاز')) return false;
-            break;
-          case 'daccessory':
-            if (!category.includes('إكسسوار') && !category.includes('accessory') && !category.includes('تحكم') && !category.includes('controller')) return false;
-            break;
-          case 'car-new':
-            if (isUsed) return false;
-            if (!category.includes('سيارة') && !category.includes('car')) return false;
-            break;
-          case 'car-used':
-            if (!isUsed) return false;
-            if (!category.includes('سيارة') && !category.includes('car')) return false;
-            break;
-        }
-      }
-
-      return true;
-    });
-  }, [allProducts, selectedMainCategory, selectedSubCategory]);
-
-  // Search results via service layer
-  const filteredProducts = useMemo(
-    () => searchTerm.length > 0 ? searchProducts(allProducts, searchTerm, undefined, 8) : [],
-    [allProducts, searchTerm]
+      {/* Link to wallets */}
+      <Link to="/wallets" className="flex items-center justify-between rounded-2xl border border-blue-200 dark:border-blue-800/20 bg-blue-50 dark:bg-blue-900/10 px-5 py-4 text-blue-700 dark:text-blue-400 hover:bg-blue-100 transition-colors">
+        <div className="flex items-center gap-3">
+          <Wallet className="h-5 w-5" />
+          <div>
+            <p className="text-sm font-bold">إدارة المحافظ والصندوق</p>
+            <p className="text-xs opacity-70">عرض الأرصدة وتفاصيل المعاملات</p>
+          </div>
+        </div>
+        <ChevronRight className="h-5 w-5 opacity-60" />
+      </Link>
+    </div>
   );
+};
 
-  // Auto-add on exact barcode match
+
+// ── Main POS ─────────────────────────────────────────────────
+export default function POS() {
+  const navigate = useNavigate();
+  const { theme, toggleTheme } = useTheme();
+  const { toast } = useToast();
+  const { user } = useAuth();
+
+  const {
+    cart, addToCart, removeFromCart, updateCartItemQty, updateLineDiscount,
+    clearCart, invoiceDiscount, applyInvoiceDiscount, getTotals,
+    holdInvoice, heldInvoices, restoreInvoice, removeHeldInvoice,
+  } = useCart();
+
+  // Discount math
+  const subtotal = cart.reduce((s, i) => s + i.product.sellingPrice * i.qty, 0);
+  const lineDiscountsTotal = cart.reduce((s, i) => s + (i.lineDiscount ?? 0), 0);
+  const totalCost = cart.reduce((s, i) => s + i.product.costPrice * i.qty, 0);
+  const maxInvoiceDiscount = Math.max(0, subtotal - lineDiscountsTotal - totalCost);
+  const grandTotal = Math.max(0, subtotal - lineDiscountsTotal - invoiceDiscount);
+
+  // Local
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [selectedTab, setSelectedTab] = useState<TabId>('mobiles');
+  const [selectedChip, setSelectedChip] = useState('الكل');
+  const [showHeld, setShowHeld] = useState(false);
+  const [now, setNow] = useState(new Date());
+
   useEffect(() => {
-    if (searchTerm.length >= 8) {
-      const match = lookupBarcode(allProducts, searchTerm);
-      if (match) addToCart(match);
-    }
-  }, [searchTerm, addToCart, allProducts]);
+    const t = setInterval(() => setNow(new Date()), 60_000);
+    return () => clearInterval(t);
+  }, []);
 
-  const handleCheckout = useCallback(() => {
-    // Prevent double-click
-    if (isProcessing || cart.length === 0) return;
+  // Reset chip when tab changes
+  useEffect(() => { setSelectedChip('الكل'); }, [selectedTab]);
 
-    setIsProcessing(true);
-
-    // Minimum discount limit warning (cost + profit * 0.5) => Max discount = profit / 2
-    const maxDiscount = totals.grossProfit / 2;
-    if (invoiceDiscount > maxDiscount && invoiceDiscount > 0) {
-      if (!window.confirm(`⚠️ تحذير: الخصم المدخل (${invoiceDiscount} EGP) يتجاوز الحد الآمن (نصف الربح: ${maxDiscount} EGP). هل تريد الاستمرار وإتمام عملية الدفع بأي حال؟`)) {
+  // ── Keyboard Shortcuts (ELOS-style F1–F9) ──────────────────
+  const checkoutBtnRef = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    const fn = (e: KeyboardEvent) => {
+      // Skip if typing in an input/textarea
+      const tag = (e.target as HTMLElement).tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') {
+        // Only allow Escape even in input
+        if (e.key === 'Escape') {
+          (e.target as HTMLElement).blur();
+        }
         return;
       }
+
+      switch (e.key) {
+        case 'F1':
+          e.preventDefault();
+          searchInputRef.current?.focus();
+          break;
+        case 'F2':
+          e.preventDefault();
+          setSelectedTab('mobiles');
+          setSelectedChip('الكل');
+          break;
+        case 'F3':
+          e.preventDefault();
+          setSelectedTab('accessories');
+          setSelectedChip('الكل');
+          break;
+        case 'F4':
+          e.preventDefault();
+          setSelectedTab('cars');
+          setSelectedChip('الكل');
+          break;
+        case 'F5':
+          e.preventDefault();
+          setSelectedTab('transfers');
+          break;
+        case 'F9':
+          e.preventDefault();
+          checkoutBtnRef.current?.click();
+          break;
+        case 'Escape':
+          e.preventDefault();
+          searchInputRef.current?.blur();
+          break;
+        // Ctrl+K legacy
+        default:
+          if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+            e.preventDefault();
+            searchInputRef.current?.focus();
+          }
+      }
+    };
+    window.addEventListener('keydown', fn);
+    return () => window.removeEventListener('keydown', fn);
+  }, []);
+
+  const allProducts = useMemo(() => getAllInventoryProducts(), []);
+
+  // Category chips per tab
+  const chips = useMemo(() => {
+    if (selectedTab === 'mobiles') return MOBILE_BRANDS;
+    if (selectedTab === 'accessories') return ACC_CATS;
+    if (selectedTab === 'cars') return CAR_CATS;
+    return [];
+  }, [selectedTab]);
+
+  const filteredProducts = useMemo(() => {
+    if (selectedTab === 'transfers') return [];
+
+    let prods = allProducts;
+
+    if (selectedTab === 'mobiles') {
+      prods = prods.filter(p =>
+        p.category.includes('موبيل') || p.category.includes('موبايل') ||
+        p.category.includes('لابتوب') || p.category.includes('تابلت')
+      );
+      if (selectedChip !== 'الكل') {
+        const cl = selectedChip.toLowerCase();
+        prods = prods.filter(p => p.name.toLowerCase().includes(cl));
+      }
+    } else if (selectedTab === 'accessories') {
+      prods = prods.filter(p =>
+        p.category.includes('إكسسوار') || p.category.includes('سماع') ||
+        p.category.includes('شاحن') || p.category.includes('كفر') ||
+        p.category.includes('كابل')
+      );
+      if (selectedChip !== 'الكل') {
+        const cl = selectedChip.toLowerCase();
+        prods = prods.filter(p =>
+          p.category.toLowerCase().includes(cl) || p.name.toLowerCase().includes(cl)
+        );
+      }
+    } else if (selectedTab === 'cars') {
+      prods = prods.filter(p =>
+        p.category.includes('سيارة') || p.category.includes('car') || p.category.includes('عربي')
+      );
+      if (selectedChip !== 'الكل') {
+        const cl = selectedChip.toLowerCase();
+        prods = prods.filter(p =>
+          p.category.toLowerCase().includes(cl) || p.name.toLowerCase().includes(cl)
+        );
+      }
     }
 
-    try {
-      const userId = user?.id || 'user-1';
-      const userName = user?.fullName || 'Ahmed';
-      const result = processSale(cart, invoiceDiscount, selectedPayment, userId, userName);
+    if (searchTerm.trim()) prods = searchProducts(prods, searchTerm, undefined, 40);
+    return prods;
+  }, [allProducts, selectedTab, selectedChip, searchTerm]);
 
-      // Persist through repositories
+  const handleCheckout = useCallback(async () => {
+    if (isProcessing || cart.length === 0) return;
+    setIsProcessing(true);
+    try {
+      const result = processSale(cart, invoiceDiscount, 'cash', user?.id ?? 'user-1', user?.fullName ?? 'Admin');
       saveSale(result.sale);
       saveMovements(result.stockMovements);
       saveAuditEntries(result.auditEntries);
-
-      // Update product quantities
       result.stockMovements.forEach(m => updateProductQuantity(m.productId, m.newQuantity));
+      try { printInvoice(result.sale); } catch { /* silent */ }
+      toast({ title: '✅ تمت العملية!', description: `فاتورة: ${result.sale.invoiceNumber} — ${result.sale.total.toFixed(2)} ج.م` });
+      clearCart();
+    } catch (e: any) {
+      toast({ title: 'حدث خطأ', description: e?.message, variant: 'destructive' });
+    } finally { setIsProcessing(false); }
+  }, [cart, isProcessing, invoiceDiscount, user, toast, clearCart]);
 
-      // Auto-print receipt
-      try {
-        printInvoice(result.sale);
-      } catch {
-        // Silent fail on print
-      }
-
-      toast({
-        title: 'تمت العملية بنجاح!',
-        description: `فاتورة: ${result.sale.invoiceNumber} — الإجمالي: ${result.sale.total.toFixed(2)} EGP | الربح: ${result.sale.grossProfit.toFixed(2)} EGP`,
-      });
-
-      setCart([]);
-      setInvoiceDiscount(0);
-      setIsProcessing(false); // Reset loading state
-      setRefreshKey(k => k + 1);
-      searchRef.current?.focus();
-    } catch (err: unknown) {
-      setIsProcessing(false); // Reset on error
-      if (err instanceof Error) {
-        toast({ title: 'فشلت العملية', description: err.message, variant: 'destructive' });
-      } else {
-        toast({ title: 'فشلت العملية', description: 'حدث خطأ غير معروف', variant: 'destructive' });
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cart, invoiceDiscount, selectedPayment, toast, user, totals.grossProfit]);
-
-  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      if (!searchTerm.trim()) return;
-
-      const match = lookupBarcode(allProducts, searchTerm);
-      if (match) {
-        addToCart(match);
-      } else {
-        toast({ title: t('pos.notFound'), variant: 'destructive' });
-        setSearchTerm('');
-      }
-    }
-  };
+  const isTransferTab = selectedTab === 'transfers';
 
   return (
-    <div className="flex flex-col md:flex-row h-auto md:h-[calc(100vh-2rem)] gap-5 pb-20 md:pb-0">
-      {/* Left: Product search & grid */}
-      <div className="flex flex-1 flex-col">
-        {/* Header */}
-        <div className="mb-5 flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-              {t('pos.title')}
-              <Sparkles className="h-5 w-5 text-primary animate-pulse" />
-            </h1>
-            <p className="text-sm text-muted-foreground mt-1">{t('pos.scanBarcode')}</p>
+    <div className="flex h-screen w-full flex-col bg-[#F3F4F6] dark:bg-background" dir="rtl">
+
+      {/* ══ Header ══ */}
+      <header className="flex h-14 shrink-0 items-center justify-between border-b bg-white dark:bg-card px-4 shadow-sm z-10 gap-3">
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-500/10 text-blue-600">
+            <ShoppingCart className="h-5 w-5" />
           </div>
-          <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/30 rounded-lg px-3 py-2">
-            <Keyboard className="h-4 w-4" />
-            <span>F2 بحث • F9 دفع</span>
-            <div className="w-px h-4 bg-border mx-1" />
-            <div className={`flex items-center gap-1.5 rounded-md px-2 py-1 transition-all duration-300 ${scannerActive ? 'bg-emerald-500/20 text-emerald-400' : 'text-muted-foreground/50'}`}>
-              <Scan className={`h-3.5 w-3.5 ${scannerActive ? 'animate-pulse' : ''}`} />
-              <span>{scannerActive ? 'تم المسح ✓' : 'جهاز الليز'}</span>
-            </div>
-          </div>
+          <h1 className="text-xl font-black">نقطة البيع</h1>
         </div>
 
-        {/* Search */}
-        <div className="relative mb-5">
-          <div className="absolute start-4 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
-            <Search className="h-4 w-4 text-primary" />
+        <div className="hidden lg:flex flex-1 items-center justify-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 rounded-lg bg-blue-50 dark:bg-blue-500/10 px-3 py-1.5 text-xs font-bold text-blue-700 dark:text-blue-400 border border-blue-100">
+            <Clock className="h-4 w-4" />
+            {now.toLocaleDateString('ar-EG', { weekday: 'long', day: 'numeric', month: 'long' })} | {now.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}
           </div>
-          <input
-            ref={searchRef}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            onKeyDown={handleSearchKeyDown}
-            placeholder={t('pos.scanBarcode')}
-            className="w-full rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm ps-16 pe-20 py-4 text-sm text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/30 shadow-soft transition-all duration-300"
-          />
-          <span className="absolute end-4 top-1/2 -translate-y-1/2 rounded-lg bg-muted/50 px-2.5 py-1.5 text-[10px] font-mono font-medium text-muted-foreground border border-border/30">F2</span>
-        </div>
-
-        {/* Search Results */}
-        {filteredProducts.length > 0 && (
-          <div className="mb-5 rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm p-3 shadow-elevated animate-slide-down">
-            {filteredProducts.map((p, i) => (
-              <button
-                key={p.id}
-                onClick={() => addToCart(p)}
-                className="flex w-full items-center justify-between rounded-xl px-4 py-3 text-start hover:bg-gradient-to-l hover:from-primary/5 hover:to-transparent transition-all duration-200"
-                style={{ animationDelay: `${i * 50}ms` }}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-br from-primary/10 to-secondary/10">
-                    <Package className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-semibold text-card-foreground">{p.name}</p>
-                    <p className="text-xs text-muted-foreground font-mono">{p.barcode}</p>
-                  </div>
-                </div>
-                <div className="text-end">
-                  <p className="text-base font-bold text-primary">{(getActiveSalePrice(p.id) ?? p.sellingPrice).toLocaleString('ar-EG')} EGP</p>
-                  <div className="flex items-center justify-end gap-1 mt-0.5">
-                    <span className="text-[10px] font-medium bg-primary/10 text-primary px-1.5 py-0.5 rounded">
-                      {getAvailableBatchesCount(p.id)} {t('pos.batches') || 'دفعات'}
-                    </span>
-                    <p className="text-xs text-muted-foreground">{p.quantity} متوفر</p>
-                  </div>
-                </div>
-              </button>
-            ))}
-          </div>
-        )}
-
-        {/* Category Tabs */}
-        <div className="mb-4 flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-          {/* Main Categories */}
-          <div className="flex gap-1.5">
-            {mainCategories.map(cat => {
-              const Icon = cat.icon;
-              return (
-                <button
-                  key={cat.id}
-                  onClick={() => { setSelectedMainCategory(cat.id); setSelectedSubCategory('all'); }}
-                  className={cn(
-                    'flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200',
-                    selectedMainCategory === cat.id
-                      ? 'bg-primary text-primary-foreground shadow-lg'
-                      : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
-                  )}
-                >
-                  <Icon className="h-4 w-4" />
-                  {cat.label}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Subcategory Tabs */}
-        {selectedMainCategory !== 'all' && (
-          <div className="mb-4 flex gap-1.5 overflow-x-auto pb-2 scrollbar-hide">
-            {getSubCategories(selectedMainCategory).map(sub => (
-              <button
-                key={sub.id}
-                onClick={() => setSelectedSubCategory(sub.id)}
-                className={cn(
-                  'px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 whitespace-nowrap',
-                  selectedSubCategory === sub.id
-                    ? 'bg-primary/20 text-primary border border-primary/30'
-                    : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
-                )}
-              >
-                {sub.label}
-              </button>
-            ))}
-            <button
-              onClick={() => setSelectedSubCategory('all')}
-              className={cn(
-                'px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-200',
-                selectedSubCategory === 'all'
-                  ? 'bg-primary/20 text-primary border border-primary/30'
-                  : 'bg-muted/30 text-muted-foreground hover:bg-muted/50'
-              )}
-            >
-              الكل
+          <button onClick={() => searchInputRef.current?.focus()} className="flex items-center gap-2 rounded-lg bg-gray-100 dark:bg-muted/50 px-3 py-1.5 text-xs font-bold text-gray-500 hover:bg-gray-200 transition-all">
+            <Search className="h-3.5 w-3.5 text-blue-600" /> بحث <kbd className="rounded bg-white dark:bg-card px-1.5 py-0.5 text-[10px] font-mono shadow-sm border">Ctrl+K</kbd>
+          </button>
+          {[
+            { label: 'طباعة باركود', color: 'bg-violet-600 hover:bg-violet-700', icon: Barcode, path: '/barcodes' },
+            { label: 'استلام من عميل', color: 'bg-emerald-600 hover:bg-emerald-700', icon: Lock, path: '/maintenance' },
+            { label: 'مرتجع', color: 'bg-orange-500 hover:bg-orange-600', icon: RotateCcw, path: '/returns' },
+            { label: 'شراء جهاز', color: 'bg-blue-600 hover:bg-blue-700', icon: Download, path: '/mobiles' },
+          ].map(b => (
+            <button key={b.label} onClick={() => navigate(b.path)} className={`flex items-center gap-1.5 rounded-lg ${b.color} px-3 py-1.5 text-xs font-bold text-white shadow-sm active:scale-95`}>
+              {b.label} <b.icon className="h-3.5 w-3.5" />
             </button>
-          </div>
-        )}
-
-        {/* Product count */}
-        <div className="mb-3 text-xs text-muted-foreground">
-          {categoryFilteredProducts.length} منتج
+          ))}
         </div>
 
-        {/* Product grid */}
-        <div className="grid flex-1 grid-cols-2 gap-4 overflow-y-auto sm:grid-cols-3 lg:grid-cols-4 content-start pr-1 pb-4">
-          {categoryFilteredProducts.map((p, i) => {
-            const isLow = p.quantity <= 5;
-            const isOut = p.quantity === 0;
-            return (
-              <button
-                key={p.id}
-                onClick={() => addToCart(p)}
-                disabled={isOut}
-                className={cn(
-                  'group relative flex flex-col rounded-2xl border bg-card/80 backdrop-blur-sm p-4 text-start transition-all duration-300',
-                  isOut
-                    ? 'border-border/30 opacity-50 cursor-not-allowed'
-                    : 'border-border/50 hover:border-primary/40 hover:shadow-elevated hover:-translate-y-1 active:scale-[0.98] card-hover'
-                )}
-                style={{ animationDelay: `${i * 30}ms` }}
-              >
-                {/* Category badge */}
-                <span className="mb-3 inline-flex items-center gap-1 self-start rounded-lg bg-gradient-to-l from-primary/15 to-secondary/10 px-2.5 py-1 text-[10px] font-bold text-primary">
-                  <Tag className="h-3 w-3" />
-                  {p.category}
+        <div className="flex items-center gap-2 shrink-0">
+          <button onClick={toggleTheme} className="flex h-8 w-8 items-center justify-center rounded-lg bg-gray-100 dark:bg-muted/50 hover:bg-gray-200 text-gray-600 dark:text-gray-300">
+            {theme === 'light' ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4 text-amber-500" />}
+          </button>
+          <button onClick={() => navigate('/')} className="flex items-center gap-1.5 rounded-lg bg-gray-100 dark:bg-muted/50 px-3 py-1.5 text-xs font-bold text-gray-600 hover:bg-gray-200">
+            رجوع <ArrowLeft className="h-4 w-4" />
+          </button>
+        </div>
+      </header>
+
+      {/* ══ Body ══ */}
+      <main className="flex flex-1 gap-4 overflow-hidden p-4">
+
+        {/* Products Panel */}
+        <div className="flex flex-1 flex-col overflow-hidden bg-white dark:bg-card rounded-2xl border border-border/50 shadow-sm p-4">
+
+          {/* Category Tabs */}
+          <div className="flex gap-2 mb-4">
+            {TABS.map(tab => (
+              <button key={tab.id} onClick={() => setSelectedTab(tab.id)}
+                className={cn('flex-1 flex items-center justify-between px-3 py-3 rounded-xl text-sm font-bold transition-all hover:scale-[1.01] active:scale-[0.98]',
+                  selectedTab === tab.id ? 'bg-blue-600 text-white shadow-md' : 'bg-white dark:bg-muted/30 text-gray-600 hover:bg-gray-50 border border-border/60'
+                )}>
+                <div className="flex items-center gap-2">
+                  <tab.icon className={cn('h-4 w-4', selectedTab === tab.id ? 'opacity-90' : 'text-gray-400')} />
+                  {tab.label}
+                </div>
+                <span className={cn('flex h-6 min-w-6 items-center justify-center rounded-lg px-2 text-[11px] font-black',
+                  selectedTab === tab.id ? 'bg-white/20 text-white' : 'bg-blue-50 text-blue-600 dark:bg-background dark:text-blue-400')}>
+                  {selectedTab === tab.id && !isTransferTab ? filteredProducts.length : ''}
                 </span>
+              </button>
+            ))}
+          </div>
 
-                {/* Product name */}
-                <p className="text-sm font-bold text-card-foreground leading-snug line-clamp-2 min-h-[2.5rem]">
-                  {p.name}
-                </p>
-
-                {/* Model */}
-                {p.model && (
-                  <p className="mt-1 text-[11px] text-muted-foreground font-medium">
-                    {p.model}
-                  </p>
-                )}
-
-                {/* Divider */}
-                <div className="my-3 h-px w-full bg-gradient-to-l from-transparent via-border/60 to-transparent" />
-
-                {/* Price + Stock */}
-                <div className="flex w-full flex-col gap-1.5">
-                  <div className="flex w-full items-end justify-between">
-                    <div>
-                      <p className="text-[10px] text-muted-foreground mb-0.5">سعر الكاش</p>
-                      <p className="text-lg font-extrabold text-primary leading-none">
-                        {(getActiveSalePrice(p.id) ?? p.sellingPrice).toLocaleString('ar-EG')}
-                        <span className="text-[10px] font-medium text-muted-foreground ms-1">EGP</span>
-                      </p>
-                    </div>
-                    <div className="flex flex-col items-end gap-1">
-                      <span className={cn(
-                        'rounded-lg px-2.5 py-1 text-[10px] font-bold',
-                        isOut ? 'bg-destructive/10 text-destructive' :
-                          isLow ? 'bg-warning/10 text-warning' :
-                            'bg-chart-3/10 text-chart-3'
-                      )}>
-                        {isOut ? 'نفذ' : `${p.quantity} قطعة`}
-                      </span>
-                      {!isOut && getAvailableBatchesCount(p.id) > 1 && (
-                        <span className="text-[9px] font-black bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full border border-blue-200">
-                          {getAvailableBatchesCount(p.id)} دفعات
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex w-full items-end justify-between">
-                    <div>
-                      <p className="text-[10px] text-muted-foreground mb-0.5">سعر التقسيط</p>
-                      <p className="text-sm font-bold text-muted-foreground leading-none">
-                        {((p as { installmentPrice?: number }).installmentPrice || p.sellingPrice * 1.3).toLocaleString('ar-EG')}
-                        <span className="text-[10px] font-medium text-muted-foreground ms-1">EGP</span>
-                      </p>
-                    </div>
+          {isTransferTab ? (
+            <div className="flex-1 overflow-y-auto px-1"><TransferTab /></div>
+          ) : (
+            <>
+              {/* Stats */}
+              <div className="flex gap-4 mb-4">
+                <div className="flex-[1.5] rounded-2xl bg-gradient-to-l from-violet-600 to-indigo-700 p-5 text-white shadow-lg flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-1.5 opacity-80 mb-1 text-sm font-bold"><Calculator className="h-4 w-4" /> إجمالي السلة</div>
+                    <span className="text-4xl font-black">{grandTotal.toLocaleString('ar-EG', { minimumFractionDigits: 2 })}</span>
                   </div>
                 </div>
-
-                {/* Hover overlay */}
-                {!isOut && (
-                  <div className="absolute inset-0 rounded-2xl bg-gradient-to-br from-primary/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Right: Cart */}
-      <div className="flex w-full md:w-[400px] flex-col rounded-2xl border border-border/50 bg-card/80 backdrop-blur-sm shadow-elevated overflow-hidden mt-4 md:mt-0">
-        {/* Cart Header */}
-        <div className="border-b border-border/30 px-4 py-3 bg-gradient-to-l from-primary/5 to-transparent">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
-                <ShoppingCart className="h-4 w-4 text-primary" />
+                <div className="flex-1 rounded-2xl bg-gradient-to-l from-emerald-500 to-teal-500 p-5 text-white shadow-lg flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="flex items-center justify-center gap-1.5 opacity-80 mb-1 text-sm font-bold"><ShoppingCart className="h-4 w-4" /> في السلة</div>
+                    <span className="text-4xl font-black text-amber-300">{cart.length}</span>
+                  </div>
+                </div>
+                <div className="flex-1 rounded-2xl border-2 border-blue-100 dark:border-blue-900/40 bg-blue-50/30 p-5 flex flex-col items-center justify-center">
+                  <p className="text-xs font-bold text-blue-400 mb-1">متاح للبيع</p>
+                  <span className="text-3xl font-black text-blue-700 dark:text-blue-400">{filteredProducts.length}</span>
+                </div>
               </div>
-              <div>
-                <h2 className="text-sm font-bold text-card-foreground">{t('pos.cart')} <span className="text-xs font-normal text-muted-foreground">({cart.length})</span></h2>
-              </div>
-            </div>
-            <div className="flex items-center gap-1">
-              {cart.length > 0 && (
-                <button onClick={() => { if (window.confirm('مسح السلة؟')) setCart([]); }}
-                  className="text-[10px] text-destructive hover:bg-destructive/10 rounded-lg px-2 py-1 transition-all">
-                  مسح
-                </button>
-              )}
-            </div>
-          </div>
 
-          {/* Quick Action Buttons */}
-          <div className="flex items-center gap-1.5 mt-2">
-            <button onClick={holdInvoice} disabled={cart.length === 0} title="تعليق الفاتورة"
-              className="flex items-center gap-1 rounded-lg bg-amber-500/10 text-amber-600 px-2.5 py-1.5 text-[10px] font-medium hover:bg-amber-500/20 transition-all disabled:opacity-40">
-              <PauseCircle className="h-3 w-3" /> تعليق
-              {heldInvoices.length > 0 && <span className="bg-amber-500 text-white text-[8px] rounded-full px-1">{heldInvoices.length}</span>}
-            </button>
-            <button onClick={() => setShowHeld(!showHeld)} title="الفواتير المعلقة"
-              className={cn('flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[10px] font-medium transition-all', showHeld ? 'bg-primary/20 text-primary' : 'bg-muted/50 text-muted-foreground hover:bg-muted')}>
-              <FileText className="h-3 w-3" /> معلقة
-            </button>
-            <button onClick={() => setShowRecent(!showRecent)} title="آخر الفواتير"
-              className={cn('flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-[10px] font-medium transition-all', showRecent ? 'bg-primary/20 text-primary' : 'bg-muted/50 text-muted-foreground hover:bg-muted')}>
-              <Clock className="h-3 w-3" /> سجل
-            </button>
-          </div>
-        </div>
-
-        {/* Customer Picker */}
-        <div className="px-4 py-2 border-b border-border/20">
-          <div className="relative">
-            <button onClick={() => setShowCustomerPicker(!showCustomerPicker)}
-              className="w-full flex items-center justify-between rounded-lg bg-muted/30 px-3 py-2 text-xs hover:bg-muted/50 transition-all">
-              <div className="flex items-center gap-2">
-                <User className="h-3.5 w-3.5 text-primary" />
-                <span className="text-card-foreground font-medium">{selectedCustomer || 'عميل نقدي (اختياري)'}</span>
+              {/* Search */}
+              <div className="flex gap-2 mb-3 bg-gray-50 dark:bg-muted/30 p-2 rounded-xl border border-border/50">
+                <div className="relative flex-1">
+                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <input ref={searchInputRef} value={searchTerm} onChange={e => setSearchTerm(e.target.value)}
+                    className="w-full h-10 bg-white dark:bg-background border border-border/60 rounded-lg pr-9 pl-4 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                    placeholder="ابحث بالاسم أو الموديل أو الباركود..." />
+                </div>
               </div>
-              {showCustomerPicker ? <ChevronUp className="h-3 w-3 text-muted-foreground" /> : <ChevronDown className="h-3 w-3 text-muted-foreground" />}
-            </button>
-            {showCustomerPicker && (
-              <div className="absolute z-20 top-full left-0 right-0 mt-1 rounded-xl border border-border bg-card shadow-xl p-2 animate-slide-down">
-                <input value={customerSearch} onChange={e => setCustomerSearch(e.target.value)} placeholder="بحث عن عميل..." autoFocus
-                  className="w-full rounded-lg border border-border/50 bg-background px-3 py-1.5 text-xs mb-1 focus:outline-none focus:ring-1 focus:ring-primary/30" />
-                <div className="max-h-32 overflow-y-auto space-y-0.5">
-                  <button onClick={() => { setSelectedCustomer(''); setShowCustomerPicker(false); setCustomerSearch(''); }}
-                    className="w-full text-start rounded-lg px-2 py-1.5 text-xs hover:bg-muted/50 transition-colors text-muted-foreground">عميل نقدي</button>
-                  {filteredCustomers.map(c => (
-                    <button key={c.id} onClick={() => { setSelectedCustomer(c.name); setShowCustomerPicker(false); setCustomerSearch(''); }}
-                      className="w-full text-start rounded-lg px-2 py-1.5 text-xs hover:bg-primary/5 transition-colors flex items-center justify-between">
-                      <span className="font-medium text-card-foreground">{c.name}</span>
-                      {c.phone && <span className="text-[10px] text-muted-foreground font-mono">{c.phone}</span>}
+
+              {/* Chip filter (smart per tab) */}
+              {chips.length > 0 && (
+                <div className="flex gap-2 mb-4 overflow-x-auto pb-2 scrollbar-hide">
+                  {chips.map(chip => (
+                    <button key={chip} onClick={() => setSelectedChip(chip)}
+                      className={cn('rounded-lg px-5 py-2 text-xs font-bold whitespace-nowrap transition-all shrink-0',
+                        selectedChip === chip ? 'bg-blue-600 text-white shadow' : 'bg-white dark:bg-background border border-border/60 text-gray-500 hover:bg-gray-50')}>
+                      {chip}
                     </button>
                   ))}
                 </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Held Invoices Panel */}
-        {showHeld && heldInvoices.length > 0 && (
-          <div className="px-4 py-2 border-b border-border/20 bg-amber-500/5 animate-slide-down">
-            <p className="text-[10px] font-bold text-amber-600 mb-1.5">الفواتير المعلقة ({heldInvoices.length})</p>
-            <div className="space-y-1 max-h-28 overflow-y-auto">
-              {heldInvoices.map(h => (
-                <div key={h.id} className="flex items-center justify-between rounded-lg bg-white/50 dark:bg-white/5 px-2 py-1.5">
-                  <div>
-                    <p className="text-[10px] font-bold text-card-foreground">{h.cart.length} منتج • {h.customer || 'نقدي'}</p>
-                    <p className="text-[9px] text-muted-foreground">{new Date(h.heldAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</p>
-                  </div>
-                  <div className="flex gap-1">
-                    <button onClick={() => resumeInvoice(h.id)} className="text-[9px] bg-primary/10 text-primary px-2 py-0.5 rounded font-medium hover:bg-primary/20">استرجاع</button>
-                    <button onClick={() => deleteHeld(h.id)} className="text-[9px] bg-destructive/10 text-destructive px-1.5 py-0.5 rounded hover:bg-destructive/20"><X className="h-2.5 w-2.5" /></button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Recent Sales Panel */}
-        {showRecent && recentSales.length > 0 && (
-          <div className="px-4 py-2 border-b border-border/20 bg-blue-500/5 animate-slide-down">
-            <p className="text-[10px] font-bold text-blue-600 mb-1.5">آخر الفواتير</p>
-            <div className="space-y-1 max-h-28 overflow-y-auto">
-              {recentSales.map((s: any) => (
-                <div key={s.id} className="flex items-center justify-between rounded-lg bg-white/50 dark:bg-white/5 px-2 py-1">
-                  <div>
-                    <p className="text-[10px] font-bold text-card-foreground">#{s.invoiceNumber} <span className="text-muted-foreground font-normal">• {s.paymentMethod}</span></p>
-                    <p className="text-[9px] text-muted-foreground">{new Date(s.date).toLocaleDateString('ar-EG')}</p>
-                  </div>
-                  <span className="text-[10px] font-bold text-primary">{s.total?.toLocaleString('ar-EG')} EGP</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Cart Items */}
-        <div className="flex-1 overflow-y-auto px-4 py-3">
-          {cart.length === 0 ? (
-            <div className="flex h-full flex-col items-center justify-center text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted/30 mb-3">
-                <ShoppingCart className="h-7 w-7 text-muted-foreground/40" />
-              </div>
-              <p className="text-sm text-muted-foreground">{t('pos.noItems')}</p>
-              <p className="text-xs text-muted-foreground/60 mt-1">اضغط على المنتجات لإضافتها</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {cart.map((item, i) => (
-                <div key={item.product.id} className="animate-slide-up" style={{ animationDelay: `${i * 30}ms` }}>
-                  <CartItemRow item={item} onUpdateQty={updateQty} onRemove={removeFromCart} onLineDiscount={updateLineDiscount} />
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Totals & Payment */}
-        <div className="border-t border-border/30 bg-gradient-to-t from-muted/20 to-transparent px-4 py-4 space-y-3">
-          {/* Notes */}
-          <div className="flex items-center gap-2">
-            <StickyNote className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-            <input value={invoiceNotes} onChange={e => setInvoiceNotes(e.target.value)} placeholder="ملاحظات الفاتورة (اختياري)"
-              className="flex-1 rounded-lg border border-border/40 bg-background/50 px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-primary/20" />
-          </div>
-
-          {/* Subtotal & Discount */}
-          <div className="space-y-1.5 text-xs">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">{t('pos.subtotal')}</span>
-              <span className="font-medium text-card-foreground">{totals.subtotal.toLocaleString('ar-EG')} EGP</span>
-            </div>
-            {cart.reduce((sum, c) => sum + c.lineDiscount, 0) > 0 && (
-              <div className="flex justify-between text-amber-500">
-                <span>خصم الأصناف</span>
-                <span className="font-medium">-{cart.reduce((sum, c) => sum + c.lineDiscount, 0).toLocaleString('ar-EG')} EGP</span>
-              </div>
-            )}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5 text-muted-foreground">
-                <Percent className="h-3 w-3" />
-                <span>خصم الفاتورة</span>
-              </div>
-              <input type="number" value={invoiceDiscount || ''} onChange={(e) => setInvoiceDiscount(Number(e.target.value))}
-                className="w-20 rounded-lg border border-border/50 bg-background/50 px-2 py-1 text-end text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary/20" min={0} placeholder="0" />
-            </div>
-          </div>
-
-          {/* Total */}
-          <div className="flex justify-between items-end border-t border-border/30 pt-2">
-            <div>
-              <p className="text-[10px] text-muted-foreground">{t('pos.total')}</p>
-              <p className="text-xl font-extrabold text-card-foreground">{totals.total.toLocaleString('ar-EG')} EGP</p>
-            </div>
-            <div className="text-end">
-              <p className="text-[10px] text-muted-foreground">{t('pos.profit')}</p>
-              <p className="text-sm font-bold text-chart-3">{totals.grossProfit.toLocaleString('ar-EG')} EGP</p>
-              <p className="text-[9px] text-muted-foreground">هامش {totals.marginPct}%</p>
-            </div>
-          </div>
-
-          {/* Change Calculation */}
-          {selectedPayment === 'cash' && cart.length > 0 && (
-            <div className="flex items-center gap-2 rounded-lg bg-emerald-500/5 border border-emerald-500/20 px-3 py-2">
-              <div className="flex-1">
-                <p className="text-[10px] text-emerald-600 font-medium mb-0.5">المبلغ المدفوع</p>
-                <input type="number" value={amountPaid || ''} onChange={e => setAmountPaid(+e.target.value)} placeholder={totals.total.toString()}
-                  className="w-full bg-transparent text-sm font-bold text-emerald-700 focus:outline-none placeholder:text-emerald-400/40" min={0} />
-              </div>
-              {amountPaid > 0 && (
-                <div className="text-end border-r border-emerald-500/20 pr-3">
-                  <p className="text-[10px] text-emerald-600">الباقي</p>
-                  <p className={cn('text-base font-extrabold', amountPaid >= totals.total ? 'text-emerald-600' : 'text-destructive')}>
-                    {(amountPaid - totals.total).toLocaleString('ar-EG')} EGP
-                  </p>
-                </div>
               )}
-            </div>
-          )}
 
-          {/* Payment method */}
-          <div className="grid grid-cols-3 gap-1.5">
-            {([
-              { key: 'cash' as const, icon: Banknote, label: t('pos.cash'), color: 'from-emerald-500/20 to-teal-500/20', iconColor: 'text-emerald-500' },
-              { key: 'card' as const, icon: CreditCard, label: t('pos.card'), color: 'from-blue-500/20 to-indigo-500/20', iconColor: 'text-blue-500' },
-              { key: 'split' as const, icon: ArrowLeftRight, label: t('pos.split'), color: 'from-violet-500/20 to-purple-500/20', iconColor: 'text-violet-500' },
-            ]).map(pm => (
-              <button key={pm.key} onClick={() => setSelectedPayment(pm.key)}
-                className={cn('flex flex-col items-center justify-center gap-1 rounded-xl py-2.5 text-[10px] font-medium transition-all',
-                  selectedPayment === pm.key ? `bg-gradient-to-br ${pm.color} border-2 border-primary/30 shadow-lg` : 'bg-muted/30 border-2 border-transparent text-muted-foreground hover:bg-muted/50')}>
-                <pm.icon className={cn('h-4 w-4', selectedPayment === pm.key ? pm.iconColor : '')} />
-                {pm.label}
+              {/* Products Grid */}
+              <div className="flex-1 overflow-y-auto pr-1">
+                {filteredProducts.length === 0 ? (
+                  <div className="h-full flex flex-col justify-center items-center text-gray-400 py-16">
+                    {selectedTab === 'accessories'
+                      ? <Headphones className="h-16 w-16 mb-4 opacity-20" />
+                      : selectedTab === 'cars'
+                        ? <Car className="h-16 w-16 mb-4 opacity-20" />
+                        : <ShoppingCart className="h-16 w-16 mb-4 opacity-20" />
+                    }
+                    <p className="font-bold text-lg">
+                      {selectedTab === 'accessories' ? 'لا توجد إكسسوارات متاحة'
+                        : selectedTab === 'cars' ? 'لا توجد عربيات متاحة'
+                          : 'لا توجد منتجات'}
+                    </p>
+                    <p className="text-sm opacity-70 mt-1">جرب تغيير الفئة أو كلمة البحث</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 pb-6">
+                    {filteredProducts.map((p: Product) => (
+                      <div key={p.id} onClick={() => addToCart(p)}
+                        className="group flex flex-col rounded-2xl border border-border/60 bg-white dark:bg-card p-4 shadow-sm hover:shadow-md hover:border-blue-400/50 transition-all cursor-pointer select-none">
+                        <span className="self-end rounded border border-gray-200 bg-gray-50 dark:border-border dark:bg-muted/40 text-gray-500 dark:text-gray-400 px-2 py-0.5 text-[10px] font-bold mb-2">{p.category}</span>
+                        <h3 className="font-bold text-foreground line-clamp-2 min-h-[40px] leading-tight text-sm">{p.name}</h3>
+                        {p.model && <p className="mt-1 text-[11px] text-muted-foreground">{p.model}</p>}
+                        <div className="mt-5 flex-1 flex flex-col justify-end">
+                          <span className="text-[10px] text-gray-400 font-medium mb-0.5">سعر البيع</span>
+                          <span className="text-lg font-black text-emerald-600">{p.sellingPrice.toLocaleString('ar-EG')}<span className="text-xs font-medium text-gray-400 mr-1">ج.م</span></span>
+                        </div>
+                        <div className={cn('mt-2 rounded-lg px-2 py-1 text-[10px] font-bold text-center',
+                          p.quantity === 0 ? 'bg-red-50 text-red-500' : p.quantity <= 5 ? 'bg-amber-50 text-amber-600' : 'bg-emerald-50 text-emerald-600')}>
+                          {p.quantity === 0 ? 'نفذ من المخزون' : `المخزون: ${p.quantity}`}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+
+        {/* ── Cart Panel ── */}
+        <div className="flex w-[380px] shrink-0 flex-col overflow-hidden bg-white dark:bg-card rounded-2xl border border-border/50 shadow-sm">
+          <div className="flex items-center gap-2.5 border-b border-border/50 bg-gray-50/50 dark:bg-muted/20 p-4">
+            <div className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-500/10"><ShoppingCart className="h-5 w-5 text-blue-600 dark:text-blue-400" /></div>
+            <h2 className="text-lg font-black">سلة المشتريات</h2>
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">{cart.length}</span>
+          </div>
+
+          <div className="grid grid-cols-4 gap-2 border-b border-border/50 p-3">
+            {[
+              { icon: PauseCircle, label: 'تعليق', action: () => { holdInvoice(); toast({ title: 'تم تعليق الفاتورة' }); }, badge: cart.length > 0 && heldInvoices.length > 0 },
+              { icon: FileText, label: 'معلقة', action: () => setShowHeld(true), badge: heldInvoices.length > 0 },
+              { icon: RotateCcw, label: 'مرتجع', action: () => navigate('/returns') },
+              { icon: HelpCircle, label: 'مساعدة', action: () => navigate('/help') },
+            ].map(({ icon: Icon, label, action, badge }) => (
+              <button key={label} onClick={action} className="flex flex-col items-center justify-center gap-1.5 rounded-xl border border-border/60 bg-gray-50 dark:bg-muted/30 py-2.5 text-xs font-bold text-gray-500 hover:bg-white hover:border-blue-200 transition-all relative">
+                {badge && <span className="absolute -top-1 -right-1 bg-amber-500 h-3 w-3 rounded-full border-2 border-white" />}
+                <Icon className="h-4 w-4" /> {label}
               </button>
             ))}
           </div>
 
-          {/* Checkout Button */}
-          <button onClick={handleCheckout} disabled={cart.length === 0 || isProcessing}
-            className="group relative w-full overflow-hidden rounded-xl bg-gradient-to-l from-primary to-secondary py-3.5 text-sm font-bold text-primary-foreground shadow-lg shadow-primary/20 hover:shadow-xl disabled:opacity-50 disabled:shadow-none transition-all">
-            <span className="relative z-10 flex items-center justify-center gap-2">
-              {isProcessing ? (<><Loader2 className="h-4 w-4 animate-spin" /> جاري المعالجة...</>) :
-                (<><Printer className="h-4 w-4" /> {t('pos.checkout')} — {totals.total.toLocaleString('ar-EG')} EGP <span className="rounded bg-white/20 px-1.5 py-0.5 text-[9px] font-mono">F9</span></>)}
-            </span>
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
-          </button>
+          <div className="flex-1 overflow-y-auto bg-gray-50/50 dark:bg-background/30 p-3">
+            {cart.length === 0 ? (
+              <div className="flex h-full flex-col items-center justify-center text-center opacity-40">
+                <ShoppingCart className="h-10 w-10 text-gray-400 mb-3" />
+                <p className="text-lg font-black text-gray-600">السلة فارغة</p>
+                <p className="text-xs font-bold text-gray-400 mt-1">اضغط على منتج لإضافته</p>
+              </div>
+            ) : cart.map(item => (
+              <CartItemRow key={item.product.id} item={item} onUpdateQty={updateCartItemQty} onRemove={removeFromCart} onLineDiscount={(id, d) => updateLineDiscount(id, d)} />
+            ))}
+          </div>
+
+          <div className="border-t border-border/50 bg-white dark:bg-card p-4 space-y-3">
+            <div className="flex items-center justify-between text-sm">
+              <span className="font-bold text-gray-500">المجموع الفرعي</span>
+              <span className="font-bold">{subtotal.toLocaleString('ar-EG')} ج.م</span>
+            </div>
+            {lineDiscountsTotal > 0 && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="font-bold text-amber-500 flex items-center gap-1"><TrendingDown className="h-3.5 w-3.5" /> خصم الأصناف</span>
+                <span className="font-bold text-amber-500">- {lineDiscountsTotal.toLocaleString('ar-EG')} ج.م</span>
+              </div>
+            )}
+
+            {/* Invoice Discount */}
+            <div className="rounded-xl border border-dashed border-orange-200 dark:border-orange-800/30 bg-orange-50/50 dark:bg-orange-900/10 p-3">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-orange-700 dark:text-orange-400">
+                  <Percent className="h-3.5 w-3.5" /> خصم الفاتورة الكلي
+                </div>
+                {invoiceDiscount > 0 && <button onClick={() => applyInvoiceDiscount(0)} className="text-[10px] text-red-400 hover:text-red-600 font-bold">مسح</button>}
+              </div>
+              <div className="flex items-center gap-2">
+                <input type="number" min={0} max={maxInvoiceDiscount} step={0.5} value={invoiceDiscount || ''} disabled={cart.length === 0}
+                  onChange={e => applyInvoiceDiscount(Math.min(Math.max(0, Number(e.target.value)), maxInvoiceDiscount))}
+                  placeholder={`حتى ${maxInvoiceDiscount.toFixed(0)} ج.م`}
+                  className="flex-1 rounded-lg border border-orange-200 bg-white dark:bg-card px-3 py-1.5 text-sm font-bold text-center focus:outline-none focus:ring-1 focus:ring-orange-400 disabled:opacity-50" />
+                <span className="text-xs text-orange-600 font-bold shrink-0">ج.م</span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between rounded-xl bg-emerald-50 dark:bg-emerald-500/10 p-3 border border-emerald-100 dark:border-emerald-500/20">
+              <div className="flex items-center gap-1.5 font-bold text-gray-700 dark:text-gray-300"><Receipt className="h-5 w-5" /> الإجمالي</div>
+              <span className="text-xl font-black text-emerald-600">{grandTotal.toLocaleString('ar-EG')} ج.م</span>
+            </div>
+
+            <div className="flex gap-2">
+              <button onClick={handleCheckout} disabled={cart.length === 0 || isProcessing}
+                className="flex-[2] rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-gray-100 disabled:text-gray-400 py-3.5 text-sm font-bold text-white flex justify-center items-center gap-2 transition-all shadow-md active:scale-[0.98]">
+                {isProcessing ? <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" /> : <CreditCard className="h-4 w-4" />}
+                إتمام البيع{cart.length > 0 ? ` — ${grandTotal.toLocaleString('ar-EG')} ج.م` : ''}
+              </button>
+              <button onClick={clearCart} disabled={cart.length === 0}
+                className="rounded-xl bg-red-50 dark:bg-red-500/10 px-4 py-3 text-xs font-bold text-red-500 hover:bg-red-100 border border-red-100 flex flex-col items-center justify-center transition-all disabled:opacity-50">
+                <Trash2 className="h-4 w-4 mb-0.5" /> مسح
+              </button>
+            </div>
+
+            <button onClick={() => navigate('/sales')} className="flex w-full items-center justify-between rounded-xl bg-teal-600 px-4 py-3 text-white hover:bg-teal-700 transition-colors active:scale-[0.98]">
+              <div className="text-start">
+                <p className="text-sm font-bold">فواتير نقطة البيع</p>
+                <p className="text-[10px] opacity-90">عرض آخر الفواتير</p>
+              </div>
+              <Receipt className="h-5 w-5 opacity-90" />
+            </button>
+          </div>
         </div>
-      </div>
+      </main>
+
+      {/* Held Invoices Modal */}
+      {showHeld && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowHeld(false)}>
+          <div className="bg-white dark:bg-card rounded-2xl shadow-2xl w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-black">الفواتير المعلقة ({heldInvoices.length})</h3>
+              <button onClick={() => setShowHeld(false)} className="rounded-lg p-1.5 hover:bg-gray-100"><X className="h-5 w-5" /></button>
+            </div>
+            {heldInvoices.length === 0 ? (
+              <p className="text-center text-muted-foreground py-8">لا توجد فواتير معلقة</p>
+            ) : (
+              <div className="space-y-2 max-h-80 overflow-y-auto">
+                {heldInvoices.map(h => (
+                  <div key={h.id} className="flex items-center justify-between rounded-xl bg-amber-50 dark:bg-amber-500/10 border border-amber-100 p-3">
+                    <div>
+                      <p className="text-sm font-bold">{h.cart.length} منتج — {h.customer ?? 'نقدي'}</p>
+                      <p className="text-xs text-muted-foreground">{new Date(h.heldAt).toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button onClick={() => { restoreInvoice(h.id); setShowHeld(false); }} className="rounded-lg bg-primary/10 text-primary px-3 py-1.5 text-xs font-bold hover:bg-primary/20">استرجاع</button>
+                      <button onClick={() => removeHeldInvoice(h.id)} className="rounded-lg bg-red-50 text-red-500 px-2 py-1.5 text-xs font-bold hover:bg-red-100"><X className="h-3.5 w-3.5" /></button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
-};
-
-export default POS;
+}

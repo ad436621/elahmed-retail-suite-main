@@ -226,7 +226,7 @@ export default function DamagedItemsPage() {
                             </div>
                             <div>
                                 <label className="mb-1 block text-xs font-semibold text-muted-foreground">السبب</label>
-                                <textarea value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))} rows={2} placeholder="سبب الهلاك..." className={`${IC} resize-none`} />
+                                <textarea data-validation="text-only" value={form.reason} onChange={e => setForm(f => ({ ...f, reason: e.target.value }))} rows={2} placeholder="سبب الهلاك..." className={`${IC} resize-none`} />
                             </div>
                         </div>
                         <div className="flex gap-2 pt-1">

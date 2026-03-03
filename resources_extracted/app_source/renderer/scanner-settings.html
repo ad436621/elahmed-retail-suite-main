@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>إعدادات السكانر - ElOs</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+      background: #1a1a1a;
+      color: #fff;
+      padding: 20px;
+      direction: rtl;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: #2a2a2a;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+    }
+    h1 {
+      margin-bottom: 30px;
+      color: #3b82f6;
+      font-size: 24px;
+    }
+    .section {
+      background: #333;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .section-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 15px;
+      color: #3b82f6;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      color: #ccc;
+      font-size: 14px;
+    }
+    select, input[type="number"], input[type="range"] {
+      width: 100%;
+      padding: 10px;
+      background: #444;
+      border: 1px solid #555;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 14px;
+    }
+    input[type="range"] {
+      padding: 0;
+    }
+    .range-value {
+      display: inline-block;
+      margin-right: 10px;
+      color: #3b82f6;
+      font-weight: bold;
+      min-width: 50px;
+    }
+    .preset-buttons {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+      margin-top: 15px;
+    }
+    .preset-btn {
+      padding: 12px;
+      background: #444;
+      border: 2px solid #555;
+      border-radius: 6px;
+      color: #fff;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s;
+    }
+    .preset-btn:hover {
+      background: #555;
+      border-color: #3b82f6;
+    }
+    .preset-btn.active {
+      background: #3b82f6;
+      border-color: #3b82f6;
+    }
+    .btn {
+      padding: 12px 24px;
+      background: #22c55e;
+      border: none;
+      border-radius: 6px;
+      color: #fff;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 20px;
+      width: 100%;
+      transition: background 0.3s;
+    }
+    .btn:hover {
+      background: #16a34a;
+    }
+    .info-box {
+      background: rgba(59, 130, 246, 0.1);
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      border-radius: 6px;
+      padding: 15px;
+      margin-top: 15px;
+      font-size: 13px;
+      color: #a0a0a0;
+    }
+    .test-section {
+      background: #2a2a2a;
+      border: 2px dashed #555;
+      border-radius: 8px;
+      padding: 20px;
+      margin-top: 20px;
+      text-align: center;
+    }
+    .test-barcode {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+      display: inline-block;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>⚙️ إعدادات السكانر</h1>
+    
+    <!-- اختيار نوع السكانر -->
+    <div class="section">
+      <div class="section-title">📱 نوع السكانر</div>
+      <div class="preset-buttons" id="presetButtons">
+        <!-- سيتم ملؤه ديناميكياً -->
+      </div>
+      <div class="info-box">
+        💡 اختر نوع السكانر الخاص بك للحصول على أفضل إعدادات. يمكنك تخصيص الإعدادات يدوياً أيضاً.
+      </div>
+    </div>
+    
+    <!-- إعدادات الباركود المطبوع -->
+    <div class="section">
+      <div class="section-title">🏷️ إعدادات الباركود المطبوع</div>
+      
+      <div class="form-group">
+        <label>
+          <span class="range-value" id="quietZoneValue">15</span>
+          Quiet Zone (مساحة بيضاء على الجانبين)
+        </label>
+        <input type="range" id="quietZone" min="5" max="25" value="15" step="1">
+        <div class="info-box" style="margin-top: 10px;">
+          المساحة البيضاء على جانبي الباركود. المعيار: 10-15 pixels. إذا كان السكانر لا يقرأ، زد هذه القيمة.
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label>
+          <span class="range-value" id="minBarWidthValue">2.0</span>
+          الحد الأدنى لسمك الخط (Min Bar Width)
+        </label>
+        <input type="range" id="minBarWidth" min="1.0" max="3.0" value="2.0" step="0.1">
+        <div class="info-box" style="margin-top: 10px;">
+          سمك الخط الأساسي في الباركود. إذا كان السكانر لا يقرأ، زد هذه القيمة إلى 2.0 أو أكثر.
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label>
+          <span class="range-value" id="contrastValue">100%</span>
+          التباين (Contrast)
+        </label>
+        <input type="range" id="contrast" min="0.8" max="1.0" value="1.0" step="0.05">
+        <div class="info-box" style="margin-top: 10px;">
+          تباين الباركود. 100% = أسود خالص (موصى به).
+        </div>
+      </div>
+    </div>
+    
+    <!-- إعدادات القراءة -->
+    <div class="section">
+      <div class="section-title">📖 إعدادات القراءة</div>
+      
+      <div class="form-group">
+        <label>الحد الأدنى لطول الباركود</label>
+        <input type="number" id="minLength" min="4" max="20" value="6">
+      </div>
+      
+      <div class="form-group">
+        <label>Timeout (milliseconds)</label>
+        <input type="number" id="timeout" min="30" max="200" value="50">
+      </div>
+      
+      <div class="form-group">
+        <label>
+          <input type="checkbox" id="soundFeedback" checked>
+          صوت عند القراءة الناجحة
+        </label>
+      </div>
+    </div>
+    
+    <!-- معاينة الباركود -->
+    <div class="test-section">
+      <div class="section-title">🔍 معاينة الباركود</div>
+      <p style="color: #888; margin-bottom: 15px;">اطبع باركود تجريبي واختبره على السكانر</p>
+      <div class="test-barcode" id="testBarcode">
+        <!-- سيتم ملؤه ديناميكياً -->
+      </div>
+      <button class="btn" onclick="printTestBarcode()" style="max-width: 300px; margin: 0 auto;">🖨️ طباعة باركود تجريبي</button>
+    </div>
+    
+    <!-- حفظ الإعدادات -->
+    <button class="btn" onclick="saveSettings()">💾 حفظ الإعدادات</button>
+  </div>
+  
+  <script src="barcode-service.js"></script>
+  <script>
+    // تحميل الإعدادات الحالية
+    function loadSettings() {
+      const settings = BarcodeService.getScannerSettings();
+      
+      // تحديث UI
+      document.getElementById('quietZone').value = settings.barcode.quietZone || 15;
+      document.getElementById('minBarWidth').value = settings.barcode.minBarWidth || 2.0;
+      document.getElementById('contrast').value = settings.barcode.contrast || 1.0;
+      document.getElementById('minLength').value = settings.minLength || 6;
+      document.getElementById('timeout').value = settings.timeout || 50;
+      document.getElementById('soundFeedback').checked = settings.soundFeedback !== false;
+      
+      updateRangeValues();
+      updatePresetButtons(settings.preset || 'alfa-500-2d');
+      updateTestBarcode();
+    }
+    
+    // تحديث قيم الـ range
+    function updateRangeValues() {
+      document.getElementById('quietZoneValue').textContent = document.getElementById('quietZone').value;
+      document.getElementById('minBarWidthValue').textContent = document.getElementById('minBarWidth').value;
+      const contrast = document.getElementById('contrast').value;
+      document.getElementById('contrastValue').textContent = Math.round(contrast * 100) + '%';
+    }
+    
+    // تحديث أزرار الـ presets
+    function updatePresetButtons(activePreset) {
+      const container = document.getElementById('presetButtons');
+      const presets = BarcodeService.config.scanner.presets;
+      
+      container.innerHTML = '';
+      for (const [key, preset] of Object.entries(presets)) {
+        const btn = document.createElement('button');
+        btn.className = 'preset-btn' + (key === activePreset ? ' active' : '');
+        btn.textContent = preset.name;
+        btn.onclick = () => applyPreset(key);
+        container.appendChild(btn);
+      }
+    }
+    
+    // تطبيق preset
+    function applyPreset(presetName) {
+      BarcodeService.applyScannerPreset(presetName);
+      loadSettings();
+    }
+    
+    // تحديث معاينة الباركود
+    function updateTestBarcode() {
+      const settings = BarcodeService.getScannerSettings();
+      const testCode = '1234567890';
+      const barcodeSVG = BarcodeService.generateCode128SVG(testCode, 200, 50);
+      document.getElementById('testBarcode').innerHTML = barcodeSVG + '<div style="margin-top: 10px; font-family: monospace; font-size: 12px;">' + testCode + '</div>';
+    }
+    
+    // حفظ الإعدادات
+    function saveSettings() {
+      const settings = {
+        preset: document.querySelector('.preset-btn.active')?.textContent || 'generic',
+        minLength: parseInt(document.getElementById('minLength').value),
+        maxLength: 20,
+        timeout: parseInt(document.getElementById('timeout').value),
+        trimSpecial: true,
+        soundFeedback: document.getElementById('soundFeedback').checked,
+        barcode: {
+          quietZone: parseInt(document.getElementById('quietZone').value),
+          minBarWidth: parseFloat(document.getElementById('minBarWidth').value),
+          contrast: parseFloat(document.getElementById('contrast').value),
+          crispEdges: true
+        }
+      };
+      
+      BarcodeService.saveScannerSettings(settings);
+      alert('✅ تم حفظ الإعدادات بنجاح!\n\nاطبع باركود جديد واختبره على السكانر.');
+      updateTestBarcode();
+    }
+    
+    // طباعة باركود تجريبي
+    function printTestBarcode() {
+      const testCode = '1234567890';
+      const barcodeSVG = BarcodeService.generateCode128SVG(testCode, 200, 50);
+      
+      const printWindow = window.open('', '_blank', 'width=400,height=300');
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8">
+          <title>باركود تجريبي</title>
+          <style>
+            body { font-family: Arial; padding: 20px; text-align: center; }
+            .barcode { margin: 20px 0; }
+            .code { font-family: monospace; font-size: 18px; margin-top: 10px; }
+          </style>
+        </head>
+        <body>
+          <h2>باركود تجريبي</h2>
+          <div class="barcode">${barcodeSVG}</div>
+          <div class="code">${testCode}</div>
+          <p style="margin-top: 20px; color: #666;">امسح هذا الباركود على السكانر للاختبار</p>
+        </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => printWindow.print(), 300);
+    }
+    
+    // Event listeners
+    document.getElementById('quietZone').addEventListener('input', () => {
+      updateRangeValues();
+      updateTestBarcode();
+    });
+    document.getElementById('minBarWidth').addEventListener('input', () => {
+      updateRangeValues();
+      updateTestBarcode();
+    });
+    document.getElementById('contrast').addEventListener('input', () => {
+      updateRangeValues();
+      updateTestBarcode();
+    });
+    
+    // تحميل الإعدادات عند فتح الصفحة
+    loadSettings();
+  </script>
+</body>
+</html>
+
+
+
+
+

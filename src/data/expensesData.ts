@@ -4,8 +4,9 @@
 
 import { Expense, ExpenseCategory } from '@/domain/types';
 import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
+import { STORAGE_KEYS } from '@/config';
 
-const KEY = 'gx_expenses';
+const KEY = STORAGE_KEYS.EXPENSES;
 
 /** Get all expenses from storage. */
 export function getExpenses(): Expense[] {

@@ -28,21 +28,36 @@ import {
 
 /* ═══════════ MAIN DASHBOARD ═══════════ */
 export default function Dashboard() {
+  const [refreshKey, setRefreshKey] = useState(0);
+
+  useEffect(() => {
+    const handleStorage = (e: StorageEvent | CustomEvent) => {
+      const key = 'key' in e ? e.key : (e as CustomEvent).detail?.key;
+      if (key && key.startsWith('gx_')) setRefreshKey(k => k + 1);
+    };
+    window.addEventListener('storage', handleStorage as EventListener);
+    window.addEventListener('local-storage', handleStorage as EventListener);
+    return () => {
+      window.removeEventListener('storage', handleStorage as EventListener);
+      window.removeEventListener('local-storage', handleStorage as EventListener);
+    };
+  }, []);
+
   /* Load all data */
-  const mobiles = useMemo(() => getMobiles(), []);
-  const mobileAcc = useMemo(() => getMobileAccessories(), []);
-  const devices = useMemo(() => getDevices(), []);
-  const deviceAcc = useMemo(() => getDeviceAccessories(), []);
-  const computers = useMemo(() => getComputers(), []);
-  const computerAcc = useMemo(() => getComputerAccessories(), []);
-  const maintenance = useMemo(() => getMaintenanceOrders(), []);
-  const contracts = useMemo(() => getContracts(), []);
-  const expenses = useMemo(() => getExpenses(), []);
-  const allSales = useMemo(() => getAllSales(), []);
-  const cars = useMemo(() => getCars(), []);
-  const damagedItems = useMemo(() => getDamagedItems(), []);
-  const warehouseCapital = useMemo(() => getWarehouseCapital(), []);
-  const otherRevenues = useMemo(() => getOtherRevenues(), []);
+  const mobiles = useMemo(() => getMobiles(), [refreshKey]);
+  const mobileAcc = useMemo(() => getMobileAccessories(), [refreshKey]);
+  const devices = useMemo(() => getDevices(), [refreshKey]);
+  const deviceAcc = useMemo(() => getDeviceAccessories(), [refreshKey]);
+  const computers = useMemo(() => getComputers(), [refreshKey]);
+  const computerAcc = useMemo(() => getComputerAccessories(), [refreshKey]);
+  const maintenance = useMemo(() => getMaintenanceOrders(), [refreshKey]);
+  const contracts = useMemo(() => getContracts(), [refreshKey]);
+  const expenses = useMemo(() => getExpenses(), [refreshKey]);
+  const allSales = useMemo(() => getAllSales(), [refreshKey]);
+  const cars = useMemo(() => getCars(), [refreshKey]);
+  const damagedItems = useMemo(() => getDamagedItems(), [refreshKey]);
+  const warehouseCapital = useMemo(() => getWarehouseCapital(), [refreshKey]);
+  const otherRevenues = useMemo(() => getOtherRevenues(), [refreshKey]);
 
   /* ─── Monthly Reset Logic ─── */
   const [resetSettings, setResetSettings] = useState(() => getMonthlyResetSettings());
@@ -148,7 +163,7 @@ export default function Dashboard() {
   const recentSales = useMemo(() => [...sales].sort((a, b) => (b.date ?? '').localeCompare(a.date ?? '')).slice(0, 6), [sales]);
 
   return (
-    <div className="space-y-6 pb-8 animate-fade-in" dir="rtl">
+    <div className="space-y-8 pb-8 animate-fade-in" dir="rtl">
 
       {/* ── HEADER: Title + Global Search ── */}
       <div className="flex items-center gap-4 flex-wrap">
@@ -224,7 +239,7 @@ export default function Dashboard() {
       {/* ── KPI ROW 1 — Financial ── */}
       <div>
         <SH title="الملخص المالي" sub={lrd ? `مخصّص للفترة من: ${new Date(lrd).toLocaleDateString('ar-EG')}` : 'إجمالي منذ البداية'} />
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <StatCard icon={ShoppingCart} label="إجمالي المبيعات" value={`${fmt(totalSalesRevenue)} ج.م`}
             sub={`${sales.length} فاتورة`} color="bg-emerald-100 text-emerald-600" trend="up" linkTo="/sales" />
           <StatCard icon={TrendingUp} label="إجمالي الربح الخام"
@@ -243,7 +258,7 @@ export default function Dashboard() {
       </div>
 
       {/* ── KPI ROW 2 — Operations ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-6 md:grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-6 md:grid-cols-3 gap-4">
         <StatCard icon={ShoppingCart} label="مبيعات اليوم"
           value={`${fmt(todayRevenue)} ج.م`} sub={`${todaySales.length} فاتورة`}
           color="bg-amber-100 text-amber-600" linkTo="/pos" />
@@ -265,12 +280,12 @@ export default function Dashboard() {
       </div>
 
       {/* ── MAIN 3-COLUMN GRID ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
         {/* ─ COLUMN 1: Inventory ─ */}
         <div className="space-y-4">
           <SH title="المخزون" sub={`قيمة إجمالية: ${fmt(totalInvValue)} ج.م`} />
-          <div className="rounded-3xl border border-border/50 bg-card/80 divide-y divide-border/50 shadow-xl overflow-hidden relative">
+          <div className="rounded-2xl border border-border/60 bg-card divide-y divide-border/40 shadow-sm overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
             {([
               { icon: Smartphone, label: 'الموبيلات', count: totalMobiles, acc: totalMobAcc, value: mobileInvValue, color: 'text-cyan-600 bg-cyan-100/80', to: '/mobiles' },
@@ -295,7 +310,7 @@ export default function Dashboard() {
           </div>
 
           {/* Installments debt */}
-          <div className="rounded-3xl border border-border/50 bg-card/80 p-6 shadow-xl space-y-4 relative overflow-hidden">
+          <div className="rounded-2xl border border-border/60 bg-card p-5 shadow-sm space-y-4">
             <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-primary/10 rounded-full blur-3xl pointer-events-none" />
             <p className="text-base font-black text-foreground flex items-center gap-2 relative z-10 tracking-tight">
               <CreditCard className="h-4 w-4 text-primary" /> ديون التقسيط
@@ -327,7 +342,7 @@ export default function Dashboard() {
         {/* ─ COLUMN 2: Expenses ─ */}
         <div className="space-y-4">
           <SH title="المصروفات" sub="توزيع حسب الفئة" />
-          <div className="rounded-3xl border border-border/50 bg-card/80 p-6 shadow-xl space-y-5">
+          <div className="rounded-2xl border border-border/60 bg-card p-5 shadow-sm space-y-4">
             {expenseByCategory.length === 0 ? (
               <div className="py-8 text-center">
                 <TrendingDown className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
@@ -346,7 +361,7 @@ export default function Dashboard() {
             )}
           </div>
 
-          <div className="rounded-3xl border border-border/50 bg-card/80 p-6 shadow-xl space-y-4 relative overflow-hidden">
+          <div className="rounded-2xl border border-border/60 bg-card p-5 shadow-sm space-y-4">
             <div className="absolute -top-10 -left-10 w-40 h-40 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
             <p className="text-base font-black text-foreground flex items-center gap-2 relative z-10 tracking-tight">
               <TrendingUp className="h-5 w-5 text-emerald-500" /> تحليل الربحية والتكاليف
@@ -379,7 +394,7 @@ export default function Dashboard() {
         {/* ─ COLUMN 3: Maintenance + Recent Sales ─ */}
         <div className="space-y-4">
           <SH title="حالة الصيانة" sub={`${maintenance.length} طلب`} />
-          <div className="rounded-3xl border border-border/50 bg-card/80 divide-y divide-border/50 shadow-xl overflow-hidden relative">
+          <div className="rounded-2xl border border-border/60 bg-card divide-y divide-border/40 shadow-sm overflow-hidden">
             <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/5 rounded-full blur-3xl pointer-events-none" />
             {([
               { label: 'انتظار', count: maintenance.filter(m => m.status === 'pending').length, icon: Clock, color: 'text-amber-600 bg-amber-100/80' },
@@ -410,7 +425,7 @@ export default function Dashboard() {
 
           <div>
             <SH title="آخر المبيعات" />
-            <div className="rounded-3xl border border-border/50 bg-card/80 shadow-xl overflow-hidden relative">
+            <div className="rounded-2xl border border-border/60 bg-card shadow-sm overflow-hidden">
               <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
               {recentSales.length === 0 ? (
                 <div className="py-8 text-center text-sm font-semibold text-muted-foreground relative z-10">لا توجد مبيعات</div>
@@ -445,7 +460,7 @@ export default function Dashboard() {
             { icon: TrendingDown, label: 'المصروفات', to: '/expenses', color: 'bg-red-100/80 text-red-700 border-red-200/50' },
           ] as const).map(({ icon: Icon, label, to, color }) => (
             <Link key={to} to={to}
-              className={`group flex flex-col items-center justify-center gap-3 rounded-3xl border border-white/20 p-4 ${color} hover:-translate-y-1 hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-2xl text-center bg-card/80 relative overflow-hidden`}>
+              className={`group flex flex-col items-center justify-center gap-2 rounded-xl border p-3 ${color} hover:-translate-y-0.5 hover:shadow-md transition-all duration-200 text-center`}>
               <div className="absolute inset-0 bg-gradient-to-br from-white/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
               <div className="absolute -bottom-6 -right-6 w-16 h-16 bg-white/20 rounded-full blur-2xl group-hover:scale-150 transition-transform duration-500" />
               <Icon className="h-7 w-7 relative z-10" />

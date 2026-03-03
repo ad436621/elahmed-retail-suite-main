@@ -5,8 +5,9 @@
 import { UsedDevice } from '@/domain/types';
 import { addBatch } from './batchesData';
 import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
+import { STORAGE_KEYS } from '@/config';
 
-const KEY = 'gx_used_devices';
+const KEY = STORAGE_KEYS.USED_DEVICES;
 
 export function getUsedDevices(): UsedDevice[] {
     return getStorageItem<UsedDevice[]>(KEY, []);

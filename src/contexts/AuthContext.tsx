@@ -4,6 +4,7 @@ import {
   getUserById,
 } from '@/data/usersData';
 import api from '@/lib/api';
+import { STORAGE_KEYS } from '@/config';
 
 export type { AppUser, Permission };
 export { ALL_PERMISSIONS, PERMISSION_LABELS } from '@/data/usersData';
@@ -35,14 +36,14 @@ interface AuthContextType {
   resetUserPassword: (username: string, newPassword: string) => boolean;
 }
 
-const SESSION_KEY = 'gx_session';
+const SESSION_KEY = STORAGE_KEYS.SESSION;
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(() => {
     // Try backend first if enabled
     if (USE_BACKEND) {
-      const token = localStorage.getItem('gx_auth_token');
+      const token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
       if (token) {
         // Will verify on mount
         return null;

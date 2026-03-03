@@ -4,8 +4,9 @@
 
 import { MaintenanceOrder } from '@/domain/types';
 import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
+import { STORAGE_KEYS } from '@/config';
 
-const KEY = 'gx_maintenance_v2';
+const KEY = STORAGE_KEYS.MAINTENANCE;
 
 export function getMaintenanceOrders(): MaintenanceOrder[] {
     return getStorageItem<MaintenanceOrder[]>(KEY, []);

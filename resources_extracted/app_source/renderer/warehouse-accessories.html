@@ -1,0 +1,878 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>مخزون الاكسسوارات - ELOS Accounting</title>
+
+  <!-- Theme Flash Prevention -->
+  <script>
+    (function(){
+      var t = localStorage.getItem('elos-theme') || localStorage.getItem('elos_theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', t === 'light' ? 'light' : 'dark');
+    })();
+  </script>
+
+  <!-- Session Injection - MUST BE FIRST -->
+  <script src="session-inject.js"></script>
+  <!-- SPA Mode Detection -->
+  <script src="spa-mode.js"></script>
+  <!-- Shared Sound & Toast System -->
+  <script src="shared.js"></script>
+  <!-- Theme Sync -->
+  <script src="theme-sync.js"></script>
+  <!-- Font Scale Manager -->
+  <script src="js/font-scale-manager.js"></script>
+
+  <!-- Design System Tokens -->
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/tokens-alias.css">
+  <!-- Design System Components -->
+  <link rel="stylesheet" href="styles/design-system.css">
+  <!-- Theme Governance -->
+  <link rel="stylesheet" href="styles/theme-fixes.css">
+  <!-- Font Sizes -->
+  <link rel="stylesheet" href="styles/font-sizes.css">
+  <!-- Inventory Enhancements -->
+  <link rel="stylesheet" href="styles/inventory-enhancements.css">
+
+  <!-- Page-Specific Styles (Scoped) -->
+  <link rel="stylesheet" href="warehouse-accessories.css">
+</head>
+<body>
+  <!-- ========================================
+       HEADER
+       ======================================== -->
+  <header class="elos-acc-header">
+    <a href="app.html" class="elos-acc-back-btn" id="backBtn">
+      <span>-></span>
+      <span>رجوع</span>
+    </a>
+
+    <div class="elos-acc-brand">
+      <span class="elos-acc-logo">ELOS</span>
+    </div>
+
+    <h1 class="elos-acc-page-title" id="pageTitle">
+      <span class="elos-acc-title-icon">📦</span>
+      <span id="warehouseName">مخزون الاكسسوارات</span>
+    </h1>
+
+    <div class="elos-acc-spacer"></div>
+
+    <!-- Stats Cards -->
+    <div class="elos-acc-stats" id="headerStats">
+      <div class="elos-acc-stat">
+        <span class="elos-acc-stat-value loading" id="statTotalItems">--</span>
+        <span class="elos-acc-stat-label">إجمالي الأصناف</span>
+      </div>
+      <div class="elos-acc-stat">
+        <span class="elos-acc-stat-value loading" id="statAvailableQty">--</span>
+        <span class="elos-acc-stat-label">الكمية المتاحة</span>
+      </div>
+      <div class="elos-acc-stat">
+        <span class="elos-acc-stat-value loading" id="statTotalValue">--</span>
+        <span class="elos-acc-stat-label">إجمالي القيمة</span>
+      </div>
+    </div>
+
+    <!-- Header Actions -->
+    <div class="elos-acc-header-actions">
+      <button class="elos-acc-header-btn" id="btnRefresh" title="تحديث">
+        <span>🔄</span>
+      </button>
+      <button class="elos-acc-header-btn" id="btnImport" title="استيراد من Excel">
+        <span>📥</span>
+        <span>استيراد</span>
+      </button>
+      <button class="elos-acc-header-btn" id="btnExport" title="تصدير إلى Excel">
+        <span>📤</span>
+        <span>تصدير</span>
+      </button>
+      <button class="elos-acc-header-btn" id="btnMovements" title="حركة المخزون">
+        <span>📊</span>
+        <span>الحركات</span>
+      </button>
+      <button class="elos-acc-header-btn elos-acc-btn-success" id="btnAddQuantity" title="إضافة كمية">
+        <span>📦</span>
+        <span>إضافة كمية</span>
+      </button>
+      <button class="elos-acc-header-btn elos-acc-btn-primary" id="btnAddAccessory" title="إضافة صنف جديد">
+        <span>➕</span>
+        <span>إضافة صنف</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ========================================
+       MAIN CONTENT
+       ======================================== -->
+  <main class="elos-acc-main">
+    <!-- KPI Summary (مثل مخزن الأجهزة: قيمة البيع المتوقعة، التكلفة، الأصناف المعروضة) -->
+    <div class="elos-acc-kpi-grid">
+      <div class="elos-acc-kpi-card">
+        <span class="elos-acc-kpi-label">📊 الأصناف المعروضة</span>
+        <div class="elos-acc-kpi-value" id="kpiCount">—</div>
+      </div>
+      <div class="elos-acc-kpi-card">
+        <span class="elos-acc-kpi-label">📦 إجمالي القطع</span>
+        <div class="elos-acc-kpi-value" id="kpiTotalQty">—</div>
+      </div>
+      <div class="elos-acc-kpi-card">
+        <span class="elos-acc-kpi-label">💰 قيمة التكلفة</span>
+        <div class="elos-acc-kpi-value" id="kpiCost">—</div>
+      </div>
+      <div class="elos-acc-kpi-card">
+        <span class="elos-acc-kpi-label">💵 قيمة البيع المتوقعة</span>
+        <div class="elos-acc-kpi-value" id="kpiSale">—</div>
+      </div>
+    </div>
+
+    <!-- Filters Bar -->
+    <div class="elos-acc-filters-bar">
+      <!-- Search -->
+      <div class="elos-acc-search-wrapper">
+        <span class="elos-acc-search-icon">🔍</span>
+        <input
+          type="text"
+          id="qSearch"
+          class="elos-acc-search-input"
+          placeholder="بحث بالاسم أو الباركود..."
+          autocomplete="off"
+        >
+        <button class="elos-acc-search-clear" id="btnClearSearch" title="مسح">×</button>
+      </div>
+
+      <!-- Filter Dropdowns -->
+      <div class="elos-acc-filter-group">
+        <select id="fCategory" class="elos-acc-filter-select">
+          <option value="">كل الفئات</option>
+        </select>
+
+        <select id="fCondition" class="elos-acc-filter-select">
+          <option value="">كل الحالات</option>
+          <option value="جديد">جديد</option>
+          <option value="مستعمل">مستعمل</option>
+        </select>
+
+        <select id="fQuantity" class="elos-acc-filter-select">
+          <option value="">كل الكميات</option>
+          <option value="available">متوفر (&gt;5)</option>
+          <option value="low">كمية قليلة (1-5)</option>
+          <option value="out">نفذت الكمية (0)</option>
+        </select>
+      </div>
+
+      <!-- Action Buttons (داخل شريط الفلاتر ليظهر في iframe) -->
+      <div class="elos-acc-action-buttons">
+        <button class="elos-acc-action-btn-main" id="btnImport2" title="استيراد من Excel">
+          <span>📥</span>
+          <span>استيراد</span>
+        </button>
+        <button class="elos-acc-action-btn-main" id="btnExport2" title="تصدير إلى Excel">
+          <span>📤</span>
+          <span>تصدير</span>
+        </button>
+        <button class="elos-acc-action-btn-main" id="btnMovements2" title="حركة المخزون">
+          <span>📊</span>
+          <span>الحركات</span>
+        </button>
+        <button class="elos-acc-action-btn-main elos-acc-btn-success" id="btnAddQuantity2" title="إضافة كمية">
+          <span>📦</span>
+          <span>إضافة كمية</span>
+        </button>
+        <button class="elos-acc-action-btn-main elos-acc-btn-primary" id="btnAddAccessory2" title="إضافة صنف جديد">
+          <span>➕</span>
+          <span>إضافة صنف</span>
+        </button>
+      </div>
+
+      <!-- Selection Actions -->
+      <div class="elos-acc-selection-actions" id="selectionActions">
+        <span class="elos-acc-selection-count" id="selectionCount">تم تحديد: 0</span>
+        <button class="elos-acc-btn elos-acc-btn-secondary" id="btnClearSelection" title="إلغاء التحديد">
+          <span>❌</span>
+          <span>إلغاء التحديد</span>
+        </button>
+        <button class="elos-acc-btn elos-acc-btn-primary" id="btnBulkTransfer" disabled title="تحويل المحدد">
+          <span>📦</span>
+          <span>تحويل المحدد</span>
+        </button>
+        <button class="elos-acc-btn" id="btnAveragePrices" disabled title="توحيد الأسعار" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white;">
+          <span>📊</span>
+          <span>توحيد الأسعار</span>
+        </button>
+        <button class="elos-acc-btn elos-acc-btn-barcode" id="btnPrintBarcodesSelection" disabled title="طباعة باركود للأصناف المحددة (حسب الكمية في المخزن)">
+          <span>🖨️</span>
+          <span>طباعة باركود</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Table Container -->
+    <div class="elos-acc-table-wrapper">
+      <div class="elos-acc-table-container" id="tableContainer">
+        <table class="elos-acc-table" id="accessoriesTable">
+          <thead id="tableHead">
+            <tr>
+              <th class="elos-acc-th-checkbox">
+                <input type="checkbox" id="selectAll" class="elos-acc-checkbox" title="تحديد الكل">
+              </th>
+              <th class="elos-acc-th sortable" data-column="short_code">الباركود</th>
+              <th class="elos-acc-th sortable" data-column="name">اسم الصنف</th>
+              <th class="elos-acc-th sortable" data-column="category">التصنيف</th>
+              <th class="elos-acc-th sortable" data-column="purchase_price">سعر الشراء</th>
+              <th class="elos-acc-th sortable" data-column="sale_price">سعر البيع</th>
+              <th class="elos-acc-th sortable" data-column="quantity">الكمية</th>
+              <th class="elos-acc-th">المخزن</th>
+              <th class="elos-acc-th sortable" data-column="updated_at">آخر تحديث</th>
+              <th class="elos-acc-th elos-acc-th-actions">إجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="accessoriesTableBody">
+            <!-- Rows will be rendered by JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Loading Overlay -->
+      <div class="elos-acc-loading-overlay" id="loadingOverlay">
+        <div class="elos-acc-spinner"></div>
+        <span>جاري التحميل...</span>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    <div class="elos-acc-pagination" id="paginationBar">
+      <div class="elos-acc-pagination-info">
+        <span id="paginationInfo">عرض 0 من 0</span>
+      </div>
+      <div class="elos-acc-pagination-controls">
+        <button class="elos-acc-page-btn" id="btnPrevPage" disabled>السابق</button>
+        <span class="elos-acc-page-indicator">
+          <span id="currentPageDisplay">1</span>
+          <span class="elos-acc-page-separator">/</span>
+          <span id="totalPagesDisplay">1</span>
+        </span>
+        <button class="elos-acc-page-btn" id="btnNextPage" disabled>التالي</button>
+      </div>
+      <div class="elos-acc-pagination-size">
+        <label>عدد الصفوف:</label>
+        <select id="rowsPerPage" class="elos-acc-filter-select">
+          <option value="10">10</option>
+          <option value="25" selected>25</option>
+          <option value="50">50</option>
+          <option value="100">100</option>
+        </select>
+      </div>
+    </div>
+  </main>
+
+  <!-- ========================================
+       MODALS
+       ======================================== -->
+
+  <!-- View Details Modal -->
+  <div class="elos-acc-modal-overlay" id="viewDetailsModal">
+    <div class="elos-acc-modal elos-acc-modal-lg">
+      <div class="elos-acc-modal-header">
+        <h2>تفاصيل الصنف</h2>
+        <button class="elos-acc-modal-close" data-close-modal="viewDetailsModal">×</button>
+      </div>
+      <div class="elos-acc-modal-body" id="viewDetailsContent">
+        <!-- Content rendered by JS -->
+      </div>
+      <div class="elos-acc-modal-footer">
+        <button class="elos-acc-btn elos-acc-btn-secondary" data-close-modal="viewDetailsModal">إغلاق</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Modal -->
+  <div class="elos-acc-modal-overlay" id="editModal">
+    <div class="elos-acc-modal elos-acc-modal-lg">
+      <div class="elos-acc-modal-header">
+        <h2 id="editModalTitle">تعديل الصنف</h2>
+        <button class="elos-acc-modal-close" data-close-modal="editModal">×</button>
+      </div>
+      <div class="elos-acc-modal-body">
+        <form id="editForm" class="elos-acc-form">
+          <input type="hidden" id="editId">
+
+          <div class="elos-acc-form-row">
+            <div class="elos-acc-form-group">
+              <label for="editName">اسم الصنف *</label>
+              <input type="text" id="editName" required>
+            </div>
+            <div class="elos-acc-form-group">
+              <label for="editCategory">التصنيف</label>
+              <input type="text" id="editCategory" list="categoryList">
+              <datalist id="categoryList"></datalist>
+            </div>
+          </div>
+
+          <div class="elos-acc-form-row">
+            <div class="elos-acc-form-group">
+              <label>📊 الباركود</label>
+              <div style="display: flex; gap: 12px; margin-bottom: 8px;">
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                  <input type="radio" name="editBarcodeType" value="keep" checked onchange="toggleEditBarcodeField()">
+                  <span style="font-size: 13px;">📌 الحالي</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                  <input type="radio" name="editBarcodeType" value="auto" onchange="toggleEditBarcodeField()">
+                  <span style="font-size: 13px;">🔄 تلقائي جديد</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                  <input type="radio" name="editBarcodeType" value="manual" onchange="toggleEditBarcodeField()">
+                  <span style="font-size: 13px;">📷 يدوي/سكان</span>
+                </label>
+              </div>
+              <input type="text" id="editBarcode" readonly style="background: var(--bg-tertiary); cursor: not-allowed;">
+            </div>
+          </div>
+
+          <div class="elos-acc-form-row">
+            <div class="elos-acc-form-group">
+              <label for="editPurchasePrice">سعر الشراء *</label>
+              <input type="number" id="editPurchasePrice" step="0.01" min="0" required>
+            </div>
+            <div class="elos-acc-form-group">
+              <label for="editSalePrice">سعر البيع *</label>
+              <input type="number" id="editSalePrice" step="0.01" min="0" required>
+            </div>
+          </div>
+
+          <div class="elos-acc-form-row">
+            <div class="elos-acc-form-group">
+              <label for="editQuantity">الكمية</label>
+              <input type="number" id="editQuantity" min="0" value="0">
+            </div>
+            <div class="elos-acc-form-group">
+              <label for="editMinStock">حد التنبيه</label>
+              <input type="number" id="editMinStock" min="0" value="5">
+            </div>
+          </div>
+
+          <div class="elos-acc-form-row">
+            <div class="elos-acc-form-group">
+              <label for="editCondition">الحالة</label>
+              <select id="editCondition">
+                <option value="جديد">جديد</option>
+                <option value="مستعمل">مستعمل</option>
+              </select>
+            </div>
+            <div class="elos-acc-form-group">
+              <label for="editSupplier">المورد</label>
+              <select id="editSupplier">
+                <option value="">بدون مورد</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="elos-acc-form-group">
+            <label for="editNotes">ملاحظات</label>
+            <textarea id="editNotes" rows="3"></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="elos-acc-modal-footer">
+        <button class="elos-acc-btn elos-acc-btn-secondary" data-close-modal="editModal">إلغاء</button>
+        <button class="elos-acc-btn elos-acc-btn-primary" id="btnSaveEdit">حفظ التغييرات</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div class="elos-acc-modal-overlay" id="deleteModal">
+    <div class="elos-acc-modal elos-acc-modal-sm">
+      <div class="elos-acc-modal-header elos-acc-modal-header-danger">
+        <h2>تأكيد الحذف</h2>
+        <button class="elos-acc-modal-close" data-close-modal="deleteModal">×</button>
+      </div>
+      <div class="elos-acc-modal-body">
+        <p class="elos-acc-modal-message">
+          هل أنت متأكد من حذف هذا الصنف؟
+        </p>
+        <p class="elos-acc-modal-item-name" id="deleteItemName"></p>
+        <p class="elos-acc-modal-warning">هذا الإجراء لا يمكن التراجع عنه.</p>
+      </div>
+      <div class="elos-acc-modal-footer">
+        <button class="elos-acc-btn elos-acc-btn-secondary" data-close-modal="deleteModal">إلغاء</button>
+        <button class="elos-acc-btn elos-acc-btn-danger" id="btnConfirmDelete">حذف</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bulk Transfer Modal -->
+  <div class="elos-acc-modal-overlay" id="bulkTransferModal">
+    <div class="elos-acc-modal elos-acc-modal-lg">
+      <div class="elos-acc-modal-header">
+        <h2>تحويل الأصناف المحددة</h2>
+        <button class="elos-acc-modal-close" data-close-modal="bulkTransferModal">×</button>
+      </div>
+      <div class="elos-acc-modal-body">
+        <!-- Transfer Summary -->
+        <div class="elos-acc-transfer-summary">
+          <div class="elos-acc-transfer-stat">
+            <span class="elos-acc-transfer-stat-value" id="transferItemsCount">0</span>
+            <span class="elos-acc-transfer-stat-label">أصناف محددة</span>
+          </div>
+          <div class="elos-acc-transfer-arrow">➡️</div>
+          <div class="elos-acc-transfer-target">
+            <label for="targetWarehouse">المخزن الوجهة:</label>
+            <select id="targetWarehouse" class="elos-acc-filter-select" required>
+              <option value="">-- اختر المخزن --</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Selected Items List -->
+        <div class="elos-acc-transfer-items-container">
+          <h4>الأصناف المحددة للتحويل:</h4>
+          <div class="elos-acc-transfer-items-list" id="transferItemsList">
+            <!-- Items rendered by JS -->
+          </div>
+        </div>
+
+        <!-- Transfer Options -->
+        <div class="elos-acc-form-group">
+          <label for="transferNotes">ملاحظات التحويل (اختياري):</label>
+          <textarea id="transferNotes" rows="2" placeholder="سبب التحويل أو ملاحظات إضافية..."></textarea>
+        </div>
+      </div>
+      <div class="elos-acc-modal-footer">
+        <button class="elos-acc-btn elos-acc-btn-secondary" data-close-modal="bulkTransferModal">إلغاء</button>
+        <button class="elos-acc-btn elos-acc-btn-primary" id="btnExecuteTransfer">
+          <span>📦</span>
+          <span>تنفيذ التحويل</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Average Prices Modal -->
+  <div class="elos-acc-modal-overlay" id="averagePricesModal">
+    <div class="elos-acc-modal elos-acc-modal-lg">
+      <div class="elos-acc-modal-header">
+        <h2>📊 توحيد أسعار الأصناف المتشابهة</h2>
+        <button class="elos-acc-modal-close" data-close-modal="averagePricesModal">×</button>
+      </div>
+      <div class="elos-acc-modal-body">
+        <!-- شرح الخاصية -->
+        <div style="background: rgba(139,92,246,0.1); border: 1px solid rgba(139,92,246,0.2); border-radius: 10px; padding: 14px; margin-bottom: 16px;">
+          <div style="display: flex; align-items: flex-start; gap: 10px;">
+            <span style="font-size: 22px;">💡</span>
+            <div style="font-size: 13px; color: var(--ink); line-height: 1.6;">
+              هذه الخاصية تقوم بحساب <strong>متوسط سعر الشراء</strong> و<strong>متوسط سعر البيع</strong> للأصناف المحددة،
+              ثم تطبيق هذا المتوسط على جميع الأصناف لتوحيد الأسعار.
+            </div>
+          </div>
+        </div>
+
+        <!-- ملخص الأصناف المحددة -->
+        <div style="margin-bottom: 20px;">
+          <label style="font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; color: var(--ink);">
+            <span style="font-size: 20px;">🎧</span>
+            الأصناف المحددة (<span id="avgAccessoriesCount">0</span> صنف)
+          </label>
+          <div id="avgAccessoriesList" style="background: var(--bg-tertiary, #1a1a2e); border: 1px solid var(--line, #333); border-radius: 10px; max-height: 180px; overflow-y: auto;">
+            <!-- سيتم ملؤها ديناميكياً -->
+          </div>
+        </div>
+
+        <!-- الأسعار الحالية والمتوسط -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px;">
+          <!-- سعر الشراء -->
+          <div style="background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.2); border-radius: 10px; padding: 16px;">
+            <div style="font-weight: 700; color: var(--danger, #ef4444); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+              <span>💰</span> سعر الشراء
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <div style="display: flex; justify-content: space-between; font-size: 13px;">
+                <span style="color: var(--muted, #888);">أقل سعر:</span>
+                <span id="avgAccMinPurchase" style="color: var(--ink, #fff);">0</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 13px;">
+                <span style="color: var(--muted, #888);">أعلى سعر:</span>
+                <span id="avgAccMaxPurchase" style="color: var(--ink, #fff);">0</span>
+              </div>
+              <div style="border-top: 1px dashed var(--line, #333); padding-top: 8px; margin-top: 4px;">
+                <div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: 700;">
+                  <span style="color: var(--danger, #ef4444);">المتوسط:</span>
+                  <span id="avgAccAvgPurchase" style="color: var(--danger, #ef4444);">0</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- سعر البيع -->
+          <div style="background: rgba(16,185,129,0.08); border: 1px solid rgba(16,185,129,0.2); border-radius: 10px; padding: 16px;">
+            <div style="font-weight: 700; color: var(--success, #10b981); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+              <span>🏷️</span> سعر البيع
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <div style="display: flex; justify-content: space-between; font-size: 13px;">
+                <span style="color: var(--muted, #888);">أقل سعر:</span>
+                <span id="avgAccMinSale" style="color: var(--ink, #fff);">0</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 13px;">
+                <span style="color: var(--muted, #888);">أعلى سعر:</span>
+                <span id="avgAccMaxSale" style="color: var(--ink, #fff);">0</span>
+              </div>
+              <div style="border-top: 1px dashed var(--line, #333); padding-top: 8px; margin-top: 4px;">
+                <div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: 700;">
+                  <span style="color: var(--success, #10b981);">المتوسط:</span>
+                  <span id="avgAccAvgSale" style="color: var(--success, #10b981);">0</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- خيارات التوحيد -->
+        <div style="background: var(--bg-tertiary, #1a1a2e); border: 1px solid var(--line, #333); border-radius: 10px; padding: 16px; margin-bottom: 16px;">
+          <div style="font-weight: 700; margin-bottom: 12px; color: var(--ink, #fff);">⚙️ خيارات التوحيد</div>
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+              <input type="checkbox" id="avgAccApplyPurchase" checked style="width: 18px; height: 18px; accent-color: var(--accent, #8b5cf6);">
+              <span style="color: var(--ink, #fff);">توحيد سعر الشراء</span>
+            </label>
+            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+              <input type="checkbox" id="avgAccApplySale" checked style="width: 18px; height: 18px; accent-color: var(--accent, #8b5cf6);">
+              <span style="color: var(--ink, #fff);">توحيد سعر البيع</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- الربح المتوقع -->
+        <div style="background: linear-gradient(135deg, rgba(139,92,246,0.1), rgba(59,130,246,0.1)); border: 1px solid rgba(139,92,246,0.2); border-radius: 10px; padding: 16px;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+              <div style="font-weight: 700; color: var(--ink, #fff); margin-bottom: 4px;">📈 الربح المتوقع للوحدة</div>
+              <div style="font-size: 12px; color: var(--muted, #888);">سعر البيع - سعر الشراء</div>
+            </div>
+            <div id="avgAccExpectedProfit" style="font-size: 24px; font-weight: 700; color: var(--accent, #8b5cf6);">0 ج.م</div>
+          </div>
+        </div>
+      </div>
+      <div class="elos-acc-modal-footer">
+        <button class="elos-acc-btn elos-acc-btn-secondary" data-close-modal="averagePricesModal">إلغاء</button>
+        <button class="elos-acc-btn" id="btnApplyAccAveragePrices" style="background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white;">
+          <span>✅</span>
+          <span>تطبيق المتوسط</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Accessory Modal -->
+  <div class="elos-acc-modal-overlay" id="addModal">
+    <div class="elos-acc-modal elos-acc-modal-lg">
+      <div class="elos-acc-modal-header">
+        <h2>إضافة صنف جديد</h2>
+        <button class="elos-acc-modal-close" data-close-modal="addModal">×</button>
+      </div>
+      <div class="elos-acc-modal-body">
+        <form id="addForm" class="elos-acc-form">
+          <div class="elos-acc-form-row">
+            <div class="elos-acc-form-group">
+              <label for="addName">اسم الصنف *</label>
+              <input type="text" id="addName" required>
+            </div>
+            <div class="elos-acc-form-group">
+              <label for="addCategory">التصنيف</label>
+              <input type="text" id="addCategory" list="addCategoryList">
+              <datalist id="addCategoryList"></datalist>
+            </div>
+          </div>
+
+          <div class="elos-acc-form-row">
+            <div class="elos-acc-form-group">
+              <label>📊 الباركود</label>
+              <div style="display: flex; gap: 12px; margin-bottom: 8px;">
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                  <input type="radio" name="addBarcodeType" value="auto" checked onchange="toggleAccBarcodeField()">
+                  <span style="font-size: 13px;">🔄 تلقائي</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer;">
+                  <input type="radio" name="addBarcodeType" value="manual" onchange="toggleAccBarcodeField()">
+                  <span style="font-size: 13px;">📷 يدوي/سكان</span>
+                </label>
+              </div>
+              <div id="addBarcodeManualField" style="display: none;">
+                <input type="text" id="addBarcode" placeholder="امسح الباركود أو أدخله يدوياً...">
+              </div>
+            </div>
+          </div>
+
+          <div class="elos-acc-form-row">
+            <div class="elos-acc-form-group">
+              <label for="addPurchasePrice">سعر الشراء *</label>
+              <input type="number" id="addPurchasePrice" step="0.01" min="0" required>
+            </div>
+            <div class="elos-acc-form-group">
+              <label for="addSalePrice">سعر البيع *</label>
+              <input type="number" id="addSalePrice" step="0.01" min="0" required>
+            </div>
+          </div>
+
+          <div class="elos-acc-form-row">
+            <div class="elos-acc-form-group">
+              <label for="addQuantity">الكمية</label>
+              <input type="number" id="addQuantity" min="0" value="0">
+            </div>
+            <div class="elos-acc-form-group">
+              <label for="addMinStock">حد التنبيه</label>
+              <input type="number" id="addMinStock" min="0" value="5">
+            </div>
+          </div>
+
+          <div class="elos-acc-form-row">
+            <div class="elos-acc-form-group">
+              <label for="addCondition">الحالة</label>
+              <select id="addCondition">
+                <option value="جديد">جديد</option>
+                <option value="مستعمل">مستعمل</option>
+              </select>
+            </div>
+            <div class="elos-acc-form-group">
+              <label for="addSupplier">المورد</label>
+              <select id="addSupplier">
+                <option value="">بدون مورد</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="elos-acc-form-group">
+            <label for="addNotes">ملاحظات</label>
+            <textarea id="addNotes" rows="3"></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="elos-acc-modal-footer">
+        <button class="elos-acc-btn elos-acc-btn-secondary" data-close-modal="addModal">إلغاء</button>
+        <button class="elos-acc-btn elos-acc-btn-primary" id="btnSaveAdd">إضافة الصنف</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Print Barcode Modal -->
+  <div class="elos-acc-modal-overlay" id="printBarcodeModal">
+    <div class="elos-acc-modal elos-acc-modal-md">
+      <div class="elos-acc-modal-header">
+        <h2>🖨️ طباعة الباركود</h2>
+        <button class="elos-acc-modal-close" data-close-modal="printBarcodeModal">×</button>
+      </div>
+      <div class="elos-acc-modal-body">
+        <!-- معلومات الصنف -->
+        <div class="elos-acc-barcode-info">
+          <div class="elos-acc-barcode-info-row">
+            <span class="elos-acc-barcode-info-label">الصنف:</span>
+            <span class="elos-acc-barcode-info-value" id="printAccessoryName">-</span>
+          </div>
+          <div class="elos-acc-barcode-info-row">
+            <span class="elos-acc-barcode-info-label">الباركود:</span>
+            <span class="elos-acc-barcode-info-value elos-acc-barcode-code" id="printBarcodeValue">-</span>
+          </div>
+          <div class="elos-acc-barcode-info-row">
+            <span class="elos-acc-barcode-info-label">السعر:</span>
+            <span class="elos-acc-barcode-info-value" id="printPriceValue">-</span>
+          </div>
+        </div>
+
+        <!-- معاينة الملصق -->
+        <div class="elos-acc-label-preview-section">
+          <h4>👁️ معاينة الملصق (38×25 مم)</h4>
+          <div class="elos-acc-label-preview-container" id="labelPreviewContainer">
+            <!-- سيتم إنشاء المعاينة هنا -->
+          </div>
+        </div>
+
+        <!-- إعدادات الطباعة -->
+        <div class="elos-acc-print-options">
+          <div class="elos-acc-form-row">
+            <div class="elos-acc-form-group">
+              <label for="printCopies">عدد النسخ</label>
+              <input type="number" id="printCopies" min="1" max="100" value="1">
+            </div>
+            <div class="elos-acc-form-group">
+              <label for="printShowPrice">إظهار السعر</label>
+              <select id="printShowPrice" class="elos-acc-filter-select">
+                <option value="yes" selected>نعم</option>
+                <option value="no">لا</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="elos-acc-modal-footer">
+        <button class="elos-acc-btn elos-acc-btn-secondary" data-close-modal="printBarcodeModal">إلغاء</button>
+        <button class="elos-acc-btn elos-acc-btn-secondary" id="btnRefreshPreview">
+          <span>🔄</span>
+          <span>تحديث</span>
+        </button>
+        <button class="elos-acc-btn elos-acc-btn-primary" id="btnDoPrint">
+          <span>🖨️</span>
+          <span>طباعة</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Quantity Modal -->
+  <div class="elos-acc-modal-overlay" id="addQuantityModal">
+    <div class="elos-acc-modal elos-acc-modal-md">
+      <div class="elos-acc-modal-header">
+        <h2>إضافة كمية للصنف</h2>
+        <button class="elos-acc-modal-close" data-close-modal="addQuantityModal">×</button>
+      </div>
+      <div class="elos-acc-modal-body">
+        <form id="addQuantityForm" class="elos-acc-form">
+          <div class="elos-acc-form-group">
+            <label for="aqAccessory">اختر الصنف *</label>
+            <select id="aqAccessory" required>
+              <option value="">-- اختر الصنف --</option>
+            </select>
+          </div>
+
+          <div class="elos-acc-selected-item" id="aqSelectedInfo" style="display: none;">
+            <div class="elos-acc-selected-item-name" id="aqItemName"></div>
+            <div class="elos-acc-selected-item-qty">الكمية الحالية: <span id="aqCurrentQty">0</span></div>
+          </div>
+
+          <div class="elos-acc-form-row">
+            <div class="elos-acc-form-group">
+              <label for="aqQuantity">الكمية المضافة *</label>
+              <input type="number" id="aqQuantity" min="1" value="1" required>
+            </div>
+            <div class="elos-acc-form-group">
+              <label for="aqPurchasePrice">سعر الشراء (للوحدة)</label>
+              <input type="number" id="aqPurchasePrice" step="0.01" min="0">
+            </div>
+          </div>
+
+          <div class="elos-acc-form-group">
+            <label for="aqSupplier">المورد</label>
+            <select id="aqSupplier">
+              <option value="">بدون مورد</option>
+            </select>
+          </div>
+
+          <div class="elos-acc-form-group">
+            <label for="aqNotes">ملاحظات</label>
+            <textarea id="aqNotes" rows="2" placeholder="سبب الإضافة..."></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="elos-acc-modal-footer">
+        <button class="elos-acc-btn elos-acc-btn-secondary" data-close-modal="addQuantityModal">إلغاء</button>
+        <button class="elos-acc-btn elos-acc-btn-success" id="btnSaveAddQuantity">
+          <span>📦</span>
+          <span>إضافة الكمية</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Movements Modal -->
+  <div class="elos-acc-modal-overlay" id="movementsModal">
+    <div class="elos-acc-modal elos-acc-modal-xl">
+      <div class="elos-acc-modal-header">
+        <h2>حركات المخزون</h2>
+        <button class="elos-acc-modal-close" data-close-modal="movementsModal">×</button>
+      </div>
+      <div class="elos-acc-modal-body">
+        <div class="elos-acc-movements-filters">
+          <select id="mvFilterType" class="elos-acc-filter-select">
+            <option value="">كل الأنواع</option>
+            <option value="purchase">شراء</option>
+            <option value="sale">بيع</option>
+            <option value="transfer_in">تحويل وارد</option>
+            <option value="transfer_out">تحويل صادر</option>
+            <option value="adjustment">تسوية</option>
+          </select>
+          <input type="date" id="mvFilterDateFrom" class="elos-acc-filter-input">
+          <input type="date" id="mvFilterDateTo" class="elos-acc-filter-input">
+          <button class="elos-acc-btn elos-acc-btn-secondary" id="btnFilterMovements">تطبيق</button>
+        </div>
+        <div class="elos-acc-movements-table-container">
+          <table class="elos-acc-table" id="movementsTable">
+            <thead>
+              <tr>
+                <th>التاريخ</th>
+                <th>الصنف</th>
+                <th>النوع</th>
+                <th>الكمية</th>
+                <th>قبل</th>
+                <th>بعد</th>
+                <th>السعر</th>
+                <th>الملاحظات</th>
+              </tr>
+            </thead>
+            <tbody id="movementsTableBody">
+              <!-- Rendered by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="elos-acc-modal-footer">
+        <button class="elos-acc-btn elos-acc-btn-secondary" data-close-modal="movementsModal">إغلاق</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Import Modal -->
+  <div class="elos-acc-modal-overlay" id="importModal">
+    <div class="elos-acc-modal elos-acc-modal-md">
+      <div class="elos-acc-modal-header">
+        <h2>استيراد من Excel</h2>
+        <button class="elos-acc-modal-close" data-close-modal="importModal">×</button>
+      </div>
+      <div class="elos-acc-modal-body">
+        <div class="elos-acc-import-zone" id="importDropZone">
+          <div class="elos-acc-import-icon">📁</div>
+          <p>اسحب ملف Excel هنا أو اضغط للاختيار</p>
+          <input type="file" id="importFile" accept=".xlsx,.xls,.csv" style="display: none;">
+          <button class="elos-acc-btn elos-acc-btn-secondary" id="btnSelectFile">اختيار ملف</button>
+        </div>
+        <div class="elos-acc-import-info">
+          <p><strong>تنسيق الملف المطلوب:</strong></p>
+          <ul>
+            <li>الاسم (مطلوب)</li>
+            <li>التصنيف</li>
+            <li>الباركود</li>
+            <li>سعر الشراء</li>
+            <li>سعر البيع</li>
+            <li>الكمية</li>
+          </ul>
+          <button class="elos-acc-btn elos-acc-btn-link" id="btnDownloadTemplate">📥 تحميل قالب Excel</button>
+        </div>
+        <div class="elos-acc-import-preview" id="importPreview" style="display: none;">
+          <h4>معاينة البيانات:</h4>
+          <div id="importPreviewContent"></div>
+        </div>
+      </div>
+      <div class="elos-acc-modal-footer">
+        <button class="elos-acc-btn elos-acc-btn-secondary" data-close-modal="importModal">إلغاء</button>
+        <button class="elos-acc-btn elos-acc-btn-primary" id="btnExecuteImport" disabled>
+          <span>📥</span>
+          <span>استيراد</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JsBarcode Library -->
+  <script src="jsbarcode.min.js"></script>
+
+  <!-- Barcode Service (MUST load before barcode-generator.js) -->
+  <script src="barcode-service.js"></script>
+
+  <!-- Barcode Generator (UI wrapper - delegates to BarcodeService) -->
+  <script src="barcode-generator.js"></script>
+
+  <!-- Page Script -->
+  <script src="warehouse-accessories.js"></script>
+</body>
+</html>

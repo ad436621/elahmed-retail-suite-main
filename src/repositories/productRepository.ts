@@ -7,24 +7,22 @@ import { Product, MobileItem, MobileAccessory, DeviceItem, DeviceAccessory, Comp
 import { getMobiles, getMobileAccessories, updateMobile, updateMobileAccessory } from '@/data/mobilesData';
 import { getComputers, getComputerAccessories, updateComputer, updateComputerAccessory } from '@/data/computersData';
 import { getDevices, getDeviceAccessories, updateDevice, updateDeviceAccessory } from '@/data/devicesData';
+import { STORAGE_KEYS } from '@/config';
+import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
 
 // Union type for all inventory item types
 type InventoryItem = MobileItem | MobileAccessory | DeviceItem | DeviceAccessory | ComputerItem | ComputerAccessory;
 
-const STORAGE_KEY = 'elahmed-products';
+const STORAGE_KEY = STORAGE_KEYS.PRODUCTS;
 
 /** Load products from localStorage */
 function loadStore(): Product[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw) as Product[];
-  } catch (_e) { /* ignore corrupt data */ }
-  return [];
+  return getStorageItem<Product[]>(STORAGE_KEY, []);
 }
 
 /** Persist products to localStorage */
 function persistStore(products: Product[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(products));
+  setStorageItem(STORAGE_KEY, products);
 }
 
 /** Generate unique barcode */

@@ -154,16 +154,18 @@ interface StatCardProps {
 
 export function StatCard({ icon: Icon, label, value, sub, color, trend, linkTo }: StatCardProps) {
     const card = (
-        <div className={`group relative overflow-hidden rounded-3xl border border-border/50 bg-card/80 p-6 shadow-xl hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 hover:border-primary/40 ${linkTo ? 'cursor-pointer' : ''}`}>
-            <div className={`mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl ${color} shadow-inner bg-gradient-to-br from-white/40 to-transparent`}>
-                <Icon className="h-6 w-6" />
+        <div className={`group relative overflow-hidden rounded-2xl border border-border/60 bg-card p-5 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 hover:border-primary/30 ${linkTo ? 'cursor-pointer' : ''}`}>
+            <div className="flex items-start justify-between mb-3">
+                <div className={`inline-flex h-12 w-12 items-center justify-center rounded-xl ${color} shadow-sm`}>
+                    <Icon className="h-5 w-5" />
+                </div>
+                {trend === 'up' && <TrendingUp className="h-4 w-4 text-emerald-500 bg-emerald-50 p-0.5 rounded" />}
+                {trend === 'down' && <TrendingDown className="h-4 w-4 text-red-500 bg-red-50 p-0.5 rounded" />}
             </div>
-            <p className="text-[1.65rem] font-extrabold text-foreground tabular-nums leading-none tracking-tight">{value}</p>
-            {sub && <p className="mt-1.5 text-xs font-semibold text-muted-foreground">{sub}</p>}
-            <p className="mt-3 text-sm font-bold text-muted-foreground">{label}</p>
-            {trend === 'up' && <TrendingUp className="absolute top-5 left-5 h-5 w-5 text-emerald-500 opacity-50 bg-emerald-100/50 p-1 rounded-full" />}
-            {trend === 'down' && <TrendingDown className="absolute top-5 left-5 h-5 w-5 text-red-500 opacity-50 bg-red-100/50 p-1 rounded-full" />}
-            {linkTo && <ArrowLeft className="absolute bottom-5 left-5 h-5 w-5 text-muted-foreground/30 group-hover:text-primary transition-colors group-hover:-translate-x-1" />}
+            <p className="text-2xl font-black text-foreground tabular-nums leading-none tracking-tight">{value}</p>
+            {sub && <p className="mt-1 text-xs font-medium text-muted-foreground">{sub}</p>}
+            <p className="mt-2 text-sm font-semibold text-muted-foreground">{label}</p>
+            {linkTo && <ArrowLeft className="absolute bottom-4 left-4 h-4 w-4 text-muted-foreground/30 group-hover:text-primary transition-colors group-hover:-translate-x-0.5" />}
         </div>
     );
     if (linkTo) return <Link to={linkTo}>{card}</Link>;
@@ -174,11 +176,11 @@ export function StatCard({ icon: Icon, label, value, sub, color, trend, linkTo }
 
 export function SectionHeader({ title, sub }: { title: string; sub?: string }) {
     return (
-        <div className="flex items-center gap-4 mb-6 relative pl-4">
-            <div className="absolute right-0 top-0 bottom-0 w-1.5 rounded-l-full bg-gradient-to-b from-primary to-primary/40 shadow-[0_0_12px_rgba(var(--primary),0.5)]" />
-            <div className="pr-4">
-                <h2 className="text-xl font-black text-foreground tracking-tight">{title}</h2>
-                {sub && <p className="text-sm font-medium text-muted-foreground mt-1 bg-muted/50 px-2 py-0.5 rounded-full inline-block">{sub}</p>}
+        <div className="flex items-center gap-3 mb-5 relative">
+            <div className="w-1 self-stretch rounded-full bg-gradient-to-b from-primary to-primary/30" />
+            <div>
+                <h2 className="text-lg font-black text-foreground tracking-tight">{title}</h2>
+                {sub && <p className="text-xs font-medium text-muted-foreground mt-0.5">{sub}</p>}
             </div>
         </div>
     );
@@ -218,7 +220,7 @@ export function CategoryCard({ icon: Icon, iconBg, label, sub, gradient, to, ite
     return (
         <div className="relative">
             <button onClick={() => setOpen(o => !o)}
-                className={`group w-full rounded-3xl border border-white/20 bg-gradient-to-br ${gradient} p-6 shadow-xl hover:shadow-2xl transition-all duration-500 hover:-translate-y-1.5 text-right overflow-hidden relative`}>
+                className={`group w-full rounded-2xl border border-white/20 bg-gradient-to-br ${gradient} p-5 shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 text-right overflow-hidden relative`}>
                 <div className="absolute -left-8 -top-8 h-32 w-32 rounded-full bg-white/30 blur-3xl pointer-events-none group-hover:scale-150 transition-transform duration-700" />
                 <div className={`mb-4 relative z-10 inline-flex h-14 w-14 items-center justify-center rounded-2xl ${iconBg} shadow-lg ring-4 ring-white/30`}>
                     <Icon className="h-7 w-7 text-white" />

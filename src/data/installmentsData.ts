@@ -4,8 +4,9 @@
 
 import { InstallmentContract, InstallmentPayment, InstallmentScheduleItem } from '@/domain/types';
 import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
+import { STORAGE_KEYS } from '@/config';
 
-const KEY = 'gx_installments_v2';
+const KEY = STORAGE_KEYS.INSTALLMENTS;
 
 export function getContracts(): InstallmentContract[] {
     return getStorageItem<InstallmentContract[]>(KEY, []);

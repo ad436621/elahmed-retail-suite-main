@@ -1,0 +1,82 @@
+:root{
+  --bg:#0b0f14;
+  --surface:#111826;
+  --muted:#1a2332;
+  --text:#e6edf3;
+  --text-dim:#96a3b1;
+  --accent:#2ea043;
+  --danger:#f85149;
+  --border:#223047;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, 'Cairo', sans-serif;
+}
+.app-header, .app-footer{
+  display:flex; align-items:center; gap:12px;
+  padding:14px 18px;
+  background:linear-gradient(180deg,var(--surface),transparent);
+  border-bottom:1px solid var(--border);
+}
+.app-footer{
+  border-top:1px solid var(--border);
+  border-bottom:none;
+  justify-content:center;
+  background:linear-gradient(0deg,var(--surface),transparent);
+}
+.app-header .logo{font-size:22px}
+.app-header h1{margin:0; font-size:18px; letter-spacing:.3px;}
+.app-header .spacer{flex:1}
+.summary{color:var(--text-dim); font-size:14px}
+
+.container{
+  display:grid;
+  grid-template-columns: 300px 1fr;
+  gap:16px;
+  padding:16px;
+}
+
+.panel{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:16px;
+}
+.panel h2{margin-top:0; font-size:16px}
+
+label{display:block; margin:12px 0 6px; color:var(--text-dim); font-size:13px}
+input,select,button{
+  width:100%;
+  padding:10px 12px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  background:var(--muted);
+  color:var(--text);
+  outline:none;
+}
+input::placeholder{color:#6c7a89}
+button{cursor:pointer; background:var(--accent); border-color:transparent; color:#08130b; font-weight:600; margin-top:12px}
+button.link{background:transparent; border:1px solid var(--border); color:var(--text-dim); padding:6px 10px; width:auto}
+button.link.danger{color:var(--danger); border-color:var(--danger)}
+
+.table-wrap{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:10px;
+  overflow:auto;
+}
+table{width:100%; border-collapse:collapse; font-size:14px}
+thead th{
+  text-align:right; padding:10px; position:sticky; top:0; background:var(--surface);
+  border-bottom:1px solid var(--border); color:var(--text-dim)
+}
+tbody td{padding:10px; border-bottom:1px dashed var(--border)}
+td.income{color:#30d158}
+td.expense{color:#ff7b72}
+
+.search{margin-top:18px}

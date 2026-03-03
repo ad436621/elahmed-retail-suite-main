@@ -14,6 +14,7 @@ import { LanguageProvider } from "@/contexts/LanguageContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { SettingsProvider } from "@/contexts/SettingsContext";
+import { CartProvider } from "@/contexts/CartContext";
 import type { Permission } from "@/data/usersData";
 import MainLayout from "@/layouts/MainLayout";
 import LoginPage from "@/pages/LoginPage";
@@ -43,6 +44,12 @@ const CustomersPage = lazy(() => import("@/pages/CustomersPage"));
 const WalletsPage = lazy(() => import("@/pages/WalletsPage"));
 const EmployeesPage = lazy(() => import("@/pages/EmployeesPage"));
 const HelpPage = lazy(() => import("@/pages/HelpPage"));
+const UsedInventory = lazy(() => import("@/pages/UsedInventory"));
+const SuppliersPage = lazy(() => import("@/pages/SuppliersPage"));
+const BlacklistPage = lazy(() => import("@/pages/BlacklistPage"));
+const RemindersPage = lazy(() => import("@/pages/RemindersPage"));
+const ShiftClosingPage = lazy(() => import("@/pages/ShiftClosingPage"));
+const PurchaseInvoicesPage = lazy(() => import("@/pages/PurchaseInvoicesPage"));
 
 // Loading fallback
 
@@ -139,6 +146,7 @@ const AppRoutes = () => (
         <Route path="/devices" element={<PermGuard perm="devices"><DevicesInventory /></PermGuard>} />
         <Route path="/cars" element={<PermGuard perm="cars"><CarsInventory /></PermGuard>} />
         <Route path="/warehouse" element={<PermGuard perm="warehouse"><WarehousePage /></PermGuard>} />
+        <Route path="/used-inventory" element={<PermGuard perm="inventory"><UsedInventory /></PermGuard>} />
         {/* Services */}
         <Route path="/maintenance" element={<PermGuard perm="maintenance"><Maintenance /></PermGuard>} />
         <Route path="/installments" element={<PermGuard perm="installments"><Installments /></PermGuard>} />
@@ -154,6 +162,14 @@ const AppRoutes = () => (
         <Route path="/wallets" element={<PermGuard perm="wallets"><WalletsPage /></PermGuard>} />
         <Route path="/employees" element={<PermGuard perm="employees"><EmployeesPage /></PermGuard>} />
         <Route path="/help" element={<HelpPage />} />
+        {/* People */}
+        <Route path="/suppliers" element={<PermGuard perm="suppliers"><SuppliersPage /></PermGuard>} />
+        {/* Tools */}
+        <Route path="/blacklist" element={<PermGuard perm="blacklist"><BlacklistPage /></PermGuard>} />
+        <Route path="/reminders" element={<PermGuard perm="reminders"><RemindersPage /></PermGuard>} />
+        {/* Finance */}
+        <Route path="/shift-closing" element={<PermGuard perm="shiftClosing"><ShiftClosingPage /></PermGuard>} />
+        <Route path="/purchase-invoices" element={<PermGuard perm="purchaseInvoices"><PurchaseInvoicesPage /></PermGuard>} />
       </Route>
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
       <Route path="*" element={<NotFound />} />
@@ -168,15 +184,17 @@ const App = () => (
         <ThemeProvider>
           <LanguageProvider>
             <AuthProvider>
-              <TooltipProvider>
-                <Toaster />
-                <Sonner />
-                <BrowserRouter>
-                  <AutoBackupRunner />
-                  <DataMigrationRunner />
-                  <AppRoutes />
-                </BrowserRouter>
-              </TooltipProvider>
+              <CartProvider>
+                <TooltipProvider>
+                  <Toaster />
+                  <Sonner />
+                  <BrowserRouter>
+                    <AutoBackupRunner />
+                    <DataMigrationRunner />
+                    <AppRoutes />
+                  </BrowserRouter>
+                </TooltipProvider>
+              </CartProvider>
             </AuthProvider>
           </LanguageProvider>
         </ThemeProvider>

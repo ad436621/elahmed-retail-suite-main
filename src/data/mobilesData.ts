@@ -6,9 +6,10 @@ import { MobileItem, MobileAccessory } from '@/domain/types';
 import { generateBarcode } from '@/domain/product';
 import { addBatch } from './batchesData';
 import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
+import { STORAGE_KEYS } from '@/config';
 
-const MOBILES_KEY = 'gx_mobiles_v2';
-const ACCESSORIES_KEY = 'gx_mobile_accessories';
+const MOBILES_KEY = STORAGE_KEYS.MOBILES;
+const ACCESSORIES_KEY = STORAGE_KEYS.MOBILE_ACCESSORIES;
 
 // ─── Mobiles ────────────────────────────────────────────────
 
