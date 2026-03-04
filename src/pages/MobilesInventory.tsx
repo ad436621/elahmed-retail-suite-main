@@ -128,8 +128,8 @@ export default function MobilesInventory() {
 
     const filteredList = useMemo(() => {
         let res = unifiedProducts;
-        // Category tab filter
         if (activeFilter === 'used') res = res.filter(p => p.condition === 'used');
+        else if (activeFilter === 'accessory') res = res.filter(p => p._type === 'accessory');
         else if (activeFilter !== 'all') res = res.filter(p => p.category === activeFilter);
         // Text search
         if (search) {

@@ -15,17 +15,23 @@ export interface User {
   active: boolean;
 }
 
+export type ProductSource = 'mobile' | 'mobile_acc' | 'computer' | 'computer_acc' | 'device' | 'device_acc' | 'car' | 'legacy';
+
 export interface Product {
   id: string;
   name: string;
   model: string;
   barcode: string;
   category: string;
+  categoryId?: string;
+  source?: ProductSource;
+  condition?: 'new' | 'used';
   supplier: string;
   costPrice: number;
   sellingPrice: number;
   quantity: number;
   minimumMarginPct: number;
+  image?: string;
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;

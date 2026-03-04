@@ -84,7 +84,7 @@ export default function BlacklistPage() {
                     </div>
                 )}
                 {quickResult === 'clean' && quickCheck.trim() && (
-                    <div className="rounded-xl border border-emerald-200 bg-emerald-50 dark:bg-emerald-900/20 p-3">
+                    <div className="rounded-xl border border-emerald-200 dark:border-emerald-500/20 bg-emerald-50 dark:bg-emerald-900/20 p-3">
                         <p className="text-sm font-bold text-emerald-700">✅ الجهاز سليم وغير محظور</p>
                     </div>
                 )}
@@ -120,7 +120,7 @@ export default function BlacklistPage() {
                             <div className="flex gap-2 shrink-0">
                                 {d.status === 'active' && (
                                     <button onClick={() => resolveEntry(d.id)}
-                                        className="rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors">
+                                        className="rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-colors">
                                         حُل
                                     </button>
                                 )}

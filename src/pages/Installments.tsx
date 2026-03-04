@@ -213,8 +213,8 @@ export default function Installments() {
                         <button key={t}
                             onClick={() => { setForm({ ...emptyForm, contractType: t }); setShowForm(true); }}
                             className={`flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all shadow-sm ${t === 'product' ? 'bg-primary text-primary-foreground hover:bg-primary/90'
-                                    : t === 'transfer' ? 'bg-amber-500 text-white hover:bg-amber-600'
-                                        : 'bg-sky-600 text-white hover:bg-sky-700'
+                                : t === 'transfer' ? 'bg-amber-500 text-white hover:bg-amber-600'
+                                    : 'bg-sky-600 text-white hover:bg-sky-700'
                                 }`}>
                             {t === 'product' ? <><Tag className="h-4 w-4" /> أجل بضاعة</>
                                 : t === 'transfer' ? <><Send className="h-4 w-4" /> أجل تحويل</>
@@ -253,10 +253,10 @@ export default function Installments() {
                                 <button key={t}
                                     onClick={() => setForm(f => ({ ...f, contractType: t, productName: '', productId: '' }))}
                                     className={`flex-1 py-2 text-xs font-bold transition-all ${form.contractType === t
-                                            ? t === 'product' ? 'bg-primary text-primary-foreground'
-                                                : t === 'transfer' ? 'bg-amber-500 text-white'
-                                                    : 'bg-sky-600 text-white'
-                                            : 'text-muted-foreground hover:bg-muted/50'
+                                        ? t === 'product' ? 'bg-primary text-primary-foreground'
+                                            : t === 'transfer' ? 'bg-amber-500 text-white'
+                                                : 'bg-sky-600 text-white'
+                                        : 'text-muted-foreground hover:bg-muted/50'
                                         }`}>
                                     {t === 'product' ? '📦 بضاعة' : t === 'transfer' ? '🔄 تحويل' : '🚗 سيارة'}
                                 </button>
@@ -446,7 +446,7 @@ export default function Installments() {
                         <p className="text-sm mb-4 text-muted-foreground">{showSchedule.customerName} — {showSchedule.productName}</p>
                         <div className="space-y-2">
                             {showSchedule.schedule.map(s => (
-                                <div key={s.month} className={`flex items-center justify-between rounded-xl px-3 py-2.5 border text-sm ${s.paid ? 'bg-emerald-50 border-emerald-200' : 'bg-muted/30 border-border'}`}>
+                                <div key={s.month} className={`flex items-center justify-between rounded-xl px-3 py-2.5 border text-sm ${s.paid ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20' : 'bg-muted/30 border-border'}`}>
                                     <span className="font-semibold text-foreground">الشهر {s.month}</span>
                                     <span className="text-muted-foreground text-xs">{s.dueDate}</span>
                                     <span className={`font-bold ${s.paid ? 'text-emerald-600' : 'text-primary'}`}>{s.amount.toLocaleString()} ج.م</span>

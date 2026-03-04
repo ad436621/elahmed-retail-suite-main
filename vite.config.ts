@@ -45,4 +45,11 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  // Prevent Vite from scanning resources_extracted/ (old Electron HTML/JS files)
+  // which causes React to be bundled twice (dual-instance useState error)
+  optimizeDeps: {
+    entries: ["src/**/*.{ts,tsx}"],
+    exclude: ["resources_extracted"],
+  },
 }));
+

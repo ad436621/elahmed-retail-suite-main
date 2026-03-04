@@ -3,12 +3,11 @@
 // ============================================================
 
 import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
+import { STORAGE_KEYS } from '@/config';
 
-const KEY = 'gx_shift_closings';
+const KEY = STORAGE_KEYS.SHIFT_CLOSINGS;
 
-function genId() {
-    return `shift_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-}
+
 
 // ─── Types ──────────────────────────────────────────────────
 
@@ -47,7 +46,7 @@ export function getShiftClosings(): ShiftClosing[] {
 export function addShiftClosing(data: Omit<ShiftClosing, 'id' | 'createdAt'>): ShiftClosing {
     const entry: ShiftClosing = {
         ...data,
-        id: genId(),
+        id: crypto.randomUUID(),
         createdAt: new Date().toISOString(),
     };
     setStorageItem(KEY, [...getShiftClosings(), entry]);
@@ -71,7 +70,7 @@ export function buildShiftSummary(closedBy: string, actualCash: number, notes?: 
     const rawSales: Array<{
         createdAt?: string; total?: number;
         paymentMethod?: string; items?: unknown[];
-    }> = JSON.parse(localStorage.getItem('gx_sales') || '[]');
+    }> = JSON.parse(localStorage.getItem(STORAGE_KEYS.SALES_LEGACY) || '[]');
 
     // Filter to sales after last closing
     const currentSales = rawSales.filter(s => {

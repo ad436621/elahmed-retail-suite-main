@@ -9,6 +9,37 @@ import { STORAGE_KEYS } from '@/config';
 const STORAGE_KEY = STORAGE_KEYS.USERS;
 const RECOVERY_CODE_KEY = STORAGE_KEYS.RECOVERY_CODE;
 
+// ─── #01 FIX: PBKDF2 Password Hashing (Web Crypto API) ──────
+
+/** Generate a random salt for password hashing */
+export function generateSalt(): string {
+    const arr = new Uint8Array(16);
+    crypto.getRandomValues(arr);
+    return btoa(String.fromCharCode(...arr));
+}
+
+/** Hash a password using PBKDF2 with 100k iterations */
+export async function hashPassword(password: string, salt: string): Promise<string> {
+    const enc = new TextEncoder();
+    const key = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveBits']);
+    const bits = await crypto.subtle.deriveBits(
+        { name: 'PBKDF2', salt: enc.encode(salt), iterations: 100000, hash: 'SHA-256' },
+        key, 256
+    );
+    return btoa(String.fromCharCode(...new Uint8Array(bits)));
+}
+
+/** Verify a password against a stored hash */
+export async function verifyPassword(password: string, salt: string, storedHash: string): Promise<boolean> {
+    const hash = await hashPassword(password, salt);
+    return hash === storedHash;
+}
+
+/** Check if a password is already hashed (contains salt separator) */
+export function isPasswordHashed(user: AppUser): boolean {
+    return !!user.salt;
+}
+
 // Generate a secure recovery code and store in localStorage if not exists
 function getOrCreateRecoveryCode(): string {
     try {
@@ -97,22 +128,25 @@ export interface AppUser {
     id: string;
     username: string;
     password: string;
+    salt?: string;              // #01: PBKDF2 salt
     fullName: string;
     role: UserRole;
     permissions: Permission[];
     active: boolean;
     createdAt: string;
+    mustChangePassword?: boolean;  // #02: Force password change on first login
 }
 
 const DEFAULT_OWNER: AppUser = {
     id: 'owner-1',
     username: 'admin',
-    password: 'admin123',
+    password: 'admin123',       // Will be hashed on first login via migration
     fullName: 'صاحب النظام',
     role: 'owner',
     permissions: [...ALL_PERMISSIONS],
     active: true,
     createdAt: new Date().toISOString(),
+    mustChangePassword: true,   // #02: Force password change
 };
 
 export function getUsers(): AppUser[] {
@@ -161,12 +195,25 @@ export function deleteUser(id: string): void {
     saveUsers(users.filter(u => u.id !== id));
 }
 
-export function changePassword(username: string, newPassword: string): boolean {
+/** Change password — hashes with PBKDF2 before saving */
+export async function changePassword(username: string, newPassword: string): Promise<boolean> {
     const users = getUsers();
     const user = users.find(u => u.username.toLowerCase() === username.toLowerCase());
     if (!user) return false;
-    saveUsers(users.map(u => u.id === user.id ? { ...u, password: newPassword } : u));
+    const salt = generateSalt();
+    const hashed = await hashPassword(newPassword, salt);
+    saveUsers(users.map(u => u.id === user.id ? { ...u, password: hashed, salt, mustChangePassword: false } : u));
     return true;
+}
+
+/** Migrate a plaintext password to PBKDF2 hash (called on first login) */
+export async function migratePasswordToHash(userId: string, plaintextPassword: string): Promise<void> {
+    const users = getUsers();
+    const user = users.find(u => u.id === userId);
+    if (!user || user.salt) return; // Already hashed
+    const salt = generateSalt();
+    const hashed = await hashPassword(plaintextPassword, salt);
+    saveUsers(users.map(u => u.id === userId ? { ...u, password: hashed, salt } : u));
 }
 
 export function verifyRecoveryCode(code: string): boolean {

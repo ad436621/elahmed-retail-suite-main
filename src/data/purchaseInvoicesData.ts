@@ -3,12 +3,11 @@
 // ============================================================
 
 import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
+import { STORAGE_KEYS } from '@/config';
 
-const KEY = 'gx_purchase_invoices';
+const KEY = STORAGE_KEYS.PURCHASE_INVOICES;
 
-function genId() {
-    return `pinv_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-}
+
 
 // ─── Types ──────────────────────────────────────────────────
 
@@ -68,7 +67,7 @@ export function addPurchaseInvoice(
     const status = deriveStatus(data.totalAmount, data.paidAmount);
     const invoice: PurchaseInvoice = {
         ...data,
-        id: genId(),
+        id: crypto.randomUUID(),
         invoiceNumber,
         remaining,
         status,

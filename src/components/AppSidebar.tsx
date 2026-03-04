@@ -29,6 +29,9 @@ import {
   Bell,
   ClipboardCheck,
   FileInput,
+  BarChart3,
+  Handshake,
+  PackageSearch,
 } from 'lucide-react';
 import { useLanguage } from '@/contexts/LanguageContext';
 // theme & language toggles are handled in TopHeader, not sidebar
@@ -124,6 +127,7 @@ const AppSidebar = () => {
     { to: '/', icon: LayoutDashboard, label: 'الرئيسية', perm: 'dashboard' },
     { to: '/pos', icon: ShoppingCart, label: 'نقطة البيع', perm: 'pos' },
     { to: '/maintenance', icon: Wrench, label: 'الصيانة', perm: 'maintenance' },
+    { to: '/reports', icon: BarChart3, label: 'التقارير', perm: 'dashboard' },
   ];
 
   // Collapsible groups
@@ -137,7 +141,9 @@ const AppSidebar = () => {
         { to: '/computers', icon: Monitor, label: 'الكمبيوترات', perm: 'computers' },
         { to: '/devices', icon: Tv, label: 'الأجهزة', perm: 'devices' },
         { to: '/cars', icon: Car, label: 'السيارات', perm: 'cars' },
+        { to: '/used-inventory', icon: Package, label: 'المستعمل', perm: 'used' },
         { to: '/warehouse', icon: Warehouse, label: 'المستودع', perm: 'warehouse' },
+        { to: '/stocktake', icon: PackageSearch, label: 'جرد المخزون', perm: 'stocktake' },
         { to: '/barcodes', icon: Barcode, label: 'طباعة الباركود', perm: 'inventory' },
       ],
     },
@@ -177,6 +183,7 @@ const AppSidebar = () => {
       defaultOpen: false,
       items: [
         { to: '/suppliers', icon: Truck, label: 'الموردون', perm: 'suppliers' },
+        { to: '/partners', icon: Handshake, label: 'الشركاء', perm: 'partners' },
       ],
     },
     {
@@ -304,7 +311,7 @@ const AppSidebar = () => {
         {/* Logout — compact */}
         <button
           onClick={handleLogout}
-          className="flex w-full items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold text-rose-600 border border-rose-200/60 bg-rose-50/60 hover:bg-rose-100 hover:border-rose-300 transition-colors"
+          className="flex w-full items-center justify-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold text-rose-600 dark:text-rose-400 border border-rose-200/60 dark:border-rose-500/20 bg-rose-50/60 dark:bg-rose-500/10 hover:bg-rose-100 dark:hover:bg-rose-500/20 hover:border-rose-300 dark:hover:border-rose-500/30 transition-colors"
         >
           <LogOutIcon className="h-3.5 w-3.5" />
           <span>تسجيل الخروج</span>

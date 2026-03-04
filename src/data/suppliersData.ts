@@ -3,13 +3,12 @@
 // ============================================================
 
 import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
+import { STORAGE_KEYS } from '@/config';
 
-const SUP_KEY = 'gx_suppliers';
-const TXN_KEY = 'gx_supplier_transactions';
+const SUP_KEY = STORAGE_KEYS.SUPPLIERS;
+const TXN_KEY = STORAGE_KEYS.SUPPLIER_TRANSACTIONS;
 
-function genId(prefix: string) {
-    return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-}
+
 
 // ─── Types ──────────────────────────────────────────────────
 
@@ -50,7 +49,7 @@ export function saveSuppliers(suppliers: Supplier[]): void {
 export function addSupplier(data: Omit<Supplier, 'id' | 'createdAt' | 'updatedAt'>): Supplier {
     const sup: Supplier = {
         ...data,
-        id: genId('sup'),
+        id: crypto.randomUUID(),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
     };
@@ -87,7 +86,7 @@ export function addSupplierTransaction(data: Omit<SupplierTransaction, 'id' | 'b
 
     const txn: SupplierTransaction = {
         ...data,
-        id: genId('stxn'),
+        id: crypto.randomUUID(),
         balanceBefore,
         balanceAfter,
     };

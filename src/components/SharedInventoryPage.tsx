@@ -148,6 +148,8 @@ export default function SharedInventoryPage({ config }: { config: SharedInventor
         let res = unifiedProducts;
         if (activeFilter === 'used') {
             res = res.filter(p => p.condition === 'used');
+        } else if (activeFilter === 'accessory') {
+            res = res.filter(p => p._type === 'accessory');
         } else if (activeFilter !== 'all') {
             res = res.filter(p => p.category === activeFilter);
         }

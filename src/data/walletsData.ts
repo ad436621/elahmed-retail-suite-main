@@ -36,9 +36,7 @@ export interface WalletTransaction {
 
 // ─── Helpers ────────────────────────────────────────────────
 
-function genId(prefix: string): string {
-    return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-}
+
 
 // ─── Default wallets (seeded on first run) ──────────────────
 
@@ -70,7 +68,7 @@ export function saveWallets(wallets: Wallet[]): void {
 }
 
 export function addWallet(data: Omit<Wallet, 'id' | 'createdAt'>): Wallet {
-    const wallet: Wallet = { ...data, id: genId('wallet'), createdAt: new Date().toISOString() };
+    const wallet: Wallet = { ...data, id: crypto.randomUUID(), createdAt: new Date().toISOString() };
     saveWallets([...getWallets(), wallet]);
     return wallet;
 }
@@ -99,7 +97,7 @@ function saveTransactions(txns: WalletTransaction[]): void {
 }
 
 function addTransaction(txn: Omit<WalletTransaction, 'id'>): WalletTransaction {
-    const t: WalletTransaction = { ...txn, id: genId('txn') };
+    const t: WalletTransaction = { ...txn, id: crypto.randomUUID() };
     saveTransactions([...getTransactions(), t]);
     return t;
 }

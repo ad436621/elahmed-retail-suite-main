@@ -135,7 +135,7 @@ export default function PurchaseInvoicesPage() {
                                 <td className="px-3 py-2.5">
                                     <div className="flex gap-1">
                                         {inv.status !== 'paid' && (
-                                            <button onClick={() => { setPayDialog(inv); setPayAmount(0); }} className="rounded-lg bg-emerald-50 border border-emerald-200 px-2 py-1 text-[10px] font-bold text-emerald-700 hover:bg-emerald-100">دفع</button>
+                                            <button onClick={() => { setPayDialog(inv); setPayAmount(0); }} className="rounded-lg bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 px-2 py-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20">دفع</button>
                                         )}
                                         <button onClick={() => { deletePurchaseInvoice(inv.id); refresh(); }} className="rounded-lg p-1.5 bg-red-50 text-destructive hover:bg-red-100"><Trash2 className="h-3 w-3" /></button>
                                     </div>

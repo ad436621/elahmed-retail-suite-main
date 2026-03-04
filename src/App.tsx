@@ -1,8 +1,7 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClientProvider } from "@tanstack/react-query";
-import { queryClient } from "@/lib/queryClient";
+// #10 FIX: Removed @tanstack/react-query — was installed but never used in any page
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useEffect, lazy, Suspense } from 'react';
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -35,7 +34,9 @@ const Installments = lazy(() => import("@/pages/Installments"));
 const Expenses = lazy(() => import("@/pages/Expenses"));
 const UsersManagement = lazy(() => import("@/pages/UsersManagement"));
 const BarcodePrintPage = lazy(() => import("@/pages/BarcodePrintPage"));
-const UnauthorizedPage = lazy(() => import("@/pages/UnauthorizedPage"));
+// #06 FIX: Direct import — NOT lazy — because PermGuard/OwnerGuard render it
+// outside their own Suspense boundary, which would cause a React crash.
+import UnauthorizedPage from "@/pages/UnauthorizedPage";
 const DamagedItemsPage = lazy(() => import("@/pages/DamagedItemsPage"));
 const CarsInventory = lazy(() => import("@/pages/CarsInventory"));
 const WarehousePage = lazy(() => import("@/pages/WarehousePage"));
@@ -50,6 +51,9 @@ const BlacklistPage = lazy(() => import("@/pages/BlacklistPage"));
 const RemindersPage = lazy(() => import("@/pages/RemindersPage"));
 const ShiftClosingPage = lazy(() => import("@/pages/ShiftClosingPage"));
 const PurchaseInvoicesPage = lazy(() => import("@/pages/PurchaseInvoicesPage"));
+const ReportsPage = lazy(() => import("@/pages/ReportsPage"));
+const PartnersPage = lazy(() => import("@/pages/PartnersPage"));
+const StocktakePage = lazy(() => import("@/pages/StocktakePage"));
 
 // Loading fallback
 
@@ -100,6 +104,9 @@ function AutoBackupRunner() {
     // Preload dashboard data in background for instant load
     preloadDashboardData();
 
+    // #24 FIX: Run backup immediately on first login, not just every 5 min
+    executeAutoBackupIfDue();
+
     // Then check every 5 minutes
     const interval = setInterval(() => {
       executeAutoBackupIfDue();
@@ -146,7 +153,7 @@ const AppRoutes = () => (
         <Route path="/devices" element={<PermGuard perm="devices"><DevicesInventory /></PermGuard>} />
         <Route path="/cars" element={<PermGuard perm="cars"><CarsInventory /></PermGuard>} />
         <Route path="/warehouse" element={<PermGuard perm="warehouse"><WarehousePage /></PermGuard>} />
-        <Route path="/used-inventory" element={<PermGuard perm="inventory"><UsedInventory /></PermGuard>} />
+        <Route path="/used-inventory" element={<PermGuard perm="used"><UsedInventory /></PermGuard>} />
         {/* Services */}
         <Route path="/maintenance" element={<PermGuard perm="maintenance"><Maintenance /></PermGuard>} />
         <Route path="/installments" element={<PermGuard perm="installments"><Installments /></PermGuard>} />
@@ -170,6 +177,10 @@ const AppRoutes = () => (
         {/* Finance */}
         <Route path="/shift-closing" element={<PermGuard perm="shiftClosing"><ShiftClosingPage /></PermGuard>} />
         <Route path="/purchase-invoices" element={<PermGuard perm="purchaseInvoices"><PurchaseInvoicesPage /></PermGuard>} />
+        <Route path="/reports" element={<PermGuard perm="dashboard"><ReportsPage /></PermGuard>} />
+        {/* #04 FIX: Missing pages */}
+        <Route path="/partners" element={<PermGuard perm="partners"><PartnersPage /></PermGuard>} />
+        <Route path="/stocktake" element={<PermGuard perm="stocktake"><StocktakePage /></PermGuard>} />
       </Route>
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
       <Route path="*" element={<NotFound />} />
@@ -178,29 +189,27 @@ const AppRoutes = () => (
 );
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ErrorBoundary>
-      <SettingsProvider>
-        <ThemeProvider>
-          <LanguageProvider>
-            <AuthProvider>
-              <CartProvider>
-                <TooltipProvider>
-                  <Toaster />
-                  <Sonner />
-                  <BrowserRouter>
-                    <AutoBackupRunner />
-                    <DataMigrationRunner />
-                    <AppRoutes />
-                  </BrowserRouter>
-                </TooltipProvider>
-              </CartProvider>
-            </AuthProvider>
-          </LanguageProvider>
-        </ThemeProvider>
-      </SettingsProvider>
-    </ErrorBoundary>
-  </QueryClientProvider>
+  <ErrorBoundary>
+    <SettingsProvider>
+      <ThemeProvider>
+        <LanguageProvider>
+          <AuthProvider>
+            <CartProvider>
+              <TooltipProvider>
+                <Toaster />
+                <Sonner />
+                <BrowserRouter>
+                  <AutoBackupRunner />
+                  <DataMigrationRunner />
+                  <AppRoutes />
+                </BrowserRouter>
+              </TooltipProvider>
+            </CartProvider>
+          </AuthProvider>
+        </LanguageProvider>
+      </ThemeProvider>
+    </SettingsProvider>
+  </ErrorBoundary>
 );
 
 export default App;

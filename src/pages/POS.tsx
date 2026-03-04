@@ -6,7 +6,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import {
   Search, Plus, Minus, Trash2, CreditCard,
   ShoppingCart, Lock, RotateCcw, Calculator, ArrowLeft, Moon, Sun,
-  Clock, Barcode, Download, Smartphone, Headphones, Car, Send,
+  Clock, Barcode, Download, Smartphone, Headphones, Car, Send, Tv,
   PauseCircle, FileText, HelpCircle, Receipt, Percent, X,
   CheckCircle, Wallet, ChevronRight, TrendingDown
 } from 'lucide-react';
@@ -26,29 +26,23 @@ import { printInvoice } from '@/services/invoicePrinter';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
-import {
-  getWallets, deposit,
-  type Wallet as WalletType, getTransactions,
-} from '@/data/walletsData';
+import { getWallets, deposit, type Wallet as WalletType, getTransactions } from '@/data/walletsData';
+import { getCategoriesBySection, type DynamicCategory } from '@/data/categoriesData';
 
 // ── Constants ─────────────────────────────────────────────────
 const TABS = [
-  { id: 'mobiles', label: 'الأجهزة', icon: Smartphone },
-  { id: 'accessories', label: 'الإكسسوارات', icon: Headphones },
-  { id: 'cars', label: 'عربيات', icon: Car },
+  { id: 'mobiles', label: 'الموبيلات', icon: Smartphone },
+  { id: 'devices', label: 'الأجهزة', icon: Tv },
+  { id: 'cars', label: 'السيارات', icon: Car },
   { id: 'transfers', label: 'تحويلات', icon: Send },
 ] as const;
 
 type TabId = typeof TABS[number]['id'];
+type SubMode = 'main' | 'accessories';
+type ConditionFilter = 'all' | 'new' | 'used';
 
-// Brand chips — only relevant for mobiles
-const MOBILE_BRANDS = ['الكل', 'Apple', 'Samsung', 'Oppo', 'Xiaomi', 'Realme', 'Vivo', 'Huawei', 'Nokia', 'أخرى'];
-
-// Accessory categories
-const ACC_CATS = ['الكل', 'سماعات', 'شواحن', 'كفرات', 'كابلات', 'لاسلكي', 'أخرى'];
-
-// Car categories
-const CAR_CATS = ['الكل', 'إكسسوار', 'قطع غيار', 'صوتيات', 'شاشات', 'أخرى'];
+// Brand chips for mobile devices (from supplier field)
+const MOBILE_BRANDS = ['Apple', 'Samsung', 'Oppo', 'Xiaomi', 'Realme', 'Vivo', 'Huawei', 'Nokia', 'أخرى'];
 
 // Transfer types with emoji icons
 const TRANSFER_TYPES = [
@@ -398,8 +392,18 @@ export default function POS() {
     return () => clearInterval(t);
   }, []);
 
-  // Reset chip when tab changes
-  useEffect(() => { setSelectedChip('الكل'); }, [selectedTab]);
+  // Sub mode (devices vs accessories) for mobiles & devices tabs
+  const [subMode, setSubMode] = useState<SubMode>('main');
+  const [conditionFilter, setConditionFilter] = useState<ConditionFilter>('all');
+
+  // Dynamic categories from categoriesData
+  const mobileCategories = useMemo(() => getCategoriesBySection('mobile'), []);
+  const deviceCategories = useMemo(() => getCategoriesBySection('device'), []);
+
+  // Reset chip, subMode, condition when tab changes
+  useEffect(() => { setSelectedChip('الكل'); setSubMode('main'); setConditionFilter('all'); }, [selectedTab]);
+  // Reset chip when subMode changes
+  useEffect(() => { setSelectedChip('الكل'); setConditionFilter('all'); }, [subMode]);
 
   // ── Keyboard Shortcuts (ELOS-style F1–F9) ──────────────────
   const checkoutBtnRef = useRef<HTMLButtonElement>(null);
@@ -427,7 +431,7 @@ export default function POS() {
           break;
         case 'F3':
           e.preventDefault();
-          setSelectedTab('accessories');
+          setSelectedTab('devices');
           setSelectedChip('الكل');
           break;
         case 'F4':
@@ -461,55 +465,72 @@ export default function POS() {
 
   const allProducts = useMemo(() => getAllInventoryProducts(), []);
 
-  // Category chips per tab
+  // Category chips per tab — dynamic from categoriesData
   const chips = useMemo(() => {
-    if (selectedTab === 'mobiles') return MOBILE_BRANDS;
-    if (selectedTab === 'accessories') return ACC_CATS;
-    if (selectedTab === 'cars') return CAR_CATS;
+    if (selectedTab === 'mobiles') {
+      if (subMode === 'main') return ['الكل', ...MOBILE_BRANDS];
+      const accCats = mobileCategories.filter(c => c.type === 'accessory');
+      return ['الكل', ...accCats.map(c => c.name)];
+    }
+    if (selectedTab === 'devices') {
+      if (subMode === 'main') {
+        const devCats = deviceCategories.filter(c => c.type === 'device');
+        return ['الكل', ...devCats.map(c => c.name)];
+      }
+      const accCats = deviceCategories.filter(c => c.type === 'accessory');
+      return ['الكل', ...accCats.map(c => c.name)];
+    }
     return [];
-  }, [selectedTab]);
+  }, [selectedTab, subMode, mobileCategories, deviceCategories]);
 
   const filteredProducts = useMemo(() => {
     if (selectedTab === 'transfers') return [];
 
     let prods = allProducts;
 
+    // ── Filter by tab source ──
     if (selectedTab === 'mobiles') {
-      prods = prods.filter(p =>
-        p.category.includes('موبيل') || p.category.includes('موبايل') ||
-        p.category.includes('لابتوب') || p.category.includes('تابلت')
-      );
-      if (selectedChip !== 'الكل') {
-        const cl = selectedChip.toLowerCase();
-        prods = prods.filter(p => p.name.toLowerCase().includes(cl));
+      if (subMode === 'main') {
+        // Show mobile + computer devices
+        prods = prods.filter(p => p.source === 'mobile' || p.source === 'computer');
+        // Condition filter
+        if (conditionFilter !== 'all') prods = prods.filter(p => p.condition === conditionFilter);
+        // Brand chip filter (from supplier field or name)
+        if (selectedChip !== 'الكل') {
+          const cl = selectedChip.toLowerCase();
+          prods = prods.filter(p => p.supplier?.toLowerCase().includes(cl) || p.name.toLowerCase().includes(cl));
+        }
+      } else {
+        // Accessories
+        prods = prods.filter(p => p.source === 'mobile_acc' || p.source === 'computer_acc');
+        if (selectedChip !== 'الكل') {
+          const cl = selectedChip.toLowerCase();
+          prods = prods.filter(p => p.category.toLowerCase().includes(cl) || p.name.toLowerCase().includes(cl));
+        }
       }
-    } else if (selectedTab === 'accessories') {
-      prods = prods.filter(p =>
-        p.category.includes('إكسسوار') || p.category.includes('سماع') ||
-        p.category.includes('شاحن') || p.category.includes('كفر') ||
-        p.category.includes('كابل')
-      );
-      if (selectedChip !== 'الكل') {
-        const cl = selectedChip.toLowerCase();
-        prods = prods.filter(p =>
-          p.category.toLowerCase().includes(cl) || p.name.toLowerCase().includes(cl)
-        );
+    } else if (selectedTab === 'devices') {
+      if (subMode === 'main') {
+        prods = prods.filter(p => p.source === 'device');
+        if (conditionFilter !== 'all') prods = prods.filter(p => p.condition === conditionFilter);
+        if (selectedChip !== 'الكل') {
+          const cl = selectedChip.toLowerCase();
+          prods = prods.filter(p => p.category.toLowerCase().includes(cl) || p.name.toLowerCase().includes(cl));
+        }
+      } else {
+        prods = prods.filter(p => p.source === 'device_acc');
+        if (selectedChip !== 'الكل') {
+          const cl = selectedChip.toLowerCase();
+          prods = prods.filter(p => p.category.toLowerCase().includes(cl) || p.name.toLowerCase().includes(cl));
+        }
       }
     } else if (selectedTab === 'cars') {
-      prods = prods.filter(p =>
-        p.category.includes('سيارة') || p.category.includes('car') || p.category.includes('عربي')
-      );
-      if (selectedChip !== 'الكل') {
-        const cl = selectedChip.toLowerCase();
-        prods = prods.filter(p =>
-          p.category.toLowerCase().includes(cl) || p.name.toLowerCase().includes(cl)
-        );
-      }
+      prods = prods.filter(p => p.source === 'car');
+      if (conditionFilter !== 'all') prods = prods.filter(p => p.condition === conditionFilter);
     }
 
     if (searchTerm.trim()) prods = searchProducts(prods, searchTerm, undefined, 40);
     return prods;
-  }, [allProducts, selectedTab, selectedChip, searchTerm]);
+  }, [allProducts, selectedTab, subMode, conditionFilter, selectedChip, searchTerm]);
 
   const handleCheckout = useCallback(async () => {
     if (isProcessing || cart.length === 0) return;
@@ -621,6 +642,39 @@ export default function POS() {
                 </div>
               </div>
 
+              {/* Sub-toggle: devices vs accessories (for mobiles & devices tabs) */}
+              {(selectedTab === 'mobiles' || selectedTab === 'devices') && (
+                <div className="flex gap-1 mb-3 rounded-xl bg-gray-100 dark:bg-muted/30 p-1 border border-border/40">
+                  <button onClick={() => setSubMode('main')}
+                    className={cn('flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition-all',
+                      subMode === 'main' ? 'bg-blue-600 text-white shadow-sm' : 'text-muted-foreground hover:text-foreground')}>
+                    {selectedTab === 'mobiles' ? <><Smartphone className="h-3.5 w-3.5" /> موبيلات</> : <><Tv className="h-3.5 w-3.5" /> أجهزة</>}
+                  </button>
+                  <button onClick={() => setSubMode('accessories')}
+                    className={cn('flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-bold transition-all',
+                      subMode === 'accessories' ? 'bg-blue-600 text-white shadow-sm' : 'text-muted-foreground hover:text-foreground')}>
+                    <Headphones className="h-3.5 w-3.5" /> إكسسوارات
+                  </button>
+                </div>
+              )}
+
+              {/* Condition filter: جديد / مستعمل (for main devices & cars) */}
+              {((selectedTab === 'mobiles' && subMode === 'main') || (selectedTab === 'devices' && subMode === 'main') || selectedTab === 'cars') && (
+                <div className="flex gap-1.5 mb-3">
+                  {(['all', 'new', 'used'] as ConditionFilter[]).map(c => (
+                    <button key={c} onClick={() => setConditionFilter(c)}
+                      className={cn('rounded-lg px-4 py-1.5 text-xs font-bold transition-all border',
+                        conditionFilter === c
+                          ? c === 'used' ? 'bg-orange-100 dark:bg-orange-500/20 text-orange-700 dark:text-orange-400 border-orange-300 dark:border-orange-500/40'
+                            : c === 'new' ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-500/40'
+                              : 'bg-blue-600 text-white border-blue-600'
+                          : 'bg-white dark:bg-background border-border/60 text-muted-foreground hover:bg-gray-50 dark:hover:bg-muted/50')}>
+                      {c === 'all' ? 'الكل' : c === 'new' ? 'جديد' : 'مستعمل'}
+                    </button>
+                  ))}
+                </div>
+              )}
+
               {/* Search */}
               <div className="flex gap-2 mb-3 bg-gray-50 dark:bg-muted/30 p-2 rounded-xl border border-border/50">
                 <div className="relative flex-1">
@@ -637,7 +691,7 @@ export default function POS() {
                   {chips.map(chip => (
                     <button key={chip} onClick={() => setSelectedChip(chip)}
                       className={cn('rounded-lg px-5 py-2 text-xs font-bold whitespace-nowrap transition-all shrink-0',
-                        selectedChip === chip ? 'bg-blue-600 text-white shadow' : 'bg-white dark:bg-background border border-border/60 text-gray-500 hover:bg-gray-50')}>
+                        selectedChip === chip ? 'bg-blue-600 text-white shadow' : 'bg-white dark:bg-background border border-border/60 text-gray-500 hover:bg-gray-50 dark:hover:bg-muted/50')}>
                       {chip}
                     </button>
                   ))}
@@ -648,16 +702,19 @@ export default function POS() {
               <div className="flex-1 overflow-y-auto pr-1">
                 {filteredProducts.length === 0 ? (
                   <div className="h-full flex flex-col justify-center items-center text-gray-400 py-16">
-                    {selectedTab === 'accessories'
-                      ? <Headphones className="h-16 w-16 mb-4 opacity-20" />
-                      : selectedTab === 'cars'
-                        ? <Car className="h-16 w-16 mb-4 opacity-20" />
-                        : <ShoppingCart className="h-16 w-16 mb-4 opacity-20" />
+                    {selectedTab === 'cars'
+                      ? <Car className="h-16 w-16 mb-4 opacity-20" />
+                      : subMode === 'accessories'
+                        ? <Headphones className="h-16 w-16 mb-4 opacity-20" />
+                        : selectedTab === 'devices'
+                          ? <Tv className="h-16 w-16 mb-4 opacity-20" />
+                          : <Smartphone className="h-16 w-16 mb-4 opacity-20" />
                     }
                     <p className="font-bold text-lg">
-                      {selectedTab === 'accessories' ? 'لا توجد إكسسوارات متاحة'
-                        : selectedTab === 'cars' ? 'لا توجد عربيات متاحة'
-                          : 'لا توجد منتجات'}
+                      {selectedTab === 'cars' ? 'لا توجد سيارات متاحة'
+                        : subMode === 'accessories' ? 'لا توجد إكسسوارات متاحة'
+                          : selectedTab === 'devices' ? 'لا توجد أجهزة متاحة'
+                            : 'لا توجد موبيلات متاحة'}
                     </p>
                     <p className="text-sm opacity-70 mt-1">جرب تغيير الفئة أو كلمة البحث</p>
                   </div>

@@ -3,15 +3,16 @@
 // Data access layer — persisted to localStorage
 // ============================================================
 
-import { Product, MobileItem, MobileAccessory, DeviceItem, DeviceAccessory, ComputerItem, ComputerAccessory } from '@/domain/types';
+import { Product, ProductSource, MobileItem, MobileAccessory, DeviceItem, DeviceAccessory, ComputerItem, ComputerAccessory, CarItem } from '@/domain/types';
 import { getMobiles, getMobileAccessories, updateMobile, updateMobileAccessory } from '@/data/mobilesData';
 import { getComputers, getComputerAccessories, updateComputer, updateComputerAccessory } from '@/data/computersData';
 import { getDevices, getDeviceAccessories, updateDevice, updateDeviceAccessory } from '@/data/devicesData';
+import { getCars } from '@/data/carsData';
 import { STORAGE_KEYS } from '@/config';
 import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
 
 // Union type for all inventory item types
-type InventoryItem = MobileItem | MobileAccessory | DeviceItem | DeviceAccessory | ComputerItem | ComputerAccessory;
+type InventoryItem = MobileItem | MobileAccessory | DeviceItem | DeviceAccessory | ComputerItem | ComputerAccessory | CarItem;
 
 const STORAGE_KEY = STORAGE_KEYS.PRODUCTS;
 
@@ -79,18 +80,25 @@ function getUpdatedAt(item: InventoryItem): string {
 
 const mapToProduct = (
   item: InventoryItem,
-  categoryLabel: string
+  categoryLabel: string,
+  source: ProductSource = 'legacy',
+  condition?: 'new' | 'used',
+  categoryId?: string,
 ): Product => ({
   id: item.id,
   name: item.name,
   model: 'model' in item ? item.model : '',
   barcode: getBarcode(item),
   category: categoryLabel,
+  categoryId: categoryId || ('category' in item ? (item as any).category : undefined),
+  source,
+  condition: condition || ('condition' in item ? (item as any).condition : 'new'),
   supplier: getSupplier(item),
   costPrice: getCostPrice(item),
   sellingPrice: getSellingPrice(item),
-  quantity: item.quantity,
+  quantity: 'quantity' in item ? (item as any).quantity : 1,
   minimumMarginPct: 0,
+  image: 'image' in item ? (item as any).image : undefined,
   createdAt: getCreatedAt(item),
   updatedAt: getUpdatedAt(item),
   deletedAt: null,
@@ -99,18 +107,18 @@ const mapToProduct = (
 export function getAllInventoryProducts(): Product[] {
   const mainProducts = productStore.filter(p => p.deletedAt === null);
 
-  const mobiles = getMobiles().map(m => mapToProduct(m, 'موبايلات'));
-  const mAcc = getMobileAccessories().map(m => mapToProduct(m, 'إكسسوارات موبايل'));
+  const mobiles = getMobiles().map(m => mapToProduct(m, 'موبايلات', 'mobile', m.condition));
+  const mAcc = getMobileAccessories().map(m => mapToProduct(m, 'إكسسوارات موبايل', 'mobile_acc'));
 
-  const computers = getComputers().map(c => mapToProduct(c, 'كمبيوتر'));
-  const cAcc = getComputerAccessories().map(c => mapToProduct(c, 'إكسسوارات كمبيوتر'));
+  const computers = getComputers().map(c => mapToProduct(c, 'كمبيوتر', 'computer', c.condition));
+  const cAcc = getComputerAccessories().map(c => mapToProduct(c, 'إكسسوارات كمبيوتر', 'computer_acc'));
 
-  const devices = getDevices().map(d => mapToProduct(d, 'أجهزة'));
-  const dAcc = getDeviceAccessories().map(d => mapToProduct(d, 'إكسسوارات أجهزة'));
+  const devices = getDevices().map(d => mapToProduct(d, 'أجهزة', 'device', d.condition));
+  const dAcc = getDeviceAccessories().map(d => mapToProduct(d, 'إكسسوارات أجهزة', 'device_acc'));
 
-  // Future: warehouse data
+  const cars = getCars().map(c => mapToProduct(c, 'سيارات', 'car', c.condition));
 
-  return [...mainProducts, ...mobiles, ...mAcc, ...computers, ...cAcc, ...devices, ...dAcc];
+  return [...mainProducts, ...mobiles, ...mAcc, ...computers, ...cAcc, ...devices, ...dAcc, ...cars];
 }
 
 // Initialize from localStorage

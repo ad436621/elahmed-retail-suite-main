@@ -3,12 +3,11 @@
 // ============================================================
 
 import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
+import { STORAGE_KEYS } from '@/config';
 
-const KEY = 'gx_reminders';
+const KEY = STORAGE_KEYS.REMINDERS;
 
-function genId() {
-    return `rem_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-}
+
 
 // ─── Types ──────────────────────────────────────────────────
 
@@ -55,7 +54,7 @@ export function saveReminders(reminders: Reminder[]): void {
 }
 
 export function addReminder(data: Omit<Reminder, 'id' | 'createdAt'>): Reminder {
-    const r: Reminder = { ...data, id: genId(), createdAt: new Date().toISOString() };
+    const r: Reminder = { ...data, id: crypto.randomUUID(), createdAt: new Date().toISOString() };
     saveReminders([...getReminders(), r]);
     return r;
 }

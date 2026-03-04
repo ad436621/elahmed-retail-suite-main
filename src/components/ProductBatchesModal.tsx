@@ -6,10 +6,21 @@ import { ProductBatch } from '@/domain/types';
 interface ProductBatchesModalProps {
     productId: string;
     productName: string;
-    onClose: () => void;
+    onClose?: () => void;
+    // Support the Dialog-style api used in DevicesInventory
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
 }
 
-export function ProductBatchesModal({ productId, productName, onClose }: ProductBatchesModalProps) {
+export function ProductBatchesModal({ productId, productName, onClose, open, onOpenChange }: ProductBatchesModalProps) {
+    // Support both open-prop pattern (used by DevicesInventory) and always-open pattern
+    if (open === false) return null;
+
+    const handleClose = () => {
+        onClose?.();
+        onOpenChange?.(false);
+    };
+
     const batches = getAllBatchesForProduct(productId).filter(b => b.remainingQty > 0);
 
     return (
@@ -25,7 +36,7 @@ export function ProductBatchesModal({ productId, productName, onClose }: Product
                         </h2>
                         <p className="text-sm text-muted-foreground mt-1 font-medium">{productName}</p>
                     </div>
-                    <button onClick={onClose} className="p-2 rounded-xl hover:bg-muted text-muted-foreground transition-colors self-start">
+                    <button onClick={handleClose} className="p-2 rounded-xl hover:bg-muted text-muted-foreground transition-colors self-start">
                         <X className="h-5 w-5" />
                     </button>
                 </div>

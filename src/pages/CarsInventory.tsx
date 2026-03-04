@@ -1,4 +1,5 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Plus, Trash2, Pencil, X, Check, Car, Search, ImagePlus, ImageOff, AlignLeft, LayoutGrid, List, FileSpreadsheet } from 'lucide-react';
 import { CarItem } from '@/domain/types';
 import { getCars, addCar, updateCar, deleteCar, getNewCars, getUsedCars, getCarsCapital, getCarsProfit } from '@/data/carsData';
@@ -71,6 +72,7 @@ function ImageUpload({ value, onChange }: { value?: string; onChange: (v: string
 
 export default function CarsInventory() {
     const { toast } = useToast();
+    const location = useLocation();
     const [items, setItems] = useState<CarItem[]>(() => getCars());
     const [tab, setTab] = useState<'new' | 'used'>('new');
     const [showForm, setShowForm] = useState(false);
@@ -80,6 +82,13 @@ export default function CarsInventory() {
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
     const [showExcelRestore, setShowExcelRestore] = useState(false);
     const { user } = useAuth();
+
+    // Read navigation state from Dashboard
+    useEffect(() => {
+        const s = (location.state as { tab?: string } | null);
+        if (s?.tab === 'used') setTab('used');
+        else if (s?.tab === 'new' || s?.tab === 'all') setTab('new');
+    }, [location.state]);
 
     const refresh = () => setItems(getCars());
 

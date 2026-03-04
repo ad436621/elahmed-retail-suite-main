@@ -268,7 +268,7 @@ export default function Maintenance() {
                                         </div>
                                     ))}
                                     {/* Summary */}
-                                    <div className="rounded-xl bg-emerald-50 border border-emerald-200 p-3 grid grid-cols-3 gap-2 text-center text-xs">
+                                    <div className="rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 p-3 grid grid-cols-3 gap-2 text-center text-xs">
                                         <div>
                                             <p className="text-muted-foreground">إجمالي التكلفة</p>
                                             <p className="font-bold text-orange-600">{form.spareParts.reduce((s, p) => s + p.costPrice, 0).toLocaleString()} ج.م</p>

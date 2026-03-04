@@ -47,7 +47,7 @@ export default function SuppliersPage() {
 
     const handlePay = () => {
         if (!showPayDialog || payAmount <= 0) return;
-        addSupplierTransaction({ supplierId: showPayDialog.id, supplierName: showPayDialog.name, type: 'payment', amount: payAmount, createdBy: user?.fullName ?? 'system' });
+        addSupplierTransaction({ supplierId: showPayDialog.id, supplierName: showPayDialog.name, type: 'payment', amount: payAmount, createdBy: user?.fullName ?? 'system', createdAt: new Date().toISOString() });
         toast({ title: '✅ تم تسجيل الدفعة', description: `${fmt(payAmount)} ج.م` });
         setShowPayDialog(null); setPayAmount(0); refresh();
     };
@@ -117,7 +117,7 @@ export default function SuppliersPage() {
                         <div className="flex gap-2 shrink-0">
                             {s.balance > 0 && (
                                 <button onClick={() => { setShowPayDialog(s); setPayAmount(0); }}
-                                    className="flex items-center gap-1 rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-1.5 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition-colors">
+                                    className="flex items-center gap-1 rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 px-3 py-1.5 text-xs font-semibold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-colors">
                                     <DollarSign className="h-3.5 w-3.5" /> دفع
                                 </button>
                             )}

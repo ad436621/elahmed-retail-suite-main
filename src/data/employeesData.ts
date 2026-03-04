@@ -49,9 +49,7 @@ export interface Advance {
 
 // ─── Helpers ────────────────────────────────────────────────
 
-function genId(prefix: string): string {
-    return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-}
+
 
 // ─── Employees ───────────────────────────────────────────────
 
@@ -64,7 +62,7 @@ export function saveEmployees(employees: Employee[]): void {
 }
 
 export function addEmployee(data: Omit<Employee, 'id'>): Employee {
-    const emp: Employee = { ...data, id: genId('emp') };
+    const emp: Employee = { ...data, id: crypto.randomUUID() };
     saveEmployees([...getEmployees(), emp]);
     return emp;
 }
@@ -89,7 +87,7 @@ export function saveSalaryRecords(records: SalaryRecord[]): void {
 }
 
 export function addSalaryRecord(data: Omit<SalaryRecord, 'id'>): SalaryRecord {
-    const record: SalaryRecord = { ...data, id: genId('sal') };
+    const record: SalaryRecord = { ...data, id: crypto.randomUUID() };
     saveSalaryRecords([...getSalaryRecords(), record]);
     return record;
 }
@@ -141,7 +139,7 @@ export function saveAdvances(advances: Advance[]): void {
 }
 
 export function addAdvance(data: Omit<Advance, 'id'>): Advance {
-    const adv: Advance = { ...data, id: genId('adv') };
+    const adv: Advance = { ...data, id: crypto.randomUUID() };
     saveAdvances([...getAdvances(), adv]);
     return adv;
 }

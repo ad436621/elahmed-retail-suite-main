@@ -3,12 +3,11 @@
 // ============================================================
 
 import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
+import { STORAGE_KEYS } from '@/config';
 
-const KEY = 'gx_blacklist';
+const KEY = STORAGE_KEYS.BLACKLIST;
 
-function genId() {
-    return `bl_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
-}
+
 
 // ─── Types ──────────────────────────────────────────────────
 
@@ -49,7 +48,7 @@ export function saveBlacklist(list: BlacklistedDevice[]): void {
 export function addToBlacklist(data: Omit<BlacklistedDevice, 'id' | 'createdAt' | 'updatedAt'>): BlacklistedDevice {
     const entry: BlacklistedDevice = {
         ...data,
-        id: genId(),
+        id: crypto.randomUUID(),
         imei: data.imei.replace(/\s/g, ''),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),

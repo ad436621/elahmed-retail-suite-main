@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import {
   AppUser, Permission, getUsers, updateUser, changePassword, findUserByUsername,
-  getUserById,
+  getUserById, isPasswordHashed, verifyPassword, migratePasswordToHash,
 } from '@/data/usersData';
 import api from '@/lib/api';
 import { STORAGE_KEYS } from '@/config';
@@ -37,6 +37,8 @@ interface AuthContextType {
 }
 
 const SESSION_KEY = STORAGE_KEYS.SESSION;
+const SESSION_TIMEOUT_MS = 8 * 60 * 60 * 1000; // #22: 8 hours
+const SESSION_TS_KEY = 'gx_session_ts';
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -54,6 +56,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const stored = localStorage.getItem(SESSION_KEY);
       if (!stored) return null;
+
+      // #22 FIX: Check session timeout
+      const sessionTs = localStorage.getItem(SESSION_TS_KEY);
+      if (sessionTs) {
+        const elapsed = Date.now() - Number(sessionTs);
+        if (elapsed > SESSION_TIMEOUT_MS) {
+          localStorage.removeItem(SESSION_KEY);
+          localStorage.removeItem(SESSION_TS_KEY);
+          return null;
+        }
+      }
+
       const parsed = JSON.parse(stored) as AuthUser;
       const live = getUserById(parsed.id);
       if (!live || !live.active) {
@@ -102,9 +116,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Token is handled by api client
       } else {
         localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+        // #22: Update session timestamp
+        localStorage.setItem(SESSION_TS_KEY, String(Date.now()));
       }
     } else {
       localStorage.removeItem(SESSION_KEY);
+      localStorage.removeItem(SESSION_TS_KEY);
     }
   }, [user]);
 
@@ -132,7 +149,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!found || !found.active) {
       return { success: false, error: 'اسم المستخدم أو كلمة المرور غير صحيحة' };
     }
-    if (found.password !== password) {
+
+    // #01 FIX: PBKDF2 password verification with auto-migration
+    let passwordValid = false;
+    if (isPasswordHashed(found)) {
+      // Already hashed — verify with PBKDF2
+      passwordValid = await verifyPassword(password, found.salt!, found.password);
+    } else {
+      // Still plaintext — compare directly, then migrate
+      passwordValid = found.password === password;
+      if (passwordValid) {
+        // Auto-migrate plaintext password to PBKDF2 hash
+        await migratePasswordToHash(found.id, password);
+      }
+    }
+
+    if (!passwordValid) {
       return { success: false, error: 'اسم المستخدم أو كلمة المرور غير صحيحة' };
     }
 
@@ -180,12 +212,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const resetUserPassword = useCallback((username: string, newPassword: string) => {
     if (USE_BACKEND) {
-      // Handle via API - would need endpoint
       return false;
     }
-    const found = findUserByUsername(username);
-    if (!found) return false;
-    updateUser(found.id, { password: newPassword });
+    // #01: changePassword is now async but we fire-and-forget here
+    changePassword(username, newPassword);
     refreshUsers();
     return true;
   }, [refreshUsers]);

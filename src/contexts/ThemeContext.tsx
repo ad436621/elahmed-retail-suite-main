@@ -16,20 +16,14 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     return (localStorage.getItem(STORAGE_KEYS.THEME) as Theme) || 'dark';
   });
 
-  // Add transition class when theme changes
+  // Apply theme — instant, no delay
   useEffect(() => {
-    // Add transition class to html element
-    document.documentElement.classList.add('theme-transitioning');
-
-    // Apply theme after a small delay for transition to work
-    requestAnimationFrame(() => {
-      document.documentElement.classList.toggle('dark', theme === 'dark');
-
-      // Remove transition class after animation completes
-      setTimeout(() => {
-        document.documentElement.classList.remove('theme-transitioning');
-      }, 300);
-    });
+    const root = document.documentElement;
+    root.classList.add('theme-transitioning');
+    root.classList.toggle('dark', theme === 'dark');
+    // Remove transition class after animation
+    const tid = setTimeout(() => root.classList.remove('theme-transitioning'), 150);
+    return () => clearTimeout(tid);
   }, [theme]);
 
   const setTheme = (t: Theme) => {

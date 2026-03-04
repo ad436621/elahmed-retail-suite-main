@@ -130,7 +130,7 @@ export default function RemindersPage() {
                             <div className="flex gap-1.5 shrink-0">
                                 {r.status === 'pending' && <>
                                     <button onClick={() => { markReminderDone(r.id); refresh(); }}
-                                        className="rounded-xl bg-emerald-50 border border-emerald-200 p-2 text-emerald-700 hover:bg-emerald-100 transition-colors" title="تم"><Check className="h-3.5 w-3.5" /></button>
+                                        className="rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 p-2 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-colors" title="تم"><Check className="h-3.5 w-3.5" /></button>
                                     <button onClick={() => { updateReminder(r.id, { status: 'dismissed' }); refresh(); }}
                                         className="rounded-xl bg-gray-50 border border-gray-200 p-2 text-gray-600 hover:bg-gray-100 transition-colors" title="تجاهل"><X className="h-3.5 w-3.5" /></button>
                                 </>}

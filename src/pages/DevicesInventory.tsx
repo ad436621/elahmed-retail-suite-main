@@ -3,6 +3,7 @@
 // ============================================================
 
 import { useState, useMemo, useCallback, memo, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import {
     Tv, Plus, Search, Trash2, Pencil, X, Check, LayoutGrid, List,
     FileSpreadsheet, Download, Upload, ShoppingCart, RefreshCw, Filter,
@@ -162,6 +163,7 @@ const DeviceCard = memo(function DeviceCard({
 // Main Component
 export default function DevicesInventory() {
     const { toast } = useToast();
+    const location = useLocation();
 
     // Data
     const devices = getDevices();
@@ -174,6 +176,15 @@ export default function DevicesInventory() {
     const [categoryFilter, setCategoryFilter] = useState<string>('all');
     const [viewMode, setViewMode] = useState<ViewMode>('grid');
     const [activeTab, setActiveTab] = useState('devices');
+
+    // Read navigation state from Dashboard
+    useEffect(() => {
+        const s = (location.state as { filter?: string } | null);
+        if (!s?.filter) return;
+        if (s.filter === 'accessory') { setActiveTab('accessories'); }
+        else if (s.filter === 'used') { setActiveTab('devices'); setConditionFilter('used'); }
+        else { setActiveTab('devices'); setConditionFilter('all'); }
+    }, [location.state]);
 
     // Dialogs
     const [isFormOpen, setIsFormOpen] = useState(false);

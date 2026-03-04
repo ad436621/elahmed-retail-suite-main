@@ -68,6 +68,17 @@ export const STORAGE_KEYS = {
     DAMAGED_ITEMS: 'gx_damaged_items',
     MAINTENANCE: 'gx_maintenance_v2',
 
+    // ─── #07 FIX: Keys that were hardcoded in data files ────────
+    BLACKLIST: 'gx_blacklist',
+    REMINDERS: 'gx_reminders',
+    SHIFT_CLOSINGS: 'gx_shift_closings',
+    SUPPLIERS: 'gx_suppliers',
+    SUPPLIER_TRANSACTIONS: 'gx_supplier_transactions',
+    PURCHASE_INVOICES: 'gx_purchase_invoices',
+    CURRENT_CART: 'gx_current_cart',
+    PARTNERS: 'gx_partners',
+    STOCKTAKE: 'gx_stocktake',
+
     // ─── Settings & System ──────────────────────────────────────
     APP_SETTINGS: 'app_settings',
     BACKUP_SETTINGS: 'gx_backup_settings',
