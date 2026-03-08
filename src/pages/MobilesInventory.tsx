@@ -4,11 +4,11 @@
 // ============================================================
 
 import { useState, useEffect, useMemo } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
     Plus, Trash2, Pencil, X, Check, Smartphone, Headphones, Search,
     AlignLeft, LayoutGrid, List, Tag, FileSpreadsheet, ImageOff,
-    Filter, SlidersHorizontal, RotateCcw, Package, ChevronDown, ChevronUp
+    Filter, SlidersHorizontal, RotateCcw, Package, ChevronDown, ChevronUp, Wrench
 } from 'lucide-react';
 import {
     getMobiles, addMobile, updateMobile, deleteMobile,
@@ -265,7 +265,22 @@ export default function MobilesInventory() {
     return (
         <div className="animate-fade-in" dir="rtl">
 
-            {/* ─── Header ─── */}
+            {/* ═══ Section Navigation ═══ */}
+            <div className="flex gap-2 flex-wrap mb-4">
+                <button onClick={() => navigate('/mobiles')}
+                    className="flex items-center gap-2 rounded-xl bg-cyan-600 px-5 py-2.5 text-sm font-bold text-white shadow-md ring-2 ring-cyan-300 ring-offset-1">
+                    <Smartphone className="h-4 w-4" /> الموبيلات
+                </button>
+                <button onClick={() => navigate('/mobiles/accessories')}
+                    className="flex items-center gap-2 rounded-xl bg-muted px-5 py-2.5 text-sm font-bold text-muted-foreground hover:bg-cyan-500 hover:text-white transition-all shadow-sm">
+                    <Headphones className="h-4 w-4" /> الإكسسورات
+                </button>
+                <button onClick={() => navigate('/mobiles/spare-parts')}
+                    className="flex items-center gap-2 rounded-xl bg-muted px-5 py-2.5 text-sm font-bold text-muted-foreground hover:bg-orange-600 hover:text-white transition-all shadow-sm">
+                    <Wrench className="h-4 w-4" /> قطع الغيار
+                </button>
+            </div>
+
             <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
                 <div className="flex items-center gap-3">
                     <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-100 border border-cyan-200">

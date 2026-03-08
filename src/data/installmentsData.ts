@@ -101,3 +101,39 @@ export function updateContract(id: string, updates: Partial<InstallmentContract>
         c.id === id ? { ...c, ...updates, updatedAt: new Date().toISOString() } : c
     ));
 }
+
+/** Mark a specific monthly schedule item as paid and auto-record the payment */
+export function markScheduleItemPaid(contractId: string, month: number): void {
+    const all = getContracts();
+    saveContracts(all.map(c => {
+        if (c.id !== contractId) return c;
+        const scheduleItem = c.schedule.find(s => s.month === month);
+        if (!scheduleItem || scheduleItem.paid) return c; // already paid or not found
+
+        // Mark schedule item paid
+        const updatedSchedule = c.schedule.map(s =>
+            s.month === month ? { ...s, paid: true } : s
+        );
+
+        // Auto-record payment entry
+        const newPayment: InstallmentPayment = {
+            id: crypto.randomUUID(),
+            amount: scheduleItem.amount,
+            date: new Date().toISOString().slice(0, 10),
+            note: `قسط الشهر ${month}`,
+        };
+        const paidTotal = c.paidTotal + scheduleItem.amount;
+        const remaining = Math.max(0, c.installmentPrice - paidTotal);
+
+        return {
+            ...c,
+            schedule: updatedSchedule,
+            payments: [...c.payments, newPayment],
+            paidTotal,
+            remaining,
+            status: remaining === 0 ? 'completed' : c.status,
+            updatedAt: new Date().toISOString(),
+        };
+    }));
+}
+

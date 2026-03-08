@@ -1,13 +1,14 @@
 import { useState, useMemo } from 'react';
-import { X, Check, CreditCard, DollarSign, Search, Printer, Calendar, Smartphone, Monitor, Tv, Car, Layers, Send, Tag } from 'lucide-react';
+import { X, Check, CreditCard, DollarSign, Search, Printer, Calendar, Smartphone, Monitor, Tv, Car, Layers, Send, Tag, CheckCircle2, Trash2, AlertTriangle } from 'lucide-react';
 import { InstallmentContract } from '@/domain/types';
-import { getContracts, addContract, addPaymentToContract, deleteContract } from '@/data/installmentsData';
+import { getContracts, addContract, addPaymentToContract, deleteContract, markScheduleItemPaid } from '@/data/installmentsData';
 import { getAllInventoryProducts, updateProductQuantity } from '@/repositories/productRepository';
 import { saveMovements } from '@/repositories/stockRepository';
 import { validateStock } from '@/domain/stock';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useSearchParams } from 'react-router-dom';
+import { usePagination, PaginationBar } from '@/hooks/usePagination';
 
 // ─── Constants ───────────────────────────────────────────────
 const TRANSFER_TYPES_LIST = ['فودافون كاش', 'اتصالات كاش', 'اورنج كاش', 'ويي', 'انستاباي', 'تحويل بنكي'];
@@ -60,6 +61,7 @@ export default function Installments() {
     const [payment, setPayment] = useState({ amount: 0, date: new Date().toISOString().slice(0, 10), note: '' });
     const [search, setSearch] = useState('');
     const [productCategory, setProductCategory] = useState('all');
+    const [deleteTarget, setDeleteTarget] = useState<InstallmentContract | null>(null); // confirm delete
 
     const productCategories = [
         { id: 'all', label: 'الكل', icon: Layers },
@@ -108,8 +110,9 @@ export default function Installments() {
         const selectedProduct = form.contractType === 'product' ? inventory.find(p => p.id === form.productId) : null;
         if (selectedProduct) {
             try { validateStock(selectedProduct, 1); }
-            catch (err: any) {
-                toast({ title: 'خطأ في المخزون', description: err.message || 'الكمية غير متوفرة', variant: 'destructive' });
+            catch (err: unknown) {
+                const msg = err instanceof Error ? err.message : 'الكمية غير متوفرة';
+                toast({ title: 'خطأ في المخزون', description: msg, variant: 'destructive' });
                 return;
             }
         }
@@ -184,10 +187,12 @@ export default function Installments() {
         if (w) { w.document.write(html); w.document.close(); w.print(); }
     };
 
-    const filtered = contracts.filter(c =>
+    const filtered = useMemo(() => contracts.filter(c =>
         c.customerName.includes(search) || c.customerPhone.includes(search) ||
         c.productName.includes(search) || c.contractNumber.includes(search)
-    );
+    ).sort((a, b) => b.createdAt?.localeCompare(a.createdAt ?? '') ?? 0), [contracts, search]);
+
+    const { paginatedItems, page, totalPages, totalItems, pageSize, nextPage, prevPage, setPage } = usePagination(filtered, 15);
 
     // ─── Render ───────────────────────────────────────────────
     return (
@@ -436,23 +441,55 @@ export default function Installments() {
             {/* ─── Schedule Modal ────────────────────────────────── */}
             {showSchedule && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowSchedule(null)}>
-                    <div className="w-full max-w-md mx-4 rounded-3xl border border-border bg-card p-6 shadow-2xl animate-scale-in max-h-[80vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="text-lg font-bold text-foreground">جدول الأقساط</h3>
+                    <div className="w-full max-w-md mx-4 rounded-3xl border border-border bg-card p-6 shadow-2xl animate-scale-in max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between mb-2">
+                            <h3 className="text-lg font-bold text-foreground">جدول الأقساط الشهرية</h3>
                             <button onClick={() => setShowSchedule(null)} className="rounded-lg p-1.5 hover:bg-muted transition-colors">
                                 <X className="h-5 w-5 text-muted-foreground" />
                             </button>
                         </div>
-                        <p className="text-sm mb-4 text-muted-foreground">{showSchedule.customerName} — {showSchedule.productName}</p>
+                        <p className="text-sm mb-1 font-semibold text-foreground">{showSchedule.customerName}</p>
+                        <p className="text-xs text-muted-foreground mb-4">{showSchedule.productName} — قسط شهري: <span className="font-bold text-primary">{showSchedule.monthlyInstallment.toLocaleString()} ج.م</span></p>
                         <div className="space-y-2">
-                            {showSchedule.schedule.map(s => (
-                                <div key={s.month} className={`flex items-center justify-between rounded-xl px-3 py-2.5 border text-sm ${s.paid ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20' : 'bg-muted/30 border-border'}`}>
-                                    <span className="font-semibold text-foreground">الشهر {s.month}</span>
-                                    <span className="text-muted-foreground text-xs">{s.dueDate}</span>
-                                    <span className={`font-bold ${s.paid ? 'text-emerald-600' : 'text-primary'}`}>{s.amount.toLocaleString()} ج.م</span>
-                                    {s.paid ? <span className="text-xs text-emerald-600 font-semibold">✅ مدفوع</span> : <span className="text-xs text-muted-foreground">⏳ منتظر</span>}
-                                </div>
-                            ))}
+                            {showSchedule.schedule.map(s => {
+                                const today = new Date().toISOString().slice(0, 10);
+                                const isOverdue = !s.paid && s.dueDate < today;
+                                return (
+                                    <div key={s.month} className={`flex items-center justify-between rounded-xl px-3 py-2.5 border text-sm gap-2 ${s.paid ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20'
+                                            : isOverdue ? 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/20'
+                                                : 'bg-muted/30 border-border'
+                                        }`}>
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            <span className={`font-bold text-xs w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${s.paid ? 'bg-emerald-100 text-emerald-700' : isOverdue ? 'bg-red-100 text-red-700' : 'bg-primary/10 text-primary'
+                                                }`}>{s.month}</span>
+                                            <div>
+                                                <p className="text-xs text-muted-foreground">{s.dueDate}</p>
+                                                <p className={`font-bold text-sm ${s.paid ? 'text-emerald-700' : isOverdue ? 'text-red-600' : 'text-foreground'}`}>{s.amount.toLocaleString()} ج.م</p>
+                                            </div>
+                                        </div>
+                                        {s.paid ? (
+                                            <span className="flex items-center gap-1 text-xs text-emerald-600 font-semibold shrink-0"><CheckCircle2 className="h-4 w-4" /> مدفوع</span>
+                                        ) : (
+                                            <button
+                                                onClick={() => {
+                                                    markScheduleItemPaid(showSchedule.id, s.month);
+                                                    refresh();
+                                                    // Update showSchedule state to reflect change
+                                                    setShowSchedule(prev => prev ? { ...prev, schedule: prev.schedule.map(x => x.month === s.month ? { ...x, paid: true } : x), paidTotal: prev.paidTotal + s.amount, remaining: Math.max(0, prev.remaining - s.amount) } : null);
+                                                }}
+                                                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 ${isOverdue ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-primary text-primary-foreground hover:bg-primary/90'
+                                                    }`}>
+                                                <DollarSign className="h-3.5 w-3.5" /> {isOverdue ? 'دفع (متأخر)' : 'دفع'}
+                                            </button>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                        {/* Totals summary */}
+                        <div className="mt-4 rounded-xl bg-muted/30 border border-border p-3 grid grid-cols-2 gap-2 text-center text-xs">
+                            <div><p className="text-muted-foreground">تم السداد</p><p className="font-bold text-emerald-600 text-base">{showSchedule.paidTotal.toLocaleString()} ج.م</p></div>
+                            <div><p className="text-muted-foreground">الباقي</p><p className="font-bold text-primary text-base">{showSchedule.remaining.toLocaleString()} ج.م</p></div>
                         </div>
                     </div>
                 </div>
@@ -460,9 +497,9 @@ export default function Installments() {
 
             {/* ─── Contracts List ────────────────────────────────── */}
             <div className="space-y-4">
-                {filtered.length === 0 ? (
+                {paginatedItems.length === 0 ? (
                     <div className="rounded-2xl border border-border bg-card p-12 text-center text-muted-foreground">لا توجد عقود</div>
-                ) : filtered.map(c => {
+                ) : paginatedItems.map(c => {
                     const cType = (c.contractType ?? 'product') as ContractType;
                     const totalPrice = c.installmentPrice || (c as any).totalPrice || 0;
                     return (
@@ -537,15 +574,46 @@ export default function Installments() {
                                     className="flex items-center gap-1.5 rounded-xl bg-muted text-muted-foreground border border-border px-3 py-1.5 text-xs font-semibold hover:bg-muted/80 transition-colors">
                                     <Printer className="h-3.5 w-3.5" /> طباعة
                                 </button>
-                                <button onClick={() => { deleteContract(c.id); refresh(); toast({ title: 'تم الحذف' }); }}
+                                <button onClick={() => setDeleteTarget(c)}
                                     className="flex items-center gap-1.5 rounded-xl bg-red-50 text-destructive border border-red-200 px-3 py-1.5 text-xs font-semibold hover:bg-red-100 transition-colors">
-                                    <X className="h-3.5 w-3.5" /> حذف
+                                    <Trash2 className="h-3.5 w-3.5" /> حذف
                                 </button>
                             </div>
                         </div>
                     );
                 })}
             </div>
+            <PaginationBar page={page} totalPages={totalPages} totalItems={totalItems} pageSize={pageSize} onPrev={prevPage} onNext={nextPage} onPage={setPage} />
+
+            {/* ─── Confirm Delete Dialog ─── */}
+            {deleteTarget && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+                    <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-2xl animate-scale-in">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100 dark:bg-red-500/15">
+                                <AlertTriangle className="h-5 w-5 text-red-600" />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-foreground">تأكيد حذف العقد</h3>
+                                <p className="text-xs text-muted-foreground">هذا الإجراء لا يمكن التراجع عنه</p>
+                            </div>
+                        </div>
+                        <p className="text-sm text-foreground mb-1">هل تريد حذف عقد الأجل:</p>
+                        <p className="text-sm font-bold text-foreground mb-1">«{deleteTarget.customerName} — {deleteTarget.productName}»</p>
+                        <p className="text-xs text-muted-foreground mb-4">رقم العقد: {deleteTarget.contractNumber}</p>
+                        <div className="flex gap-2">
+                            <button onClick={() => { deleteContract(deleteTarget.id); setDeleteTarget(null); refresh(); toast({ title: '🗑️ تم حذف العقد', description: deleteTarget.customerName }); }}
+                                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-red-600 hover:bg-red-700 py-2.5 text-sm font-bold text-white transition-all">
+                                <Trash2 className="h-4 w-4" /> نعم، احذف
+                            </button>
+                            <button onClick={() => setDeleteTarget(null)}
+                                className="flex-1 rounded-xl border border-border py-2.5 text-sm font-medium hover:bg-muted transition-colors">
+                                إلغاء
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

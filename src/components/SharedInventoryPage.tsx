@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo, ReactNode } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
     Plus, Trash2, Pencil, X, Check, Headphones, Search,
-    AlignLeft, LayoutGrid, List, Tag, FileSpreadsheet, ImageOff
+    AlignLeft, LayoutGrid, List, Tag, FileSpreadsheet, ImageOff, Wrench, Monitor, Tv, Laptop
 } from 'lucide-react';
 import { ImageUpload } from '@/components/ImageUpload';
 import { InventoryProductCard } from '@/components/InventoryProductCard';
@@ -54,6 +54,9 @@ export interface SharedInventoryConfig {
 
     /** Transforms a raw row from Excel into the device payload */
     buildDeviceFromExcelRow: (row: Record<string, any>) => any;
+
+    /** Optional nav section for sub-page navigation buttons */
+    navSection?: 'computers' | 'devices';
 }
 
 // ─── Shared Form State ────────────────────────────────────────
@@ -91,6 +94,7 @@ const accentStyles: Record<InventoryColor, {
 export default function SharedInventoryPage({ config }: { config: SharedInventoryConfig }) {
     const { toast } = useToast();
     const location = useLocation();
+    const navigate = useNavigate();
     const ac = accentStyles[config.accentColor];
 
     const fetchCategories = () => getCategoriesBySection(config.categorySection);
@@ -231,6 +235,25 @@ export default function SharedInventoryPage({ config }: { config: SharedInventor
 
     return (
         <div className="space-y-5 animate-fade-in" dir="rtl">
+
+            {/* ═══ Sub-section Navigation ═══ */}
+            {config.navSection === 'computers' && (
+                <div className="flex gap-2 flex-wrap">
+                    <button onClick={() => navigate('/computers')}
+                        className="flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-bold text-white shadow-md ring-2 ring-indigo-300 ring-offset-1">
+                        <Laptop className="h-4 w-4" /> الكمبيوترات
+                    </button>
+                    <button onClick={() => navigate('/computers/accessories')}
+                        className="flex items-center gap-2 rounded-xl bg-muted px-5 py-2.5 text-sm font-bold text-muted-foreground hover:bg-indigo-500 hover:text-white transition-all shadow-sm">
+                        <Headphones className="h-4 w-4" /> الإكسسورات
+                    </button>
+                    <button onClick={() => navigate('/computers/spare-parts')}
+                        className="flex items-center gap-2 rounded-xl bg-muted px-5 py-2.5 text-sm font-bold text-muted-foreground hover:bg-orange-600 hover:text-white transition-all shadow-sm">
+                        <Wrench className="h-4 w-4" /> قطع الغيار
+                    </button>
+                </div>
+            )}
+
             {/* ── Header ── */}
             <div className="flex items-center justify-between flex-wrap gap-3">
                 <div className="flex items-center gap-3">

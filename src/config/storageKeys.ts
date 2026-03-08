@@ -31,6 +31,20 @@ export const STORAGE_KEYS = {
 
     // ─── Inventory: Cars ────────────────────────────────────────
     CARS: 'gx_cars',
+    CAR_SPARE_PARTS: 'gx_car_spare_parts',
+    CAR_OILS: 'gx_car_oils',
+
+    // ─── Inventory: Mobile Sub-sections ─────────────────────────
+    MOBILE_SPARE_PARTS: 'gx_mobile_spare_parts',
+
+    // ─── Inventory: Computer Sub-sections ───────────────────────
+    COMPUTER_ACCESSORIES_SA: 'gx_computer_accessories_sa',
+    COMPUTER_SPARE_PARTS: 'gx_computer_spare_parts',
+
+    // ─── Inventory: Device Sub-sections ─────────────────────────
+    DEVICE_ACCESSORIES_SA: 'gx_device_accessories_sa',
+    DEVICE_SPARE_PARTS: 'gx_device_spare_parts',
+
 
     // ─── Inventory: Warehouse ───────────────────────────────────
     WAREHOUSE: 'gx_warehouse',

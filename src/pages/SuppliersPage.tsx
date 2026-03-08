@@ -19,6 +19,7 @@ export default function SuppliersPage() {
     const [form, setForm] = useState(emptyForm);
     const [showPayDialog, setShowPayDialog] = useState<Supplier | null>(null);
     const [payAmount, setPayAmount] = useState(0);
+    const [deleteTarget, setDeleteTarget] = useState<Supplier | null>(null); // #20
 
     const refresh = () => setSuppliers(getSuppliers());
 
@@ -122,7 +123,7 @@ export default function SuppliersPage() {
                                 </button>
                             )}
                             <button onClick={() => startEdit(s)} className="rounded-xl p-2 bg-primary/10 hover:bg-primary/20 text-primary transition-colors"><Pencil className="h-3.5 w-3.5" /></button>
-                            <button onClick={() => { deleteSupplier(s.id); toast({ title: 'تم الحذف' }); refresh(); }}
+                            <button onClick={() => setDeleteTarget(s)}
                                 className="rounded-xl p-2 bg-red-50 hover:bg-red-100 text-destructive transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
                         </div>
                     </div>
@@ -170,6 +171,38 @@ export default function SuppliersPage() {
                                 <Check className="h-4 w-4" /> تأكيد الدفع
                             </button>
                             <button onClick={() => setShowPayDialog(null)} className="flex-1 rounded-xl border border-border py-2.5 text-sm font-medium hover:bg-muted">إلغاء</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ─── Confirm Delete Dialog (#20) ─── */}
+            {deleteTarget && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+                    <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-2xl animate-scale-in">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100 dark:bg-red-500/15">
+                                <Trash2 className="h-5 w-5 text-red-600" />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-foreground">تأكيد حذف المورد</h3>
+                                <p className="text-xs text-muted-foreground">هذا الإجراء لا يمكن التراجع عنه</p>
+                            </div>
+                        </div>
+                        <p className="text-sm text-foreground mb-1">هل تريد حذف المورد:</p>
+                        <p className="text-sm font-bold text-foreground mb-1">«{deleteTarget.name}»</p>
+                        {deleteTarget.balance > 0 && (
+                            <p className="text-xs text-red-600 font-semibold mb-3">⚠️ هذا المورد عليه {fmt(deleteTarget.balance)} ج.م مستحقة!</p>
+                        )}
+                        <div className="flex gap-2 mt-4">
+                            <button onClick={() => { deleteSupplier(deleteTarget.id); toast({ title: '🗑️ تم الحذف', description: deleteTarget.name }); setDeleteTarget(null); refresh(); }}
+                                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-red-600 hover:bg-red-700 py-2.5 text-sm font-bold text-white transition-all">
+                                <Trash2 className="h-4 w-4" /> نعم، احذف
+                            </button>
+                            <button onClick={() => setDeleteTarget(null)}
+                                className="flex-1 rounded-xl border border-border py-2.5 text-sm font-medium hover:bg-muted transition-colors">
+                                إلغاء
+                            </button>
                         </div>
                     </div>
                 </div>

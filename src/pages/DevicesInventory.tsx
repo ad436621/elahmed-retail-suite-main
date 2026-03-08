@@ -3,11 +3,11 @@
 // ============================================================
 
 import { useState, useMemo, useCallback, memo, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import {
     Tv, Plus, Search, Trash2, Pencil, X, Check, LayoutGrid, List,
     FileSpreadsheet, Download, Upload, ShoppingCart, RefreshCw, Filter,
-    CheckCircle, Package, AlertCircle, MoreHorizontal
+    CheckCircle, Package, AlertCircle, MoreHorizontal, Headphones, Wrench
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -164,6 +164,7 @@ const DeviceCard = memo(function DeviceCard({
 export default function DevicesInventory() {
     const { toast } = useToast();
     const location = useLocation();
+    const navigate = useNavigate();
 
     // Data
     const devices = getDevices();
@@ -321,7 +322,23 @@ export default function DevicesInventory() {
 
     return (
         <div className="min-h-screen bg-background" dir="rtl">
-            {/* Header */}
+
+            {/* ═══ Sub-section Navigation ═══ */}
+            <div className="flex gap-2 flex-wrap px-4 pt-4">
+                <button onClick={() => navigate('/devices')}
+                    className="flex items-center gap-2 rounded-xl bg-orange-600 px-5 py-2.5 text-sm font-bold text-white shadow-md ring-2 ring-orange-300 ring-offset-1">
+                    <Tv className="h-4 w-4" /> الأجهزة والمنزلية
+                </button>
+                <button onClick={() => navigate('/devices/accessories')}
+                    className="flex items-center gap-2 rounded-xl bg-muted px-5 py-2.5 text-sm font-bold text-muted-foreground hover:bg-orange-500 hover:text-white transition-all shadow-sm">
+                    <Headphones className="h-4 w-4" /> الإكسسورات
+                </button>
+                <button onClick={() => navigate('/devices/spare-parts')}
+                    className="flex items-center gap-2 rounded-xl bg-muted px-5 py-2.5 text-sm font-bold text-muted-foreground hover:bg-red-600 hover:text-white transition-all shadow-sm">
+                    <Wrench className="h-4 w-4" /> قطع الغيار
+                </button>
+            </div>
+
             <div className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-40">
                 <div className="container mx-auto px-4 py-4">
                     <div className="flex items-center justify-between">

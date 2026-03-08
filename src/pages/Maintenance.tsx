@@ -1,8 +1,9 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { Plus, Trash2, Pencil, X, Check, Wrench, Printer, Search, TrendingUp, ImagePlus, ImageOff, AlignLeft } from 'lucide-react';
 import { MaintenanceOrder, SparePart } from '@/domain/types';
 import { getMaintenanceOrders, addMaintenanceOrder, updateMaintenanceOrder, deleteMaintenanceOrder } from '@/data/maintenanceData';
 import { useToast } from '@/hooks/use-toast';
+import { usePagination, PaginationBar } from '@/hooks/usePagination';
 
 const statusLabels: Record<MaintenanceOrder['status'], string> = {
     pending: '⏳ انتظار', in_progress: '🔧 قيد الإصلاح', done: '✅ تم الإصلاح', delivered: '📦 تم التسليم',
@@ -34,6 +35,7 @@ export default function Maintenance() {
     const [search, setSearch] = useState('');
     const [categoryFilter, setCategoryFilter] = useState<'all' | MaintenanceOrder['deviceCategory']>('all');
     const [showReport, setShowReport] = useState<MaintenanceOrder | null>(null);
+    const [deleteTarget, setDeleteTarget] = useState<MaintenanceOrder | null>(null); // #20
 
     const refresh = () => setOrders(getMaintenanceOrders());
 
@@ -140,10 +142,12 @@ export default function Maintenance() {
         if (w) { w.document.write(html); w.document.close(); w.print(); }
     };
 
-    const filtered = orders.filter(o =>
+    const filtered = useMemo(() => orders.filter(o =>
         (categoryFilter === 'all' || o.deviceCategory === categoryFilter) &&
         (o.customerName.includes(search) || o.deviceName.includes(search) || o.customerPhone.includes(search) || o.orderNumber.includes(search))
-    );
+    ).sort((a, b) => b.date.localeCompare(a.date)), [orders, categoryFilter, search]);
+
+    const { paginatedItems, page, totalPages, totalItems, pageSize, nextPage, prevPage, setPage } = usePagination(filtered, 20);
 
     return (
         <div className="space-y-5 animate-fade-in" dir="rtl">
@@ -362,9 +366,9 @@ export default function Maintenance() {
                             </tr>
                         </thead>
                         <tbody>
-                            {filtered.length === 0 ? (
+                            {paginatedItems.length === 0 ? (
                                 <tr><td colSpan={8} className="py-12 text-center text-muted-foreground">لا توجد طلبات صيانة</td></tr>
-                            ) : filtered.map((o, i) => (
+                            ) : paginatedItems.map((o, i) => (
                                 <tr key={o.id} className={`border-b border-border/50 hover:bg-muted/20 transition-colors ${i % 2 === 0 ? '' : 'bg-muted/10'}`}>
                                     <td className="px-3 py-3 font-mono text-xs text-muted-foreground">{o.orderNumber}</td>
                                     <td className="px-3 py-3">
@@ -392,7 +396,7 @@ export default function Maintenance() {
                                             <button onClick={() => printClientInvoice(o)} title="فاتورة العميل" className="rounded-lg p-1.5 hover:bg-muted text-muted-foreground transition-colors"><Printer className="h-3.5 w-3.5" /></button>
                                             <button onClick={() => setShowReport(o)} title="التقرير الداخلي" className="rounded-lg p-1.5 hover:bg-emerald-50 text-emerald-600 transition-colors"><TrendingUp className="h-3.5 w-3.5" /></button>
                                             <button onClick={() => startEdit(o)} className="rounded-lg p-1.5 hover:bg-primary/10 text-primary transition-colors"><Pencil className="h-3.5 w-3.5" /></button>
-                                            <button onClick={() => { deleteMaintenanceOrder(o.id); toast({ title: 'تم الحذف' }); refresh(); }} className="rounded-lg p-1.5 hover:bg-red-50 text-destructive transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
+                                            <button onClick={() => setDeleteTarget(o)} className="rounded-lg p-1.5 hover:bg-red-50 text-destructive transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
                                         </div>
                                     </td>
                                 </tr>
@@ -400,7 +404,40 @@ export default function Maintenance() {
                         </tbody>
                     </table>
                 </div>
+                <div className="px-4 pb-3">
+                    <PaginationBar page={page} totalPages={totalPages} totalItems={totalItems} pageSize={pageSize} onPrev={prevPage} onNext={nextPage} onPage={setPage} />
+                </div>
             </div>
+
+            {/* ─── Confirm Delete Dialog (#20) ─── */}
+            {deleteTarget && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+                    <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-2xl animate-scale-in">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100 dark:bg-red-500/15">
+                                <Trash2 className="h-5 w-5 text-red-600" />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-foreground">تأكيد حذف الطلب</h3>
+                                <p className="text-xs text-muted-foreground">هذا الإجراء لا يمكن التراجع عنه</p>
+                            </div>
+                        </div>
+                        <p className="text-sm text-foreground mb-1">هل تريد حذف طلب صيانة:</p>
+                        <p className="text-sm font-bold text-foreground mb-1">«{deleteTarget.customerName} — {deleteTarget.deviceName}»</p>
+                        <p className="text-xs text-muted-foreground mb-4">رقم: {deleteTarget.orderNumber}</p>
+                        <div className="flex gap-2">
+                            <button onClick={() => { deleteMaintenanceOrder(deleteTarget.id); toast({ title: '🗑️ تم الحذف', description: deleteTarget.customerName }); setDeleteTarget(null); refresh(); }}
+                                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-red-600 hover:bg-red-700 py-2.5 text-sm font-bold text-white transition-all">
+                                <Trash2 className="h-4 w-4" /> نعم، احذف
+                            </button>
+                            <button onClick={() => setDeleteTarget(null)}
+                                className="flex-1 rounded-xl border border-border py-2.5 text-sm font-medium hover:bg-muted transition-colors">
+                                إلغاء
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

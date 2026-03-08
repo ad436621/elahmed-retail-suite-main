@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
-import { Plus, Trash2, Pencil, X, Check, Car, Search, ImagePlus, ImageOff, AlignLeft, LayoutGrid, List, FileSpreadsheet } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Plus, Trash2, Pencil, X, Check, Car, Search, ImagePlus, ImageOff, AlignLeft, LayoutGrid, List, FileSpreadsheet, Wrench, Fuel } from 'lucide-react';
 import { CarItem } from '@/domain/types';
 import { getCars, addCar, updateCar, deleteCar, getNewCars, getUsedCars, getCarsCapital, getCarsProfit } from '@/data/carsData';
 import { useToast } from '@/hooks/use-toast';
@@ -73,6 +73,7 @@ function ImageUpload({ value, onChange }: { value?: string; onChange: (v: string
 export default function CarsInventory() {
     const { toast } = useToast();
     const location = useLocation();
+    const navigate = useNavigate();
     const [items, setItems] = useState<CarItem[]>(() => getCars());
     const [tab, setTab] = useState<'new' | 'used'>('new');
     const [showForm, setShowForm] = useState(false);
@@ -133,6 +134,23 @@ export default function CarsInventory() {
 
     return (
         <div className="space-y-5 animate-fade-in" dir="rtl">
+
+            {/* ═══ Sub-section Navigation ═══ */}
+            <div className="flex gap-2 flex-wrap">
+                <button onClick={() => navigate('/cars')}
+                    className="flex items-center gap-2 rounded-xl bg-sky-600 px-5 py-2.5 text-sm font-bold text-white shadow-md ring-2 ring-sky-300 ring-offset-1">
+                    <Car className="h-4 w-4" /> السيارات
+                </button>
+                <button onClick={() => navigate('/cars/spare-parts')}
+                    className="flex items-center gap-2 rounded-xl bg-muted px-5 py-2.5 text-sm font-bold text-muted-foreground hover:bg-red-600 hover:text-white transition-all shadow-sm">
+                    <Wrench className="h-4 w-4" /> قطع الغيار
+                </button>
+                <button onClick={() => navigate('/cars/oils')}
+                    className="flex items-center gap-2 rounded-xl bg-muted px-5 py-2.5 text-sm font-bold text-muted-foreground hover:bg-amber-600 hover:text-white transition-all shadow-sm">
+                    <Fuel className="h-4 w-4" /> الزيوت
+                </button>
+            </div>
+
             {/* Header */}
             <div className="flex items-center justify-between flex-wrap gap-3">
                 <div className="flex items-center gap-3">

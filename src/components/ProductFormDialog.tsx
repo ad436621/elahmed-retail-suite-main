@@ -155,8 +155,9 @@ export function ProductFormDialog({ open, onOpenChange, product, onSuccess }: Pr
       reset();
       onOpenChange(false);
       onSuccess();
-    } catch (err: any) {
-      toast({ title: 'خطأ', description: err.message, variant: 'destructive' });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'حدث خطأ أثناء الحفظ';
+      toast({ title: 'خطأ', description: msg, variant: 'destructive' });
     }
   };
 

@@ -20,11 +20,19 @@ import { getCars } from '@/data/carsData';
 import { getDamagedItems } from '@/data/damagedData';
 import { getWeightedAvgCost } from '@/data/batchesData';
 import { getOtherRevenues } from '@/data/otherRevenueData';
+// #17 FIX: New module imports for Dashboard stats
+import { getTotalBalance } from '@/data/walletsData';
+import { getTotalOwedToSuppliers } from '@/data/suppliersData';
+import { getPendingRemindersCount } from '@/data/remindersData';
+import { getTotalUnpaid as getTotalUnpaidPurchases } from '@/data/purchaseInvoicesData';
 
 import {
   GlobalSearch, HeroKPI, MetricPill, InventoryRow,
   BarRow, SectionLabel, fmt, fmtFull, pct,
 } from '@/components/dashboard/DashboardWidgets';
+import { AlertsPanel } from '@/components/dashboard/AlertsPanel';
+import { BestSellers } from '@/components/dashboard/BestSellers';
+import { WeeklyBarChart, MonthlyTrendChart } from '@/components/dashboard/SalesCharts';
 
 /* ══════════════════ HELPERS ══════════════════ */
 const DAYS_AR = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
@@ -191,29 +199,35 @@ export default function Dashboard() {
   const currentOtherRev = useMemo(() => lrd ? otherRevenues.filter(o => (o.date || '') >= lrd) : otherRevenues, [otherRevenues, lrd]);
 
   // ── Financial KPIs ────────────────────────────────────────
-  const totalRevenue = useMemo(() => sales.reduce((s, x) => s + (x.total ?? 0), 0), [sales]);
-  const totalProfit = useMemo(() => sales.reduce((s, x) => s + (x.grossProfit ?? 0), 0), [sales]);
+  // BUG FIX: exclude voided sales from ALL financial calculations
+  const validSales = useMemo(() => sales.filter(s => !s.voidedAt), [sales]);
+  const totalRevenue = useMemo(() => validSales.reduce((s, x) => s + (x.total ?? 0), 0), [validSales]);
+  // Guard against corrupted grossProfit values (NaN, undefined, or impossible negatives per item)
+  const totalProfit = useMemo(() => validSales.reduce((s, x) => {
+    const gp = x.grossProfit ?? 0;
+    return s + (isFinite(gp) ? gp : 0);
+  }, 0), [validSales]);
   const totalExpenses = useMemo(() => currentExpenses.reduce((s, e) => s + e.amount, 0), [currentExpenses]);
   const totalDamaged = useMemo(() => currentDamaged.reduce((s, d) => s + d.totalLoss, 0), [currentDamaged]);
   const maintRevenue = useMemo(() => currentMaint.reduce((s, m) => s + m.totalSale, 0), [currentMaint]);
-  const maintProfit = useMemo(() => currentMaint.reduce((s, m) => s + m.netProfit, 0), [currentMaint]);
+  const maintProfit = useMemo(() => currentMaint.reduce((s, m) => s + (isFinite(m.netProfit) ? m.netProfit : 0), 0), [currentMaint]);
   const totalOtherRev = useMemo(() => currentOtherRev.reduce((s, o) => s + o.amount, 0), [currentOtherRev]);
   const netProfit = totalProfit + maintProfit + totalOtherRev - totalExpenses - totalDamaged;
 
   // ── Averages & Ratios ─────────────────────────────────────
-  const avgInvoice = sales.length > 0 ? totalRevenue / sales.length : 0;
+  const avgInvoice = validSales.length > 0 ? totalRevenue / validSales.length : 0;
   const profitMarginPct = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
   const returnRate = totalRevenue > 0 ? (totalDamaged / totalRevenue) * 100 : 0;
 
   // ── Today ─────────────────────────────────────────────────
   const todayStr = new Date().toISOString().slice(0, 10);
-  const todaySales = useMemo(() => sales.filter(s => s.date?.startsWith(todayStr)), [sales, todayStr]);
+  const todaySales = useMemo(() => validSales.filter(s => s.date?.startsWith(todayStr)), [validSales, todayStr]);
   const todayRev = useMemo(() => todaySales.reduce((s, x) => s + (x.total ?? 0), 0), [todaySales]);
 
   // ── Yesterday comparison ──────────────────────────────────
   const yesterday = new Date(); yesterday.setDate(yesterday.getDate() - 1);
   const yStr = yesterday.toISOString().slice(0, 10);
-  const yesterdayRev = useMemo(() => sales.filter(s => s.date?.startsWith(yStr)).reduce((s, x) => s + (x.total ?? 0), 0), [sales, yStr]);
+  const yesterdayRev = useMemo(() => validSales.filter(s => s.date?.startsWith(yStr)).reduce((s, x) => s + (x.total ?? 0), 0), [validSales, yStr]);
   const todayVsYesterdayPct = yesterdayRev > 0 ? ((todayRev - yesterdayRev) / yesterdayRev) * 100 : null;
 
   // ── Weekly Sales (last 7 days) ────────────────────────────
@@ -221,14 +235,14 @@ export default function Dashboard() {
     return Array.from({ length: 7 }, (_, i) => {
       const d = new Date(); d.setDate(d.getDate() - (6 - i));
       const ds = d.toISOString().slice(0, 10);
-      const daySales = sales.filter(s => s.date?.startsWith(ds));
+      const daySales = validSales.filter(s => s.date?.startsWith(ds));
       return {
         day: DAY_SHORT[d.getDay()],
         rev: daySales.reduce((s, x) => s + (x.total ?? 0), 0),
         count: daySales.length,
       };
     });
-  }, [sales]);
+  }, [validSales]);
 
   const weeklyRevTotal = weeklyData.reduce((s, d) => s + d.rev, 0);
   const bestDay = weeklyData.reduce((best, d) => d.rev > best.rev ? d : best, weeklyData[0] ?? { day: '-', rev: 0, count: 0 });
@@ -367,6 +381,11 @@ export default function Dashboard() {
   const thisMonthProfit = useMemo(() => allSales.filter(s => !s.voidedAt && s.date?.startsWith(thisMonthStr)).reduce((s, x) => s + (x.grossProfit ?? 0), 0), [allSales, thisMonthStr]);
   const thisMonthCount = useMemo(() => allSales.filter(s => !s.voidedAt && s.date?.startsWith(thisMonthStr)).length, [allSales, thisMonthStr]);
 
+  // #17 FIX: New module stats — connected to real data sources
+  const walletTotalBalance = useMemo(() => getTotalBalance(), []);
+  const suppliersOwed = useMemo(() => getTotalOwedToSuppliers(), []);
+  const overdueReminders = useMemo(() => getPendingRemindersCount(), []);
+  const unpaidPurchases = useMemo(() => getTotalUnpaidPurchases(), []);
 
   // ── Date display ──────────────────────────────────────────
   const dateLabel = new Date().toLocaleDateString('ar-EG', {
@@ -687,6 +706,60 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* ═══════ #17: FINANCIAL OVERVIEW STRIP — New Modules ═══════ */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          {
+            label: 'رصيد الخزنة والمحافظ',
+            value: `${fmt(walletTotalBalance)} ج.م`,
+            icon: <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>,
+            accent: 'bg-emerald-500/10 text-emerald-500',
+            link: '/wallets',
+            status: walletTotalBalance > 0 ? '' : 'لا يوجد رصيد',
+            statusColor: walletTotalBalance > 0 ? 'text-emerald-500' : 'text-muted-foreground',
+          },
+          {
+            label: 'مستحقات الموردين',
+            value: `${fmt(suppliersOwed)} ج.م`,
+            icon: <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>,
+            accent: 'bg-orange-500/10 text-orange-500',
+            link: '/suppliers',
+            status: suppliersOwed > 0 ? 'مبالغ مستحقة' : 'لا يوجد ديون',
+            statusColor: suppliersOwed > 0 ? 'text-orange-500' : 'text-emerald-500',
+          },
+          {
+            label: 'فواتير شراء غير مدفوعة',
+            value: `${fmt(unpaidPurchases)} ج.م`,
+            icon: <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>,
+            accent: 'bg-red-500/10 text-red-500',
+            link: '/purchase-invoices',
+            status: unpaidPurchases > 0 ? 'تحتاج سداد' : 'كل الفواتير مسددة',
+            statusColor: unpaidPurchases > 0 ? 'text-red-500' : 'text-emerald-500',
+          },
+          {
+            label: 'تذكيرات متأخرة',
+            value: `${overdueReminders} تذكير`,
+            icon: <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>,
+            accent: 'bg-amber-500/10 text-amber-500',
+            link: '/reminders',
+            status: overdueReminders > 0 ? 'تحتاج متابعة' : 'لا يوجد تذكيرات',
+            statusColor: overdueReminders > 0 ? 'text-amber-500' : 'text-emerald-500',
+          },
+        ].map(card => (
+          <Link key={card.label} to={card.link}
+            className="rounded-2xl border border-border/50 bg-card p-4 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.08)] hover:-translate-y-0.5 transition-all flex items-start gap-3">
+            <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${card.accent}`}>
+              {card.icon}
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold text-muted-foreground leading-tight">{card.label}</p>
+              <p className="text-lg font-black tabular-nums text-foreground mt-0.5">{card.value}</p>
+              <p className={`text-[10px] font-bold ${card.statusColor}`}>{card.status}</p>
+            </div>
+          </Link>
+        ))}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">

@@ -1,8 +1,5 @@
 // ============================================================
 // ConfirmDialog — reusable delete / destructive action modal
-// Usage:
-//   const { confirmDialog, ConfirmDialogComponent } = useConfirm();
-//   await confirmDialog({ title: 'حذف العميل', message: '...' });
 // ============================================================
 
 import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
@@ -55,7 +52,6 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
         <ConfirmContext.Provider value={{ confirm }}>
             {children}
 
-            {/* ─── Dialog ─── */}
             {state?.open && (
                 <div
                     className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in"
@@ -91,8 +87,8 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
                             <button
                                 onClick={handleConfirm}
                                 className={`flex-1 rounded-xl px-4 py-2.5 text-sm font-bold transition-colors ${state.options.danger !== false
-                                        ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90'
-                                        : 'bg-amber-500 text-white hover:bg-amber-600'
+                                    ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90'
+                                    : 'bg-amber-500 text-white hover:bg-amber-600'
                                     }`}
                             >
                                 {state.options.confirmLabel || 'تأكيد'}

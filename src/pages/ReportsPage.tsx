@@ -23,6 +23,10 @@ import { getCars } from '@/data/carsData';
 import { getDamagedItems } from '@/data/damagedData';
 import { getOtherRevenues } from '@/data/otherRevenueData';
 import { getWeightedAvgCost } from '@/data/batchesData';
+// #18 FIX: New module data for extra report tabs
+import { getSuppliers, getSupplierTransactions, getTotalOwedToSuppliers } from '@/data/suppliersData';
+import { getWallets, getTransactions as getWalletTransactions, getTotalBalance } from '@/data/walletsData';
+import { getEmployees } from '@/data/employeesData';
 import { cn } from '@/lib/utils';
 
 // ── Helpers ──────────────────────────────────────────────────
@@ -142,6 +146,12 @@ export default function ReportsPage() {
     const expenses = useMemo(() => getExpenses(), []);
     const damagedItems = useMemo(() => getDamagedItems(), []);
     const otherRevenues = useMemo(() => getOtherRevenues(), []);
+    // #18 FIX: New module data
+    const suppliers = useMemo(() => getSuppliers(), []);
+    const supplierTxns = useMemo(() => getSupplierTransactions(), []);
+    const wallets = useMemo(() => getWallets(), []);
+    const walletTxns = useMemo(() => getWalletTransactions(), []);
+    const employees = useMemo(() => getEmployees(), []);
 
     // ── Date filtering ─────────────────────────────────────────
     const { from, to } = getDateRange(dateRange);
@@ -294,6 +304,9 @@ export default function ReportsPage() {
         { id: 'maintenance', label: 'الصيانة', icon: Wrench },
         { id: 'installments', label: 'التقسيط', icon: CreditCard },
         { id: 'expenses', label: 'المصروفات', icon: TrendingDown },
+        { id: 'suppliers', label: 'الموردون', icon: Users },
+        { id: 'wallets', label: 'المحافظ', icon: Receipt },
+        { id: 'employees', label: 'الموظفون', icon: FileText },
     ];
 
     return (
@@ -805,6 +818,178 @@ export default function ReportsPage() {
                                 <Area type="monotone" dataKey="مصروفات" stroke="#ef4444" fill="url(#expGrad)" strokeWidth={2} />
                             </AreaChart>
                         </ResponsiveContainer>
+                    </Card>
+                </div>
+            )}
+
+            {/* ═══════════════════════════════════════════════
+          TAB: الموردون
+          ═══════════════════════════════════════════════ */}
+            {activeTab === 'suppliers' && (
+                <div className="space-y-6">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        <KPICard label="عدد الموردين" value={`${suppliers.length}`} sub="مورد نشط" icon={Users} color="bg-primary" />
+                        <KPICard label="إجمالي المستحقات" value={`${fmt(getTotalOwedToSuppliers())} ج.م`} sub="ديون للموردين" icon={TrendingDown} color="bg-red-500" trend={getTotalOwedToSuppliers() > 0 ? 'down' : null} />
+                        <KPICard label="موردين مديونين" value={`${suppliers.filter(s => s.balance > 0).length}`} sub="يستحقون سداد" icon={AlertTriangle} color="bg-orange-500" />
+                        <KPICard label="عمليات الشراء" value={`${supplierTxns.filter(t => t.type === 'purchase').length}`} sub="إجمالي فواتير" icon={Receipt} color="bg-violet-500" />
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                        <Card>
+                            <SecTitle title="الموردون حسب المستحقات" sub="مرتب تنازلياً" />
+                            {suppliers.length === 0 ? (
+                                <p className="text-sm text-muted-foreground text-center py-8">لا يوجد موردون مسجلون</p>
+                            ) : (
+                                <div className="space-y-2">
+                                    {[...suppliers].sort((a, b) => b.balance - a.balance).slice(0, 8).map((s, i) => (
+                                        <div key={s.id} className="flex items-center justify-between p-3 rounded-xl border border-border/40 hover:bg-muted/30 transition-colors">
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-xs font-black text-muted-foreground w-5">{i + 1}</span>
+                                                <div>
+                                                    <p className="font-semibold text-sm text-foreground">{s.name}</p>
+                                                    <p className="text-[10px] text-muted-foreground">{s.phone}</p>
+                                                </div>
+                                            </div>
+                                            <span className={`text-sm font-black tabular-nums ${s.balance > 0 ? 'text-red-500' : 'text-emerald-500'}`}>
+                                                {fmt(Math.abs(s.balance))} ج.م
+                                                <span className="text-[10px] font-medium mr-1">{s.balance > 0 ? 'مستحق' : s.balance < 0 ? 'له رصيد' : 'مسوّى'}</span>
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </Card>
+
+                        <Card>
+                            <SecTitle title="آخر معاملات الموردين" />
+                            {supplierTxns.length === 0 ? (
+                                <p className="text-sm text-muted-foreground text-center py-8">لا توجد معاملات</p>
+                            ) : (
+                                <div className="space-y-2">
+                                    {[...supplierTxns].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8).map((t) => (
+                                        <div key={t.id} className="flex items-center justify-between p-2.5 rounded-lg border border-border/30">
+                                            <div>
+                                                <p className="text-xs font-semibold text-foreground">{t.type === 'purchase' ? '🛒 شراء' : t.type === 'payment' ? '💸 سداد' : '↩ مرتجع'}</p>
+                                                <p className="text-[10px] text-muted-foreground">{t.date?.slice(0, 10)}</p>
+                                            </div>
+                                            <span className={`text-sm font-black tabular-nums ${t.type === 'purchase' ? 'text-red-500' : 'text-emerald-500'}`}>
+                                                {t.type === 'purchase' ? '+' : '-'}{fmt(t.amount)} ج.م
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </Card>
+                    </div>
+                </div>
+            )}
+
+            {/* ═══════════════════════════════════════════════
+          TAB: المحافظ
+          ═══════════════════════════════════════════════ */}
+            {activeTab === 'wallets' && (
+                <div className="space-y-6">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        <KPICard label="إجمالي الرصيد" value={`${fmt(getTotalBalance())} ج.م`} sub="كل المحافظ" icon={DollarSign} color="bg-emerald-500" />
+                        <KPICard label="عدد المحافظ" value={`${wallets.length}`} sub="محافظ وحسابات" icon={Receipt} color="bg-primary" />
+                        <KPICard label="معاملات الإيداع" value={`${walletTxns.filter(t => t.type === 'deposit').length}`} icon={TrendingUp} color="bg-blue-500" />
+                        <KPICard label="معاملات السحب" value={`${walletTxns.filter(t => t.type === 'withdrawal').length}`} icon={TrendingDown} color="bg-red-500" />
+                    </div>
+
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                        <Card>
+                            <SecTitle title="رصيد كل محفظة" />
+                            {wallets.length === 0 ? (
+                                <p className="text-sm text-muted-foreground text-center py-8">لا توجد محافظ</p>
+                            ) : (
+                                <div className="space-y-3">
+                                    {[...wallets].sort((a, b) => b.balance - a.balance).map(w => {
+                                        const total = Math.max(getTotalBalance(), 1);
+                                        const pctW = Math.round((w.balance / total) * 100);
+                                        return (
+                                            <div key={w.id} className="space-y-1.5">
+                                                <div className="flex justify-between text-sm">
+                                                    <span className="font-semibold text-foreground">{w.name}</span>
+                                                    <span className={`font-black tabular-nums ${w.balance > 0 ? 'text-emerald-500' : 'text-red-500'}`}>{fmt(w.balance)} ج.م</span>
+                                                </div>
+                                                <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                                                    <div className="h-full rounded-full bg-emerald-500 transition-all duration-700" style={{ width: `${Math.max(pctW, 0)}%` }} />
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            )}
+                        </Card>
+
+                        <Card>
+                            <SecTitle title="آخر معاملات المحافظ" />
+                            {walletTxns.length === 0 ? (
+                                <p className="text-sm text-muted-foreground text-center py-8">لا توجد معاملات</p>
+                            ) : (
+                                <div className="space-y-2">
+                                    {[...walletTxns].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8).map(t => (
+                                        <div key={t.id} className="flex items-center justify-between p-2.5 rounded-lg border border-border/30">
+                                            <div>
+                                                <p className="text-xs font-semibold text-foreground truncate max-w-[150px]">{t.reason}</p>
+                                                <p className="text-[10px] text-muted-foreground">{t.date?.slice(0, 10)} — {t.type === 'deposit' ? 'إيداع' : t.type === 'withdrawal' ? 'سحب' : 'تحويل'}</p>
+                                            </div>
+                                            <span className={`text-sm font-black tabular-nums ${t.type === 'deposit' || t.type === 'transfer_in' ? 'text-emerald-500' : 'text-red-500'}`}>
+                                                {t.type === 'deposit' || t.type === 'transfer_in' ? '+' : '-'}{fmt(t.amount)} ج.م
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </Card>
+                    </div>
+                </div>
+            )}
+
+            {/* ═══════════════════════════════════════════════
+          TAB: الموظفون  
+          ═══════════════════════════════════════════════ */}
+            {activeTab === 'employees' && (
+                <div className="space-y-6">
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                        <KPICard label="إجمالي الموظفين" value={`${employees.length}`} sub="موظف مسجل" icon={Users} color="bg-primary" />
+                        <KPICard label="موظفون نشطون" value={`${employees.filter(e => e.status === 'active').length}`} icon={TrendingUp} color="bg-emerald-500" />
+                        <KPICard label="موظفون مستقيلون" value={`${employees.filter(e => e.status === 'resigned').length}`} icon={TrendingDown} color="bg-red-500" />
+                        <KPICard label="إجمالي الرواتب" value={`${fmt(employees.reduce((s, e) => s + (e.salary || 0), 0))} ج.م`} sub="شهرياً" icon={DollarSign} color="bg-amber-500" />
+                    </div>
+
+                    <Card>
+                        <SecTitle title="الموظفون" sub={`${employees.length} موظف مسجل`} />
+                        {employees.length === 0 ? (
+                            <p className="text-sm text-muted-foreground text-center py-8">لا يوجد موظفون مسجلون</p>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className="border-b border-border/30">
+                                            <th className="py-2 px-3 text-right text-xs font-semibold text-muted-foreground">الاسم</th>
+                                            <th className="py-2 px-3 text-right text-xs font-semibold text-muted-foreground">الوظيفة</th>
+                                            <th className="py-2 px-3 text-right text-xs font-semibold text-muted-foreground">الراتب</th>
+                                            <th className="py-2 px-3 text-right text-xs font-semibold text-muted-foreground">الحالة</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {employees.map(e => (
+                                            <tr key={e.id} className="border-b border-border/20 hover:bg-muted/30 transition-colors">
+                                                <td className="py-2.5 px-3 font-medium text-foreground">{e.name}</td>
+                                                <td className="py-2.5 px-3 text-muted-foreground">{e.position || '—'}</td>
+                                                <td className="py-2.5 px-3 font-bold tabular-nums">{fmt(e.salary || 0)} ج.م</td>
+                                                <td className="py-2.5 px-3">
+                                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${e.status === 'active' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
+                                                        {e.status === 'active' ? 'نشط' : 'غير نشط'}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
                     </Card>
                 </div>
             )}

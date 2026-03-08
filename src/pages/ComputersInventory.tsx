@@ -16,6 +16,7 @@ const config: SharedInventoryConfig = {
     categorySection: 'computer',
     accentColor: 'indigo',
     excelInventoryType: 'computer',
+    navSection: 'computers',
 
     getDevices: getComputers,
     addDevice: addComputer,

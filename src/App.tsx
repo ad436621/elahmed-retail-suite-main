@@ -54,6 +54,15 @@ const PurchaseInvoicesPage = lazy(() => import("@/pages/PurchaseInvoicesPage"));
 const ReportsPage = lazy(() => import("@/pages/ReportsPage"));
 const PartnersPage = lazy(() => import("@/pages/PartnersPage"));
 const StocktakePage = lazy(() => import("@/pages/StocktakePage"));
+const DiagnosticsPage = lazy(() => import("@/pages/DiagnosticsPage"));
+const CarSparePartsPage = lazy(() => import("@/pages/CarSparePartsPage"));
+const CarOilsPage = lazy(() => import("@/pages/CarOilsPage"));
+const MobileAccessoriesPage = lazy(() => import("@/pages/MobileAccessoriesPage"));
+const MobileSparePartsPage = lazy(() => import("@/pages/MobileSparePartsPage"));
+const ComputerAccessoriesPage = lazy(() => import("@/pages/ComputerAccessoriesPage"));
+const ComputerSparePartsPage = lazy(() => import("@/pages/ComputerSparePartsPage"));
+const DeviceAccessoriesPage = lazy(() => import("@/pages/DeviceAccessoriesPage"));
+const DeviceSparePartsPage = lazy(() => import("@/pages/DeviceSparePartsPage"));
 
 // Loading fallback
 
@@ -95,7 +104,7 @@ function OwnerGuard({ children }: { children: React.ReactNode }) {
 }
 
 // Background task to run auto backups
-function AutoBackupRunner() {
+function AutoBackupRunner(): React.ReactElement | null {
   const { isAuthenticated } = useAuth();
 
   useEffect(() => {
@@ -119,7 +128,7 @@ function AutoBackupRunner() {
 }
 
 // Background task to run data migration to batches system
-function DataMigrationRunner() {
+function DataMigrationRunner(): React.ReactElement | null {
   const { isAuthenticated } = useAuth();
 
   useEffect(() => {
@@ -149,9 +158,17 @@ const AppRoutes = () => (
         <Route path="/returns" element={<PermGuard perm="returns"><ReturnsPage /></PermGuard>} />
         {/* Inventory */}
         <Route path="/mobiles" element={<PermGuard perm="mobiles"><MobilesInventory /></PermGuard>} />
+        <Route path="/mobiles/accessories" element={<PermGuard perm="mobiles"><MobileAccessoriesPage /></PermGuard>} />
+        <Route path="/mobiles/spare-parts" element={<PermGuard perm="mobiles"><MobileSparePartsPage /></PermGuard>} />
         <Route path="/computers" element={<PermGuard perm="computers"><ComputersInventory /></PermGuard>} />
+        <Route path="/computers/accessories" element={<PermGuard perm="computers"><ComputerAccessoriesPage /></PermGuard>} />
+        <Route path="/computers/spare-parts" element={<PermGuard perm="computers"><ComputerSparePartsPage /></PermGuard>} />
         <Route path="/devices" element={<PermGuard perm="devices"><DevicesInventory /></PermGuard>} />
+        <Route path="/devices/accessories" element={<PermGuard perm="devices"><DeviceAccessoriesPage /></PermGuard>} />
+        <Route path="/devices/spare-parts" element={<PermGuard perm="devices"><DeviceSparePartsPage /></PermGuard>} />
         <Route path="/cars" element={<PermGuard perm="cars"><CarsInventory /></PermGuard>} />
+        <Route path="/cars/spare-parts" element={<PermGuard perm="cars"><CarSparePartsPage /></PermGuard>} />
+        <Route path="/cars/oils" element={<PermGuard perm="cars"><CarOilsPage /></PermGuard>} />
         <Route path="/warehouse" element={<PermGuard perm="warehouse"><WarehousePage /></PermGuard>} />
         <Route path="/used-inventory" element={<PermGuard perm="used"><UsedInventory /></PermGuard>} />
         {/* Services */}
@@ -181,6 +198,8 @@ const AppRoutes = () => (
         {/* #04 FIX: Missing pages */}
         <Route path="/partners" element={<PermGuard perm="partners"><PartnersPage /></PermGuard>} />
         <Route path="/stocktake" element={<PermGuard perm="stocktake"><StocktakePage /></PermGuard>} />
+        {/* Diagnostics — owner only */}
+        <Route path="/diagnostics" element={<OwnerGuard><DiagnosticsPage /></OwnerGuard>} />
       </Route>
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
       <Route path="*" element={<NotFound />} />
