@@ -7,12 +7,13 @@ import {
 import { getSuppliers } from '@/data/suppliersData';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useConfirm } from '@/components/ConfirmDialog';
 
 const IC = 'w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all';
 const fmt = (n: number) => n.toLocaleString('ar-EG');
 
 const STATUS_LABELS: Record<InvoiceStatus, string> = { draft: 'مسودة', confirmed: 'مؤكدة', partial: 'جزئي', paid: 'مدفوعة' };
-const STATUS_COLORS: Record<InvoiceStatus, string> = { draft: 'bg-gray-100 text-gray-600', confirmed: 'bg-blue-100 text-blue-700', partial: 'bg-amber-100 text-amber-700', paid: 'bg-emerald-100 text-emerald-700' };
+const STATUS_COLORS: Record<InvoiceStatus, string> = { draft: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400', confirmed: 'bg-blue-100 dark:bg-blue-500/15 text-blue-700 dark:text-blue-400', partial: 'bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400', paid: 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400' };
 const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
     { value: 'cash', label: 'نقدي' }, { value: 'card', label: 'بطاقة' },
     { value: 'wallet', label: 'محفظة' }, { value: 'bank', label: 'بنك' }, { value: 'credit', label: 'آجل' },
@@ -26,6 +27,7 @@ const emptyItem = (): PurchaseInvoiceItem => ({
 export default function PurchaseInvoicesPage() {
     const { toast } = useToast();
     const { user } = useAuth();
+    const { confirm } = useConfirm();
     const [invoices, setInvoices] = useState<PurchaseInvoice[]>(() => getPurchaseInvoices());
     const [search, setSearch] = useState('');
     const [statusFilter, setStatusFilter] = useState<InvoiceStatus | 'all'>('all');
@@ -80,7 +82,7 @@ export default function PurchaseInvoicesPage() {
         <div className="space-y-5 animate-fade-in" dir="rtl">
             <div className="flex items-center justify-between flex-wrap gap-3">
                 <div className="flex items-center gap-3">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-sky-100 border border-sky-200"><FileText className="h-5 w-5 text-sky-600" /></div>
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-sky-100 dark:bg-sky-500/15 border border-sky-200 dark:border-sky-500/20"><FileText className="h-5 w-5 text-sky-600 dark:text-sky-400" /></div>
                     <div>
                         <h1 className="text-2xl font-bold text-foreground">فواتير الشراء</h1>
                         <p className="text-xs text-muted-foreground">مستحقات: <span className="text-red-600 font-bold">{fmt(getTotalUnpaid())} ج.م</span></p>
@@ -137,7 +139,7 @@ export default function PurchaseInvoicesPage() {
                                         {inv.status !== 'paid' && (
                                             <button onClick={() => { setPayDialog(inv); setPayAmount(0); }} className="rounded-lg bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 px-2 py-1 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20">دفع</button>
                                         )}
-                                        <button onClick={() => { deletePurchaseInvoice(inv.id); refresh(); }} className="rounded-lg p-1.5 bg-red-50 text-destructive hover:bg-red-100"><Trash2 className="h-3 w-3" /></button>
+                                        <button onClick={async () => { const ok = await confirm({ title: 'حذف فاتورة', message: `هل أنت متأكد من حذف الفاتورة "${inv.invoiceNumber}"؟`, confirmLabel: 'حذف', danger: true }); if (ok) { deletePurchaseInvoice(inv.id); refresh(); } }} className="rounded-lg p-1.5 bg-red-50 dark:bg-red-500/10 text-destructive hover:bg-red-100 dark:hover:bg-red-500/20"><Trash2 className="h-3 w-3" /></button>
                                     </div>
                                 </td>
                             </tr>

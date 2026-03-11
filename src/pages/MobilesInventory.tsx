@@ -52,6 +52,7 @@ const RAM_OPTIONS = ['2GB', '3GB', '4GB', '6GB', '8GB', '12GB', '16GB'];
 export default function MobilesInventory() {
     const { toast } = useToast();
     const location = useLocation();
+    const navigate = useNavigate();
     const { confirm } = useConfirm();
 
     const fetchCategories = () => getCategoriesBySection('mobile');

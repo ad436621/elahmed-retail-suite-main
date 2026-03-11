@@ -41,8 +41,8 @@ export default function ShiftClosingPage() {
         <div className="space-y-5 animate-fade-in" dir="rtl">
             {/* Header */}
             <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-100 border border-rose-200">
-                    <ClipboardCheck className="h-5 w-5 text-rose-600" />
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-100 dark:bg-rose-500/15 border border-rose-200 dark:border-rose-500/20">
+                    <ClipboardCheck className="h-5 w-5 text-rose-600 dark:text-rose-400" />
                 </div>
                 <div>
                     <h1 className="text-2xl font-bold text-foreground">إقفال الوردية</h1>
@@ -81,7 +81,7 @@ export default function ShiftClosingPage() {
 
                     {/* Difference */}
                     {actualCash > 0 && (
-                        <div className={`rounded-xl border p-3 flex items-center justify-between ${diff > 0 ? 'border-emerald-200 bg-emerald-50 dark:bg-emerald-900/10' : diff < 0 ? 'border-red-200 bg-red-50 dark:bg-red-900/10' : 'border-gray-200 bg-gray-50'}`}>
+                        <div className={`rounded-xl border p-3 flex items-center justify-between ${diff > 0 ? 'border-emerald-200 dark:border-emerald-500/20 bg-emerald-50 dark:bg-emerald-500/10' : diff < 0 ? 'border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/10' : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50'}`}>
                             <span className="text-sm font-semibold text-muted-foreground">
                                 {diff > 0 ? '✅ فائض' : diff < 0 ? '⚠️ عجز' : '✓ مطابق'}
                             </span>
@@ -153,7 +153,7 @@ export default function ShiftClosingPage() {
                             </div>
                         </div>
                         {previewSummary.cashDifference < 0 && (
-                            <div className="flex items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                            <div className="flex items-center gap-2 rounded-xl border border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/10 p-3 text-sm text-red-700 dark:text-red-400">
                                 <AlertTriangle className="h-4 w-4 shrink-0" /> هناك عجز في الصندوق!
                             </div>
                         )}

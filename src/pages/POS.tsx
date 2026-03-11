@@ -91,6 +91,12 @@ export default function POS() {
 
   // Checkout trigger ref (injected by CheckoutSidebar via callback)
   const checkoutTriggerRef = useRef<(() => void) | null>(null);
+
+  // ── Stable refs for keyboard handler closure (avoids stale state) ──
+  // filteredProducts is declared later — we use refs so handler always
+  // reads the latest values without re-registering the listener.
+  const filteredProductsRef = useRef<Product[]>([]);
+  const grandTotalRef = useRef<number>(0);
   const handleCheckoutReady = useCallback((trigger: () => void) => {
     checkoutTriggerRef.current = trigger;
   }, []);
@@ -150,8 +156,8 @@ export default function POS() {
         const num = parseInt(e.key.replace('Numpad', ''), 10);
         if (num >= 1 && num <= 9) {
           e.preventDefault();
-          // Quick add product by number position
-          const product = filteredProducts[num - 1];
+          // Quick add product by number position — read from ref (always fresh)
+          const product = filteredProductsRef.current[num - 1];
           if (product && product.quantity > 0) {
             addToCart(product);
             toast({ title: `✅ تمت الإضافة`, description: product.name });
@@ -190,17 +196,17 @@ export default function POS() {
           break;
         case 'F7':
           e.preventDefault();
-          // Quick 5% discount on grand total
-          if (grandTotal > 0) {
-            applyInvoiceDiscount(Math.round(grandTotal * 0.05 * 2) / 2);
+          // Quick 5% discount on grand total — read from ref (always fresh)
+          if (grandTotalRef.current > 0) {
+            applyInvoiceDiscount(Math.round(grandTotalRef.current * 0.05 * 2) / 2);
             toast({ title: '💰 تم تطبيق خصم 5%' });
           }
           break;
         case 'F8':
           e.preventDefault();
-          // Quick 10% discount on grand total
-          if (grandTotal > 0) {
-            applyInvoiceDiscount(Math.round(grandTotal * 0.10 * 2) / 2);
+          // Quick 10% discount on grand total — read from ref (always fresh)
+          if (grandTotalRef.current > 0) {
+            applyInvoiceDiscount(Math.round(grandTotalRef.current * 0.10 * 2) / 2);
             toast({ title: '💰 تم تطبيق خصم 10%' });
           }
           break;
@@ -264,7 +270,8 @@ export default function POS() {
     };
     window.addEventListener('keydown', fn);
     return () => window.removeEventListener('keydown', fn);
-  }, [cart.length, holdInvoice, toast]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cart, holdInvoice, applyInvoiceDiscount, addToCart, updateCartItemQty, removeFromCart, toggleTheme, navigate, toast, searchTerm]);
 
   // ── Products ────────────────────────────────────────────────
   const allProducts = useMemo(() => getAllInventoryProducts(), []);
@@ -335,6 +342,11 @@ export default function POS() {
 
   // Set of product IDs in cart for highlighting
   const cartProductIds = useMemo(() => new Set(cart.map(i => i.product.id)), [cart]);
+
+  // ── Keep refs in sync with computed values so the keyboard handler
+  // always reads the latest filteredProducts and grandTotal.
+  useEffect(() => { filteredProductsRef.current = filteredProducts; }, [filteredProducts]);
+  useEffect(() => { grandTotalRef.current = grandTotal; }, [grandTotal]);
 
   // ── Count metrics ───────────────────────────────────────────
   const availableCount = filteredProducts.filter(p => p.quantity > 0).length;

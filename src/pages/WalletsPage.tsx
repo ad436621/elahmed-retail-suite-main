@@ -177,14 +177,14 @@ function WalletCard({ wallet, allWallets, onOperation, onRefresh, onDelete }: { 
                     )}
                 </div>
                 <div className="flex gap-2 mt-4">
-                    <button onClick={() => onOperation(wallet, 'deposit')} className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-emerald-500/10 text-emerald-700 border border-emerald-200/50 py-2 text-xs font-bold hover:bg-emerald-500/20 transition-colors">
+                    <button onClick={() => onOperation(wallet, 'deposit')} className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-500/20 py-2 text-xs font-bold hover:bg-emerald-500/20 transition-colors">
                         <TrendingUp className="h-3.5 w-3.5" /> إيداع
                     </button>
-                    <button onClick={() => onOperation(wallet, 'withdrawal')} className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-rose-500/10 text-rose-700 border border-rose-200/50 py-2 text-xs font-bold hover:bg-rose-500/20 transition-colors">
+                    <button onClick={() => onOperation(wallet, 'withdrawal')} className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-200/50 dark:border-rose-500/20 py-2 text-xs font-bold hover:bg-rose-500/20 transition-colors">
                         <TrendingDown className="h-3.5 w-3.5" /> سحب
                     </button>
                     {allWallets.length > 1 && (
-                        <button onClick={() => onOperation(wallet, 'transfer')} className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-blue-500/10 text-blue-700 border border-blue-200/50 py-2 text-xs font-bold hover:bg-blue-500/20 transition-colors">
+                        <button onClick={() => onOperation(wallet, 'transfer')} className="flex-1 flex items-center justify-center gap-1.5 rounded-xl bg-blue-500/10 text-blue-700 dark:text-blue-400 border border-blue-200/50 dark:border-blue-500/20 py-2 text-xs font-bold hover:bg-blue-500/20 transition-colors">
                             <ArrowLeftRight className="h-3.5 w-3.5" /> تحويل
                         </button>
                     )}

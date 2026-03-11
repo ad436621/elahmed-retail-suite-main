@@ -32,7 +32,7 @@ export default function MobileNavBar() {
                 active ? "bg-primary/10 text-primary font-bold shadow-sm" : "hover:bg-muted text-foreground font-medium"
             )}>
                 <div className={cn("flex h-9 w-9 items-center justify-center rounded-xl", active ? "bg-primary text-primary-foreground shadow-md" : "bg-muted text-muted-foreground")}>
-                    <Icon className="h-4.5 w-4.5" />
+                    <Icon className="h-5 w-5" />
                 </div>
                 <span className="text-sm">{label}</span>
             </NavLink>

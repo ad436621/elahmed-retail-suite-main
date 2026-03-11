@@ -137,12 +137,12 @@ export default function PaymentStep({ grandTotal, onConfirm, onBack, isProcessin
                             <div className="flex gap-1.5 mt-2 flex-wrap">
                                 {quickAmounts.map(amt => (
                                     <button
-                                        key={amt}
-                                        onClick={() => setAmountStr(amt.toString())}
-                                        aria-label={`دفع ${amt} جنيه`}
+                                        key={amt.value}
+                                        onClick={() => setAmountStr(amt.value.toString())}
+                                        aria-label={`دفع ${amt.label} جنيه`}
                                         className="rounded-lg border border-border/70 bg-muted/50 px-3 py-1.5 text-xs font-bold text-muted-foreground hover:bg-primary hover:text-white hover:border-primary transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                                     >
-                                        {amt.toLocaleString('ar-EG')}
+                                        {amt.label}
                                     </button>
                                 ))}
                             </div>

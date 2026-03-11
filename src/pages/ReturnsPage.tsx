@@ -160,8 +160,8 @@ export default function ReturnsPage() {
   return (
     <div className="space-y-5 animate-fade-in" dir="rtl">
       <div className="flex items-center gap-3">
-        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-100 border border-rose-200">
-          <RotateCcw className="h-5 w-5 text-rose-600" />
+        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-100 dark:bg-rose-500/15 border border-rose-200 dark:border-rose-500/20">
+          <RotateCcw className="h-5 w-5 text-rose-600 dark:text-rose-400" />
         </div>
         <div>
           <h1 className="text-2xl font-bold text-foreground">المرتجعات</h1>
@@ -191,9 +191,9 @@ export default function ReturnsPage() {
 
       {/* Not found */}
       {notFound && (
-        <div className="flex items-center gap-3 rounded-2xl border border-red-200 bg-red-50 p-4">
+        <div className="flex items-center gap-3 rounded-2xl border border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-500/10 p-4">
           <AlertCircle className="h-5 w-5 text-red-500 shrink-0" />
-          <p className="text-sm text-red-700">لم يتم العثور على فاتورة بهذا الرقم</p>
+          <p className="text-sm text-red-700 dark:text-red-400">لم يتم العثور على فاتورة بهذا الرقم</p>
         </div>
       )}
 
@@ -231,7 +231,7 @@ export default function ReturnsPage() {
                     <p className="text-xs text-muted-foreground">المباع: {item.qty} — سعر الوحدة: {item.price.toLocaleString()} ج.م</p>
                   </div>
                   {item.returnQty > 0 && (
-                    <span className="rounded-full bg-rose-100 text-rose-700 px-2 py-0.5 text-xs font-bold">
+                    <span className="rounded-full bg-rose-100 dark:bg-rose-500/15 text-rose-700 dark:text-rose-400 px-2 py-0.5 text-xs font-bold">
                       استرداد: {(item.returnQty * item.price).toLocaleString()} ج.م
                     </span>
                   )}
@@ -264,7 +264,7 @@ export default function ReturnsPage() {
 
           {/* Summary */}
           {returnItems.some(i => i.returnQty > 0) && (
-            <div className="rounded-2xl border border-rose-200 bg-rose-50 p-4 flex justify-between items-center">
+            <div className="rounded-2xl border border-rose-200 dark:border-rose-500/20 bg-rose-50 dark:bg-rose-500/10 p-4 flex justify-between items-center">
               <div>
                 <p className="text-sm font-semibold text-foreground">
                   {returnItems.filter(i => i.returnQty > 0).length} منتج مرتجع

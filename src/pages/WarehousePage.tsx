@@ -5,6 +5,7 @@ import { getWarehouseItems, addWarehouseItem, updateWarehouseItem, deleteWarehou
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { ExcelColumnMappingDialog } from '@/components/ExcelColumnMappingDialog';
+import { useConfirm } from '@/components/ConfirmDialog';
 
 const emptyForm: Omit<WarehouseItem, 'id' | 'createdAt' | 'updatedAt'> = {
     name: '', category: '', quantity: 1, costPrice: 0, notes: '', addedBy: '',
@@ -15,6 +16,7 @@ const IC = "w-full rounded-xl border border-input bg-background px-3 py-2.5 text
 export default function WarehousePage() {
     const { toast } = useToast();
     const { user } = useAuth();
+    const { confirm } = useConfirm();
     const [items, setItems] = useState<WarehouseItem[]>(() => getWarehouseItems());
     const [categories, setCategories] = useState<string[]>(() => getWarehouseCategories());
     const [showForm, setShowForm] = useState(false);
@@ -84,8 +86,8 @@ export default function WarehousePage() {
             {/* Header */}
             <div className="flex items-center justify-between flex-wrap gap-3">
                 <div className="flex items-center gap-3">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-teal-100 border border-teal-200">
-                        <Warehouse className="h-5 w-5 text-teal-600" />
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-teal-100 dark:bg-teal-500/15 border border-teal-200 dark:border-teal-500/20">
+                        <Warehouse className="h-5 w-5 text-teal-600 dark:text-teal-400" />
                     </div>
                     <div>
                         <h1 className="text-2xl font-bold text-foreground">المستودع</h1>
@@ -93,9 +95,9 @@ export default function WarehousePage() {
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
-                    <div className="rounded-xl bg-teal-50 border border-teal-200 px-4 py-2">
-                        <p className="text-xs text-teal-600">رأس المال</p>
-                        <p className="text-lg font-bold text-teal-700">{totalCapital.toLocaleString('ar-EG')} ج.م</p>
+                    <div className="rounded-xl bg-teal-50 dark:bg-teal-500/10 border border-teal-200 dark:border-teal-500/20 px-4 py-2">
+                        <p className="text-xs text-teal-600 dark:text-teal-400">رأس المال</p>
+                        <p className="text-lg font-bold text-teal-700 dark:text-teal-300">{totalCapital.toLocaleString('ar-EG')} ج.م</p>
                     </div>
                     <div className="flex gap-1 rounded-xl border border-border p-1 bg-muted/30">
                         <button onClick={() => setViewMode('grid')} className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${viewMode === 'grid' ? 'bg-card shadow text-primary border border-border' : 'text-muted-foreground'}`}>شبكة</button>
@@ -126,8 +128,8 @@ export default function WarehousePage() {
 
             {/* Form Modal */}
             {showForm && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm overflow-y-auto py-6 px-4">
-                    <div className="w-full max-w-lg mx-auto rounded-2xl border border-border bg-card p-6 shadow-2xl space-y-4 animate-scale-in">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm overflow-y-auto py-6 px-4" onClick={() => { setShowForm(false); setEditId(null); }}>
+                    <div className="w-full max-w-lg mx-auto rounded-2xl border border-border bg-card p-6 shadow-2xl space-y-4 animate-scale-in" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between">
                             <h2 className="text-lg font-bold text-foreground">{editId ? 'تعديل عنصر' : 'إضافة عنصر'}</h2>
                             <button onClick={() => { setShowForm(false); setEditId(null); }} className="rounded-lg p-1.5 hover:bg-muted transition-colors"><X className="h-5 w-5 text-muted-foreground" /></button>
@@ -189,14 +191,14 @@ export default function WarehousePage() {
                             <div className="p-4 flex flex-col gap-2">
                                 <div className="flex items-center justify-between">
                                     <h3 className="font-bold text-foreground">{item.name}</h3>
-                                    <span className="rounded-full bg-teal-100 text-teal-700 px-2 py-0.5 text-xs font-semibold">{item.category}</span>
+                                    <span className="rounded-full bg-teal-100 dark:bg-teal-500/15 text-teal-700 dark:text-teal-400 px-2 py-0.5 text-xs font-semibold">{item.category}</span>
                                 </div>
                                 <p className="text-xs text-muted-foreground">الكمية: {item.quantity}</p>
                                 <div className="mt-auto flex items-center justify-between pt-2 border-t border-border/40">
                                     <p className="text-sm font-bold text-primary">{(item.quantity * item.costPrice).toLocaleString()} ج.م</p>
                                     <div className="flex gap-1.5">
                                         <button onClick={() => startEdit(item)} className="rounded-lg p-1.5 hover:bg-primary/10 text-primary transition-colors"><Pencil className="h-3.5 w-3.5" /></button>
-                                        <button onClick={() => { deleteWarehouseItem(item.id); toast({ title: 'تم الحذف' }); refresh(); }} className="rounded-lg p-1.5 hover:bg-red-50 text-destructive transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
+                                        <button onClick={async () => { const ok = await confirm({ title: 'حذف عنصر', message: `هل أنت متأكد من حذف "${item.name}"؟`, confirmLabel: 'حذف', danger: true }); if (ok) { deleteWarehouseItem(item.id); toast({ title: '🗑️ تم الحذف' }); refresh(); } }} className="rounded-lg p-1.5 hover:bg-red-50 dark:hover:bg-red-500/10 text-destructive transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
                                     </div>
                                 </div>
                             </div>
@@ -223,7 +225,7 @@ export default function WarehousePage() {
                             ) : filtered.map((item, i) => (
                                 <tr key={item.id} className={`border-b border-border/50 hover:bg-muted/20 transition-colors ${i % 2 === 0 ? '' : 'bg-muted/10'}`}>
                                     <td className="px-4 py-3 font-semibold text-foreground">{item.name}</td>
-                                    <td className="px-4 py-3"><span className="rounded-full bg-teal-100 text-teal-700 px-2 py-0.5 text-xs font-semibold">{item.category}</span></td>
+                                    <td className="px-4 py-3"><span className="rounded-full bg-teal-100 dark:bg-teal-500/15 text-teal-700 dark:text-teal-400 px-2 py-0.5 text-xs font-semibold">{item.category}</span></td>
                                     <td className="px-4 py-3 text-center">{item.quantity}</td>
                                     <td className="px-4 py-3 text-xs text-muted-foreground">{item.costPrice.toLocaleString()}</td>
                                     <td className="px-4 py-3 text-sm font-bold text-primary">{(item.quantity * item.costPrice).toLocaleString()} ج.م</td>
@@ -231,7 +233,7 @@ export default function WarehousePage() {
                                     <td className="px-4 py-3">
                                         <div className="flex gap-1">
                                             <button onClick={() => startEdit(item)} className="rounded-lg p-1.5 hover:bg-primary/10 text-primary transition-colors"><Pencil className="h-3.5 w-3.5" /></button>
-                                            <button onClick={() => { deleteWarehouseItem(item.id); toast({ title: 'تم الحذف' }); refresh(); }} className="rounded-lg p-1.5 hover:bg-red-50 text-destructive transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
+                                            <button onClick={async () => { const ok = await confirm({ title: 'حذف عنصر', message: `هل أنت متأكد من حذف "${item.name}"؟`, confirmLabel: 'حذف', danger: true }); if (ok) { deleteWarehouseItem(item.id); toast({ title: '🗑️ تم الحذف' }); refresh(); } }} className="rounded-lg p-1.5 hover:bg-red-50 dark:hover:bg-red-500/10 text-destructive transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
                                         </div>
                                     </td>
                                 </tr>

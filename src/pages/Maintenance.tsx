@@ -153,8 +153,8 @@ export default function Maintenance() {
         <div className="space-y-5 animate-fade-in" dir="rtl">
             <div className="flex items-center justify-between flex-wrap gap-3">
                 <div className="flex items-center gap-3">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-orange-100 border border-orange-200">
-                        <Wrench className="h-5 w-5 text-orange-600" />
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-orange-100 dark:bg-orange-500/15 border border-orange-200 dark:border-orange-500/20">
+                        <Wrench className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                     </div>
                     <div>
                         <h1 className="text-2xl font-bold text-foreground">الصيانة</h1>
@@ -194,8 +194,8 @@ export default function Maintenance() {
 
             {/* Form Modal */}
             {showForm && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm overflow-y-auto py-6">
-                    <div className="w-full max-w-xl mx-4 rounded-3xl border border-border bg-card p-6 shadow-2xl space-y-5 animate-scale-in">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm overflow-y-auto py-6" onClick={() => setShowForm(false)}>
+                    <div className="w-full max-w-xl mx-4 rounded-3xl border border-border bg-card p-6 shadow-2xl space-y-5 animate-scale-in" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between">
                             <h2 className="text-lg font-bold text-foreground">طلب صيانة</h2>
                             <button onClick={() => { setShowForm(false); setEditId(null); }} className="rounded-lg p-1.5 hover:bg-muted transition-colors"><X className="h-5 w-5 text-muted-foreground" /></button>
@@ -336,7 +336,7 @@ export default function Maintenance() {
                             </div>
                         ) : <p className="text-sm text-muted-foreground mb-4">لا توجد قطع غيار مسجلة</p>}
 
-                        <div className="grid grid-cols-3 gap-2 text-center text-xs rounded-xl bg-emerald-50 border border-emerald-200 p-3">
+                        <div className="grid grid-cols-3 gap-2 text-center text-xs rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 p-3">
                             <div>
                                 <p className="text-muted-foreground mb-1">إجمالي التكلفة</p>
                                 <p className="font-bold text-orange-600 text-base">{showReport.totalCost.toLocaleString()} ج.م</p>
@@ -394,9 +394,9 @@ export default function Maintenance() {
                                     <td className="px-3 py-3">
                                         <div className="flex items-center gap-1">
                                             <button onClick={() => printClientInvoice(o)} title="فاتورة العميل" className="rounded-lg p-1.5 hover:bg-muted text-muted-foreground transition-colors"><Printer className="h-3.5 w-3.5" /></button>
-                                            <button onClick={() => setShowReport(o)} title="التقرير الداخلي" className="rounded-lg p-1.5 hover:bg-emerald-50 text-emerald-600 transition-colors"><TrendingUp className="h-3.5 w-3.5" /></button>
+                                            <button onClick={() => setShowReport(o)} title="التقرير الداخلي" className="rounded-lg p-1.5 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 text-emerald-600 transition-colors"><TrendingUp className="h-3.5 w-3.5" /></button>
                                             <button onClick={() => startEdit(o)} className="rounded-lg p-1.5 hover:bg-primary/10 text-primary transition-colors"><Pencil className="h-3.5 w-3.5" /></button>
-                                            <button onClick={() => setDeleteTarget(o)} className="rounded-lg p-1.5 hover:bg-red-50 text-destructive transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
+                                            <button onClick={() => setDeleteTarget(o)} className="rounded-lg p-1.5 hover:bg-red-50 dark:hover:bg-red-500/10 text-destructive transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
                                         </div>
                                     </td>
                                 </tr>
@@ -411,8 +411,8 @@ export default function Maintenance() {
 
             {/* ─── Confirm Delete Dialog (#20) ─── */}
             {deleteTarget && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
-                    <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-2xl animate-scale-in">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4" onClick={() => setDeleteTarget(null)}>
+                    <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-2xl animate-scale-in" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center gap-3 mb-4">
                             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100 dark:bg-red-500/15">
                                 <Trash2 className="h-5 w-5 text-red-600" />

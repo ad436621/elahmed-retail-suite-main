@@ -5,15 +5,16 @@ import {
     getOverdueReminders, CATEGORY_LABELS, PRIORITY_LABELS,
     type Reminder, type ReminderCategory, type ReminderPriority, type ReminderStatus,
 } from '@/data/remindersData';
+import { useConfirm } from '@/components/ConfirmDialog';
 
 const IC = 'w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all';
 const today = new Date().toISOString().slice(0, 10);
 const thisWeek = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
 
 const PRIORITY_COLORS: Record<ReminderPriority, string> = {
-    high: 'bg-red-100 text-red-700',
-    medium: 'bg-amber-100 text-amber-700',
-    low: 'bg-gray-100 text-gray-600',
+    high: 'bg-red-100 dark:bg-red-500/15 text-red-700 dark:text-red-400',
+    medium: 'bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400',
+    low: 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400',
 };
 
 const emptyForm = {
@@ -24,6 +25,7 @@ const emptyForm = {
 
 export default function RemindersPage() {
     const [reminders, setReminders] = useState<Reminder[]>(() => getReminders());
+    const { confirm } = useConfirm();
     const [statusFilter, setStatusFilter] = useState<ReminderStatus | 'all'>('all');
     const [catFilter, setCatFilter] = useState<ReminderCategory | 'all'>('all');
     const [showForm, setShowForm] = useState(false);
@@ -54,8 +56,8 @@ export default function RemindersPage() {
             {/* Header */}
             <div className="flex items-center justify-between flex-wrap gap-3">
                 <div className="flex items-center gap-3">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-100 border border-cyan-200">
-                        <Bell className="h-5 w-5 text-cyan-600" />
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-100 dark:bg-cyan-500/15 border border-cyan-200 dark:border-cyan-500/20">
+                        <Bell className="h-5 w-5 text-cyan-600 dark:text-cyan-400" />
                     </div>
                     <div>
                         <h1 className="text-2xl font-bold text-foreground">التذكيرات</h1>
@@ -119,7 +121,7 @@ export default function RemindersPage() {
                                     {isOverdue(r) && <AlertTriangle className="h-4 w-4 text-red-500 shrink-0" />}
                                     <p className={`font-bold text-foreground ${r.status === 'done' ? 'line-through' : ''}`}>{r.title}</p>
                                     <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${PRIORITY_COLORS[r.priority]}`}>{PRIORITY_LABELS[r.priority]}</span>
-                                    <span className="rounded-full bg-blue-100 text-blue-700 px-2 py-0.5 text-[10px] font-bold">{CATEGORY_LABELS[r.category]}</span>
+                                    <span className="rounded-full bg-blue-100 dark:bg-blue-500/15 text-blue-700 dark:text-blue-400 px-2 py-0.5 text-[10px] font-bold">{CATEGORY_LABELS[r.category]}</span>
                                 </div>
                                 {r.description && <p className="text-xs text-muted-foreground mt-0.5">{r.description}</p>}
                                 <p className="flex items-center gap-1 text-xs text-muted-foreground mt-1">
@@ -134,8 +136,8 @@ export default function RemindersPage() {
                                     <button onClick={() => { updateReminder(r.id, { status: 'dismissed' }); refresh(); }}
                                         className="rounded-xl bg-gray-50 border border-gray-200 p-2 text-gray-600 hover:bg-gray-100 transition-colors" title="تجاهل"><X className="h-3.5 w-3.5" /></button>
                                 </>}
-                                <button onClick={() => { deleteReminder(r.id); refresh(); }}
-                                    className="rounded-xl bg-red-50 p-2 text-destructive hover:bg-red-100 transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
+                                <button onClick={async () => { const ok = await confirm({ title: 'حذف تذكير', message: `هل أنت متأكد من حذف التذكير "${r.title}"؟`, confirmLabel: 'حذف', danger: true }); if (ok) { deleteReminder(r.id); refresh(); } }}
+                                    className="rounded-xl bg-red-50 dark:bg-red-500/10 p-2 text-destructive hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
                             </div>
                         </div>
                     </div>

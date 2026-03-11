@@ -101,11 +101,13 @@ export default function POSProductGrid({ products, onAdd, cartProductIds, select
                 break;
             case 'ArrowRight':
                 e.preventDefault();
-                setSelectedIndex(i => Math.min(i + 1, products.length - 1));
+                // RTL: Arrow Right = previous item (visually moves right = backwards)
+                setSelectedIndex(i => Math.max(i - 1, 0));
                 break;
             case 'ArrowLeft':
                 e.preventDefault();
-                setSelectedIndex(i => Math.max(i - 1, 0));
+                // RTL: Arrow Left = next item (visually moves left = forward)
+                setSelectedIndex(i => Math.min(i + 1, products.length - 1));
                 break;
             case 'ArrowDown':
                 e.preventDefault();

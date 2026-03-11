@@ -4,6 +4,7 @@ import { UsedDevice, UsedDeviceType } from '@/domain/types';
 import { getUsedDevices, addUsedDevice, updateUsedDevice, deleteUsedDevice } from '@/data/usedDevicesData';
 import { useToast } from '@/hooks/use-toast';
 import { useInventoryData } from '@/hooks/useInventoryData';
+import { useConfirm } from '@/components/ConfirmDialog';
 
 const emptyForm: Omit<UsedDevice, 'id' | 'createdAt' | 'updatedAt'> = {
     name: '', model: '', deviceType: 'mobile', serialNumber: '', color: '', storage: '', ram: '',
@@ -68,6 +69,7 @@ function ImageUpload({ value, onChange }: { value?: string; onChange: (v: string
 
 export default function UsedInventory() {
     const { toast } = useToast();
+    const { confirm } = useConfirm();
     const items = useInventoryData(getUsedDevices, ['gx_used_devices']);
     const [showForm, setShowForm] = useState(false);
     const [editId, setEditId] = useState<string | null>(null);
@@ -100,8 +102,8 @@ export default function UsedInventory() {
             {/* Header */}
             <div className="flex items-center justify-between flex-wrap gap-3">
                 <div className="flex items-center gap-3">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-100 border border-violet-200">
-                        <Archive className="h-5 w-5 text-violet-600" />
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-100 dark:bg-violet-500/15 border border-violet-200 dark:border-violet-500/20">
+                        <Archive className="h-5 w-5 text-violet-600 dark:text-violet-400" />
                     </div>
                     <div>
                         <h1 className="text-2xl font-bold text-foreground">الأجهزة المستعملة</h1>
@@ -128,8 +130,8 @@ export default function UsedInventory() {
 
             {/* Form Modal */}
             {showForm && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm overflow-y-auto py-6 px-4">
-                    <div className="w-full max-w-xl mx-auto rounded-3xl border border-border bg-card p-6 shadow-2xl space-y-4 animate-scale-in">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm overflow-y-auto py-6 px-4" onClick={() => { setShowForm(false); setEditId(null); }}>
+                    <div className="w-full max-w-xl mx-auto rounded-3xl border border-border bg-card p-6 shadow-2xl space-y-4 animate-scale-in" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between">
                             <h2 className="text-lg font-bold text-foreground">{editId ? 'تعديل جهاز مستعمل' : 'إضافة جهاز مستعمل'}</h2>
                             <button onClick={() => { setShowForm(false); setEditId(null); }} className="rounded-lg p-1.5 hover:bg-muted transition-colors"><X className="h-5 w-5 text-muted-foreground" /></button>
@@ -236,7 +238,7 @@ export default function UsedInventory() {
                                     </div>
                                     <div className="flex gap-1.5">
                                         <button onClick={() => startEdit(item)} className="rounded-xl p-2 bg-primary/10 hover:bg-primary/20 text-primary transition-colors"><Pencil className="h-3.5 w-3.5" /></button>
-                                        <button onClick={() => { deleteUsedDevice(item.id); toast({ title: 'تم الحذف' }); refresh(); }} className="rounded-xl p-2 bg-red-50 hover:bg-red-100 text-destructive transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
+                                        <button onClick={async () => { const ok = await confirm({ title: 'حذف جهاز', message: `هل أنت متأكد من حذف "${item.name}"؟`, confirmLabel: 'حذف', danger: true }); if (ok) { deleteUsedDevice(item.id); toast({ title: '🗑️ تم الحذف' }); refresh(); } }} className="rounded-xl p-2 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 text-destructive transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
                                     </div>
                                 </div>
                             </div>
@@ -272,7 +274,7 @@ export default function UsedInventory() {
                                         <td className={`px-3 py-3 text-xs font-bold ${(item.salePrice - item.purchasePrice) >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>{(item.salePrice - item.purchasePrice).toLocaleString()}</td>
                                         <td className="px-3 py-3"><div className="flex gap-1">
                                             <button onClick={() => startEdit(item)} className="rounded-lg p-1.5 hover:bg-primary/10 text-primary transition-colors"><Pencil className="h-3.5 w-3.5" /></button>
-                                            <button onClick={() => { deleteUsedDevice(item.id); toast({ title: 'تم الحذف' }); refresh(); }} className="rounded-lg p-1.5 hover:bg-red-50 text-destructive transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
+                                            <button onClick={async () => { const ok = await confirm({ title: 'حذف جهاز', message: `هل أنت متأكد من حذف "${item.name}"؟`, confirmLabel: 'حذف', danger: true }); if (ok) { deleteUsedDevice(item.id); toast({ title: '🗑️ تم الحذف' }); refresh(); } }} className="rounded-lg p-1.5 hover:bg-red-50 dark:hover:bg-red-500/10 text-destructive transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
                                         </div></td>
                                     </tr>
                                 ))}

@@ -24,15 +24,15 @@ function StepCard({ num, title, desc, warning, tip }: StepItem) {
                 <p className="font-bold text-foreground">{title}</p>
                 <p className="text-sm text-muted-foreground mt-0.5">{desc}</p>
                 {warning && (
-                    <div className="mt-2 flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2">
-                        <AlertTriangle className="h-3.5 w-3.5 text-amber-600 shrink-0 mt-0.5" />
-                        <p className="text-xs text-amber-700">{warning}</p>
+                    <div className="mt-2 flex items-start gap-2 rounded-lg bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 px-3 py-2">
+                        <AlertTriangle className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                        <p className="text-xs text-amber-700 dark:text-amber-300">{warning}</p>
                     </div>
                 )}
                 {tip && (
-                    <div className="mt-2 flex items-start gap-2 rounded-lg bg-blue-50 border border-blue-200 px-3 py-2">
-                        <Lightbulb className="h-3.5 w-3.5 text-blue-600 shrink-0 mt-0.5" />
-                        <p className="text-xs text-blue-700">{tip}</p>
+                    <div className="mt-2 flex items-start gap-2 rounded-lg bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 px-3 py-2">
+                        <Lightbulb className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400 shrink-0 mt-0.5" />
+                        <p className="text-xs text-blue-700 dark:text-blue-300">{tip}</p>
                     </div>
                 )}
             </div>
@@ -105,9 +105,9 @@ function TabContent({ tab }: { tab: string }) {
                     { num: 4, title: 'إتمام البيع', desc: 'اضغط زر إتمام البيع، اختر طريقة الدفع، وستُطبع الفاتورة.' },
                 ].map(s => <StepCard key={s.num} {...s} />)}
             </div>
-            <div className="flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-xl px-4 py-3">
-                <Keyboard className="h-4 w-4 text-blue-600" />
-                <p className="text-sm text-blue-700">للوصول السريع: اضغط <kbd className="px-2 py-0.5 bg-blue-100 rounded font-mono text-xs">Ctrl + 2</kbd> من أي صفحة</p>
+            <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 rounded-xl px-4 py-3">
+                <Keyboard className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <p className="text-sm text-blue-700 dark:text-blue-300">للوصول السريع: اضغط <kbd className="px-2 py-0.5 bg-blue-100 dark:bg-blue-500/20 rounded font-mono text-xs">Ctrl + 2</kbd> من أي صفحة</p>
             </div>
         </div>
     );
@@ -223,8 +223,8 @@ export default function HelpPage() {
                     return (
                         <button key={t.id} onClick={() => setActiveTab(t.id)}
                             className={`flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold transition-all ${activeTab === t.id
-                                    ? 'bg-primary text-primary-foreground shadow-md'
-                                    : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
+                                ? 'bg-primary text-primary-foreground shadow-md'
+                                : 'bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground'
                                 }`}>
                             <Icon className="h-3.5 w-3.5" />
                             {t.label}

@@ -1228,3 +1228,44 @@ input[type="number"] {
 .dark [class*="bg-black\/"] {
   background-color: rgb(0 0 0 / 0.7) !important;
 }
+
+/* ─── PAGE HEADER  TITLE ANIMATION ─────────────────────────────────── */
+/* Used by PageHeader.tsx — defined here globally to avoid per-render   */
+/* <style> injection which hurts performance.                           */
+
+@keyframes gleamex-title-glow {
+
+  0%,
+  100% {
+    filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.35));
+  }
+
+  50% {
+    filter: drop-shadow(0 0 16px rgba(168, 85, 247, 0.55));
+  }
+}
+
+/* ─── SCROLLBAR THIN UTILITY ─────────────────────────────────────────── */
+/* Used by AppSidebar nav — replaces Tailwind Scrollbar plugin need.    */
+
+.scrollbar-thin {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--primary) / 0.2) transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 4px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: hsl(var(--primary) / 0.2);
+  border-radius: 999px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary) / 0.35);
+}

@@ -6,6 +6,7 @@ import { getActiveSales, getAllSales, saveSale } from '@/repositories/saleReposi
 import { voidSale } from '@/services/saleService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useConfirm } from '@/components/ConfirmDialog';
 
 const PAGE_SIZE = 20;
 
@@ -20,6 +21,7 @@ const Sales = () => {
   const { t } = useLanguage();
   const { user, isOwner } = useAuth();
   const { toast } = useToast();
+  const { confirm } = useConfirm();
   const [search, setSearch] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
   const [showVoided, setShowVoided] = useState(false);
@@ -28,7 +30,7 @@ const Sales = () => {
   useEffect(() => {
     const handleStorage = (e: StorageEvent | CustomEvent) => {
       const key = 'key' in e ? e.key : (e as CustomEvent).detail?.key;
-      if (key && key.startsWith('gx_') || key?.startsWith('elahmed_')) setRefreshKey(k => k + 1);
+      if (key && (key.startsWith('gx_') || key.startsWith('elahmed_'))) setRefreshKey(k => k + 1);
     };
     window.addEventListener('storage', handleStorage as EventListener);
     window.addEventListener('local-storage', handleStorage as EventListener);
@@ -55,20 +57,24 @@ const Sales = () => {
   // Reset page when search changes
   useEffect(() => { setPage(1); }, [search, showVoided]);
 
-  const handleVoid = (saleId: string, invoiceNumber: string) => {
-    const reason = window.prompt(`سبب إلغاء الفاتورة ${invoiceNumber}:`);
-    if (!reason || !reason.trim()) return;
+  const [voidReason, setVoidReason] = useState('');
+  const [showVoidDialog, setShowVoidDialog] = useState<{ saleId: string; invoiceNumber: string } | null>(null);
+
+  const handleVoidConfirm = () => {
+    if (!showVoidDialog || !voidReason.trim()) return;
     try {
-      const sale = allSales.find(s => s.id === saleId);
+      const sale = allSales.find(s => s.id === showVoidDialog.saleId);
       if (!sale) return;
-      const { voidedSale } = voidSale(sale, reason.trim(), user?.id || 'admin');
+      const { voidedSale } = voidSale(sale, voidReason.trim(), user?.id || 'admin');
       saveSale(voidedSale);
       setRefreshKey(k => k + 1);
-      toast({ title: '✅ تم إلغاء الفاتورة', description: `${invoiceNumber} — ${reason}` });
+      toast({ title: '✅ تم إلغاء الفاتورة', description: `${showVoidDialog.invoiceNumber} — ${voidReason}` });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'حدث خطأ غير متوقع';
       toast({ title: 'خطأ', description: msg, variant: 'destructive' });
     }
+    setShowVoidDialog(null);
+    setVoidReason('');
   };
 
   return (
@@ -132,8 +138,8 @@ const Sales = () => {
                     </div>
                   </td>
                   <td className="px-4 py-3 text-end">
-                    <p className="font-semibold text-card-foreground">{sale.total.toFixed(2)} EGP</p>
-                    <p className="text-xs text-chart-3">+{sale.grossProfit.toFixed(2)} EGP</p>
+                    <p className="font-semibold text-card-foreground">{sale.total.toFixed(2)} ج.م</p>
+                    <p className="text-xs text-chart-3">+{sale.grossProfit.toFixed(2)} ج.م</p>
                   </td>
                   <td className="px-4 py-3 text-center">
                     <span className={cn(
@@ -149,7 +155,7 @@ const Sales = () => {
                   {isOwner() && (
                     <td className="px-4 py-3 text-center">
                       {!sale.voidedAt && (
-                        <button onClick={() => handleVoid(sale.id, sale.invoiceNumber)}
+                        <button onClick={() => { setShowVoidDialog({ saleId: sale.id, invoiceNumber: sale.invoiceNumber }); setVoidReason(''); }}
                           title="إلغاء الفاتورة"
                           className="rounded-lg p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all">
                           <Ban className="h-4 w-4" />
@@ -178,6 +184,40 @@ const Sales = () => {
           </div>
         )}
       </div>
+
+      {/* Void Sale Dialog */}
+      {showVoidDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
+          <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-2xl animate-scale-in">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100 dark:bg-red-500/15">
+                <Ban className="h-5 w-5 text-red-600" />
+              </div>
+              <div>
+                <h3 className="font-bold text-foreground">إلغاء الفاتورة</h3>
+                <p className="text-xs text-muted-foreground">{showVoidDialog.invoiceNumber}</p>
+              </div>
+            </div>
+            <div className="mb-4">
+              <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">سبب الإلغاء *</label>
+              <input value={voidReason} onChange={e => setVoidReason(e.target.value)}
+                placeholder="أدخل سبب إلغاء الفاتورة..."
+                autoFocus
+                className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
+            </div>
+            <div className="flex gap-2">
+              <button onClick={handleVoidConfirm} disabled={!voidReason.trim()}
+                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-red-600 hover:bg-red-700 disabled:opacity-40 py-2.5 text-sm font-bold text-white transition-all">
+                <Ban className="h-4 w-4" /> تأكيد الإلغاء
+              </button>
+              <button onClick={() => setShowVoidDialog(null)}
+                className="flex-1 rounded-xl border border-border py-2.5 text-sm font-medium hover:bg-muted transition-colors">
+                تراجع
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

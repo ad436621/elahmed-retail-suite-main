@@ -65,9 +65,9 @@ const StatCard = ({
         (e.currentTarget as HTMLDivElement).style.borderColor = v.border;
       }}
     >
-      {/* ELOS left-side color bar */}
+      {/* ELOS left-side color bar — on left edge in RTL layout */}
       <div
-        className="absolute top-0 right-0 w-1 h-full rounded-l-sm"
+        className="absolute top-0 left-0 w-1 h-full rounded-r-sm"
         style={{ background: v.sideBar }}
       />
 

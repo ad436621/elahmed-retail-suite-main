@@ -39,7 +39,7 @@ const PasswordField = memo(({ value, onChange, disabled }: {
         onChange={e => onChange(e.target.value)} placeholder="أدخل كلمة المرور" required disabled={disabled}
         autoComplete="current-password"
         className="h-12 w-full rounded-xl border border-white/10 bg-white/5 pr-4 pl-12 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/50 transition-all duration-300 disabled:opacity-50 backdrop-blur-sm" />
-      <button type="button" tabIndex={-1} aria-label={show ? 'إخفاء' : 'إظهار'}
+      <button type="button" tabIndex={-1} aria-label={show ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
         onMouseDown={e => { e.preventDefault(); setShow(s => !s); }}
         className="absolute left-4 top-1/2 -translate-y-1/2 flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors">
         {show ? <EyeOff className="h-4 w-4 text-primary pointer-events-none" /> : <Eye className="h-4 w-4 text-primary pointer-events-none" />}
@@ -232,8 +232,8 @@ const LoginPage = () => {
               <input id="username" value={username} onChange={e => setUsername(e.target.value)}
                 placeholder="أدخل اسم المستخدم" required autoFocus autoComplete="username"
                 disabled={loading || isLocked}
-                className="h-12 w-full rounded-xl border border-white/10 bg-white/5 pr-4 pl-12 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/50 transition-all duration-300 disabled:opacity-50 backdrop-blur-sm" />
-              <div className="absolute left-4 top-1/2 -translate-y-1/2 flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10">
+                className="h-12 w-full rounded-xl border border-white/10 bg-white/5 pr-12 pl-4 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/50 transition-all duration-300 disabled:opacity-50 backdrop-blur-sm" />
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10">
                 <User className="h-4 w-4 text-primary" />
               </div>
             </div>

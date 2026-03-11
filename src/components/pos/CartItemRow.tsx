@@ -204,7 +204,7 @@ export default function CartItemRow({ item, onUpdateQty, onRemove, onLineDiscoun
                     ) : (
                         <button
                             onClick={() => { setEditingQty(true); setQtyInput(String(item.qty)); }}
-                            aria-label={`الكمية: ${item.qty} — انقر للتعديل —可以使用 +/- 键调整`}
+                            aria-label={`الكمية: ${item.qty} — انقر للتعديل — استخدم +/- للتغيير`}
                             title="انقر للتعديل - استخدم +/- للتغيير - احذف للحذف"
                             className="min-w-[44px] h-11 px-3 text-center text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded tabular-nums cursor-pointer hover:bg-muted flex items-center justify-center"
                         >

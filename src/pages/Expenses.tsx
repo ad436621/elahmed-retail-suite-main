@@ -3,6 +3,7 @@ import { Plus, Trash2, X, Check, TrendingDown } from 'lucide-react';
 import { Expense, ExpenseCategory } from '@/domain/types';
 import { getExpenses, addExpense, deleteExpense, getExpenseCategoryLabel } from '@/data/expensesData';
 import { useToast } from '@/hooks/use-toast';
+import { useConfirm } from '@/components/ConfirmDialog';
 
 const emptyForm = {
     date: new Date().toISOString().split('T')[0],
@@ -34,6 +35,7 @@ const categoryColors: Record<ExpenseCategory, string> = {
 
 export default function Expenses() {
     const { toast } = useToast();
+    const { confirm } = useConfirm();
     const [expenses, setExpenses] = useState<Expense[]>(() => getExpenses());
     const [showForm, setShowForm] = useState(false);
     const [form, setForm] = useState(emptyForm);
@@ -119,8 +121,8 @@ export default function Expenses() {
 
             {/* Form */}
             {showForm && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-                    <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-2xl space-y-4 animate-scale-in mx-4">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowForm(false)}>
+                    <div className="w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-2xl space-y-4 animate-scale-in mx-4" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between">
                             <h2 className="text-lg font-bold text-foreground">إضافة مصروف</h2>
                             <button onClick={() => setShowForm(false)} className="rounded-lg p-1.5 hover:bg-muted transition-colors"><X className="h-5 w-5 text-muted-foreground" /></button>
@@ -192,7 +194,11 @@ export default function Expenses() {
                                     <td className="px-4 py-3 text-center font-semibold text-rose-500">{e.amount.toLocaleString()} ج.م</td>
                                     <td className="px-4 py-3 text-center text-muted-foreground text-xs">{e.addedBy || '—'}</td>
                                     <td className="px-4 py-3 text-center">
-                                        <button onClick={() => { deleteExpense(e.id); refresh(); toast({ title: 'تم الحذف' }); }}
+                                        <button onClick={async () => {
+                                            const ok = await confirm({ title: 'حذف مصروف', message: `هل أنت متأكد من حذف "${e.description}" (${e.amount.toLocaleString()} ج.م)؟`, confirmLabel: 'حذف', danger: true });
+                                            if (!ok) return;
+                                            deleteExpense(e.id); refresh(); toast({ title: '🗑️ تم الحذف', description: e.description });
+                                        }}
                                             className="rounded-lg p-1.5 hover:bg-destructive/10 text-destructive transition-colors"><Trash2 className="h-4 w-4" /></button>
                                     </td>
                                 </tr>

@@ -44,20 +44,11 @@ export default function PageHeader({ title, icon, subtitle, actions, className }
                 </div>
             </div>
 
-            {/* Right: actions slot */}
             {actions && (
                 <div className="flex items-center gap-2 flex-wrap">
                     {actions}
                 </div>
             )}
-
-            {/* Keyframe injection (idempotent) */}
-            <style>{`
-        @keyframes gleamex-title-glow {
-          0%, 100% { filter: drop-shadow(0 0 8px rgba(59,130,246,0.35)); }
-          50%       { filter: drop-shadow(0 0 16px rgba(168,85,247,0.55)); }
-        }
-      `}</style>
         </div>
     );
 }

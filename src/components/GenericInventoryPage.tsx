@@ -32,6 +32,7 @@ import { ProductFormDialog } from '@/components/ProductFormDialog';
 import { ExcelImportDialog } from '@/components/ExcelImportDialog';
 import { ProductBatchesModal } from '@/components/ProductBatchesModal';
 import { BarcodeSVG } from '@/components/BarcodeSVG';
+import { useConfirm } from '@/components/ConfirmDialog';
 
 // Product type interface
 export interface InventoryProduct {
@@ -81,6 +82,7 @@ export function GenericInventoryPage({
     onImportProducts,
 }: GenericInventoryPageProps) {
     const { toast } = useToast();
+    const { confirm } = useConfirm();
     const [searchParams, setSearchParams] = useSearchParams();
 
     // State
@@ -156,12 +158,12 @@ export function GenericInventoryPage({
         }
     }, [editingProduct, onUpdateProduct, toast]);
 
-    const handleDelete = useCallback((product: InventoryProduct) => {
-        if (confirm(`هل أنت متأكد من حذف "${product.name}"؟`)) {
-            onDeleteProduct(product.id);
-            toast({ title: 'تم حذف المنتج', description: product.name });
-        }
-    }, [onDeleteProduct, toast]);
+    const handleDelete = useCallback(async (product: InventoryProduct) => {
+        const ok = await confirm({ title: 'حذف منتج', message: `هل أنت متأكد من حذف "${product.name}"؟`, confirmLabel: 'حذف', danger: true });
+        if (!ok) return;
+        onDeleteProduct(product.id);
+        toast({ title: 'تم حذف المنتج', description: product.name });
+    }, [onDeleteProduct, toast, confirm]);
 
     const handlePrintBarcode = useCallback((product: InventoryProduct) => {
         const printWindow = window.open('', '_blank');

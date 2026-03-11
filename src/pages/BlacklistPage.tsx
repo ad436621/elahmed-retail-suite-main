@@ -3,6 +3,7 @@ import { ShieldAlert, Plus, X, Check, Search, Trash2, AlertTriangle } from 'luci
 import { getBlacklist, addToBlacklist, updateBlacklistEntry, removeFromBlacklist, checkIMEI, REASON_LABELS, type BlacklistedDevice, type BlacklistReason } from '@/data/blacklistData';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useConfirm } from '@/components/ConfirmDialog';
 
 const IC = 'w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all';
 
@@ -11,6 +12,7 @@ const emptyForm = { imei: '', deviceName: '', ownerName: '', ownerPhone: '', rea
 export default function BlacklistPage() {
     const { toast } = useToast();
     const { user } = useAuth();
+    const { confirm } = useConfirm();
     const [list, setList] = useState<BlacklistedDevice[]>(() => getBlacklist());
     const [search, setSearch] = useState('');
     const [quickCheck, setQuickCheck] = useState('');
@@ -51,8 +53,8 @@ export default function BlacklistPage() {
             {/* Header */}
             <div className="flex items-center justify-between flex-wrap gap-3">
                 <div className="flex items-center gap-3">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-red-100 border border-red-200">
-                        <ShieldAlert className="h-5 w-5 text-red-600" />
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-red-100 dark:bg-red-500/15 border border-red-200 dark:border-red-500/20">
+                        <ShieldAlert className="h-5 w-5 text-red-600 dark:text-red-400" />
                     </div>
                     <div>
                         <h1 className="text-2xl font-bold text-foreground">القائمة السوداء</h1>
@@ -106,10 +108,10 @@ export default function BlacklistPage() {
                             <div className="flex-1">
                                 <div className="flex items-center gap-2 flex-wrap">
                                     <p className="font-bold text-foreground">{d.deviceName}</p>
-                                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${d.status === 'active' ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'}`}>
+                                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${d.status === 'active' ? 'bg-red-100 dark:bg-red-500/15 text-red-700 dark:text-red-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400'}`}>
                                         {d.status === 'active' ? '🔴 محظور' : '✅ تم الحل'}
                                     </span>
-                                    <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700">{REASON_LABELS[d.reason]}</span>
+                                    <span className="rounded-full bg-amber-100 dark:bg-amber-500/15 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:text-amber-400">{REASON_LABELS[d.reason]}</span>
                                 </div>
                                 <p className="font-mono text-xs text-muted-foreground mt-1">IMEI: {d.imei}</p>
                                 {(d.ownerName || d.ownerPhone) && (
@@ -124,8 +126,8 @@ export default function BlacklistPage() {
                                         حُل
                                     </button>
                                 )}
-                                <button onClick={() => { removeFromBlacklist(d.id); toast({ title: 'تم الحذف' }); refresh(); }}
-                                    className="rounded-xl p-2 bg-red-50 hover:bg-red-100 text-destructive transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
+                                <button onClick={async () => { const ok = await confirm({ title: 'حذف جهاز', message: `هل أنت متأكد من حذف "${d.deviceName}" من القائمة السوداء؟`, confirmLabel: 'حذف', danger: true }); if (ok) { removeFromBlacklist(d.id); toast({ title: '🗑️ تم الحذف' }); refresh(); } }}
+                                    className="rounded-xl p-2 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 text-destructive transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
                             </div>
                         </div>
                         {d.notes && <p className="text-xs text-muted-foreground border-t border-border/50 pt-2">{d.notes}</p>}

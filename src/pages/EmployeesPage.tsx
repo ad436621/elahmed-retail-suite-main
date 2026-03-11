@@ -13,6 +13,7 @@ import {
     hasBeenPaidThisMonth, type Employee,
 } from '@/data/employeesData';
 import { useConfirm } from '@/components/ConfirmDialog';
+import { useToast } from '@/hooks/use-toast';
 
 const fmt = (n: number) => n.toLocaleString('ar-EG');
 const POSITIONS = ['كاشير', 'تقني', 'مدير', 'محاسب', 'مندوب مبيعات', 'موظف'];
@@ -45,8 +46,8 @@ function EmployeeModal({ emp, onClose, onDone }: { emp?: Employee; onClose: () =
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
-            <div className="w-full max-w-md bg-card rounded-3xl border border-border shadow-2xl animate-scale-in max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+            <div className="w-full max-w-md bg-card rounded-3xl border border-border shadow-2xl animate-scale-in max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                 <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-border/50 sticky top-0 bg-card z-10">
                     <h2 className="text-lg font-extrabold">{isEdit ? 'تعديل موظف' : 'إضافة موظف جديد'}</h2>
                     <button onClick={onClose} className="rounded-lg p-1.5 hover:bg-muted text-muted-foreground transition-colors"><X className="h-4 w-4" /></button>
@@ -122,8 +123,8 @@ function SalaryModal({ emp, onClose, onDone }: { emp: Employee; onClose: () => v
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
-            <div className="w-full max-w-sm bg-card rounded-3xl border border-border shadow-2xl animate-scale-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+            <div className="w-full max-w-sm bg-card rounded-3xl border border-border shadow-2xl animate-scale-in" onClick={e => e.stopPropagation()}>
                 <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-border/50">
                     <h2 className="text-base font-extrabold">صرف راتب — {emp.name}</h2>
                     <button onClick={onClose} className="rounded-lg p-1.5 hover:bg-muted text-muted-foreground"><X className="h-4 w-4" /></button>
@@ -181,8 +182,26 @@ export default function EmployeesPage() {
     const [salaryTarget, setSalaryTarget] = useState<Employee | null>(null);
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const { confirm } = useConfirm();
+    const { toast } = useToast();
 
     const refresh = () => setEmployees(getEmployees());
+
+    const [advanceTarget, setAdvanceTarget] = useState<Employee | null>(null);
+    const [advanceAmount, setAdvanceAmount] = useState(0);
+
+    const handleAdvance = (emp: Employee) => {
+        setAdvanceTarget(emp);
+        setAdvanceAmount(0);
+    };
+
+    const submitAdvance = () => {
+        if (!advanceTarget || advanceAmount <= 0) return;
+        addAdvance({ employeeId: advanceTarget.id, employeeName: advanceTarget.name, amount: advanceAmount, date: new Date().toISOString(), notes: '' });
+        toast({ title: '✅ تم تسجيل السلفة', description: `${advanceTarget.name} — ${fmt(advanceAmount)} ج.م` });
+        setAdvanceTarget(null);
+        setAdvanceAmount(0);
+        refresh();
+    };
 
     const handleDelete = async (emp: Employee) => {
         const ok = await confirm({ title: 'حذف موظف', message: `هل أنت متأكد من حذف الموظف "${emp.name}"؟`, confirmLabel: 'حذف', danger: true });
@@ -231,7 +250,7 @@ export default function EmployeesPage() {
                                         <div className="flex items-center gap-2 flex-wrap">
                                             <p className="font-extrabold text-foreground">{emp.name}</p>
                                             <span className="text-[10px] bg-muted px-2 py-0.5 rounded-full text-muted-foreground font-medium">{emp.position}</span>
-                                            {isPaid && <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-bold">✓ مصروف</span>}
+                                            {isPaid && <span className="text-[10px] bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-full font-bold">✓ مصروف</span>}
                                         </div>
                                         <p className="text-sm text-muted-foreground mt-0.5">
                                             راتب: <span className="font-bold text-foreground">{fmt(emp.baseSalary)} ج.م</span>
@@ -245,8 +264,8 @@ export default function EmployeesPage() {
                                                 <DollarSign className="h-3.5 w-3.5" /> صرف راتب
                                             </button>
                                         )}
-                                        <button onClick={() => addAdvance({ employeeId: emp.id, employeeName: emp.name, amount: 0, date: new Date().toISOString(), notes: '' })}
-                                            title="سلفة" className="rounded-xl border border-border p-2 text-muted-foreground hover:bg-amber-50 hover:text-amber-600 transition-colors">
+                                        <button onClick={() => handleAdvance(emp)}
+                                            title="سلفة" className="rounded-xl border border-border p-2 text-muted-foreground hover:bg-amber-50 dark:hover:bg-amber-500/10 hover:text-amber-600 transition-colors">
                                             <TrendingDown className="h-3.5 w-3.5" />
                                         </button>
                                         <button onClick={() => { setEditTarget(emp); setShowModal(true); }}
@@ -285,6 +304,36 @@ export default function EmployeesPage() {
 
             {showModal && <EmployeeModal emp={editTarget} onClose={() => setShowModal(false)} onDone={refresh} />}
             {salaryTarget && <SalaryModal emp={salaryTarget} onClose={() => setSalaryTarget(null)} onDone={refresh} />}
+
+            {/* Advance Dialog */}
+            {advanceTarget && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in" onClick={() => setAdvanceTarget(null)}>
+                    <div className="w-full max-w-sm bg-card rounded-2xl border border-border shadow-2xl animate-scale-in" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-border/50">
+                            <h3 className="font-bold text-foreground">💰 تسجيل سلفة</h3>
+                            <button onClick={() => setAdvanceTarget(null)} className="rounded-lg p-1.5 hover:bg-muted text-muted-foreground"><X className="h-4 w-4" /></button>
+                        </div>
+                        <div className="p-5 space-y-4">
+                            <p className="text-sm text-muted-foreground">أدخل مبلغ السلفة للموظف <strong className="text-foreground">{advanceTarget.name}</strong></p>
+                            <div>
+                                <label className="block text-xs font-semibold text-muted-foreground mb-1">المبلغ (ج.م)</label>
+                                <input type="number" min={1} autoFocus value={advanceAmount || ''} onChange={e => setAdvanceAmount(+e.target.value)}
+                                    className="w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all"
+                                    placeholder="مثال: 500"
+                                    onKeyDown={e => { if (e.key === 'Enter' && advanceAmount > 0) submitAdvance(); }}
+                                />
+                            </div>
+                            <div className="flex gap-2">
+                                <button onClick={submitAdvance} disabled={advanceAmount <= 0}
+                                    className="flex-1 rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all">
+                                    تسجيل السلفة
+                                </button>
+                                <button onClick={() => setAdvanceTarget(null)} className="flex-1 rounded-xl border border-border py-2.5 text-sm font-medium hover:bg-muted transition-colors">إلغاء</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

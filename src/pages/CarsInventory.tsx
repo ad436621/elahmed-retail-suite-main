@@ -6,6 +6,7 @@ import { getCars, addCar, updateCar, deleteCar, getNewCars, getUsedCars, getCars
 import { useToast } from '@/hooks/use-toast';
 import { ExcelColumnMappingDialog } from '@/components/ExcelColumnMappingDialog';
 import { useAuth } from '@/contexts/AuthContext';
+import { useConfirm } from '@/components/ConfirmDialog';
 
 const emptyForm: Omit<CarItem, 'id' | 'createdAt' | 'updatedAt'> = {
     name: '', model: '', year: new Date().getFullYear(), color: '',
@@ -83,6 +84,7 @@ export default function CarsInventory() {
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
     const [showExcelRestore, setShowExcelRestore] = useState(false);
     const { user } = useAuth();
+    const { confirm } = useConfirm();
 
     // Read navigation state from Dashboard
     useEffect(() => {
@@ -154,8 +156,8 @@ export default function CarsInventory() {
             {/* Header */}
             <div className="flex items-center justify-between flex-wrap gap-3">
                 <div className="flex items-center gap-3">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-100 border border-emerald-200">
-                        <Car className="h-5 w-5 text-emerald-600" />
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-100 dark:bg-emerald-500/15 border border-emerald-200 dark:border-emerald-500/20">
+                        <Car className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                     </div>
                     <div>
                         <h1 className="text-2xl font-bold text-foreground">السيارات</h1>
@@ -163,13 +165,13 @@ export default function CarsInventory() {
                     </div>
                 </div>
                 <div className="flex items-center gap-3">
-                    <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-2">
-                        <p className="text-xs text-emerald-600">رأس المال</p>
-                        <p className="text-lg font-bold text-emerald-700">{totalCapital.toLocaleString('ar-EG')} ج.م</p>
+                    <div className="rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 px-4 py-2">
+                        <p className="text-xs text-emerald-600 dark:text-emerald-400">رأس المال</p>
+                        <p className="text-lg font-bold text-emerald-700 dark:text-emerald-300">{totalCapital.toLocaleString('ar-EG')} ج.م</p>
                     </div>
-                    <div className="rounded-xl bg-blue-50 border border-blue-200 px-4 py-2">
-                        <p className="text-xs text-blue-600">الأرباح</p>
-                        <p className="text-lg font-bold text-blue-700">{totalProfit.toLocaleString('ar-EG')} ج.م</p>
+                    <div className="rounded-xl bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 px-4 py-2">
+                        <p className="text-xs text-blue-600 dark:text-blue-400">الأرباح</p>
+                        <p className="text-lg font-bold text-blue-700 dark:text-blue-300">{totalProfit.toLocaleString('ar-EG')} ج.م</p>
                     </div>
                     <div className="flex gap-1 rounded-xl border border-border p-1 bg-muted/30">
                         <button onClick={() => setViewMode('grid')} className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${viewMode === 'grid' ? 'bg-card shadow text-primary border border-border' : 'text-muted-foreground'}`}>شبكة</button>
@@ -247,9 +249,9 @@ export default function CarsInventory() {
                                     <input type="number" min={0} value={form.salePrice} onChange={e => setForm(f => ({ ...f, salePrice: +e.target.value }))} className={IC} />
                                 </div>
                                 {form.salePrice > 0 && form.purchasePrice > 0 && (
-                                    <div className="col-span-2 rounded-xl border p-3 flex justify-between items-center" style={{ backgroundColor: (form.salePrice - form.purchasePrice) >= 0 ? '#f0fdf4' : '#fef2f2', borderColor: (form.salePrice - form.purchasePrice) >= 0 ? '#bbf7d0' : '#fecaca' }}>
-                                        <span className="text-sm font-semibold" style={{ color: (form.salePrice - form.purchasePrice) >= 0 ? '#16a34a' : '#dc2626' }}>الربح المتوقع</span>
-                                        <span className="text-lg font-extrabold" style={{ color: (form.salePrice - form.purchasePrice) >= 0 ? '#16a34a' : '#dc2626' }}>{(form.salePrice - form.purchasePrice).toLocaleString()} ج.م</span>
+                                    <div className={`col-span-2 rounded-xl border p-3 flex justify-between items-center ${(form.salePrice - form.purchasePrice) >= 0 ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20' : 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/20'}`}>
+                                        <span className={`text-sm font-semibold ${(form.salePrice - form.purchasePrice) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>الربح المتوقع</span>
+                                        <span className={`text-lg font-extrabold ${(form.salePrice - form.purchasePrice) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{(form.salePrice - form.purchasePrice).toLocaleString()} ج.م</span>
                                     </div>
                                 )}
                             </div>
@@ -303,7 +305,7 @@ export default function CarsInventory() {
                                     </div>
                                     <div className="flex gap-1.5">
                                         <button onClick={() => startEdit(item)} className="rounded-xl p-2 bg-primary/10 hover:bg-primary/20 text-primary transition-colors"><Pencil className="h-3.5 w-3.5" /></button>
-                                        <button onClick={() => { deleteCar(item.id); toast({ title: 'تم الحذف' }); refresh(); }} className="rounded-xl p-2 bg-red-50 hover:bg-red-100 text-destructive transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
+                                        <button onClick={async () => { const ok = await confirm({ title: 'حذف سيارة', message: `هل أنت متأكد من حذف "${item.name}"؟`, confirmLabel: 'حذف', danger: true }); if (ok) { deleteCar(item.id); toast({ title: '🗑️ تم الحذف' }); refresh(); } }} className="rounded-xl p-2 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 text-destructive transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
                                     </div>
                                 </div>
                             </div>
@@ -335,14 +337,14 @@ export default function CarsInventory() {
                                     <td className="px-4 py-3 text-xs text-muted-foreground">{item.model || '—'}</td>
                                     <td className="px-4 py-3 text-xs text-muted-foreground">{item.year}</td>
                                     <td className="px-4 py-3 text-xs text-muted-foreground">{item.plateNumber || '—'}</td>
-                                    <td className="px-4 py-3"><span className={`rounded-full px-2 py-0.5 text-xs font-bold ${item.condition === 'new' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>{item.condition === 'new' ? 'جديدة' : 'مستعملة'}</span></td>
+                                    <td className="px-4 py-3"><span className={`rounded-full px-2 py-0.5 text-xs font-bold ${item.condition === 'new' ? 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400' : 'bg-amber-100 dark:bg-amber-500/15 text-amber-700 dark:text-amber-400'}`}>{item.condition === 'new' ? 'جديدة' : 'مستعملة'}</span></td>
                                     <td className="px-4 py-3 text-xs text-muted-foreground">{item.purchasePrice.toLocaleString()}</td>
                                     <td className="px-4 py-3 text-sm font-bold text-foreground">{item.salePrice.toLocaleString()}</td>
                                     <td className={`px-4 py-3 text-xs font-bold ${(item.salePrice - item.purchasePrice) >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>{(item.salePrice - item.purchasePrice).toLocaleString()}</td>
                                     <td className="px-4 py-3">
                                         <div className="flex gap-1">
                                             <button onClick={() => startEdit(item)} className="rounded-lg p-1.5 hover:bg-primary/10 text-primary transition-colors"><Pencil className="h-3.5 w-3.5" /></button>
-                                            <button onClick={() => { deleteCar(item.id); toast({ title: 'تم الحذف' }); refresh(); }} className="rounded-lg p-1.5 hover:bg-red-50 text-destructive transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
+                                            <button onClick={async () => { const ok = await confirm({ title: 'حذف سيارة', message: `هل أنت متأكد من حذف "${item.name}"؟`, confirmLabel: 'حذف', danger: true }); if (ok) { deleteCar(item.id); toast({ title: '🗑️ تم الحذف' }); refresh(); } }} className="rounded-lg p-1.5 hover:bg-red-50 dark:hover:bg-red-500/10 text-destructive transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
                                         </div>
                                     </td>
                                 </tr>

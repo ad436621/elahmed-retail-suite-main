@@ -10,6 +10,7 @@ import { getDevices } from '@/data/devicesData';
 import { getCars } from '@/data/carsData';
 import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
 import { STORAGE_KEYS } from '@/config';
+import { useToast } from '@/hooks/use-toast';
 
 // ── Types ────────────────────────────────────────────────────
 interface StocktakeItem {
@@ -34,6 +35,7 @@ const STOCKTAKE_KEY = STORAGE_KEYS.STOCKTAKE ?? 'gx_stocktake';
 
 // ── Component ────────────────────────────────────────────────
 export default function StocktakePage() {
+    const { toast } = useToast();
     const [search, setSearch] = useState('');
     const [activeCategory, setActiveCategory] = useState<string>('all');
     const [sessions] = useState<StocktakeSession[]>(() => getStorageItem<StocktakeSession[]>(STOCKTAKE_KEY, []));
@@ -104,7 +106,7 @@ export default function StocktakePage() {
         };
         const existing = getStorageItem<StocktakeSession[]>(STOCKTAKE_KEY, []);
         setStorageItem(STOCKTAKE_KEY, [...existing, session]);
-        alert('تم حفظ جلسة الجرد بنجاح ✅');
+        toast({ title: '✅ تم الحفظ', description: 'تم حفظ جلسة الجرد بنجاح' });
     }
 
     const fmt = (n: number) => n.toLocaleString('ar-EG');

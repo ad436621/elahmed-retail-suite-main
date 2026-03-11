@@ -6,6 +6,7 @@ import { useState, useMemo } from 'react';
 import { Users, Plus, Pencil, Trash2, Search, Phone, MapPin } from 'lucide-react';
 import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
 import { STORAGE_KEYS } from '@/config';
+import { useConfirm } from '@/components/ConfirmDialog';
 
 // ── Types ────────────────────────────────────────────────────
 export interface Partner {
@@ -84,8 +85,12 @@ export default function PartnersPage() {
         setForm({});
     }
 
-    function handleDelete(id: string) {
-        if (!confirm('هل تريد حذف هذا الشريك؟')) return;
+    const { confirm } = useConfirm();
+
+    async function handleDelete(id: string) {
+        const p = partners.find(x => x.id === id);
+        const ok = await confirm({ title: 'حذف شريك', message: `هل أنت متأكد من حذف الشريك "${p?.name ?? ''}"؟`, confirmLabel: 'حذف', danger: true });
+        if (!ok) return;
         const updated = partners.filter(p => p.id !== id);
         savePartners(updated);
         setPartners(updated);

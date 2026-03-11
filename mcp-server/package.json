@@ -1,0 +1,20 @@
+{
+    "name": "elahmed-retail-mcp-server",
+    "version": "1.0.0",
+    "description": "MCP Server for ElAhmed Retail Suite — gives AI access to business data",
+    "type": "module",
+    "main": "src/index.ts",
+    "scripts": {
+        "start": "npx tsx src/index.ts",
+        "dev": "npx tsx watch src/index.ts"
+    },
+    "dependencies": {
+        "@modelcontextprotocol/sdk": "^1.12.1",
+        "zod": "^3.24.4"
+    },
+    "devDependencies": {
+        "@types/node": "^20.11.0",
+        "tsx": "^4.7.0",
+        "typescript": "^5.3.3"
+    }
+}

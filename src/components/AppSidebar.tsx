@@ -49,7 +49,7 @@ import {
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSettings } from '@/contexts/SettingsContext';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import type { Permission } from '@/data/usersData';
 
@@ -264,6 +264,7 @@ const AppSidebar = () => {
   const { user, logout, hasPermission, isOwner } = useAuth();
   const { settings } = useSettings();
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Track which groups are expanded
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(() => {
@@ -430,33 +431,106 @@ const AppSidebar = () => {
         aria-label="التنقل الرئيسي"
       >
         {isCollapsed ? (
-          // Collapsed view: Icons only
+          // Collapsed view: Icons that navigate to the first page of each group
           <div className="space-y-0.5">
             {NAV_GROUPS.map(group => {
               const visible = filterByPerm(group.items);
               if (visible.length === 0) return null;
 
+              // Check if any item in this group is active
+              const isGroupActive = visible.some(item =>
+                item.to === '/' ? location.pathname === '/' : location.pathname.startsWith(item.to)
+              );
+
               return (
                 <div key={group.id} className="relative group">
-                  <button
-                    onClick={() => toggleGroup(group.id)}
+                  <NavLink
+                    to={visible[0].to}
                     aria-label={group.title}
                     className={cn(
-                      "flex w-full items-center justify-center p-2 rounded-xl transition-all",
-                      "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
+                      "flex w-full items-center justify-center p-2 rounded-xl transition-all relative",
+                      isGroupActive
+                        ? "bg-primary/10 text-primary"
+                        : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
                       "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                     )}
                   >
+                    {isGroupActive && (
+                      <div
+                        className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-primary rounded-l-full"
+                        aria-hidden="true"
+                      />
+                    )}
                     <group.icon className="h-5 w-5" />
-                  </button>
+                  </NavLink>
 
-                  {/* Tooltip on hover */}
-                  <div className="absolute right-full top-0 mr-2 px-2 py-1 bg-foreground text-background text-xs font-bold rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50">
+                  {/* Tooltip on hover — RTL: appears on left side */}
+                  <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2.5 py-1.5 bg-foreground text-background text-xs font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg">
                     {group.title}
+                    <div className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-l-foreground" />
                   </div>
                 </div>
               );
             })}
+
+            {/* Divider */}
+            <div className="h-px bg-sidebar-border/30 my-2" />
+
+            {/* System items in collapsed mode */}
+            {hasPermission('settings') && (
+              <div className="relative group">
+                <NavLink
+                  to="/settings"
+                  aria-label="الإعدادات"
+                  className={({ isActive }) => cn(
+                    "flex w-full items-center justify-center p-2 rounded-xl transition-all relative",
+                    isActive
+                      ? "bg-primary/10 text-primary"
+                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  )}
+                >
+                  {({ isActive }) => (
+                    <>
+                      {isActive && (
+                        <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-primary rounded-l-full" aria-hidden="true" />
+                      )}
+                      <Settings className="h-5 w-5" />
+                    </>
+                  )}
+                </NavLink>
+                <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2.5 py-1.5 bg-foreground text-background text-xs font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg">
+                  الإعدادات
+                </div>
+              </div>
+            )}
+            {isOwner() && (
+              <div className="relative group">
+                <NavLink
+                  to="/users"
+                  aria-label="إدارة المستخدمين"
+                  className={({ isActive }) => cn(
+                    "flex w-full items-center justify-center p-2 rounded-xl transition-all relative",
+                    isActive
+                      ? "bg-primary/10 text-primary"
+                      : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-foreground",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  )}
+                >
+                  {({ isActive }) => (
+                    <>
+                      {isActive && (
+                        <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-primary rounded-l-full" aria-hidden="true" />
+                      )}
+                      <Users className="h-5 w-5" />
+                    </>
+                  )}
+                </NavLink>
+                <div className="absolute left-full top-1/2 -translate-y-1/2 ml-2 px-2.5 py-1.5 bg-foreground text-background text-xs font-bold rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap z-50 shadow-lg">
+                  إدارة المستخدمين
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           // Expanded view
@@ -476,7 +550,7 @@ const AppSidebar = () => {
         {/* Divider */}
         <div className="h-px bg-sidebar-border/30 my-2" />
 
-        {/* System Items */}
+        {/* System Items — expanded only */}
         {!isCollapsed && (
           <>
             {hasPermission('settings') && (

@@ -18,9 +18,9 @@ type ContractType = 'product' | 'transfer' | 'car';
 const IC = 'w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all';
 
 const STATUS_COLORS: Record<InstallmentContract['status'], string> = {
-    active: 'bg-blue-100 text-blue-700',
-    completed: 'bg-emerald-100 text-emerald-700',
-    overdue: 'bg-red-100 text-red-700',
+    active: 'bg-blue-100 text-blue-700 dark:bg-blue-500/15 dark:text-blue-400',
+    completed: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400',
+    overdue: 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400',
 };
 const STATUS_LABELS: Record<InstallmentContract['status'], string> = {
     active: 'نشط', completed: 'مكتمل', overdue: 'متأخر',
@@ -29,9 +29,9 @@ const TYPE_LABELS: Record<ContractType, string> = {
     product: 'بضاعة', transfer: 'تحويل', car: 'سيارة',
 };
 const TYPE_COLORS: Record<ContractType, string> = {
-    product: 'bg-purple-100 text-purple-700',
-    transfer: 'bg-amber-100 text-amber-700',
-    car: 'bg-sky-100 text-sky-700',
+    product: 'bg-purple-100 text-purple-700 dark:bg-purple-500/15 dark:text-purple-400',
+    transfer: 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-400',
+    car: 'bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-400',
 };
 
 const emptyForm = {
@@ -239,8 +239,8 @@ export default function Installments() {
 
             {/* ─── New Contract Modal ─────────────────────────────── */}
             {showForm && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm overflow-y-auto py-6">
-                    <div className="w-full max-w-lg mx-4 rounded-3xl border border-border bg-card p-6 shadow-2xl space-y-4 animate-scale-in">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm overflow-y-auto py-6" onClick={() => setShowForm(false)}>
+                    <div className="w-full max-w-lg mx-4 rounded-3xl border border-border bg-card p-6 shadow-2xl space-y-4 animate-scale-in" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between">
                             <h2 className="text-lg font-bold text-foreground">
                                 {form.contractType === 'transfer' ? '🔄 عقد أجل تحويل مالي'
@@ -407,8 +407,8 @@ export default function Installments() {
 
             {/* ─── Payment Modal ──────────────────────────────────── */}
             {showPayment && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-                    <div className="w-full max-w-sm mx-4 rounded-3xl border border-border bg-card p-6 shadow-2xl space-y-4 animate-scale-in">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowPayment(null)}>
+                    <div className="w-full max-w-sm mx-4 rounded-3xl border border-border bg-card p-6 shadow-2xl space-y-4 animate-scale-in" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between">
                             <h2 className="text-lg font-bold text-foreground">تسجيل دفعة</h2>
                             <button onClick={() => setShowPayment(null)} className="rounded-lg p-1.5 hover:bg-muted transition-colors">
@@ -456,8 +456,8 @@ export default function Installments() {
                                 const isOverdue = !s.paid && s.dueDate < today;
                                 return (
                                     <div key={s.month} className={`flex items-center justify-between rounded-xl px-3 py-2.5 border text-sm gap-2 ${s.paid ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20'
-                                            : isOverdue ? 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/20'
-                                                : 'bg-muted/30 border-border'
+                                        : isOverdue ? 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/20'
+                                            : 'bg-muted/30 border-border'
                                         }`}>
                                         <div className="flex items-center gap-2 min-w-0">
                                             <span className={`font-bold text-xs w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${s.paid ? 'bg-emerald-100 text-emerald-700' : isOverdue ? 'bg-red-100 text-red-700' : 'bg-primary/10 text-primary'

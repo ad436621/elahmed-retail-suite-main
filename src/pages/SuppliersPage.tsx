@@ -58,8 +58,8 @@ export default function SuppliersPage() {
             {/* Header */}
             <div className="flex items-center justify-between flex-wrap gap-3">
                 <div className="flex items-center gap-3">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-orange-100 border border-orange-200">
-                        <Truck className="h-5 w-5 text-orange-600" />
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-orange-100 dark:bg-orange-500/15 border border-orange-200 dark:border-orange-500/20">
+                        <Truck className="h-5 w-5 text-orange-600 dark:text-orange-400" />
                     </div>
                     <div>
                         <h1 className="text-2xl font-bold text-foreground">الموردون</h1>
@@ -132,8 +132,8 @@ export default function SuppliersPage() {
 
             {/* Form Modal */}
             {showForm && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-                    <div className="w-full max-w-md mx-4 rounded-3xl border border-border bg-card p-6 shadow-2xl space-y-4 animate-scale-in">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowForm(false)}>
+                    <div className="w-full max-w-md mx-4 rounded-3xl border border-border bg-card p-6 shadow-2xl space-y-4 animate-scale-in" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between">
                             <h2 className="text-lg font-bold">{editId ? 'تعديل مورد' : 'إضافة مورد'}</h2>
                             <button onClick={() => setShowForm(false)} className="rounded-lg p-1.5 hover:bg-muted"><X className="h-5 w-5" /></button>
@@ -157,8 +157,8 @@ export default function SuppliersPage() {
 
             {/* Pay Dialog */}
             {showPayDialog && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-                    <div className="w-full max-w-sm mx-4 rounded-3xl border border-border bg-card p-6 shadow-2xl space-y-4 animate-scale-in">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowPayDialog(null)}>
+                    <div className="w-full max-w-sm mx-4 rounded-3xl border border-border bg-card p-6 shadow-2xl space-y-4 animate-scale-in" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between">
                             <h2 className="text-lg font-bold">تسجيل دفعة للمورد</h2>
                             <button onClick={() => setShowPayDialog(null)} className="rounded-lg p-1.5 hover:bg-muted"><X className="h-5 w-5" /></button>
