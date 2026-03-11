@@ -6,14 +6,13 @@ import { Laptop } from 'lucide-react';
 import SharedInventoryPage, { SharedInventoryConfig } from '@/components/SharedInventoryPage';
 import {
     getComputers, addComputer, updateComputer, deleteComputer,
-    getComputerAccessories, addComputerAccessory, updateComputerAccessory, deleteComputerAccessory,
 } from '@/data/computersData';
 import { ComputerItem } from '@/domain/types';
 
 const config: SharedInventoryConfig = {
     icon: <Laptop className="h-5 w-5" />,
-    title: 'كمبيوتر وإكسسوارات',
-    categorySection: 'computer',
+    title: 'الكمبيوترات',
+    categoryStorageKey: 'computers_cats',
     accentColor: 'indigo',
     excelInventoryType: 'computer',
     navSection: 'computers',
@@ -24,11 +23,6 @@ const config: SharedInventoryConfig = {
     deleteDevice: deleteComputer,
     deviceStorageKey: 'gx_computers_v2',
 
-    getAccessories: getComputerAccessories,
-    addAccessory: addComputerAccessory,
-    updateAccessory: updateComputerAccessory,
-    deleteAccessory: deleteComputerAccessory,
-    accessoryStorageKey: 'gx_computer_accessories',
 
     extraDeviceField: {
         key: 'processor',

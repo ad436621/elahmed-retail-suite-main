@@ -2,7 +2,7 @@
 // Mobiles & Mobile Accessories — Data Layer
 // ============================================================
 
-import { MobileItem, MobileAccessory } from '@/domain/types';
+import { MobileItem, MobileAccessory, MobileSparePart } from '@/domain/types';
 import { generateBarcode } from '@/domain/product';
 import { addBatch } from './batchesData';
 import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
@@ -10,6 +10,7 @@ import { STORAGE_KEYS } from '@/config';
 
 const MOBILES_KEY = STORAGE_KEYS.MOBILES;
 const ACCESSORIES_KEY = STORAGE_KEYS.MOBILE_ACCESSORIES;
+const SPARE_PARTS_KEY = STORAGE_KEYS.MOBILE_SPARE_PARTS;
 
 // ─── Mobiles ────────────────────────────────────────────────
 
@@ -92,7 +93,7 @@ export function addMobileAccessory(item: Omit<MobileAccessory, 'id' | 'createdAt
             quantity: newItem.quantity,
             remainingQty: newItem.quantity,
             purchaseDate: newItem.createdAt,
-            supplier: '',
+            supplier: newItem.supplier || '',
             notes: 'رصيد افتتاحي (إضافة جديدة)',
         });
     }
@@ -108,4 +109,53 @@ export function updateMobileAccessory(id: string, updates: Partial<MobileAccesso
 
 export function deleteMobileAccessory(id: string): void {
     saveMobileAccessories(getMobileAccessories().filter(a => a.id !== id));
+}
+
+// ─── Mobile Spare Parts ──────────────────────────────────────
+
+export function getMobileSpareParts(): MobileSparePart[] {
+    return getStorageItem<MobileSparePart[]>(SPARE_PARTS_KEY, []);
+}
+
+export function saveMobileSpareParts(items: MobileSparePart[]): void {
+    setStorageItem(SPARE_PARTS_KEY, items);
+}
+
+export function addMobileSparePart(item: Omit<MobileSparePart, 'id' | 'createdAt' | 'updatedAt'>): MobileSparePart {
+    const all = getMobileSpareParts();
+    const newItem: MobileSparePart = {
+        ...item,
+        id: crypto.randomUUID(),
+        barcode: item.barcode || generateBarcode(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+    };
+    saveMobileSpareParts([...all, newItem]);
+
+    if (newItem.quantity > 0) {
+        addBatch({
+            productId: newItem.id,
+            inventoryType: 'mobile_accessory', // We reuse this or create mobile_spare_part in batches config later if needed
+            productName: newItem.name,
+            costPrice: newItem.newCostPrice || newItem.oldCostPrice || 0,
+            salePrice: newItem.salePrice,
+            quantity: newItem.quantity,
+            remainingQty: newItem.quantity,
+            purchaseDate: newItem.createdAt,
+            supplier: newItem.supplier || '',
+            notes: 'رصيد افتتاحي (إضافة جديدة)',
+        });
+    }
+
+    return newItem;
+}
+
+export function updateMobileSparePart(id: string, updates: Partial<MobileSparePart>): void {
+    saveMobileSpareParts(getMobileSpareParts().map(a =>
+        a.id === id ? { ...a, ...updates, updatedAt: new Date().toISOString() } : a
+    ));
+}
+
+export function deleteMobileSparePart(id: string): void {
+    saveMobileSpareParts(getMobileSpareParts().filter(a => a.id !== id));
 }

@@ -172,16 +172,16 @@ function CollapsibleSection({ group, isOpen, onToggle, filterByPerm }: Collapsib
         aria-expanded={isOpen}
         aria-controls={`group-${group.id}`}
         className={cn(
-          'flex w-full items-center gap-1.5 px-1.5 py-1.5 rounded-lg text-xs font-semibold transition-all duration-200',
+          'flex w-full items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset',
           isOpen
             ? 'bg-primary/10 text-primary'
             : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
         )}
       >
-        <group.icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+        <group.icon className="h-5 w-5 shrink-0" aria-hidden="true" />
         <span className="flex-1 text-start">{group.title}</span>
-        <span className="text-xs text-muted-foreground font-normal">
+        <span className="text-sm text-muted-foreground font-normal">
           {visible.length}
         </span>
         <ChevronRight
@@ -222,7 +222,7 @@ function SidebarNavItem({ item }: SidebarNavItemProps) {
       end={item.to === '/'}
       className={({ isActive }) =>
         cn(
-          'group relative flex items-center gap-1.5 px-1.5 py-1.5 text-xs font-medium transition-all duration-200',
+          'group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-inset',
           isActive
             ? 'bg-primary/10 text-primary font-bold'
@@ -234,13 +234,13 @@ function SidebarNavItem({ item }: SidebarNavItemProps) {
         <>
           {isActive && (
             <div
-              className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-6 bg-primary rounded-l-full"
+              className="absolute right-0 top-1/2 -translate-y-1/2 w-1.5 h-full bg-primary rounded-l-full"
               aria-hidden="true"
             />
           )}
           <item.icon
             className={cn(
-              'h-[18px] w-[18px] shrink-0 transition-colors',
+              'h-5 w-5 shrink-0 transition-colors',
               isActive ? 'text-primary' : 'text-sidebar-foreground/50 group-hover:text-sidebar-foreground/80'
             )}
             aria-hidden="true"

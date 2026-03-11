@@ -177,7 +177,7 @@ export default function CartItemRow({ item, onUpdateQty, onRemove, onLineDiscoun
                         onClick={() => onUpdateQty(item.product.id, item.qty - 1)}
                         aria-label={`تقليل كمية ${item.product.name} (معيار -)`}
                         disabled={item.qty <= 1}
-                        className="flex h-11 w-11 items-center justify-center rounded-lg border bg-muted text-muted-foreground hover:bg-red-50 hover:text-red-500 hover:border-red-200 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
+                        className="flex h-11 w-11 items-center justify-center rounded-lg border bg-muted text-muted-foreground hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-500 hover:border-red-200 dark:hover:border-red-500/20 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary disabled:opacity-40 disabled:cursor-not-allowed shadow-sm"
                     >
                         <Minus className="h-4 w-4" aria-hidden="true" />
                     </button>

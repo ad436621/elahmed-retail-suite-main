@@ -4,15 +4,15 @@
 // ============================================================
 
 import { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
     Plus, Trash2, Pencil, X, Check, Smartphone, Headphones, Search,
     AlignLeft, LayoutGrid, List, Tag, FileSpreadsheet, ImageOff,
-    Filter, SlidersHorizontal, RotateCcw, Package, ChevronDown, ChevronUp, Wrench
+    Filter, SlidersHorizontal, RotateCcw, Package, Wrench
 } from 'lucide-react';
 import {
     getMobiles, addMobile, updateMobile, deleteMobile,
-    getMobileAccessories, addMobileAccessory, updateMobileAccessory, deleteMobileAccessory,
 } from '@/data/mobilesData';
 import { MobileItem } from '@/domain/types';
 import { getWeightedAvgCost } from '@/data/batchesData';
@@ -21,7 +21,7 @@ import { useInventoryData } from '@/hooks/useInventoryData';
 import { InventoryProductCard } from '@/components/InventoryProductCard';
 import { ImageUpload } from '@/components/ImageUpload';
 import { ProductBatchesModal } from '@/components/ProductBatchesModal';
-import { getCategoriesBySection, addCategory, DynamicCategory } from '@/data/categoriesData';
+import { loadCats, saveCats } from '@/data/categoriesData';
 import { ExcelColumnMappingDialog } from '@/components/ExcelColumnMappingDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useConfirm } from '@/components/ConfirmDialog';
@@ -29,11 +29,20 @@ import { useConfirm } from '@/components/ConfirmDialog';
 const IC = 'w-full rounded-xl border border-border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all';
 
 const emptyForm = {
-    name: '', barcode: '', category: '', condition: 'new' as 'new' | 'used',
+    name: '', barcode: '', category: '', condition: 'new' as 'new' | 'like_new' | 'used' | 'broken',
     quantity: 1, oldCostPrice: 0, newCostPrice: 0, salePrice: 0,
     storage: '', ram: '', color: '', supplier: '', serialNumber: '',
-    model: '', description: '', image: '',
+    imei2: '', model: '', description: '', image: '', notes: '', subcategory: '',
+    boxNumber: '', source: '', taxExcluded: false,
 };
+
+interface UnitEntry {
+    imei1: string;
+    imei2: string;
+    color: string;
+    barcode: string;
+}
+const emptyUnit = (): UnitEntry => ({ imei1: '', imei2: '', color: '', barcode: '' });
 
 const fmt = (n: number) => n.toLocaleString('ar-EG');
 
@@ -47,6 +56,154 @@ const STORAGE_OPTIONS = ['16GB', '32GB', '64GB', '128GB', '256GB', '512GB', '1TB
 const RAM_OPTIONS = ['2GB', '3GB', '4GB', '6GB', '8GB', '12GB', '16GB'];
 
 
+// ─── Mobile Categories Manager Modal ─────────────────────────
+
+function MobilesCategoriesManager({
+    cats, onClose, onSave
+}: {
+    cats: string[];
+    onClose: () => void;
+    onSave: (cats: string[]) => void;
+}) {
+    const [list, setList] = useState<string[]>([...cats]);
+    const [newName, setNewName] = useState('');
+    const [editIndex, setEditIndex] = useState<number | null>(null);
+    const [editVal, setEditVal] = useState('');
+
+    const addCat = () => {
+        const n = newName.trim();
+        if (!n) return;
+        if (list.includes(n)) return; // duplicate check
+        setList(l => [...l, n]);
+        setNewName('');
+    };
+
+    const deleteCat = (idx: number) => {
+        setList(l => l.filter((_, i) => i !== idx));
+        if (editIndex === idx) setEditIndex(null);
+    };
+
+    const startEdit = (cat: string, idx: number) => {
+        setEditIndex(idx);
+        setEditVal(cat);
+    };
+
+    const saveEdit = () => {
+        if (editIndex === null) return;
+        const n = editVal.trim();
+        if (!n) return;
+        setList(l => l.map((c, i) => i === editIndex ? n : c));
+        setEditIndex(null);
+    };
+
+    return (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4" onClick={onClose}>
+            <div className="w-full max-w-md rounded-2xl border border-border bg-card shadow-2xl animate-scale-in overflow-hidden" onClick={e => e.stopPropagation()}>
+                {/* Header */}
+                <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-muted/30">
+                    <div className="flex items-center gap-2">
+                        <Tag className="h-5 w-5 text-primary" />
+                        <h3 className="text-base font-bold">إدارة تصنيفات الموبايلات</h3>
+                        <span className="rounded-full bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5">{list.length}</span>
+                    </div>
+                    <button onClick={onClose} className="rounded-lg p-1.5 hover:bg-muted text-muted-foreground">
+                        <X className="h-4 w-4" />
+                    </button>
+                </div>
+
+                {/* Add new */}
+                <div className="px-5 pt-4 pb-3 space-y-2.5">
+                    <div className="flex gap-2">
+                        <input
+                            value={newName}
+                            onChange={e => setNewName(e.target.value)}
+                            onKeyDown={e => e.key === 'Enter' && addCat()}
+                            placeholder="اسم التصنيف الجديد..."
+                            className="flex-1 rounded-xl border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                            autoFocus
+                        />
+                        <button onClick={addCat}
+                            className="flex items-center gap-1.5 rounded-xl bg-cyan-600 hover:bg-cyan-700 px-4 py-2 text-sm font-bold text-white transition-colors">
+                            <Plus className="h-4 w-4" />
+                        </button>
+                    </div>
+                </div>
+
+                {/* List */}
+                <div className="px-5 pb-4 space-y-1.5 max-h-72 overflow-y-auto">
+                    {list.length === 0 && (
+                        <p className="py-6 text-center text-sm text-muted-foreground">لا توجد تصنيفات بعد</p>
+                    )}
+                    {list.map((cat, idx) => (
+                        <div key={idx}
+                            className="group flex items-center justify-between rounded-xl border border-border bg-muted/30 px-3 py-2.5 hover:bg-muted/50 transition-colors"
+                        >
+                            {editIndex === idx ? (
+                                <div className="flex-1 ml-3">
+                                    <input
+                                        value={editVal}
+                                        onChange={e => setEditVal(e.target.value)}
+                                        onKeyDown={e => {
+                                            if (e.key === 'Enter') saveEdit();
+                                            if (e.key === 'Escape') setEditIndex(null);
+                                        }}
+                                        className="w-full rounded-lg border border-primary/40 px-2 py-1 text-sm focus:outline-none bg-background"
+                                        autoFocus
+                                    />
+                                </div>
+                            ) : (
+                                <div className="flex-1 flex items-center gap-2">
+                                    <span className="shrink-0 h-5 w-5 rounded-full flex items-center justify-center bg-cyan-100 text-cyan-600 dark:bg-cyan-500/20 dark:text-cyan-400">
+                                        <Smartphone className="h-3 w-3" />
+                                    </span>
+                                    <span className="flex-1 text-sm font-medium text-foreground">{cat}</span>
+                                </div>
+                            )}
+                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                {editIndex === idx ? (
+                                    <>
+                                        <button onClick={saveEdit}
+                                            className="rounded-md p-1 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 text-emerald-600">
+                                            <Check className="h-3.5 w-3.5" />
+                                        </button>
+                                        <button onClick={() => setEditIndex(null)}
+                                            className="rounded-md p-1 hover:bg-muted text-muted-foreground">
+                                            <X className="h-3.5 w-3.5" />
+                                        </button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <button onClick={() => startEdit(cat, idx)}
+                                            className="rounded-md p-1 hover:bg-primary/10 text-primary">
+                                            <Pencil className="h-3.5 w-3.5" />
+                                        </button>
+                                        <button onClick={() => deleteCat(idx)}
+                                            className="rounded-md p-1 hover:bg-red-50 dark:hover:bg-red-500/10 text-destructive">
+                                            <Trash2 className="h-3.5 w-3.5" />
+                                        </button>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+
+                {/* Footer */}
+                <div className="flex gap-2 px-5 pb-5">
+                    <button onClick={() => onSave(list)}
+                        className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-cyan-600 hover:bg-cyan-700 py-2.5 text-sm font-bold text-white transition-colors">
+                        <Check className="h-4 w-4" /> حفظ التصنيفات
+                    </button>
+                    <button onClick={onClose}
+                        className="flex-1 rounded-xl border border-border py-2.5 text-sm font-medium hover:bg-muted transition-colors">
+                        إلغاء
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 // ─── Main Component ──────────────────────────────────────────
 
 export default function MobilesInventory() {
@@ -55,12 +212,9 @@ export default function MobilesInventory() {
     const navigate = useNavigate();
     const { confirm } = useConfirm();
 
-    const fetchCategories = () => getCategoriesBySection('mobile');
-    const [categories, setCategories] = useState<DynamicCategory[]>(fetchCategories);
+    const [categories, setCategories] = useState<string[]>(() => loadCats('mobiles_main_cats', ['موبايلات', 'تابلت', 'ساعات ذكية']));
 
     const mobiles = useInventoryData(getMobiles, ['gx_mobiles_v2']);
-    const accessories = useInventoryData(getMobileAccessories, ['gx_mobile_accessories']);
-
     const [search, setSearch] = useState('');
     const [activeFilter, setActiveFilter] = useState<string>('all');
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
@@ -68,7 +222,7 @@ export default function MobilesInventory() {
     // ── Side Panel Filters ──
     const [filterImei, setFilterImei] = useState('');
     const [filterSupplier, setFilterSupplier] = useState('all');
-    const [filterCondition, setFilterCondition] = useState<'all' | 'new' | 'used'>('all');
+    const [filterCondition, setFilterCondition] = useState<'all' | 'new' | 'like_new' | 'used' | 'broken'>('all');
     const [filterStock, setFilterStock] = useState<'all' | 'in' | 'out'>('all');
     const [filterMinPrice, setFilterMinPrice] = useState('');
     const [filterMaxPrice, setFilterMaxPrice] = useState('');
@@ -76,17 +230,15 @@ export default function MobilesInventory() {
 
     const [showForm, setShowForm] = useState(false);
     const [editId, setEditId] = useState<string | null>(null);
-    const [editType, setEditType] = useState<'device' | 'accessory'>('device');
     const [f, setF] = useState(emptyForm);
     const [customSupplier, setCustomSupplier] = useState(false);
     const [customStorage, setCustomStorage] = useState(false);
     const [customRam, setCustomRam] = useState(false);
 
-    const [showCategoryForm, setShowCategoryForm] = useState(false);
-    const [newCatName, setNewCatName] = useState('');
-    const [newCatType, setNewCatType] = useState<'device' | 'accessory'>('device');
+    const [showCatManager, setShowCatManager] = useState(false);
     const [activeBatchesModal, setActiveBatchesModal] = useState<{ id: string; name: string } | null>(null);
     const [showExcelRestore, setShowExcelRestore] = useState(false);
+    const [units, setUnits] = useState<UnitEntry[]>([emptyUnit()]);
     const { user } = useAuth();
 
     useEffect(() => {
@@ -98,27 +250,16 @@ export default function MobilesInventory() {
     const unifiedProducts = useMemo(() => {
         const list: any[] = [];
         mobiles.forEach(m => {
-            const cat = categories.find(c => c.id === m.category);
             list.push({
                 _raw: m, _type: 'device',
                 id: m.id, name: m.name, barcode: m.barcode, image: m.image, description: m.description,
                 quantity: m.quantity, salePrice: m.salePrice, newCostPrice: m.newCostPrice, oldCostPrice: m.oldCostPrice,
-                category: m.category, condition: m.condition || 'new', categoryName: cat?.name,
+                category: m.category, condition: m.condition || 'new', categoryName: m.category,
                 storage: m.storage, ram: m.ram, color: m.color, supplier: m.supplier, serialNumber: m.serialNumber
             });
         });
-        accessories.forEach(a => {
-            const cat = categories.find(c => c.id === a.category);
-            list.push({
-                _raw: a, _type: 'accessory',
-                id: a.id, name: a.name, barcode: a.barcode, image: a.image, description: a.description,
-                quantity: a.quantity, salePrice: a.salePrice, newCostPrice: a.newCostPrice, oldCostPrice: a.oldCostPrice,
-                category: a.category, condition: (a as any).condition || 'new', categoryName: cat?.name,
-                model: a.model, color: a.color
-            });
-        });
         return list;
-    }, [mobiles, accessories, categories]);
+    }, [mobiles, categories]);
 
     // ── Extract unique suppliers for filter dropdown ──
     const uniqueSuppliers = useMemo(() => {
@@ -130,7 +271,6 @@ export default function MobilesInventory() {
     const filteredList = useMemo(() => {
         let res = unifiedProducts;
         if (activeFilter === 'used') res = res.filter(p => p.condition === 'used');
-        else if (activeFilter === 'accessory') res = res.filter(p => p._type === 'accessory');
         else if (activeFilter !== 'all') res = res.filter(p => p.category === activeFilter);
         // Text search
         if (search) {
@@ -176,54 +316,64 @@ export default function MobilesInventory() {
 
     // ── Stats ──
     const stats = useMemo(() => {
+        const totalTypes = filteredList.length;
         const totalItems = filteredList.reduce((s, p) => s + p.quantity, 0);
         const totalCost = filteredList.reduce((s, p) => s + (getWeightedAvgCost(p.id) || p.newCostPrice) * p.quantity, 0);
         const totalSale = filteredList.reduce((s, p) => s + p.salePrice * p.quantity, 0);
-        return { totalItems, totalCost, totalSale };
+        return { totalTypes, totalItems, totalCost, totalSale };
     }, [filteredList]);
 
     // ── Handlers ──
     const refreshData = () => {
-        setCategories(fetchCategories());
+        setCategories(loadCats('mobiles_main_cats', ['موبايلات', 'تابلت', 'ساعات ذكية']));
         window.dispatchEvent(new Event('local-storage-sync'));
     };
 
-    const handleCategorySubmit = () => {
-        if (!newCatName.trim()) return;
-        addCategory({
-            name: newCatName.trim(),
-            section: 'mobile',
-            type: newCatType,
-        });
-        setCategories(fetchCategories());
-        setNewCatName('');
-        setShowCategoryForm(false);
-        toast({ title: '✅ تم إضافة التصنيف', description: newCatName });
+    const handleSaveCats = (updated: string[]) => {
+        saveCats('mobiles_main_cats', updated);
+        setCategories(updated);
+        setShowCatManager(false);
+        toast({ title: '✅ تم حفظ التصنيفات', description: `${updated.length} تصنيف` });
     };
 
     const handleFormSubmit = () => {
         if (!f.category) { toast({ title: '⚠️ اختر تصنيفاً', variant: 'destructive' }); return; }
         if (!f.name.trim()) { toast({ title: '⚠️ أدخل اسم المنتج', variant: 'destructive' }); return; }
-        const catType = categories.find(c => c.id === f.category)?.type || 'device';
-        if (catType === 'device') {
-            const deviceData: Omit<MobileItem, 'id' | 'createdAt' | 'updatedAt'> = {
-                name: f.name, barcode: f.barcode || `MOB-${Date.now()}`, deviceType: 'mobile',
+        
+        if (editId) {
+            // ─ تعديل وحدة واحدة ─
+            const u = units[0] || emptyUnit();
+            updateMobile(editId, {
+                name: f.name, barcode: u.barcode || f.barcode, deviceType: 'mobile',
                 category: f.category, condition: f.condition, quantity: f.quantity,
-                storage: f.storage, ram: f.ram, color: f.color, supplier: f.supplier,
+                storage: f.storage, ram: f.ram, color: u.color || f.color, supplier: f.supplier,
                 oldCostPrice: f.oldCostPrice, newCostPrice: f.newCostPrice, salePrice: f.salePrice,
-                serialNumber: f.serialNumber, notes: '', description: f.description, image: f.image,
-            };
-            editId ? updateMobile(editId, deviceData) : addMobile(deviceData);
+                serialNumber: u.imei1 || f.serialNumber, imei2: u.imei2 || f.imei2,
+                boxNumber: f.boxNumber, source: f.source, taxExcluded: f.taxExcluded,
+                notes: '', description: f.description, image: f.image,
+            });
+            toast({ title: '✅ تم تعديل المنتج' });
         } else {
-            const accData = {
-                name: f.name, barcode: f.barcode || `ACC-${Date.now()}`,
-                category: f.category, quantity: f.quantity,
-                oldCostPrice: f.oldCostPrice, newCostPrice: f.newCostPrice, salePrice: f.salePrice,
-                model: f.model, color: f.color, description: f.description, image: f.image,
-            };
-            editId ? updateMobileAccessory(editId, accData) : addMobileAccessory(accData);
+            // ─ إضافة: سجل منفصل لكل وحدة ─
+            const validUnits = units.filter(u => u.imei1.trim());
+            if (validUnits.length === 0) {
+                toast({ title: '⚠️ أدخل IMEI 1 لوحدة واحدة على الأقل', variant: 'destructive' });
+                return;
+            }
+            validUnits.forEach(u => {
+                addMobile({
+                    name: f.name, barcode: u.barcode || `MOB-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                    deviceType: 'mobile', category: f.category, condition: f.condition,
+                    quantity: 1, storage: f.storage, ram: f.ram, color: u.color || f.color,
+                    supplier: f.supplier, oldCostPrice: f.oldCostPrice, newCostPrice: f.newCostPrice,
+                    salePrice: f.salePrice, serialNumber: u.imei1, imei2: u.imei2,
+                    boxNumber: f.boxNumber, source: f.source, taxExcluded: f.taxExcluded,
+                    notes: '', description: f.description, image: f.image,
+                });
+            });
+            toast({ title: `✅ تم إضافة ${validUnits.length} وحدة` });
         }
-        toast({ title: editId ? '✅ تم تعديل المنتج' : '✅ تم إضافة المنتج' });
+        
         closeForm();
         refreshData();
     };
@@ -231,15 +381,17 @@ export default function MobilesInventory() {
     const openAdd = () => { setEditId(null); setF(emptyForm); setCustomSupplier(false); setCustomStorage(false); setCustomRam(false); setShowForm(true); };
     const openEdit = (item: any) => {
         setEditId(item.id);
-        setEditType(item._type);
         setF({
             name: item.name, barcode: item.barcode || '', category: item.category,
             condition: item.condition, quantity: item.quantity,
             oldCostPrice: item.oldCostPrice, newCostPrice: item.newCostPrice, salePrice: item.salePrice,
             storage: item.storage || '', ram: item.ram || '', color: item.color || '',
             supplier: item.supplier || '', serialNumber: item.serialNumber || '',
-            model: item.model || '', description: item.description || '', image: item.image || '',
+            imei2: item._raw?.imei2 || '', model: item.model || '', description: item.description || '', image: item.image || '',
+            boxNumber: item._raw?.boxNumber || '', source: item._raw?.source || '', taxExcluded: item._raw?.taxExcluded || false,
+            notes: '', subcategory: '',
         });
+        setUnits([{ imei1: item.serialNumber || '', imei2: item._raw?.imei2 || '', color: item.color || '', barcode: item.barcode || '' }]);
         setCustomSupplier(!!item.supplier && !BRAND_OPTIONS.includes(item.supplier));
         setCustomStorage(!!item.storage && !STORAGE_OPTIONS.includes(item.storage));
         setCustomRam(!!item.ram && !RAM_OPTIONS.includes(item.ram));
@@ -255,12 +407,10 @@ export default function MobilesInventory() {
             danger: true,
         });
         if (!ok) return;
-        item._type === 'device' ? deleteMobile(item.id) : deleteMobileAccessory(item.id);
+        deleteMobile(item.id);
         setTimeout(() => window.dispatchEvent(new Event('local-storage-sync')), 100);
         toast({ title: '🗑️ تم حذف المنتج' });
     };
-
-    const activeCategoryType = categories.find(c => c.id === f.category)?.type || 'device';
 
     // ── Render ──
     return (
@@ -295,32 +445,41 @@ export default function MobilesInventory() {
             </div>
 
             {/* ─── Stat Cards ─── */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
-                <div className="rounded-2xl border border-border bg-card p-4 flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center shrink-0">
-                        <span className="text-emerald-600 text-sm">💰</span>
-                    </div>
-                    <div>
-                        <p className="text-[10px] text-muted-foreground font-bold">قيمة البيع المتوقعة</p>
-                        <p className="text-xl font-black text-foreground tabular-nums">{fmt(stats.totalSale)}</p>
-                    </div>
-                </div>
-                <div className="rounded-2xl border border-border bg-card p-4 flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-xl bg-amber-100 border border-amber-200 flex items-center justify-center shrink-0">
-                        <span className="text-amber-600 text-sm">📦</span>
-                    </div>
-                    <div>
-                        <p className="text-[10px] text-muted-foreground font-bold">قيمة التكلفة</p>
-                        <p className="text-xl font-black text-foreground tabular-nums">{fmt(stats.totalCost)}</p>
-                    </div>
-                </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
                 <div className="rounded-2xl border border-border bg-card p-4 flex items-center gap-3">
                     <div className="h-10 w-10 rounded-xl bg-blue-100 border border-blue-200 flex items-center justify-center shrink-0">
                         <span className="text-blue-600 text-sm">📋</span>
                     </div>
                     <div>
-                        <p className="text-[10px] text-muted-foreground font-bold">الأجهزة المتوفرة</p>
+                        <p className="text-[10px] text-muted-foreground font-bold">الأصناف المعروضة</p>
+                        <p className="text-xl font-black text-foreground tabular-nums">{stats.totalTypes}</p>
+                    </div>
+                </div>
+                <div className="rounded-2xl border border-border bg-card p-4 flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-purple-100 border border-purple-200 flex items-center justify-center shrink-0">
+                        <span className="text-purple-600 text-sm">📦</span>
+                    </div>
+                    <div>
+                        <p className="text-[10px] text-muted-foreground font-bold">إجمالي القطع</p>
                         <p className="text-xl font-black text-foreground tabular-nums">{stats.totalItems}</p>
+                    </div>
+                </div>
+                <div className="rounded-2xl border border-border bg-card p-4 flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-amber-100 dark:bg-amber-500/15 border border-amber-200 flex items-center justify-center shrink-0">
+                        <span className="text-amber-600 text-sm">💰</span>
+                    </div>
+                    <div>
+                        <p className="text-[10px] text-muted-foreground font-bold">إجمالي التكلفة</p>
+                        <p className="text-xl font-black text-foreground tabular-nums">{fmt(stats.totalCost)}</p>
+                    </div>
+                </div>
+                <div className="rounded-2xl border border-border bg-card p-4 flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-emerald-100 border border-emerald-200 flex items-center justify-center shrink-0">
+                        <span className="text-emerald-600 text-sm">💎</span>
+                    </div>
+                    <div>
+                        <p className="text-[10px] text-muted-foreground font-bold">قيمة البيع المتوقعة</p>
+                        <p className="text-xl font-black text-foreground tabular-nums">{fmt(stats.totalSale)}</p>
                     </div>
                 </div>
             </div>
@@ -335,9 +494,9 @@ export default function MobilesInventory() {
                     className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2 text-xs font-bold text-white hover:bg-blue-700 transition-all shadow-sm">
                     <FileSpreadsheet className="h-3.5 w-3.5" /> استرداد Excel
                 </button>
-                <button onClick={() => setShowCategoryForm(true)}
+                <button onClick={() => setShowCatManager(true)}
                     className="flex items-center gap-1.5 rounded-xl border border-dashed border-primary/40 px-3 py-2 text-xs font-bold text-primary hover:bg-primary/5 transition-all">
-                    <Tag className="h-3.5 w-3.5" /> تصنيف
+                    <Tag className="h-3.5 w-3.5" /> التصنيفات ({categories.length})
                 </button>
 
                 <div className="flex-1" />
@@ -411,11 +570,11 @@ export default function MobilesInventory() {
                                 <label className="flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground mb-1">
                                     <SlidersHorizontal className="h-3 w-3 text-primary" /> حالة الجهاز
                                 </label>
-                                <div className="flex gap-1">
-                                    {[{ v: 'all' as const, l: 'الكل' }, { v: 'new' as const, l: 'جديد' }, { v: 'used' as const, l: 'مستعمل' }].map(opt => (
+                                <div className="flex flex-wrap gap-1.5">
+                                    {[{ v: 'all' as const, l: 'الكل' }, { v: 'new' as const, l: 'جديد' }, { v: 'like_new' as const, l: 'مثل الجديد' }, { v: 'used' as const, l: 'مستعمل' }, { v: 'broken' as const, l: 'معطل' }].map(opt => (
                                         <button key={opt.v} onClick={() => setFilterCondition(opt.v)}
-                                            className={`flex-1 py-1 text-[11px] font-bold rounded-lg border transition-all ${filterCondition === opt.v
-                                                ? opt.v === 'used' ? 'bg-orange-100 text-orange-700 border-orange-300' : opt.v === 'new' ? 'bg-emerald-100 text-emerald-700 border-emerald-300' : 'bg-primary/10 text-primary border-primary/30'
+                                            className={`flex-auto px-2 min-w-[30%] py-1.5 text-[11px] font-bold rounded-lg border transition-all ${filterCondition === opt.v
+                                                ? opt.v === 'used' || opt.v === 'broken' ? 'bg-orange-100 text-orange-700 border-orange-300' : opt.v === 'new' || opt.v === 'like_new' ? 'bg-emerald-100 text-emerald-700 border-emerald-300' : 'bg-primary/10 text-primary border-primary/30'
                                                 : 'bg-transparent text-muted-foreground border-border hover:bg-muted/50'
                                                 }`}>{opt.l}</button>
                                     ))}
@@ -481,11 +640,11 @@ export default function MobilesInventory() {
                             <Check className="h-4 w-4" /> مستعمل
                         </button>
                         <div className="shrink-0 w-px h-6 bg-border mx-1 self-center" />
-                        {categories.map(c => (
-                            <button key={c.id} onClick={() => setActiveFilter(c.id)}
-                                className={`shrink-0 rounded-xl px-4 py-2 text-sm font-semibold border transition-all flex items-center gap-2 ${activeFilter === c.id ? 'bg-cyan-50 text-cyan-700 border-cyan-300 shadow-sm' : 'bg-card border-border text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}>
-                                {c.type === 'device' ? <Smartphone className="h-4 w-4 opacity-70" /> : <Headphones className="h-4 w-4 opacity-70" />}
-                                {c.name}
+                        {categories.map((c, i) => (
+                            <button key={i} onClick={() => setActiveFilter(c)}
+                                className={`shrink-0 rounded-xl px-4 py-2 text-sm font-semibold border transition-all flex items-center gap-2 ${activeFilter === c ? 'bg-cyan-50 text-cyan-700 border-cyan-300 shadow-sm' : 'bg-card border-border text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}>
+                                <Smartphone className="h-4 w-4 opacity-70" />
+                                {c}
                             </button>
                         ))}
                     </div>
@@ -526,9 +685,8 @@ export default function MobilesInventory() {
                                             <th className="px-3 py-3 text-right">الحالة</th>
                                             <th className="px-3 py-3 text-right">IMEI</th>
                                             <th className="px-3 py-3 text-center">الكمية</th>
-                                            <th className="px-3 py-3 text-right">التكلفة</th>
                                             <th className="px-3 py-3 text-right">سعر البيع</th>
-                                            <th className="px-3 py-3 text-right">المخزون</th>
+                                            <th className="px-3 py-3 text-right">هامش الربح</th>
                                             <th className="px-3 py-3 text-left">إجراءات</th>
                                         </tr>
                                     </thead>
@@ -553,25 +711,26 @@ export default function MobilesInventory() {
                                                         </div>
                                                     </td>
                                                     <td className="px-3 py-2 text-[11px] text-muted-foreground">{details || '—'}</td>
-                                                    <td className="px-3 py-2 text-xs font-semibold text-primary">{item.categoryName || '—'}</td>
+                                                    <td className="px-3 py-2 text-xs font-semibold text-primary">{item.category || '—'}</td>
                                                     <td className="px-3 py-2">
-                                                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${item.condition === 'used' ? 'bg-orange-100 text-orange-700' : 'bg-emerald-100 text-emerald-700'}`}>
-                                                            {item.condition === 'used' ? 'مستعمل' : 'جديد'}
+                                                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${item.condition === 'used' || item.condition === 'broken' ? 'bg-orange-100 dark:bg-orange-500/15 text-orange-700 dark:text-orange-400' : 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'}`}>
+                                                            {item.condition === 'new' ? 'جديد' : item.condition === 'like_new' ? 'مثل الجديد' : item.condition === 'broken' ? 'معطل' : 'مستعمل'}
                                                         </span>
                                                     </td>
-                                                    <td className="px-3 py-2 text-[10px] text-muted-foreground font-mono">{item.serialNumber || '—'}</td>
-                                                    <td className="px-3 py-2 text-center">
-                                                        <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${item.quantity === 0 ? 'bg-red-100 text-red-600' : 'bg-muted text-foreground'}`}>{item.quantity}</span>
+                                                    <td className="px-3 py-2 text-[10px] text-muted-foreground font-mono">
+                                                        <div>{item.serialNumber || '—'}</div>
+                                                        {item._raw?.imei2 && <div className="text-muted-foreground/60">{item._raw.imei2}</div>}
                                                     </td>
-                                                    <td className="px-3 py-2 text-xs text-muted-foreground tabular-nums">
-                                                        <button onClick={() => setActiveBatchesModal({ id: item.id, name: item.name })} className="hover:text-primary transition-colors underline decoration-dotted underline-offset-2" title="عرض الدُفعات">{avgCost.toLocaleString()}</button>
+                                                    <td className="px-3 py-2 text-center">
+                                                        <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${item.quantity === 0 ? 'bg-red-100 dark:bg-red-500/15 text-red-600 dark:text-red-400' : 'bg-muted text-foreground'}`}>{item.quantity}</span>
                                                     </td>
                                                     <td className="px-3 py-2 text-sm font-bold text-foreground tabular-nums">{item.salePrice.toLocaleString()}</td>
                                                     <td className="px-3 py-2 text-xs font-bold text-emerald-600 tabular-nums">{(item.salePrice - avgCost).toLocaleString()}</td>
                                                     <td className="px-3 py-2 text-left">
                                                         <div className="flex justify-end gap-1">
-                                                            <button onClick={() => openEdit(item)} className="rounded-lg p-1.5 hover:bg-primary/10 text-primary transition-colors"><Pencil className="h-3.5 w-3.5" /></button>
-                                                            <button onClick={() => handleDelete(item)} className="rounded-lg p-1.5 hover:bg-red-50 text-destructive transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
+                                                            <button onClick={() => setActiveBatchesModal({ id: item.id, name: item.name })} className="rounded-lg p-1.5 hover:bg-cyan-50 dark:hover:bg-cyan-500/10 text-cyan-600 transition-colors" title="عرض الدفعات"><List className="h-3.5 w-3.5" /></button>
+                                                            <button onClick={() => openEdit(item)} className="rounded-lg p-1.5 hover:bg-primary/10 text-primary transition-colors" title="تعديل"><Pencil className="h-3.5 w-3.5" /></button>
+                                                            <button onClick={() => handleDelete(item)} className="rounded-lg p-1.5 hover:bg-red-50 dark:hover:bg-red-500/10 text-destructive transition-colors" title="حذف"><Trash2 className="h-3.5 w-3.5" /></button>
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -588,10 +747,10 @@ export default function MobilesInventory() {
             </div>{/* end flex layout */}
 
             {/* ─── Product Form Modal ─── */}
-            {showForm && (
-                <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-sm overflow-y-auto py-4 px-4">
-                    <div className="w-full max-w-xl rounded-2xl border border-border bg-card shadow-2xl animate-scale-in my-8">
-                        <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-border">
+            {showForm && createPortal(
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 sm:p-6" onClick={closeForm}>
+                    <div className="w-full max-w-xl max-h-[90vh] flex flex-col rounded-2xl border border-border bg-card shadow-2xl animate-scale-in" onClick={e => e.stopPropagation()}>
+                        <div className="flex-none flex items-center justify-between px-4 pt-4 pb-3 border-b border-border">
                             <h2 className="text-base font-bold text-foreground">
                                 {editId ? '✏️ تعديل المنتج' : '➕ إضافة منتج'}
                             </h2>
@@ -600,22 +759,22 @@ export default function MobilesInventory() {
                             </button>
                         </div>
 
-                        <div className="p-4 space-y-4">
+                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
                             <ImageUpload value={f.image} onChange={v => setF(p => ({ ...p, image: v }))} />
 
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="col-span-2 sm:col-span-1">
                                     <label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase">التصنيف *</label>
                                     <select value={f.category} onChange={e => setF(p => ({ ...p, category: e.target.value }))} className={IC}>
-                                        <option value="" disabled>-- اختر تصنيفاً --</option>
-                                        {categories.map(c => <option key={c.id} value={c.id}>{c.name} ({c.type === 'device' ? 'جهاز' : 'إكسسوار'})</option>)}
+                                        <option value="">-- اختر --</option>
+                                        {categories.map((c, i) => <option key={i} value={c}>{c}</option>)}
                                     </select>
                                 </div>
                                 <div className="col-span-2 sm:col-span-1">
-                                    <label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase">حالة المنتج *</label>
-                                    <div className="flex gap-2 h-10">
-                                        <button type="button" onClick={() => setF(p => ({ ...p, condition: 'new' }))} className={`flex-1 rounded-xl border text-sm font-semibold transition-all ${f.condition === 'new' ? 'bg-primary/10 border-primary text-primary' : 'bg-transparent border-input text-muted-foreground'}`}>جديد</button>
-                                        <button type="button" onClick={() => setF(p => ({ ...p, condition: 'used' }))} className={`flex-1 rounded-xl border text-sm font-semibold transition-all ${f.condition === 'used' ? 'bg-orange-100 border-orange-400 text-orange-700' : 'bg-transparent border-input text-muted-foreground'}`}>مستعمل</button>
+                                    <div className="flex flex-wrap gap-2 h-auto text-center mt-1">
+                                                        {[{v: 'new', l: 'جديد'}, {v: 'like_new', l: 'مثل الجديد'}, {v: 'used', l: 'مستعمل'}, {v: 'broken', l: 'معطل'}].map(cond => (
+                                                            <button key={cond.v} type="button" onClick={() => setF(p => ({ ...p, condition: cond.v as any }))} className={`flex-1 py-1.5 rounded-xl border text-[13px] font-semibold transition-all ${f.condition === cond.v ? 'bg-primary/10 border-primary text-primary' : 'bg-transparent border-input text-muted-foreground'}`}>{cond.l}</button>
+                                                        ))}
                                     </div>
                                 </div>
                             </div>
@@ -627,57 +786,104 @@ export default function MobilesInventory() {
                                 <div><label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase">الباركود</label><input value={f.barcode} onChange={e => setF(p => ({ ...p, barcode: e.target.value }))} placeholder="تلقائي" className={IC} /></div>
                             </div>
 
-                            {activeCategoryType === 'device' ? (
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-muted/20 p-3 rounded-xl border border-border/40">
-                                    <div className="col-span-full mb-1"><span className="text-xs font-bold text-primary flex items-center gap-1"><Smartphone className="w-3.5 h-3.5" /> مواصفات الجهاز</span></div>
-                                    {/* التخزين */}
-                                    <div>
-                                        <label className="mb-1 block text-xs text-muted-foreground">التخزين</label>
-                                        <select value={customStorage ? '__other__' : f.storage} onChange={e => { const v = e.target.value; if (v === '__other__') { setCustomStorage(true); setF(p => ({ ...p, storage: '' })); } else { setCustomStorage(false); setF(p => ({ ...p, storage: v })); } }} className={IC}>
-                                            <option value="">-- اختر --</option>
-                                            {STORAGE_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
-                                            <option value="__other__">أخرى...</option>
-                                        </select>
-                                        {customStorage && (
-                                            <input value={f.storage} onChange={e => setF(p => ({ ...p, storage: e.target.value }))} placeholder="أدخل الحجم..." className={`${IC} mt-1.5`} autoFocus />
-                                        )}
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-muted/20 p-3 rounded-xl border border-border/40">
+                                        <div className="col-span-full mb-1"><span className="text-xs font-bold text-primary flex items-center gap-1"><Smartphone className="w-3.5 h-3.5" /> مواصفات الجهاز</span></div>
+                                        {/* التخزين */}
+                                        <div>
+                                            <label className="mb-1 block text-xs text-muted-foreground">التخزين</label>
+                                            <select value={customStorage ? '__other__' : f.storage} onChange={e => { const v = e.target.value; if (v === '__other__') { setCustomStorage(true); setF(p => ({ ...p, storage: '' })); } else { setCustomStorage(false); setF(p => ({ ...p, storage: v })); } }} className={IC}>
+                                                <option value="">-- اختر --</option>
+                                                {STORAGE_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
+                                                <option value="__other__">أخرى...</option>
+                                            </select>
+                                            {customStorage && (
+                                                <input value={f.storage} onChange={e => setF(p => ({ ...p, storage: e.target.value }))} placeholder="أدخل الحجم..." className={`${IC} mt-1.5`} autoFocus />
+                                            )}
+                                        </div>
+                                        {/* الرام */}
+                                        <div>
+                                            <label className="mb-1 block text-xs text-muted-foreground">الرام</label>
+                                            <select value={customRam ? '__other__' : f.ram} onChange={e => { const v = e.target.value; if (v === '__other__') { setCustomRam(true); setF(p => ({ ...p, ram: '' })); } else { setCustomRam(false); setF(p => ({ ...p, ram: v })); } }} className={IC}>
+                                                <option value="">-- اختر --</option>
+                                                {RAM_OPTIONS.map(r => <option key={r} value={r}>{r}</option>)}
+                                                <option value="__other__">أخرى...</option>
+                                            </select>
+                                            {customRam && (
+                                                <input value={f.ram} onChange={e => setF(p => ({ ...p, ram: e.target.value }))} placeholder="أدخل الرام..." className={`${IC} mt-1.5`} autoFocus />
+                                            )}
+                                        </div>
+                                        {/* اللون */}
+                                        <div><label className="mb-1 block text-xs text-muted-foreground">اللون</label><input data-validation="text-only" value={f.color} onChange={e => setF(p => ({ ...p, color: e.target.value }))} className={IC} /></div>
+                                        {/* الشركة */}
+                                        <div>
+                                            <label className="mb-1 block text-xs text-muted-foreground">الشركة</label>
+                                            <select value={customSupplier ? '__other__' : f.supplier} onChange={e => { const v = e.target.value; if (v === '__other__') { setCustomSupplier(true); setF(p => ({ ...p, supplier: '' })); } else { setCustomSupplier(false); setF(p => ({ ...p, supplier: v })); } }} className={IC}>
+                                                <option value="">-- اختر --</option>
+                                                {BRAND_OPTIONS.map(b => <option key={b} value={b}>{b}</option>)}
+                                                <option value="__other__">أخرى...</option>
+                                            </select>
+                                            {customSupplier && (
+                                                <input value={f.supplier} onChange={e => setF(p => ({ ...p, supplier: e.target.value }))} placeholder="اسم الشركة..." className={`${IC} mt-1.5`} autoFocus />
+                                            )}
+                                        </div>
+                                        {/* رقم الكرتونة */}
+                                        <div><label className="mb-1 block text-xs text-muted-foreground">رقم الكرتونة</label><input value={f.boxNumber} onChange={e => setF(p => ({ ...p, boxNumber: e.target.value }))} className={IC} /></div>
+                                        {/* المصدر */}
+                                        <div><label className="mb-1 block text-xs text-muted-foreground">المصدر</label><input value={f.source} onChange={e => setF(p => ({ ...p, source: e.target.value }))} className={IC} /></div>
+                                        {/* الضريبة */}
+                                        <div className="col-span-1 flex items-end pb-3">
+                                            <label className="flex items-center gap-2 text-xs font-semibold cursor-pointer">
+                                                <input type="checkbox" checked={f.taxExcluded} onChange={e => setF(p => ({ ...p, taxExcluded: e.target.checked }))} className="rounded border-border text-primary focus:ring-primary w-4 h-4" />
+                                                الضريبة غير شاملة
+                                            </label>
+                                        </div>
                                     </div>
-                                    {/* الرام */}
-                                    <div>
-                                        <label className="mb-1 block text-xs text-muted-foreground">الرام</label>
-                                        <select value={customRam ? '__other__' : f.ram} onChange={e => { const v = e.target.value; if (v === '__other__') { setCustomRam(true); setF(p => ({ ...p, ram: '' })); } else { setCustomRam(false); setF(p => ({ ...p, ram: v })); } }} className={IC}>
-                                            <option value="">-- اختر --</option>
-                                            {RAM_OPTIONS.map(r => <option key={r} value={r}>{r}</option>)}
-                                            <option value="__other__">أخرى...</option>
-                                        </select>
-                                        {customRam && (
-                                            <input value={f.ram} onChange={e => setF(p => ({ ...p, ram: e.target.value }))} placeholder="أدخل الرام..." className={`${IC} mt-1.5`} autoFocus />
-                                        )}
+                                    {/* ─── جدول الوحدات (IMEI) ─── */}
+                                    <div className="bg-primary/5 dark:bg-primary/10 rounded-xl border border-primary/20 dark:border-primary/30 p-3 space-y-2">
+                                        <div className="flex items-center justify-between">
+                                            <span className="text-xs font-bold text-primary flex items-center gap-1">📱 بيانات الوحدات ({units.length})</span>
+                                            {!editId && (
+                                                <button type="button" onClick={() => setUnits(u => [...u, emptyUnit()])}
+                                                    className="flex items-center gap-1 rounded-lg bg-primary/10 dark:bg-primary/20 text-primary px-2.5 py-1 text-[10px] font-bold hover:bg-primary/20 dark:hover:bg-primary/30 transition-colors">
+                                                    <Plus className="h-3 w-3" /> وحدة جديدة
+                                                </button>
+                                            )}
+                                        </div>
+                                        <div className="overflow-x-auto rounded-lg border border-border bg-card">
+                                            <table className="w-full text-xs">
+                                                <thead>
+                                                    <tr className="bg-muted/30 border-b border-border">
+                                                        <th className="px-2 py-1.5 text-right font-semibold text-muted-foreground w-6">#</th>
+                                                        <th className="px-2 py-1.5 text-right font-semibold text-muted-foreground">IMEI 1 *</th>
+                                                        <th className="px-2 py-1.5 text-right font-semibold text-muted-foreground">IMEI 2</th>
+                                                        <th className="px-2 py-1.5 text-right font-semibold text-muted-foreground">اللون</th>
+                                                        <th className="px-2 py-1.5 text-right font-semibold text-muted-foreground">الباركود</th>
+                                                        {!editId && units.length > 1 && <th className="px-1 py-1.5 w-8"></th>}
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {units.map((u, idx) => (
+                                                        <tr key={idx} className="border-b border-border/40 last:border-0">
+                                                            <td className="px-2 py-1 text-center font-bold text-muted-foreground">{idx + 1}</td>
+                                                            <td className="px-1 py-1"><input value={u.imei1} onChange={e => { const v = e.target.value; setUnits(us => us.map((uu, i) => i === idx ? { ...uu, imei1: v } : uu)); }} placeholder="IMEI 1" className="w-full rounded-md border border-border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary/40" /></td>
+                                                            <td className="px-1 py-1"><input value={u.imei2} onChange={e => { const v = e.target.value; setUnits(us => us.map((uu, i) => i === idx ? { ...uu, imei2: v } : uu)); }} placeholder="اختياري" className="w-full rounded-md border border-border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary/40" /></td>
+                                                            <td className="px-1 py-1"><input value={u.color} onChange={e => { const v = e.target.value; setUnits(us => us.map((uu, i) => i === idx ? { ...uu, color: v } : uu)); }} placeholder="اللون" className="w-full rounded-md border border-border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary/40" /></td>
+                                                            <td className="px-1 py-1"><input value={u.barcode} onChange={e => { const v = e.target.value; setUnits(us => us.map((uu, i) => i === idx ? { ...uu, barcode: v } : uu)); }} placeholder="تلقائي" className="w-full rounded-md border border-border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary/40" /></td>
+                                                            {!editId && units.length > 1 && (
+                                                                <td className="px-1 py-1 text-center">
+                                                                    <button type="button" onClick={() => setUnits(us => us.filter((_, i) => i !== idx))}
+                                                                        className="rounded-md p-1 hover:bg-red-50 dark:hover:bg-red-500/10 text-red-500 transition-colors">
+                                                                        <Trash2 className="h-3 w-3" />
+                                                                    </button>
+                                                                </td>
+                                                            )}
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <p className="text-[10px] text-muted-foreground">💡 كل وحدة تُسجَّل كسجل منفصل في المخزون بـ IMEI خاص بها</p>
                                     </div>
-                                    {/* اللون */}
-                                    <div><label className="mb-1 block text-xs text-muted-foreground">اللون</label><input data-validation="text-only" value={f.color} onChange={e => setF(p => ({ ...p, color: e.target.value }))} className={IC} /></div>
-                                    {/* الشركة */}
-                                    <div>
-                                        <label className="mb-1 block text-xs text-muted-foreground">الشركة</label>
-                                        <select value={customSupplier ? '__other__' : f.supplier} onChange={e => { const v = e.target.value; if (v === '__other__') { setCustomSupplier(true); setF(p => ({ ...p, supplier: '' })); } else { setCustomSupplier(false); setF(p => ({ ...p, supplier: v })); } }} className={IC}>
-                                            <option value="">-- اختر --</option>
-                                            {BRAND_OPTIONS.map(b => <option key={b} value={b}>{b}</option>)}
-                                            <option value="__other__">أخرى...</option>
-                                        </select>
-                                        {customSupplier && (
-                                            <input value={f.supplier} onChange={e => setF(p => ({ ...p, supplier: e.target.value }))} placeholder="اسم الشركة..." className={`${IC} mt-1.5`} autoFocus />
-                                        )}
-                                    </div>
-                                    <div className="col-span-2"><label className="mb-1 block text-xs text-muted-foreground">السيريال نمبر</label><input value={f.serialNumber} onChange={e => setF(p => ({ ...p, serialNumber: e.target.value }))} className={IC} /></div>
-                                </div>
-                            ) : (
-                                <div className="grid grid-cols-2 gap-3 bg-muted/20 p-3 rounded-xl border border-border/40">
-                                    <div className="col-span-full mb-1"><span className="text-xs font-bold text-primary flex items-center gap-1"><Tag className="w-3.5 h-3.5" /> بيانات الإكسسوار</span></div>
-                                    <div><label className="mb-1 block text-xs text-muted-foreground">الموديل</label><input value={f.model} onChange={e => setF(p => ({ ...p, model: e.target.value }))} className={IC} /></div>
-                                    <div><label className="mb-1 block text-xs text-muted-foreground">اللون</label><input data-validation="text-only" value={f.color} onChange={e => setF(p => ({ ...p, color: e.target.value }))} className={IC} /></div>
-                                </div>
-                            )}
-
                             <div>
                                 <label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1"><AlignLeft className="h-3 w-3" /> ملاحظات / تفاصيل</label>
                                 <textarea value={f.description} onChange={e => setF(p => ({ ...p, description: e.target.value }))} rows={2} className={`${IC} resize-none`} />
@@ -691,7 +897,7 @@ export default function MobilesInventory() {
                             </div>
                         </div>
 
-                        <div className="flex gap-2 px-4 pb-4 border-t border-border pt-3 bg-muted/10 rounded-b-2xl">
+                        <div className="flex-none flex gap-2 px-4 py-4 border-t border-border bg-muted/10 rounded-b-2xl">
                             <button onClick={handleFormSubmit}
                                 className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-all shadow-md">
                                 <Check className="h-4 w-4" /> {editId ? 'حفظ التعديلات' : 'إضافة المنتج'}
@@ -702,43 +908,29 @@ export default function MobilesInventory() {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
-            {/* Category Form */}
-            {showCategoryForm && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
-                    <div className="w-full max-w-sm rounded-2xl bg-card border border-border shadow-2xl p-5 animate-scale-in">
-                        <h3 className="text-lg font-bold mb-4">إنشاء تصنيف جديد</h3>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">اسم التصنيف</label>
-                                <input value={newCatName} onChange={e => setNewCatName(e.target.value)} placeholder="مثال: ساعات ذكية" className={IC} autoFocus />
-                            </div>
-                            <div>
-                                <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">النوع التقني</label>
-                                <div className="flex gap-2">
-                                    <button onClick={() => setNewCatType('device')} className={`flex-1 py-2 text-sm font-bold rounded-xl border transition-all ${newCatType === 'device' ? 'bg-primary/10 text-primary border-primary/40' : 'bg-transparent text-muted-foreground'}`}>جهاز مستقل</button>
-                                    <button onClick={() => setNewCatType('accessory')} className={`flex-1 py-2 text-sm font-bold rounded-xl border transition-all ${newCatType === 'accessory' ? 'bg-primary/10 text-primary border-primary/40' : 'bg-transparent text-muted-foreground'}`}>ملحق / إكسسوار</button>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="flex gap-2 mt-6">
-                            <button onClick={handleCategorySubmit} className="flex-1 bg-primary text-primary-foreground font-bold py-2 rounded-xl hover:bg-primary/90 transition-all">إضافة التصنيف</button>
-                            <button onClick={() => setShowCategoryForm(false)} className="px-4 border border-border rounded-xl font-medium hover:bg-muted transition-colors">إلغاء</button>
-                        </div>
-                    </div>
-                </div>
+            {/* Categories Manager Modal */}
+            {showCatManager && (
+                <MobilesCategoriesManager
+                    cats={categories}
+                    onSave={handleSaveCats}
+                    onClose={() => setShowCatManager(false)}
+                />
             )}
 
             {/* Product Batches Modal */}
-            {activeBatchesModal && (
-                <ProductBatchesModal
-                    productId={activeBatchesModal.id}
-                    productName={activeBatchesModal.name}
-                    onClose={() => setActiveBatchesModal(null)}
-                />
-            )}
+            {
+                activeBatchesModal && (
+                    <ProductBatchesModal
+                        productId={activeBatchesModal.id}
+                        productName={activeBatchesModal.name}
+                        onClose={() => setActiveBatchesModal(null)}
+                    />
+                )
+            }
 
             {/* Excel Restore */}
             <ExcelColumnMappingDialog
@@ -755,12 +947,13 @@ export default function MobilesInventory() {
                             color: row.color || '', supplier: row.supplier || '',
                             oldCostPrice: Number(row.oldCostPrice) || 0, newCostPrice: Number(row.newCostPrice) || 0,
                             salePrice: Number(row.salePrice) || 0, serialNumber: row.serialNumber || '',
+                            boxNumber: row.boxNumber || '', source: row.source || '', taxExcluded: row.taxExcluded === 'true' || row.taxExcluded === true,
                             notes: row.notes || '', description: row.description || '',
                         };
                         addMobile(mobile);
                     });
                 }}
             />
-        </div>
+        </div >
     );
 }

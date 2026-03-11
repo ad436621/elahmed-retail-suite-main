@@ -176,9 +176,9 @@ export default function UsedInventory() {
                                 <textarea value={form.condition} onChange={e => setForm(f => ({ ...f, condition: e.target.value }))} rows={2} placeholder="مثال: حالة ممتازة — شاشة خالية من الشقوق — بطارية 89%" className={`${IC} resize-none`} />
                             </div>
                             {form.salePrice > 0 && form.purchasePrice > 0 && (
-                                <div className="col-span-2 rounded-xl border p-3 flex justify-between items-center" style={{ backgroundColor: (form.salePrice - form.purchasePrice) >= 0 ? '#f0fdf4' : '#fef2f2', borderColor: (form.salePrice - form.purchasePrice) >= 0 ? '#bbf7d0' : '#fecaca' }}>
-                                    <span className="text-sm font-semibold" style={{ color: (form.salePrice - form.purchasePrice) >= 0 ? '#16a34a' : '#dc2626' }}>الربح المتوقع</span>
-                                    <span className="text-lg font-extrabold" style={{ color: (form.salePrice - form.purchasePrice) >= 0 ? '#16a34a' : '#dc2626' }}>{(form.salePrice - form.purchasePrice).toLocaleString()} ج.م</span>
+                                <div className={`col-span-2 rounded-xl border p-3 flex justify-between items-center ${(form.salePrice - form.purchasePrice) >= 0 ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20' : 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/20'}`}>
+                                    <span className={`text-sm font-semibold ${(form.salePrice - form.purchasePrice) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>الربح المتوقع</span>
+                                    <span className={`text-lg font-extrabold ${(form.salePrice - form.purchasePrice) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>{(form.salePrice - form.purchasePrice).toLocaleString()} ج.م</span>
                                 </div>
                             )}
                         </div>

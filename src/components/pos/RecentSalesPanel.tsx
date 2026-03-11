@@ -19,8 +19,8 @@ const RecentSalesPanel = ({ sales }: RecentSalesPanelProps) => {
     if (sales.length === 0) return null;
 
     return (
-        <div className="px-4 py-2 border-b border-border/20 bg-blue-500/5 animate-slide-down">
-            <p className="text-[10px] font-bold text-blue-600 mb-1.5">آخر الفواتير</p>
+        <div className="px-4 py-2 border-b border-border/20 bg-blue-500/5 dark:bg-blue-500/10 animate-slide-down">
+            <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400 mb-1.5">آخر الفواتير</p>
             <div className="space-y-1 max-h-28 overflow-y-auto">
                 {sales.map((s) => (
                     <div
@@ -37,7 +37,7 @@ const RecentSalesPanel = ({ sales }: RecentSalesPanelProps) => {
                             </p>
                         </div>
                         <span className="text-[10px] font-bold text-primary">
-                            {s.total?.toLocaleString('ar-EG')} EGP
+                            {s.total?.toLocaleString('ar-EG')} ج.م
                         </span>
                     </div>
                 ))}

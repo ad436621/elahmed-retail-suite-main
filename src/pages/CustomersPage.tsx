@@ -48,8 +48,8 @@ function CustomerModal({
         setForm(prev => ({ ...prev, [k]: e.target.value }));
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
-            <div className="w-full max-w-md bg-card rounded-3xl border border-border shadow-2xl animate-scale-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in" onClick={onClose}>
+            <div className="w-full max-w-md bg-card rounded-3xl border border-border shadow-2xl animate-scale-in" onClick={e => e.stopPropagation()}>
                 <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-border/50">
                     <h2 className="text-lg font-extrabold text-foreground">
                         {isEdit ? 'تعديل عميل' : 'إضافة عميل جديد'}

@@ -17,6 +17,8 @@ export interface User {
 
 export type ProductSource = 'mobile' | 'mobile_acc' | 'computer' | 'computer_acc' | 'device' | 'device_acc' | 'car' | 'legacy';
 
+export type ProductCondition = 'new' | 'like_new' | 'used' | 'broken';
+
 export interface Product {
   id: string;
   name: string;
@@ -25,7 +27,7 @@ export interface Product {
   category: string;
   categoryId?: string;
   source?: ProductSource;
-  condition?: 'new' | 'used';
+  condition?: ProductCondition;
   supplier: string;
   costPrice: number;
   sellingPrice: number;
@@ -186,8 +188,11 @@ export interface MobileItem {
   barcode?: string;
   deviceType: MobileDeviceType; // mobile or tablet
   category?: string;
-  condition?: 'new' | 'used';
+  condition?: ProductCondition;
   quantity: number;
+  boxNumber?: string;
+  source?: string;
+  taxExcluded?: boolean;
   storage: string;
   ram: string;
   color: string;
@@ -195,7 +200,8 @@ export interface MobileItem {
   oldCostPrice: number;
   newCostPrice: number;
   salePrice: number;
-  serialNumber: string;
+  serialNumber: string;       // IMEI 1
+  imei2?: string;             // IMEI 2 (اختياري)
   notes: string;
   description: string;  // detailed product description
   image?: string;       // base64 data URL
@@ -211,6 +217,39 @@ export interface MobileAccessory {
   category?: string;
   subcategory: string;
   quantity: number;
+  condition?: ProductCondition;
+  boxNumber?: string;
+  source?: string;
+  taxExcluded?: boolean;
+  supplier?: string;
+  serialNumber?: string;       // IMEI 1
+  imei2?: string;             // IMEI 2
+  color: string;
+  oldCostPrice: number;
+  newCostPrice: number;
+  salePrice: number;
+  notes: string;
+  description: string;
+  image?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface MobileSparePart {
+  id: string;
+  name: string;
+  model: string;
+  barcode?: string;
+  category?: string;
+  subcategory: string;
+  quantity: number;
+  condition?: ProductCondition;
+  boxNumber?: string;
+  source?: string;
+  taxExcluded?: boolean;
+  supplier?: string;
+  serialNumber?: string;       // IMEI 1
+  imei2?: string;             // IMEI 2
   color: string;
   oldCostPrice: number;
   newCostPrice: number;
@@ -490,6 +529,7 @@ export interface CarItem {
   plateNumber: string;     // plate number
   licenseExpiry: string;   // license expiry date
   condition: 'new' | 'used';
+  category?: string;       // car category
   purchasePrice: number;   // purchase price
   salePrice: number;       // sale price
   notes: string;

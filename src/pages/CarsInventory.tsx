@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Plus, Trash2, Pencil, X, Check, Car, Search, ImagePlus, ImageOff, AlignLeft, LayoutGrid, List, FileSpreadsheet, Wrench, Fuel } from 'lucide-react';
 import { CarItem } from '@/domain/types';
 import { getCars, addCar, updateCar, deleteCar, getNewCars, getUsedCars, getCarsCapital, getCarsProfit } from '@/data/carsData';
+import { loadCats, saveCats } from '@/data/categoriesData';
 import { useToast } from '@/hooks/use-toast';
 import { ExcelColumnMappingDialog } from '@/components/ExcelColumnMappingDialog';
 import { useAuth } from '@/contexts/AuthContext';
@@ -10,7 +11,7 @@ import { useConfirm } from '@/components/ConfirmDialog';
 
 const emptyForm: Omit<CarItem, 'id' | 'createdAt' | 'updatedAt'> = {
     name: '', model: '', year: new Date().getFullYear(), color: '',
-    plateNumber: '', licenseExpiry: '', condition: 'new',
+    plateNumber: '', licenseExpiry: '', condition: 'new', category: '',
     purchasePrice: 0, salePrice: 0, notes: '', image: undefined,
 };
 
@@ -71,10 +72,94 @@ function ImageUpload({ value, onChange }: { value?: string; onChange: (v: string
     );
 }
 
+// ─── Categories Manager ───────────────────────────────────────
+function CarsCategoriesManager({
+    cats, onSave, onClose,
+}: {
+    cats: string[];
+    onSave: (cats: string[]) => void;
+    onClose: () => void;
+}) {
+    const [list, setList] = useState<string[]>([...cats]);
+    const [newName, setNewName] = useState('');
+    const [editIdx, setEditIdx] = useState<number | null>(null);
+    const [editVal, setEditVal] = useState('');
+
+    const addCat = () => {
+        const n = newName.trim();
+        if (!n || list.includes(n)) return;
+        setList(l => [...l, n]);
+        setNewName('');
+    };
+    const deleteCat = (idx: number) => {
+        setList(l => l.filter((_, i) => i !== idx));
+        if (editIdx === idx) setEditIdx(null);
+    };
+    const startEdit = (idx: number) => { setEditIdx(idx); setEditVal(list[idx]); };
+    const saveEdit = () => {
+        if (editIdx === null) return;
+        const n = editVal.trim();
+        if (!n) return;
+        if (list.filter((_, i) => i !== editIdx).includes(n)) return;
+        setList(l => l.map((c, i) => i === editIdx ? n : c));
+        setEditIdx(null);
+    };
+
+    return (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4" onClick={onClose}>
+            <div className="w-full max-w-sm rounded-2xl border border-border bg-card shadow-2xl animate-scale-in overflow-hidden" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-muted/30">
+                    <div className="flex items-center gap-2">
+                        <Car className="h-5 w-5 text-emerald-600" />
+                        <h3 className="text-base font-bold">إدارة تصنيفات السيارات</h3>
+                    </div>
+                    <button onClick={onClose} className="rounded-lg p-1.5 hover:bg-muted text-muted-foreground"><X className="h-4 w-4" /></button>
+                </div>
+                <div className="px-5 pt-4 pb-3 flex gap-2">
+                    <input value={newName} onChange={e => setNewName(e.target.value)} onKeyDown={e => e.key === 'Enter' && addCat()} placeholder="اسم التصنيف الجديد..." className="flex-1 rounded-xl border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/30" autoFocus />
+                    <button onClick={addCat} className="flex items-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2 text-sm font-bold text-white hover:bg-emerald-700 transition"><Plus className="h-4 w-4" /></button>
+                </div>
+                <div className="px-5 pb-4 space-y-1.5 max-h-64 overflow-y-auto">
+                    {list.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">لا توجد تصنيفات بعد</p>}
+                    {list.map((cat, idx) => (
+                        <div key={idx} className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 group hover:border-emerald-500/30 transition-colors">
+                            {editIdx === idx ? (
+                                <input value={editVal} onChange={e => setEditVal(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditIdx(null); }} className="flex-1 rounded-lg border border-emerald-500/40 px-2 py-1 text-sm focus:outline-none bg-background" autoFocus />
+                            ) : (
+                                <span className="flex-1 text-sm font-medium text-foreground">{cat}</span>
+                            )}
+                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                {editIdx === idx ? (
+                                    <>
+                                        <button onClick={saveEdit} className="rounded-md p-1 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 text-emerald-600"><Check className="h-3.5 w-3.5" /></button>
+                                        <button onClick={() => setEditIdx(null)} className="rounded-md p-1 hover:bg-muted text-muted-foreground"><X className="h-3.5 w-3.5" /></button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <button onClick={() => startEdit(idx)} className="rounded-md p-1 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 text-emerald-600"><Pencil className="h-3.5 w-3.5" /></button>
+                                        <button onClick={() => deleteCat(idx)} className="rounded-md p-1 hover:bg-red-50 dark:hover:bg-red-500/10 text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+                <div className="flex gap-2 px-5 pb-5">
+                    <button onClick={() => onSave(list)} className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-emerald-600 py-2.5 text-sm font-bold text-white hover:bg-emerald-700 transition"><Check className="h-4 w-4" /> حفظ التصنيفات</button>
+                    <button onClick={onClose} className="flex-1 rounded-xl border border-border py-2.5 text-sm font-medium hover:bg-muted transition">إلغاء</button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 export default function CarsInventory() {
     const { toast } = useToast();
     const location = useLocation();
     const navigate = useNavigate();
+    const [categories, setCategories] = useState<string[]>(() => loadCats('cars_cats', ['سيدان', 'SUV', 'هاتشباك', 'نقل', 'ميكروباص']));
+    const [showCatManager, setShowCatManager] = useState(false);
+    const [catFilter, setCatFilter] = useState('الكل');
     const [items, setItems] = useState<CarItem[]>(() => getCars());
     const [tab, setTab] = useState<'new' | 'used'>('new');
     const [showForm, setShowForm] = useState(false);
@@ -117,15 +202,23 @@ export default function CarsInventory() {
         setForm({
             name: item.name, model: item.model, year: item.year, color: item.color,
             plateNumber: item.plateNumber, licenseExpiry: item.licenseExpiry,
-            condition: item.condition, purchasePrice: item.purchasePrice,
+            condition: item.condition, category: item.category ?? '', purchasePrice: item.purchasePrice,
             salePrice: item.salePrice, notes: item.notes, image: item.image,
         });
         setEditId(item.id);
         setShowForm(true);
     };
 
+    const handleSaveCats = (updated: string[]) => {
+        saveCats('cars_cats', updated);
+        setCategories(updated);
+        setShowCatManager(false);
+        toast({ title: '✅ تم حفظ تصنيفات السيارات', description: `${updated.length} تصنيف` });
+    };
+
     const filtered = items.filter(i =>
         (tab === 'new' ? i.condition === 'new' : i.condition === 'used') &&
+        (catFilter === 'الكل' || i.category === catFilter) &&
         (i.name.toLowerCase().includes(search.toLowerCase()) ||
             i.model.toLowerCase().includes(search.toLowerCase()) ||
             i.plateNumber.includes(search))
@@ -177,6 +270,9 @@ export default function CarsInventory() {
                         <button onClick={() => setViewMode('grid')} className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${viewMode === 'grid' ? 'bg-card shadow text-primary border border-border' : 'text-muted-foreground'}`}>شبكة</button>
                         <button onClick={() => setViewMode('table')} className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${viewMode === 'table' ? 'bg-card shadow text-primary border border-border' : 'text-muted-foreground'}`}>جدول</button>
                     </div>
+                    <button onClick={() => setShowCatManager(true)} className="flex items-center gap-2 rounded-xl border border-border bg-muted/50 px-4 py-2.5 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition-all shadow-sm">
+                        التصنيفات ({categories.length})
+                    </button>
                     <button onClick={() => { setShowForm(true); setEditId(null); setForm({ ...emptyForm, condition: tab }); }} className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-all shadow-md">
                         <Plus className="h-4 w-4" /> إضافة سيارة
                     </button>
@@ -192,6 +288,15 @@ export default function CarsInventory() {
                 <button onClick={() => setTab('used')} className={`rounded-xl px-5 py-2 text-sm font-semibold transition-all ${tab === 'used' ? 'bg-card shadow-sm text-primary border border-border' : 'text-muted-foreground'}`}>مستعملة</button>
             </div>
 
+            {categories.length > 0 && (
+                <div className="flex gap-1.5 flex-wrap">
+                    <button onClick={() => setCatFilter('الكل')} className={`rounded-xl px-4 py-2 text-sm font-semibold transition-all shadow-sm border ${catFilter === 'الكل' ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-500/30' : 'bg-card text-muted-foreground border-border hover:bg-muted/50'}`}>الكل</button>
+                    {categories.map(c => (
+                        <button key={c} onClick={() => setCatFilter(c)} className={`rounded-xl px-4 py-2 text-sm font-semibold transition-all shadow-sm border ${catFilter === c ? 'bg-emerald-50 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-500/30' : 'bg-card text-muted-foreground border-border hover:bg-muted/50'}`}>{c}</button>
+                    ))}
+                </div>
+            )}
+
             {/* Search */}
             <div className="relative max-w-md">
                 <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -200,8 +305,8 @@ export default function CarsInventory() {
 
             {/* Form Modal */}
             {showForm && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm overflow-y-auto py-6 px-4">
-                    <div className="w-full max-w-xl mx-auto rounded-2xl border border-border bg-card p-6 shadow-2xl space-y-4 animate-scale-in">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm overflow-y-auto py-6 px-4" onClick={() => { setShowForm(false); setEditId(null); }}>
+                    <div className="w-full max-w-xl mx-auto rounded-2xl border border-border bg-card p-6 shadow-2xl space-y-4 animate-scale-in" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between">
                             <h2 className="text-lg font-bold text-foreground">{editId ? 'تعديل سيارة' : 'إضافة سيارة'}</h2>
                             <button onClick={() => { setShowForm(false); setEditId(null); }} className="rounded-lg p-1.5 hover:bg-muted transition-colors"><X className="h-5 w-5 text-muted-foreground" /></button>
@@ -232,6 +337,13 @@ export default function CarsInventory() {
                                 <div>
                                     <label className="mb-1 block text-xs font-semibold text-muted-foreground">انتهاء الرخصة</label>
                                     <input type="date" value={form.licenseExpiry} onChange={e => setForm(f => ({ ...f, licenseExpiry: e.target.value }))} className={IC} />
+                                </div>
+                                <div>
+                                    <label className="mb-1 block text-xs font-semibold text-muted-foreground">التصنيف</label>
+                                    <select value={form.category || ''} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} className={IC}>
+                                        <option value="">-- تصنيف السيارة --</option>
+                                        {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                                    </select>
                                 </div>
                                 <div>
                                     <label className="mb-1 block text-xs font-semibold text-muted-foreground">الحالة</label>
@@ -271,6 +383,8 @@ export default function CarsInventory() {
             )}
 
             {/* Content */}
+            {showCatManager && <CarsCategoriesManager cats={categories} onSave={handleSaveCats} onClose={() => setShowCatManager(false)} />}
+            
             {viewMode === 'grid' ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                     {filtered.length === 0 ? (
@@ -294,7 +408,7 @@ export default function CarsInventory() {
                             </div>
                             <div className="flex flex-col flex-1 p-4 gap-2">
                                 <h3 className="font-bold text-foreground">{item.name}</h3>
-                                <p className="text-xs text-muted-foreground">{[item.model, item.year, item.color].filter(Boolean).join(' • ')}</p>
+                                <p className="text-xs text-muted-foreground">{[item.category, item.model, item.year, item.color].filter(Boolean).join(' • ')}</p>
                                 {item.plateNumber && <p className="text-xs text-muted-foreground">رقم اللوحة: {item.plateNumber}</p>}
                                 <div className="mt-auto flex items-center justify-between pt-2 border-t border-border/40">
                                     <div>
@@ -318,6 +432,7 @@ export default function CarsInventory() {
                         <thead>
                             <tr className="border-b border-border bg-muted/30">
                                 <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground">السيارة</th>
+                                <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground">التصنيف</th>
                                 <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground">موديل</th>
                                 <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground">سنة</th>
                                 <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground">رقم اللوحة</th>
@@ -330,10 +445,11 @@ export default function CarsInventory() {
                         </thead>
                         <tbody>
                             {filtered.length === 0 ? (
-                                <tr><td colSpan={9} className="py-12 text-center text-muted-foreground">لا توجد سيارات</td></tr>
+                                <tr><td colSpan={10} className="py-12 text-center text-muted-foreground">لا توجد سيارات</td></tr>
                             ) : filtered.map((item, i) => (
                                 <tr key={item.id} className={`border-b border-border/50 hover:bg-muted/20 transition-colors ${i % 2 === 0 ? '' : 'bg-muted/10'}`}>
                                     <td className="px-4 py-3 font-semibold text-foreground">{item.name}</td>
+                                    <td className="px-4 py-3 text-xs text-muted-foreground">{item.category || '—'}</td>
                                     <td className="px-4 py-3 text-xs text-muted-foreground">{item.model || '—'}</td>
                                     <td className="px-4 py-3 text-xs text-muted-foreground">{item.year}</td>
                                     <td className="px-4 py-3 text-xs text-muted-foreground">{item.plateNumber || '—'}</td>
@@ -372,6 +488,7 @@ export default function CarsInventory() {
                             plateNumber: row.plateNumber || '',
                             licenseExpiry: row.licenseExpiry || '',
                             condition: row.condition || 'new',
+                            category: '',
                             purchasePrice: Number(row.purchasePrice) || 0,
                             salePrice: Number(row.salePrice) || 0,
                             notes: row.notes || '',

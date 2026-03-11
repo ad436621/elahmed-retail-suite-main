@@ -169,7 +169,7 @@ export default function WalletsTab() {
                                     onChange={e => setTransfers(ts => ts.map(x => x.id === t.id ? { ...x, commission: +e.target.value } : x))}
                                     className="w-20 text-center rounded-xl border border-input bg-background px-2 py-1.5 text-sm font-bold tabular-nums" />
                                 <button onClick={() => setTransfers(ts => ts.filter(x => x.id !== t.id))}
-                                    className="rounded-lg p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 transition-colors">
+                                    className="rounded-lg p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors">
                                     <Trash2 className="h-3.5 w-3.5" />
                                 </button>
                             </div>

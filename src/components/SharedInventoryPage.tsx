@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useInventoryData } from '@/hooks/useInventoryData';
 import { getWeightedAvgCost } from '@/data/batchesData';
 import { ProductBatchesModal } from '@/components/ProductBatchesModal';
-import { getCategoriesBySection, addCategory, DynamicCategory } from '@/data/categoriesData';
+import { loadCats, saveCats } from '@/data/categoriesData';
 import { ExcelColumnMappingDialog } from '@/components/ExcelColumnMappingDialog';
 
 // ─── Types ────────────────────────────────────────────────────
@@ -24,8 +24,8 @@ export interface SharedInventoryConfig {
     icon: ReactNode;
     /** Page title */
     title: string;
-    /** Category section slug used in categoriesData */
-    categorySection: CategorySection;
+    /** Storage key for isolated category management */
+    categoryStorageKey: string;
     /** Color theme for active filter buttons */
     accentColor: InventoryColor;
     /** inventoryType passed to ExcelColumnMappingDialog */
@@ -37,13 +37,6 @@ export interface SharedInventoryConfig {
     updateDevice: (id: string, payload: any) => void;
     deleteDevice: (id: string) => void;
     deviceStorageKey: string;
-
-    // ─ Accessories CRUD ─
-    getAccessories: () => any[];
-    addAccessory: (payload: any) => void;
-    updateAccessory: (id: string, payload: any) => void;
-    deleteAccessory: (id: string) => void;
-    accessoryStorageKey: string;
 
     /** Extra fields that only some inventory types have (e.g. processor for computers) */
     extraDeviceField?: {
@@ -76,18 +69,122 @@ const accentStyles: Record<InventoryColor, {
     filterActive: string; categoryActive: string; categoryHover: string;
 }> = {
     indigo: {
-        iconBg: 'bg-indigo-100', iconText: 'text-indigo-600', iconBorder: 'border-indigo-200',
-        filterActive: 'bg-indigo-50 text-indigo-700 border-indigo-300',
-        categoryActive: 'bg-indigo-50 text-indigo-700 border-indigo-300',
+        iconBg: 'bg-indigo-100 dark:bg-indigo-500/15', iconText: 'text-indigo-600 dark:text-indigo-400', iconBorder: 'border-indigo-200 dark:border-indigo-500/20',
+        filterActive: 'bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-500/30',
+        categoryActive: 'bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-500/30',
         categoryHover: 'hover:bg-muted/50',
     },
     orange: {
-        iconBg: 'bg-orange-100', iconText: 'text-orange-600', iconBorder: 'border-orange-200',
-        filterActive: 'bg-orange-50 text-orange-700 border-orange-300',
-        categoryActive: 'bg-orange-50 text-orange-700 border-orange-300',
+        iconBg: 'bg-orange-100 dark:bg-orange-500/15', iconText: 'text-orange-600 dark:text-orange-400', iconBorder: 'border-orange-200 dark:border-orange-500/20',
+        filterActive: 'bg-orange-50 dark:bg-orange-500/15 text-orange-700 dark:text-orange-300 border-orange-300 dark:border-orange-500/30',
+        categoryActive: 'bg-orange-50 dark:bg-orange-500/15 text-orange-700 dark:text-orange-300 border-orange-300 dark:border-orange-500/30',
         categoryHover: 'hover:bg-muted/50',
     },
 };
+
+// ─── Shared Categories Manager ─────────────────────────────────
+
+function SharedCategoriesManager({
+    cats, accentColor, icon, onSave, onClose,
+}: {
+    cats: string[];
+    accentColor: InventoryColor;
+    icon: ReactNode;
+    onSave: (cats: string[]) => void;
+    onClose: () => void;
+}) {
+    const [list, setList] = useState<string[]>([...cats]);
+    const [newName, setNewName] = useState('');
+    const [editIndex, setEditIndex] = useState<number | null>(null);
+    const [editVal, setEditVal] = useState('');
+
+    const addCat = () => {
+        const n = newName.trim();
+        if (!n || list.includes(n)) return;
+        setList(l => [...l, n]);
+        setNewName('');
+    };
+    const deleteCat = (idx: number) => { 
+        setList(l => l.filter((_, i) => i !== idx));
+        if (editIndex === idx) setEditIndex(null); 
+    };
+    const startEdit = (idx: number, val: string) => { setEditIndex(idx); setEditVal(val); };
+    const saveEdit = () => {
+        if (editIndex === null) return;
+        const n = editVal.trim();
+        if (!n || (list.includes(n) && list.indexOf(n) !== editIndex)) return;
+        setList(l => l.map((c, i) => i === editIndex ? n : c));
+        setEditIndex(null);
+    };
+
+    return (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4" onClick={onClose}>
+            <div className="w-full max-w-md rounded-2xl border border-border bg-card shadow-2xl animate-scale-in overflow-hidden" onClick={e => e.stopPropagation()}>
+                {/* Header */}
+                <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-muted/30">
+                    <div className="flex items-center gap-2">
+                        <Tag className={`h-5 w-5 text-${accentColor}-500`} />
+                        <h3 className="text-base font-bold">إدارة التصنيفات</h3>
+                        <span className={`rounded-full bg-${accentColor}-100 dark:bg-${accentColor}-500/15 text-${accentColor}-600 dark:text-${accentColor}-400 text-[10px] font-bold px-2 py-0.5`}>{list.length}</span>
+                    </div>
+                    <button onClick={onClose} className="rounded-lg p-1.5 hover:bg-muted text-muted-foreground"><X className="h-4 w-4" /></button>
+                </div>
+                {/* Add new */}
+                <div className="px-5 pt-4 pb-3 space-y-2.5">
+                    <div className="flex gap-2">
+                        <input value={newName} onChange={e => setNewName(e.target.value)} onKeyDown={e => e.key === 'Enter' && addCat()}
+                            placeholder="اسم التصنيف الجديد..." className={`flex-1 rounded-xl border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-${accentColor}-500/30`} autoFocus />
+                        <button onClick={addCat} className={`flex items-center gap-1.5 rounded-xl bg-${accentColor}-600 hover:bg-${accentColor}-700 px-4 py-2 text-sm font-bold text-white transition-colors`}>
+                            <Plus className="h-4 w-4" />
+                        </button>
+                    </div>
+                </div>
+                {/* List */}
+                <div className="px-5 pb-4 space-y-1.5 max-h-72 overflow-y-auto">
+                    {list.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">لا توجد تصنيفات بعد</p>}
+                    {list.map((cat, idx) => (
+                        <div key={idx} className={`flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 group hover:border-${accentColor}-300 dark:hover:border-${accentColor}-500/30 transition-colors`}>
+                            {editIndex === idx ? (
+                                <div className="flex-1 space-y-1.5">
+                                    <input value={editVal} onChange={e => setEditVal(e.target.value)}
+                                        onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditIndex(null); }}
+                                        className={`w-full rounded-lg border border-${accentColor}-400 px-2 py-1 text-sm focus:outline-none bg-background`} autoFocus />
+                                </div>
+                            ) : (
+                                <div className="flex-1 flex items-center gap-2">
+                                    <span className={`shrink-0 h-5 w-5 rounded-full flex items-center justify-center bg-primary/10 text-primary`}>
+                                        <span className="[&>svg]:h-3 [&>svg]:w-3">{icon}</span>
+                                    </span>
+                                    <span className="flex-1 text-sm font-medium text-foreground">{cat}</span>
+                                </div>
+                            )}
+                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                {editIndex === idx ? (
+                                    <>
+                                        <button onClick={saveEdit} className="rounded-md p-1 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 text-emerald-600"><Check className="h-3.5 w-3.5" /></button>
+                                        <button onClick={() => setEditIndex(null)} className="rounded-md p-1 hover:bg-muted text-muted-foreground"><X className="h-3.5 w-3.5" /></button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <button onClick={() => startEdit(idx, cat)} className="rounded-md p-1 hover:bg-primary/10 text-primary"><Pencil className="h-3.5 w-3.5" /></button>
+                                        <button onClick={() => deleteCat(idx)} className="rounded-md p-1 hover:bg-red-50 dark:hover:bg-red-500/10 text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+                {/* Footer */}
+                <div className="flex gap-2 px-5 pb-5">
+                    <button onClick={() => onSave(list)} className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-primary hover:bg-primary/90 py-2.5 text-sm font-bold text-primary-foreground transition-colors">
+                        <Check className="h-4 w-4" /> حفظ التصنيفات
+                    </button>
+                    <button onClick={onClose} className="flex-1 rounded-xl border border-border py-2.5 text-sm font-medium hover:bg-muted transition-colors">إلغاء</button>
+                </div>
+            </div>
+        </div>
+    );
+}
 
 // ─── Main Component ───────────────────────────────────────────
 
@@ -97,11 +194,9 @@ export default function SharedInventoryPage({ config }: { config: SharedInventor
     const navigate = useNavigate();
     const ac = accentStyles[config.accentColor];
 
-    const fetchCategories = () => getCategoriesBySection(config.categorySection);
-    const [categories, setCategories] = useState<DynamicCategory[]>(fetchCategories);
+    const [categories, setCategories] = useState<string[]>(() => loadCats(config.categoryStorageKey, []));
 
     const devices = useInventoryData(config.getDevices, [config.deviceStorageKey]);
-    const accessories = useInventoryData(config.getAccessories, [config.accessoryStorageKey]);
 
     const [search, setSearch] = useState('');
     const [activeFilter, setActiveFilter] = useState<string>('all');
@@ -109,12 +204,9 @@ export default function SharedInventoryPage({ config }: { config: SharedInventor
 
     const [showForm, setShowForm] = useState(false);
     const [editId, setEditId] = useState<string | null>(null);
-    const [editType, setEditType] = useState<'device' | 'accessory'>('device');
     const [f, setF] = useState(makeEmptyForm());
 
-    const [showCategoryForm, setShowCategoryForm] = useState(false);
-    const [newCatName, setNewCatName] = useState('');
-    const [newCatType, setNewCatType] = useState<'device' | 'accessory'>('device');
+    const [showCatManager, setShowCatManager] = useState(false);
     const [activeBatchesModal, setActiveBatchesModal] = useState<{ id: string; name: string } | null>(null);
     const [showExcelRestore, setShowExcelRestore] = useState(false);
 
@@ -126,34 +218,21 @@ export default function SharedInventoryPage({ config }: { config: SharedInventor
     const unifiedProducts = useMemo(() => {
         const list: any[] = [];
         devices.forEach(d => {
-            const cat = categories.find(ct => ct.id === d.category);
             list.push({
                 _raw: d, _type: 'device',
                 id: d.id, name: d.name, barcode: d.barcode, image: d.image, description: d.description,
                 quantity: d.quantity, salePrice: d.salePrice, newCostPrice: d.newCostPrice, oldCostPrice: d.oldCostPrice,
-                category: d.category, condition: d.condition || 'new', categoryName: cat?.name,
+                category: d.category, condition: d.condition || 'new', categoryName: d.category,
                 model: d.model, color: d.color, extra: config.extraDeviceField ? d[config.extraDeviceField.key] : '',
             });
         });
-        accessories.forEach(a => {
-            const cat = categories.find(ct => ct.id === a.category);
-            list.push({
-                _raw: a, _type: 'accessory',
-                id: a.id, name: a.name, barcode: a.barcode, image: a.image, description: a.description,
-                quantity: a.quantity, salePrice: a.salePrice, newCostPrice: a.newCostPrice, oldCostPrice: a.oldCostPrice,
-                category: a.category, condition: (a as any).condition || 'new', categoryName: cat?.name,
-                model: a.model, color: a.color, extra: '',
-            });
-        });
         return list;
-    }, [devices, accessories, categories, config.extraDeviceField]);
+    }, [devices, categories, config.extraDeviceField]);
 
     const filteredList = useMemo(() => {
         let res = unifiedProducts;
         if (activeFilter === 'used') {
             res = res.filter(p => p.condition === 'used');
-        } else if (activeFilter === 'accessory') {
-            res = res.filter(p => p._type === 'accessory');
         } else if (activeFilter !== 'all') {
             res = res.filter(p => p.category === activeFilter);
         }
@@ -169,44 +248,29 @@ export default function SharedInventoryPage({ config }: { config: SharedInventor
         return res;
     }, [unifiedProducts, search, activeFilter, config.extraDeviceField]);
 
-    const refreshData = () => setCategories(fetchCategories());
+    const refreshData = () => setCategories(loadCats(config.categoryStorageKey, []));
 
-    const handleCategorySubmit = () => {
-        if (!newCatName.trim()) { toast({ title: 'خطأ', description: 'اسم التصنيف مطلوب', variant: 'destructive' }); return; }
-        addCategory({ name: newCatName, section: config.categorySection, type: newCatType });
-        setCategories(fetchCategories());
-        setShowCategoryForm(false);
-        setNewCatName('');
-        toast({ title: 'نجاح', description: 'تم إنشاء التصنيف' });
+    const handleSaveCats = (updated: string[]) => {
+        saveCats(config.categoryStorageKey, updated);
+        setCategories(updated);
+        setShowCatManager(false);
+        toast({ title: '✅ تم الحفظ', description: `تم إعادة ضبط التصنيفات بنجاح`, variant: 'default' });
     };
 
     const handleFormSubmit = () => {
         if (!f.name.trim() || !f.category) { toast({ title: 'خطأ', description: 'الاسم والتصنيف مطلوبان', variant: 'destructive' }); return; }
         if (f.barcode && isBarcodeDuplicate(f.barcode, editId || undefined)) { toast({ title: 'خطأ', description: 'الباركود المدخل مكرر', variant: 'destructive' }); return; }
 
-        const selectedCat = categories.find(c => c.id === f.category);
-        if (!selectedCat) return;
-
-        if (selectedCat.type === 'device') {
-            const payload: any = {
-                name: f.name, barcode: f.barcode, category: f.category, condition: f.condition,
-                quantity: f.quantity, model: f.model, color: f.color,
-                oldCostPrice: f.oldCostPrice, newCostPrice: f.newCostPrice, salePrice: f.salePrice,
-                notes: f.notes, description: f.description, image: f.image,
-            };
-            if (config.extraDeviceField) payload[config.extraDeviceField.key] = f.extra;
-            if (editId) config.updateDevice(editId, payload);
-            else config.addDevice(payload);
-        } else {
-            const payload: any = {
-                name: f.name, barcode: f.barcode, category: f.category, subcategory: '', condition: f.condition,
-                quantity: f.quantity, color: f.color, model: f.model,
-                oldCostPrice: f.oldCostPrice, newCostPrice: f.newCostPrice,
-                salePrice: f.salePrice, notes: f.notes, description: f.description, image: f.image,
-            };
-            if (editId) config.updateAccessory(editId, payload);
-            else config.addAccessory(payload);
-        }
+        const payload: any = {
+            name: f.name, barcode: f.barcode, category: f.category, condition: f.condition,
+            quantity: f.quantity, model: f.model, color: f.color,
+            oldCostPrice: f.oldCostPrice, newCostPrice: f.newCostPrice, salePrice: f.salePrice,
+            notes: f.notes, description: f.description, image: f.image,
+        };
+        if (config.extraDeviceField) payload[config.extraDeviceField.key] = f.extra;
+        if (editId) config.updateDevice(editId, payload);
+        else config.addDevice(payload);
+        
         toast({ title: '✅ تم الحفظ بنجاح', description: f.name });
         setShowForm(false); setEditId(null);
         refreshData();
@@ -214,7 +278,7 @@ export default function SharedInventoryPage({ config }: { config: SharedInventor
     };
 
     const openAdd = () => {
-        setF({ ...makeEmptyForm(), category: categories[0]?.id || '' });
+        setF({ ...makeEmptyForm(), category: categories[0] || '' });
         setEditId(null);
         setShowForm(true);
     };
@@ -227,11 +291,11 @@ export default function SharedInventoryPage({ config }: { config: SharedInventor
             notes: item.notes || '', description: item.description || '', image: item.image
         });
         setEditId(item.id);
-        setEditType(item._type);
         setShowForm(true);
     };
 
-    const activeCategoryType = categories.find(c => c.id === f.category)?.type || 'device';
+    // Assuming all categories are 'device' type for now, as DynamicCategory is removed
+    const activeCategoryType = 'device';
 
     return (
         <div className="space-y-5 animate-fade-in" dir="rtl">
@@ -290,20 +354,20 @@ export default function SharedInventoryPage({ config }: { config: SharedInventor
                     <LayoutGrid className="h-4 w-4" /> الكل
                 </button>
                 <button onClick={() => setActiveFilter('used')}
-                    className={`shrink-0 rounded-xl px-4 py-2 text-sm font-semibold border transition-all flex items-center gap-2 ${activeFilter === 'used' ? 'bg-orange-100 text-orange-700 border-orange-300 shadow-sm' : 'bg-card border-border text-muted-foreground hover:text-foreground hover:border-orange-300'}`}>
+                    className={`shrink-0 rounded-xl px-4 py-2 text-sm font-semibold border transition-all flex items-center gap-2 ${activeFilter === 'used' ? 'bg-orange-100 dark:bg-orange-500/15 text-orange-700 dark:text-orange-300 border-orange-300 dark:border-orange-500/30 shadow-sm' : 'bg-card border-border text-muted-foreground hover:text-foreground hover:border-orange-300'}`}>
                     <Check className="h-4 w-4" /> مستعمل
                 </button>
                 <div className="shrink-0 w-px h-6 bg-border mx-1 self-center" />
-                {categories.map(c => (
-                    <button key={c.id} onClick={() => setActiveFilter(c.id)}
-                        className={`shrink-0 rounded-xl px-4 py-2 text-sm font-semibold border transition-all flex items-center gap-2 ${activeFilter === c.id ? ac.categoryActive + ' shadow-sm' : 'bg-card border-border text-muted-foreground hover:text-foreground ' + ac.categoryHover}`}>
-                        {c.type === 'device' ? <span className="opacity-70">{config.icon}</span> : <Headphones className="h-4 w-4 opacity-70" />}
-                        {c.name}
+                {categories.map((c, i) => (
+                    <button key={i} onClick={() => setActiveFilter(c)}
+                        className={`shrink-0 rounded-xl px-4 py-2 text-sm font-semibold border transition-all flex items-center gap-2 ${activeFilter === c ? ac.categoryActive + ' shadow-sm' : 'bg-card border-border text-muted-foreground hover:text-foreground ' + ac.categoryHover}`}>
+                        <span className="opacity-70">{config.icon}</span>
+                        {c}
                     </button>
                 ))}
-                <button onClick={() => setShowCategoryForm(true)}
+                <button onClick={() => setShowCatManager(true)}
                     className="shrink-0 rounded-xl px-4 py-2 text-sm font-semibold border border-dashed border-primary/40 text-primary hover:bg-primary/5 transition-all flex items-center gap-2">
-                    <Plus className="h-4 w-4" /> إضافة تصنيف
+                    <Tag className="h-4 w-4" /> التصنيفات ({categories.length})
                 </button>
             </div>
 
@@ -327,7 +391,7 @@ export default function SharedInventoryPage({ config }: { config: SharedInventor
                         <InventoryProductCard key={item.id} item={item}
                             onEdit={() => openEdit(item)}
                             onDelete={() => {
-                                item._type === 'device' ? config.deleteDevice(item.id) : config.deleteAccessory(item.id);
+                                config.deleteDevice(item.id);
                                 setTimeout(() => window.dispatchEvent(new Event('local-storage-sync')), 100);
                             }}
                         />
@@ -368,12 +432,12 @@ export default function SharedInventoryPage({ config }: { config: SharedInventor
                                             </td>
                                             <td className="px-3 py-2 text-xs font-semibold text-primary">{item.categoryName || '—'}</td>
                                             <td className="px-3 py-2">
-                                                <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${item.condition === 'used' ? 'bg-orange-100 text-orange-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                                                <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${item.condition === 'used' ? 'bg-orange-100 dark:bg-orange-500/15 text-orange-700 dark:text-orange-400' : 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'}`}>
                                                     {item.condition === 'used' ? 'مستعمل' : 'جديد'}
                                                 </span>
                                             </td>
                                             <td className="px-3 py-2 text-center">
-                                                <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${item.quantity === 0 ? 'bg-red-100 text-red-600' : 'bg-muted text-foreground'}`}>{item.quantity}</span>
+                                                <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${item.quantity === 0 ? 'bg-red-100 dark:bg-red-500/15 text-red-600' : 'bg-muted text-foreground'}`}>{item.quantity}</span>
                                             </td>
                                             <td className="px-3 py-2 text-xs text-muted-foreground tabular-nums">
                                                 <button onClick={() => setActiveBatchesModal({ id: item.id, name: item.name })} className="hover:text-primary transition-colors underline decoration-dotted underline-offset-2" title="الضغط لعرض التفاصيل">{avgCost.toLocaleString()}</button>
@@ -383,7 +447,7 @@ export default function SharedInventoryPage({ config }: { config: SharedInventor
                                             <td className="px-3 py-2 text-left">
                                                 <div className="flex justify-end gap-1.5">
                                                     <button onClick={() => openEdit(item)} className="rounded-lg p-1.5 hover:bg-primary/10 text-primary transition-colors"><Pencil className="h-3.5 w-3.5" /></button>
-                                                    <button onClick={() => { item._type === 'device' ? config.deleteDevice(item.id) : config.deleteAccessory(item.id); setTimeout(() => window.dispatchEvent(new Event('local-storage-sync')), 100); }} className="rounded-lg p-1.5 hover:bg-red-50 text-destructive transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
+                                                    <button onClick={() => { config.deleteDevice(item.id); setTimeout(() => window.dispatchEvent(new Event('local-storage-sync')), 100); }} className="rounded-lg p-1.5 hover:bg-red-50 dark:hover:bg-red-500/10 text-destructive transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -397,8 +461,8 @@ export default function SharedInventoryPage({ config }: { config: SharedInventor
 
             {/* ── Add/Edit Form Modal ── */}
             {showForm && (
-                <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-sm overflow-y-auto py-4 px-4">
-                    <div className="w-full max-w-xl rounded-2xl border border-border bg-card shadow-2xl animate-scale-in my-8">
+                <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-sm overflow-y-auto py-4 px-4" onClick={() => { setShowForm(false); setEditId(null); }}>
+                    <div className="w-full max-w-xl rounded-2xl border border-border bg-card shadow-2xl animate-scale-in my-8" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-border">
                             <h2 className="text-base font-bold text-foreground">{editId ? '✏️ تعديل المنتج' : '➕ إضافة منتج'}</h2>
                             <button onClick={() => { setShowForm(false); setEditId(null); }} className="rounded-xl p-2 hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
@@ -414,14 +478,14 @@ export default function SharedInventoryPage({ config }: { config: SharedInventor
                                     <label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase">التصنيف *</label>
                                     <select value={f.category} onChange={e => setF(p => ({ ...p, category: e.target.value }))} className={IC}>
                                         <option value="" disabled>-- اختر تصنيفاً --</option>
-                                        {categories.map(c => <option key={c.id} value={c.id}>{c.name} ({c.type === 'device' ? 'جهاز' : 'إكسسوار'})</option>)}
+                                        {categories.map((c, i) => <option key={i} value={c}>{c}</option>)}
                                     </select>
                                 </div>
                                 <div className="col-span-2 sm:col-span-1">
                                     <label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase">حالة المنتج *</label>
                                     <div className="flex gap-2 h-10">
                                         <button type="button" onClick={() => setF(p => ({ ...p, condition: 'new' }))} className={`flex-1 rounded-xl border text-sm font-semibold transition-all ${f.condition === 'new' ? 'bg-primary/10 border-primary text-primary' : 'bg-transparent border-input text-muted-foreground'}`}>جديد</button>
-                                        <button type="button" onClick={() => setF(p => ({ ...p, condition: 'used' }))} className={`flex-1 rounded-xl border text-sm font-semibold transition-all ${f.condition === 'used' ? 'bg-orange-100 border-orange-400 text-orange-700' : 'bg-transparent border-input text-muted-foreground'}`}>مستعمل</button>
+                                        <button type="button" onClick={() => setF(p => ({ ...p, condition: 'used' }))} className={`flex-1 rounded-xl border text-sm font-semibold transition-all ${f.condition === 'used' ? 'bg-orange-100 dark:bg-orange-500/15 border-orange-400 dark:border-orange-500/30 text-orange-700 dark:text-orange-400' : 'bg-transparent border-input text-muted-foreground'}`}>مستعمل</button>
                                     </div>
                                 </div>
                             </div>
@@ -475,31 +539,15 @@ export default function SharedInventoryPage({ config }: { config: SharedInventor
                 </div>
             )}
 
-            {/* ── Category Creation Modal ── */}
-            {showCategoryForm && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
-                    <div className="w-full max-w-sm rounded-2xl bg-card border border-border shadow-2xl p-5 animate-scale-in">
-                        <h3 className="text-lg font-bold mb-4">إنشاء تصنيف جديد</h3>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">اسم التصنيف</label>
-                                <input value={newCatName} onChange={e => setNewCatName(e.target.value)} placeholder="مثال: شاشات" className={IC} autoFocus />
-                            </div>
-                            <div>
-                                <label className="text-xs font-semibold text-muted-foreground mb-1.5 block">النوع التقني للتصنيف</label>
-                                <div className="flex gap-2">
-                                    <button onClick={() => setNewCatType('device')} className={`flex-1 py-2 text-sm font-bold rounded-xl border transition-all ${newCatType === 'device' ? 'bg-primary/10 text-primary border-primary/40' : 'bg-transparent text-muted-foreground'}`}>جهاز مستقل</button>
-                                    <button onClick={() => setNewCatType('accessory')} className={`flex-1 py-2 text-sm font-bold rounded-xl border transition-all ${newCatType === 'accessory' ? 'bg-primary/10 text-primary border-primary/40' : 'bg-transparent text-muted-foreground'}`}>ملحق / إكسسوار</button>
-                                </div>
-                                <p className="text-[10px] text-muted-foreground/80 mt-1">تحديد &quot;جهاز&quot; يطلب إدخال بيانات أكثر. أما &quot;إكسسوار&quot; فيكتفي بالموديل واللون.</p>
-                            </div>
-                        </div>
-                        <div className="flex gap-2 mt-6">
-                            <button onClick={handleCategorySubmit} className="flex-1 bg-primary text-primary-foreground font-bold py-2 rounded-xl hover:bg-primary/90 transition-all">إضافة التصنيف</button>
-                            <button onClick={() => setShowCategoryForm(false)} className="px-4 border border-border rounded-xl font-medium hover:bg-muted transition-colors">إلغاء</button>
-                        </div>
-                    </div>
-                </div>
+            {/* ── Categories Manager Modal ── */}
+            {showCatManager && (
+                <SharedCategoriesManager
+                    cats={categories}
+                    accentColor={config.accentColor}
+                    icon={config.icon}
+                    onSave={handleSaveCats}
+                    onClose={() => setShowCatManager(false)}
+                />
             )}
 
             {/* ── Batches Modal ── */}

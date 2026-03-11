@@ -12,6 +12,7 @@ import {
     AlertTriangle, FolderOpen, Settings2
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useConfirm } from '@/components/ConfirmDialog';
 import { cn } from '@/lib/utils';
 
 // ─── Types ───────────────────────────────────────────────────
@@ -164,8 +165,8 @@ function CategoriesManager({ cats, onSave, onClose, addBtnClass }: {
     };
 
     return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
-            <div className="w-full max-w-sm rounded-2xl border border-border bg-card shadow-2xl animate-scale-in overflow-hidden">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4" onClick={onClose}>
+            <div className="w-full max-w-sm rounded-2xl border border-border bg-card shadow-2xl animate-scale-in overflow-hidden" onClick={e => e.stopPropagation()}>
                 {/* Header */}
                 <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-muted/30">
                     <div className="flex items-center gap-2">
@@ -219,7 +220,7 @@ function CategoriesManager({ cats, onSave, onClose, addBtnClass }: {
                                 {editIdx === idx ? (
                                     <>
                                         <button onClick={saveEdit}
-                                            className="rounded-md p-1 hover:bg-emerald-50 text-emerald-600">
+                                            className="rounded-md p-1 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 text-emerald-600">
                                             <Check className="h-3.5 w-3.5" />
                                         </button>
                                         <button onClick={() => setEditIdx(null)}
@@ -234,7 +235,7 @@ function CategoriesManager({ cats, onSave, onClose, addBtnClass }: {
                                             <Pencil className="h-3.5 w-3.5" />
                                         </button>
                                         <button onClick={() => deleteCat(idx)}
-                                            className="rounded-md p-1 hover:bg-red-50 text-destructive">
+                                            className="rounded-md p-1 hover:bg-red-50 dark:hover:bg-red-500/10 text-destructive">
                                             <Trash2 className="h-3.5 w-3.5" />
                                         </button>
                                     </>
@@ -273,6 +274,7 @@ const emptyForm = (): Omit<SubItem, 'id' | 'createdAt' | 'updatedAt'> => ({
 export default function SubSectionPage({ config }: { config: SubSectionPageConfig }) {
     const { toast } = useToast();
     const navigate = useNavigate();
+    const { confirm } = useConfirm();
 
     // ── Dynamic Categories (persisted to localStorage) ──
     const catsKey = config.storageKey ? `${config.storageKey}__cats` : '';
@@ -328,7 +330,9 @@ export default function SubSectionPage({ config }: { config: SubSectionPageConfi
         setEditId(item.id); setShowForm(true);
     };
 
-    const handleDelete = (id: string, name: string) => {
+    const handleDelete = async (id: string, name: string) => {
+        const ok = await confirm({ title: 'حذف منتج', message: `هل أنت متأكد من حذف "${name}"؟`, confirmLabel: 'حذف', danger: true });
+        if (!ok) return;
         config.deleteItem(id);
         toast({ title: `🗑️ تم حذف "${name}"` });
         refresh();
@@ -436,8 +440,8 @@ export default function SubSectionPage({ config }: { config: SubSectionPageConfi
 
             {/* Add/Edit Form Modal */}
             {showForm && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm overflow-y-auto py-6 px-4">
-                    <div className="w-full max-w-xl mx-auto rounded-2xl border border-border bg-card p-6 shadow-2xl space-y-4 animate-scale-in">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm overflow-y-auto py-6 px-4" onClick={() => { setShowForm(false); setEditId(null); }}>
+                    <div className="w-full max-w-xl mx-auto rounded-2xl border border-border bg-card p-6 shadow-2xl space-y-4 animate-scale-in" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between">
                             <h2 className="text-lg font-bold">{editId ? '✏️ تعديل' : '➕ إضافة'} — {config.title}</h2>
                             <button onClick={() => { setShowForm(false); setEditId(null); }}
@@ -492,17 +496,11 @@ export default function SubSectionPage({ config }: { config: SubSectionPageConfi
                                     onChange={e => setForm(f => ({ ...f, salePrice: +e.target.value }))} className={IC} />
                             </div>
                             {form.salePrice > 0 && form.costPrice > 0 && (
-                                <div className="col-span-2 rounded-xl border p-3 flex justify-between"
-                                    style={{
-                                        background: form.salePrice >= form.costPrice ? '#f0fdf4' : '#fef2f2',
-                                        borderColor: form.salePrice >= form.costPrice ? '#bbf7d0' : '#fecaca',
-                                    }}>
-                                    <span className="text-sm font-semibold"
-                                        style={{ color: form.salePrice >= form.costPrice ? '#16a34a' : '#dc2626' }}>
+                                <div className={`col-span-2 rounded-xl border p-3 flex justify-between ${form.salePrice >= form.costPrice ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20' : 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/20'}`}>
+                                    <span className={`text-sm font-semibold ${form.salePrice >= form.costPrice ? 'text-emerald-600' : 'text-red-600'}`}>
                                         هامش الربح
                                     </span>
-                                    <span className="text-lg font-extrabold"
-                                        style={{ color: form.salePrice >= form.costPrice ? '#16a34a' : '#dc2626' }}>
+                                    <span className={`text-lg font-extrabold ${form.salePrice >= form.costPrice ? 'text-emerald-600' : 'text-red-600'}`}>
                                         {(form.salePrice - form.costPrice).toLocaleString()} ج.م
                                     </span>
                                 </div>
@@ -618,7 +616,7 @@ export default function SubSectionPage({ config }: { config: SubSectionPageConfi
                                             <Pencil className="h-3.5 w-3.5" />
                                         </button>
                                         <button onClick={() => handleDelete(item.id, item.name)}
-                                            className="rounded-lg p-1.5 hover:bg-red-50 text-destructive transition-colors"
+                                            className="rounded-lg p-1.5 hover:bg-red-50 dark:hover:bg-red-500/10 text-destructive transition-colors"
                                             title="حذف">
                                             <Trash2 className="h-3.5 w-3.5" />
                                         </button>

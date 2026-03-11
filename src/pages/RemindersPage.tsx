@@ -75,9 +75,9 @@ export default function RemindersPage() {
 
             {/* Stats */}
             <div className="grid grid-cols-3 gap-3">
-                <div className="rounded-2xl border border-red-200 bg-red-50 dark:bg-red-900/10 p-4 text-center">
-                    <p className="text-xs text-red-600">متأخر وعاجل</p>
-                    <p className="text-2xl font-bold text-red-700 mt-1">{overdue.length}</p>
+                <div className="rounded-2xl border border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-900/10 p-4 text-center">
+                    <p className="text-xs text-red-600 dark:text-red-400">متأخر وعاجل</p>
+                    <p className="text-2xl font-bold text-red-700 dark:text-red-400 mt-1">{overdue.length}</p>
                 </div>
                 <div className="rounded-2xl border border-amber-200 bg-amber-50 dark:bg-amber-900/10 p-4 text-center">
                     <p className="text-xs text-amber-600">اليوم</p>
@@ -146,8 +146,8 @@ export default function RemindersPage() {
 
             {/* Form Modal */}
             {showForm && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm overflow-y-auto py-6">
-                    <div className="w-full max-w-md mx-4 rounded-3xl border border-border bg-card p-6 shadow-2xl space-y-4 animate-scale-in">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm overflow-y-auto py-6" onClick={() => setShowForm(false)}>
+                    <div className="w-full max-w-md mx-4 rounded-3xl border border-border bg-card p-6 shadow-2xl space-y-4 animate-scale-in" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between">
                             <h2 className="text-lg font-bold">إضافة تذكير</h2>
                             <button onClick={() => setShowForm(false)} className="rounded-lg p-1.5 hover:bg-muted"><X className="h-5 w-5" /></button>

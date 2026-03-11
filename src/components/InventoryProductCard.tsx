@@ -46,8 +46,8 @@ export function InventoryProductCard({ item, onEdit, onDelete }: InventoryProduc
             <div className="absolute top-2 left-2 z-10 flex flex-col gap-1.5">
                 <span
                     className={`rounded-full px-2 py-0.5 text-[10px] font-bold shadow-sm ${item.condition === 'used'
-                        ? 'bg-orange-100 text-orange-700'
-                        : 'bg-emerald-100 text-emerald-700'
+                        ? 'bg-orange-100 dark:bg-orange-500/15 text-orange-700 dark:text-orange-400'
+                        : 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'
                         }`}
                 >
                     {conditionBadge}
@@ -104,7 +104,7 @@ export function InventoryProductCard({ item, onEdit, onDelete }: InventoryProduc
                         <button
                             onClick={onDelete}
                             title="حذف"
-                            className="rounded-xl p-2 bg-red-50 hover:bg-red-100 text-destructive transition-colors"
+                            className="rounded-xl p-2 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 text-destructive transition-colors"
                         >
                             <Trash2 className="h-3.5 w-3.5" />
                         </button>

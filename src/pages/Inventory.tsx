@@ -230,11 +230,11 @@ const Inventory = () => {
                       )}
                     </td>
                     <td className="px-5 py-4 text-end">
-                      <span className="text-muted-foreground font-medium">{p.costPrice.toLocaleString('ar-EG')} EGP</span>
+                      <span className="text-muted-foreground font-medium">{p.costPrice.toLocaleString('ar-EG')} ج.م</span>
                     </td>
                     <td className="px-5 py-4 text-end">
                       <div>
-                        <span className="font-bold text-card-foreground">{p.sellingPrice.toLocaleString('ar-EG')} EGP</span>
+                        <span className="font-bold text-card-foreground">{p.sellingPrice.toLocaleString('ar-EG')} ج.م</span>
                         <span className="ms-2 inline-flex items-center gap-0.5 rounded-full bg-chart-3/10 px-2 py-0.5 text-[10px] font-bold text-chart-3">
                           <TrendingUp className="h-3 w-3" />
                           {margin}%

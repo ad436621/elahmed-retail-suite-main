@@ -89,7 +89,7 @@ export default function HeldInvoicesPanel({ heldInvoices, onRestore, onRemove, o
                                     <button
                                         onClick={() => onRemove(invoice.id)}
                                         aria-label="حذف الفاتورة المعلقة"
-                                        className="flex h-8 w-8 items-center justify-center rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                                        className="flex h-8 w-8 items-center justify-center rounded-lg text-red-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
                                     >
                                         <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
                                     </button>

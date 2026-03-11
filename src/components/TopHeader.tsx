@@ -81,7 +81,7 @@ export default function TopHeader() {
     });
 
     return (
-        <header className="hidden md:flex items-center gap-3 px-5 py-2 bg-background border-b border-border/50 shrink-0 z-10">
+        <header className="hidden md:flex items-center gap-3 px-6 py-3 bg-background/80 backdrop-blur-md border border-border/40 shadow-sm shrink-0 z-10 rounded-b-2xl mx-4 mt-2">
 
             {/* Page title */}
             <h1 className="text-base font-extrabold text-foreground tracking-tight flex-1 truncate">
@@ -93,11 +93,7 @@ export default function TopHeader() {
 
                 {/* ELOS-style live clock card */}
                 <div
-                    className="flex flex-col items-center px-3 py-1 rounded-xl border transition-all hover:-translate-y-0.5 cursor-default"
-                    style={{
-                        background: 'linear-gradient(135deg, rgba(59,130,246,0.08) 0%, rgba(139,92,246,0.08) 100%)',
-                        borderColor: 'rgba(59,130,246,0.25)',
-                    }}
+                    className="flex flex-col items-center px-4 py-1.5 rounded-xl border transition-all hover:-translate-y-0.5 cursor-default bg-gradient-to-br from-primary/10 to-primary/5 border-primary/20"
                 >
                     <span
                         className="font-black text-sm tracking-widest leading-none"
@@ -115,7 +111,7 @@ export default function TopHeader() {
                     <button
                         onClick={() => navigate(-1)}
                         title="رجوع"
-                        className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-muted-foreground border border-border/40 bg-muted/60 hover:bg-muted hover:text-foreground transition-colors"
+                        className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-sm font-medium text-muted-foreground border border-border/40 bg-muted/60 hover:bg-muted hover:text-foreground transition-colors"
                     >
                         <ChevronRight className="h-3.5 w-3.5" />
                         <span>رجوع</span>
@@ -126,7 +122,7 @@ export default function TopHeader() {
                 <button
                     onClick={toggleTheme}
                     title={theme === 'light' ? 'الوضع الداكن' : 'الوضع الفاتح'}
-                    className="flex h-8 w-8 items-center justify-center rounded-lg border border-border/40 bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground transition-all hover:scale-110"
+                    className="flex h-9 w-9 items-center justify-center rounded-xl border border-border/40 bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground transition-all hover:scale-110"
                 >
                     {theme === 'light'
                         ? <Moon className="h-4 w-4" />

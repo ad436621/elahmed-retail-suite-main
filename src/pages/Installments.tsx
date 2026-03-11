@@ -460,11 +460,11 @@ export default function Installments() {
                                             : 'bg-muted/30 border-border'
                                         }`}>
                                         <div className="flex items-center gap-2 min-w-0">
-                                            <span className={`font-bold text-xs w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${s.paid ? 'bg-emerald-100 text-emerald-700' : isOverdue ? 'bg-red-100 text-red-700' : 'bg-primary/10 text-primary'
+                                            <span className={`font-bold text-xs w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${s.paid ? 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400' : isOverdue ? 'bg-red-100 dark:bg-red-500/15 text-red-700 dark:text-red-400' : 'bg-primary/10 text-primary'
                                                 }`}>{s.month}</span>
                                             <div>
                                                 <p className="text-xs text-muted-foreground">{s.dueDate}</p>
-                                                <p className={`font-bold text-sm ${s.paid ? 'text-emerald-700' : isOverdue ? 'text-red-600' : 'text-foreground'}`}>{s.amount.toLocaleString()} ج.م</p>
+                                                <p className={`font-bold text-sm ${s.paid ? 'text-emerald-700 dark:text-emerald-400' : isOverdue ? 'text-red-600 dark:text-red-400' : 'text-foreground'}`}>{s.amount.toLocaleString()} ج.م</p>
                                             </div>
                                         </div>
                                         {s.paid ? (
@@ -575,7 +575,7 @@ export default function Installments() {
                                     <Printer className="h-3.5 w-3.5" /> طباعة
                                 </button>
                                 <button onClick={() => setDeleteTarget(c)}
-                                    className="flex items-center gap-1.5 rounded-xl bg-red-50 text-destructive border border-red-200 px-3 py-1.5 text-xs font-semibold hover:bg-red-100 transition-colors">
+                                    className="flex items-center gap-1.5 rounded-xl bg-red-50 dark:bg-red-500/10 text-destructive border border-red-200 dark:border-red-500/20 px-3 py-1.5 text-xs font-semibold hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors">
                                     <Trash2 className="h-3.5 w-3.5" /> حذف
                                 </button>
                             </div>
@@ -587,8 +587,8 @@ export default function Installments() {
 
             {/* ─── Confirm Delete Dialog ─── */}
             {deleteTarget && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
-                    <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-2xl animate-scale-in">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4" onClick={() => setDeleteTarget(null)}>
+                    <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-2xl animate-scale-in" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center gap-3 mb-4">
                             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100 dark:bg-red-500/15">
                                 <AlertTriangle className="h-5 w-5 text-red-600" />

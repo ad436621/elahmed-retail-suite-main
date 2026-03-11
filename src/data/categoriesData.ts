@@ -90,3 +90,19 @@ export function getLegacyCategories(): string[] {
 export function saveLegacyCategories(cats: string[]): void {
     setStorageItem(LEGACY_CATEGORIES_KEY, cats);
 }
+
+// ─── Isolated String Categories ───────────────────────────────
+
+/** Get string categories by a unique storage key */
+export function loadCats(key: string, defaults: string[] = []): string[] {
+    try {
+        const raw = localStorage.getItem(key);
+        if (raw) return JSON.parse(raw) as string[];
+    } catch { /* ignore */ }
+    return defaults;
+}
+
+/** Save string categories by a unique storage key */
+export function saveCats(key: string, cats: string[]): void {
+    localStorage.setItem(key, JSON.stringify(cats));
+}

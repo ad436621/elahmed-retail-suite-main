@@ -150,8 +150,8 @@ export default function PurchaseInvoicesPage() {
 
             {/* Wizard */}
             {step > 0 && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm overflow-y-auto py-6">
-                    <div className="w-full max-w-lg mx-4 rounded-3xl border border-border bg-card p-6 shadow-2xl space-y-5 animate-scale-in">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm overflow-y-auto py-6" onClick={() => setStep(0)}>
+                    <div className="w-full max-w-lg mx-4 rounded-3xl border border-border bg-card p-6 shadow-2xl space-y-5 animate-scale-in" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between">
                             <h2 className="text-lg font-bold">فاتورة جديدة — {step}/3</h2>
                             <button onClick={() => setStep(0)} className="rounded-lg p-1.5 hover:bg-muted"><X className="h-5 w-5" /></button>
@@ -228,8 +228,8 @@ export default function PurchaseInvoicesPage() {
 
             {/* Pay Dialog */}
             {payDialog && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-                    <div className="w-full max-w-sm mx-4 rounded-3xl border border-border bg-card p-6 shadow-2xl space-y-4 animate-scale-in">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setPayDialog(null)}>
+                    <div className="w-full max-w-sm mx-4 rounded-3xl border border-border bg-card p-6 shadow-2xl space-y-4 animate-scale-in" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between">
                             <h2 className="text-lg font-bold">تسجيل دفعة</h2>
                             <button onClick={() => setPayDialog(null)} className="rounded-lg p-1.5 hover:bg-muted"><X className="h-5 w-5" /></button>

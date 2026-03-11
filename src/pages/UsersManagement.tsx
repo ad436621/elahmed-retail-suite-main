@@ -143,8 +143,8 @@ export default function UsersManagement() {
 
             {/* User Form Modal */}
             {showForm && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm overflow-y-auto py-8">
-                    <div className="w-full max-w-xl rounded-2xl border border-border bg-card p-6 shadow-2xl space-y-4 animate-scale-in mx-4">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm overflow-y-auto py-8" onClick={() => setShowForm(false)}>
+                    <div className="w-full max-w-xl rounded-2xl border border-border bg-card p-6 shadow-2xl space-y-4 animate-scale-in mx-4" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center gap-3 pb-2 border-b border-border">
                             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10">
                                 {editId ? <Pencil className="h-5 w-5 text-primary" /> : <Plus className="h-5 w-5 text-primary" />}
@@ -361,8 +361,8 @@ export default function UsersManagement() {
 
             {/* Confirm Delete Dialog */}
             {deleteTarget && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
-                    <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-2xl animate-scale-in">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4" onClick={() => setDeleteTarget(null)}>
+                    <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-2xl animate-scale-in" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center gap-3 mb-4">
                             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100 dark:bg-red-500/15">
                                 <Trash2 className="h-5 w-5 text-red-600" />

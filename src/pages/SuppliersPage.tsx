@@ -78,9 +78,9 @@ export default function SuppliersPage() {
                     <p className="text-xs text-muted-foreground">إجمالي الموردين</p>
                     <p className="text-2xl font-bold text-foreground mt-1">{suppliers.length}</p>
                 </div>
-                <div className="rounded-2xl border border-red-200 bg-red-50 dark:bg-red-900/10 p-4">
-                    <p className="text-xs text-red-600">مستحقات للموردين</p>
-                    <p className="text-2xl font-bold text-red-700 mt-1">{fmt(totalOwed)} ج.م</p>
+                <div className="rounded-2xl border border-red-200 dark:border-red-500/20 bg-red-50 dark:bg-red-900/10 p-4">
+                    <p className="text-xs text-red-600 dark:text-red-400">مستحقات للموردين</p>
+                    <p className="text-2xl font-bold text-red-700 dark:text-red-400 mt-1">{fmt(totalOwed)} ج.م</p>
                 </div>
                 <div className="rounded-2xl border border-border bg-card p-4">
                     <p className="text-xs text-muted-foreground">موردون بديون</p>
@@ -104,7 +104,7 @@ export default function SuppliersPage() {
                             <div className="flex items-center gap-2">
                                 <p className="font-bold text-foreground">{s.name}</p>
                                 {s.balance > 0 && (
-                                    <span className="flex items-center gap-0.5 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-bold text-red-700">
+                                    <span className="flex items-center gap-0.5 rounded-full bg-red-100 dark:bg-red-500/15 px-2 py-0.5 text-[10px] font-bold text-red-700 dark:text-red-400">
                                         <AlertCircle className="h-3 w-3" /> {fmt(s.balance)} ج.م
                                     </span>
                                 )}
@@ -124,7 +124,7 @@ export default function SuppliersPage() {
                             )}
                             <button onClick={() => startEdit(s)} className="rounded-xl p-2 bg-primary/10 hover:bg-primary/20 text-primary transition-colors"><Pencil className="h-3.5 w-3.5" /></button>
                             <button onClick={() => setDeleteTarget(s)}
-                                className="rounded-xl p-2 bg-red-50 hover:bg-red-100 text-destructive transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
+                                className="rounded-xl p-2 bg-red-50 dark:bg-red-500/10 hover:bg-red-100 dark:hover:bg-red-500/20 text-destructive transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
                         </div>
                     </div>
                 ))}
@@ -178,8 +178,8 @@ export default function SuppliersPage() {
 
             {/* ─── Confirm Delete Dialog (#20) ─── */}
             {deleteTarget && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
-                    <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-2xl animate-scale-in">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4" onClick={() => setDeleteTarget(null)}>
+                    <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-2xl animate-scale-in" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center gap-3 mb-4">
                             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100 dark:bg-red-500/15">
                                 <Trash2 className="h-5 w-5 text-red-600" />

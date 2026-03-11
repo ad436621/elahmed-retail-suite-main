@@ -14,7 +14,7 @@ const MainLayout = () => {
         {location.pathname !== '/pos' && <TopHeader />}
         {/* pb-16 to clear the bottom nav on mobile */}
         <main className={cn(
-          "flex-1 overflow-y-auto relative z-0",
+          "flex-1 overflow-y-auto relative w-full",
           location.pathname === '/pos' ? "p-0" : "p-4 md:p-8 pb-20 md:pb-8"
         )}>
           <div key={location.pathname} className={cn(

@@ -171,8 +171,8 @@
     --popover: 30 20% 99%;
     --popover-foreground: 25 30% 12%;
 
-    --primary: 217 91% 57%;
-    /* #2563eb brand blue */
+    --primary: 191 91% 36%;
+    /* #008eb4 cyan */
     --primary-foreground: 0 0% 100%;
 
     --secondary: 30 15% 93%;
@@ -193,19 +193,19 @@
     --border: 30 12% 85%;
     /* #dbd6cf warm border */
     --input: 30 12% 85%;
-    --ring: 217 91% 57%;
+    --ring: 191 91% 36%;
 
-    --radius: 0.75rem;
+    --radius: 1rem;
 
     --sidebar-background: 30 18% 95%;
     /* #f5f2ee warm sidebar */
     --sidebar-foreground: 25 30% 12%;
-    --sidebar-primary: 217 91% 57%;
+    --sidebar-primary: 191 91% 36%;
     --sidebar-primary-foreground: 0 0% 100%;
     --sidebar-accent: 30 14% 90%;
     --sidebar-accent-foreground: 25 25% 20%;
     --sidebar-border: 30 12% 85%;
-    --sidebar-ring: 217 91% 57%;
+    --sidebar-ring: 191 91% 36%;
 
     /* Charts */
     --chart-1: 217 91% 57%;
@@ -242,9 +242,9 @@
     /* #151921 */
     --popover-foreground: 214 32% 91%;
 
-    --primary: 217 91% 60%;
-    /* #3b82f6 ELOS --ds-brand */
-    --primary-foreground: 0 0% 100%;
+    --primary: 189 94% 43%;
+    /* #0eddfa Cyan-400 for dark mode */
+    --primary-foreground: 215 33% 6%;
 
     --secondary: 220 23% 13%;
     /* #1a1f29 */
@@ -266,19 +266,19 @@
     /* #1e2530 */
     --input: 220 23% 13%;
     /* #1a1f29 */
-    --ring: 217 91% 60%;
+    --ring: 189 94% 43%;
 
     /* Sidebar — ELOS gradient #0d1117 → #161b22 */
     --sidebar-background: 216 28% 7%;
     /* #0d1117 */
     --sidebar-foreground: 214 32% 91%;
-    --sidebar-primary: 217 91% 60%;
-    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-primary: 189 94% 43%;
+    --sidebar-primary-foreground: 215 33% 6%;
     --sidebar-accent: 216 22% 12%;
     --sidebar-accent-foreground: 214 32% 91%;
     --sidebar-border: 216 22% 15%;
     /* #1e2530 */
-    --sidebar-ring: 217 91% 60%;
+    --sidebar-ring: 189 94% 43%;
 
     --chart-1: 217 91% 60%;
     --chart-2: 160 84% 44%;

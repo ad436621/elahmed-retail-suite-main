@@ -26,9 +26,9 @@ export default function DangerTab({ onDataCleared }: Props) {
     };
 
     return (
-        <div className="rounded-2xl border border-red-200 bg-red-50/50 dark:bg-red-950/10 p-5 space-y-4">
+        <div className="rounded-2xl border border-red-200 dark:border-red-500/20 bg-red-50/50 dark:bg-red-950/10 p-5 space-y-4">
             <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100 border border-red-200">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100 dark:bg-red-500/15 border border-red-200 dark:border-red-500/20">
                     <Trash2 className="h-5 w-5 text-red-600" />
                 </div>
                 <div>
@@ -41,7 +41,7 @@ export default function DangerTab({ onDataCleared }: Props) {
 
             {!confirmClear ? (
                 <button onClick={() => setConfirmClear(true)}
-                    className="flex items-center gap-2 rounded-xl border border-red-300 bg-red-50 px-4 py-2.5 text-sm font-bold text-red-600 hover:bg-red-100 transition-all">
+                    className="flex items-center gap-2 rounded-xl border border-red-300 dark:border-red-500/30 bg-red-50 dark:bg-red-500/10 px-4 py-2.5 text-sm font-bold text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 transition-all">
                     <Trash2 className="h-4 w-4" /> مسح كل البيانات
                 </button>
             ) : (
@@ -56,7 +56,7 @@ export default function DangerTab({ onDataCleared }: Props) {
                     <input value={confirmText}
                         onChange={e => setConfirmText(e.target.value)}
                         placeholder="امسح كل شيء"
-                        className="w-full rounded-xl border border-red-300 bg-white px-3 py-2.5 text-sm text-red-700 placeholder:text-red-300/60 focus:outline-none focus:ring-2 focus:ring-red-400/40 font-bold" />
+                        className="w-full rounded-xl border border-red-300 dark:border-red-500/30 bg-white dark:bg-red-950/20 px-3 py-2.5 text-sm text-red-700 dark:text-red-400 placeholder:text-red-300/60 focus:outline-none focus:ring-2 focus:ring-red-400/40 font-bold" />
                     <div className="flex gap-2">
                         <button onClick={handleClearAll}
                             disabled={confirmText.trim() !== 'امسح كل شيء'}

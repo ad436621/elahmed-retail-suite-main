@@ -87,7 +87,7 @@ export default function BlacklistPage() {
                 )}
                 {quickResult === 'clean' && quickCheck.trim() && (
                     <div className="rounded-xl border border-emerald-200 dark:border-emerald-500/20 bg-emerald-50 dark:bg-emerald-900/20 p-3">
-                        <p className="text-sm font-bold text-emerald-700">✅ الجهاز سليم وغير محظور</p>
+                        <p className="text-sm font-bold text-emerald-700 dark:text-emerald-400">✅ الجهاز سليم وغير محظور</p>
                     </div>
                 )}
             </div>
@@ -137,8 +137,8 @@ export default function BlacklistPage() {
 
             {/* Form Modal */}
             {showForm && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm overflow-y-auto py-6">
-                    <div className="w-full max-w-md mx-4 rounded-3xl border border-border bg-card p-6 shadow-2xl space-y-4 animate-scale-in">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm overflow-y-auto py-6" onClick={() => setShowForm(false)}>
+                    <div className="w-full max-w-md mx-4 rounded-3xl border border-border bg-card p-6 shadow-2xl space-y-4 animate-scale-in" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between">
                             <h2 className="text-lg font-bold">إضافة جهاز للقائمة السوداء</h2>
                             <button onClick={() => setShowForm(false)} className="rounded-lg p-1.5 hover:bg-muted"><X className="h-5 w-5" /></button>

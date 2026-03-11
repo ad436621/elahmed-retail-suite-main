@@ -5,7 +5,7 @@
 import { useState, useMemo, useCallback, memo, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
-    Tv, Plus, Search, Trash2, Pencil, X, Check, LayoutGrid, List,
+    Tv, Plus, Search, Trash2, Pencil, X, Check, LayoutGrid, List, Tag,
     FileSpreadsheet, Download, Upload, ShoppingCart, RefreshCw, Filter,
     CheckCircle, Package, AlertCircle, MoreHorizontal, Headphones, Wrench
 } from 'lucide-react';
@@ -29,10 +29,9 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { ImageUpload } from '@/components/ImageUpload';
 import {
     getDevices, addDevice, updateDevice, deleteDevice,
-    getDeviceAccessories, addDeviceAccessory, updateDeviceAccessory, deleteDeviceAccessory,
-    DeviceItem, DeviceAccessory
 } from '@/data/devicesData';
-import { getCategoriesBySection, addCategory, DynamicCategory } from '@/data/categoriesData';
+import { DeviceItem } from '@/domain/types';
+import { loadCats, saveCats } from '@/data/categoriesData';
 import { getWeightedAvgCost } from '@/data/batchesData';
 import { ProductBatchesModal } from '@/components/ProductBatchesModal';
 import { isBarcodeDuplicate } from '@/repositories/productRepository';
@@ -68,10 +67,10 @@ const emptyForm = (): DeviceFormData => ({
 
 // Accent styles for orange theme
 const accentStyles = {
-    iconBg: 'bg-orange-100',
-    iconText: 'text-orange-600',
-    filterActive: 'bg-orange-50 text-orange-700 border-orange-300',
-    categoryActive: 'bg-orange-50 text-orange-700 border-orange-300',
+    iconBg: 'bg-orange-100 dark:bg-orange-500/15',
+    iconText: 'text-orange-600 dark:text-orange-400',
+    filterActive: 'bg-orange-50 dark:bg-orange-500/15 text-orange-700 dark:text-orange-300 border-orange-300 dark:border-orange-500/30',
+    categoryActive: 'bg-orange-50 dark:bg-orange-500/15 text-orange-700 dark:text-orange-300 border-orange-300 dark:border-orange-500/30',
 };
 
 // Optimized Device Card with memo
@@ -97,7 +96,7 @@ const DeviceCard = memo(function DeviceCard({
             {/* Top-left badges */}
             <div className="absolute top-2 left-2 z-10 flex flex-col gap-1.5">
                 <Badge variant={item.condition === 'used' ? 'secondary' : 'default'}
-                    className={item.condition === 'used' ? 'bg-orange-100 text-orange-700' : 'bg-emerald-100 text-emerald-700'}>
+                    className={item.condition === 'used' ? 'bg-orange-100 dark:bg-orange-500/15 text-orange-700 dark:text-orange-400' : 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'}>
                     {item.condition === 'used' ? 'مستعمل' : 'جديد'}
                 </Badge>
                 <Badge variant="outline" className="bg-white/80 backdrop-blur text-xs truncate max-w-[80px]">
@@ -130,14 +129,14 @@ const DeviceCard = memo(function DeviceCard({
 
                 {/* Price row */}
                 <div className="mt-auto pt-3 border-t border-border/40">
-                    <div className="flex items-center justify-between mb-2">
-                        <span className="text-lg font-extrabold text-orange-600">
+                    <div className="flex items-center justify-between mb-3">
+                        <span className="text-xl font-black text-transparent bg-clip-text bg-gradient-to-l from-orange-600 to-amber-500">
                             {item.salePrice.toLocaleString('ar-EG')}
-                            <span className="text-xs font-medium text-muted-foreground mr-1">ج.م</span>
+                            <span className="text-xs font-bold text-muted-foreground mr-1">ج.م</span>
                         </span>
-                        <span className={`text-xs font-bold ${margin >= 20 ? 'text-emerald-600' : margin >= 10 ? 'text-amber-600' : 'text-red-500'}`}>
-                            {margin.toFixed(1)}%
-                        </span>
+                        <Badge variant="outline" className={`text-xs font-bold border-0 shadow-sm ${margin >= 20 ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10' : margin >= 10 ? 'bg-amber-50 text-amber-600 dark:bg-amber-500/10' : 'bg-red-50 text-red-500 dark:bg-red-500/10'}`}>
+                            الربح {margin.toFixed(1)}%
+                        </Badge>
                     </div>
 
                     {/* Actions */}
@@ -149,7 +148,7 @@ const DeviceCard = memo(function DeviceCard({
                         <Button size="sm" variant="ghost" className="h-8 px-2" onClick={onEdit}>
                             <Pencil className="h-3.5 w-3.5" />
                         </Button>
-                        <Button size="sm" variant="ghost" className="h-8 px-2 text-red-500 hover:text-red-600 hover:bg-red-50"
+                        <Button size="sm" variant="ghost" className="h-8 px-2 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10"
                             onClick={onDelete}>
                             <Trash2 className="h-3.5 w-3.5" />
                         </Button>
@@ -160,6 +159,104 @@ const DeviceCard = memo(function DeviceCard({
     );
 });
 
+// ─── Device Categories Manager Modal ─────────────────────────
+
+function DeviceCategoriesManager({
+    cats, onSave, onClose,
+}: {
+    cats: string[];
+    onSave: (cats: string[]) => void;
+    onClose: () => void;
+}) {
+    const [list, setList] = useState<string[]>([...cats]);
+    const [newName, setNewName] = useState('');
+    const [editIndex, setEditIndex] = useState<number | null>(null);
+    const [editVal, setEditVal] = useState('');
+
+    const addCat = () => {
+        const n = newName.trim();
+        if (!n || list.includes(n)) return;
+        setList(l => [...l, n]);
+        setNewName('');
+    };
+    const deleteCat = (idx: number) => { 
+        setList(l => l.filter((_, i) => i !== idx));
+        if (editIndex === idx) setEditIndex(null); 
+    };
+    const startEdit = (idx: number, val: string) => { setEditIndex(idx); setEditVal(val); };
+    const saveEdit = () => {
+        if (editIndex === null) return;
+        const n = editVal.trim();
+        if (!n || (list.includes(n) && list.indexOf(n) !== editIndex)) return;
+        setList(l => l.map((c, i) => i === editIndex ? n : c));
+        setEditIndex(null);
+    };
+
+    return (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4" onClick={onClose}>
+            <div className="w-full max-w-md rounded-2xl border border-border bg-card shadow-2xl animate-scale-in overflow-hidden" onClick={e => e.stopPropagation()}>
+                <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-muted/30">
+                    <div className="flex items-center gap-2">
+                        <Tag className="h-5 w-5 text-orange-500" />
+                        <h3 className="text-base font-bold">إدارة تصنيفات الأجهزة</h3>
+                        <span className="rounded-full bg-orange-100 dark:bg-orange-500/15 text-orange-600 dark:text-orange-400 text-[10px] font-bold px-2 py-0.5">{list.length}</span>
+                    </div>
+                    <button onClick={onClose} className="rounded-lg p-1.5 hover:bg-muted text-muted-foreground"><X className="h-4 w-4" /></button>
+                </div>
+                <div className="px-5 pt-4 pb-3 space-y-2.5">
+                    <div className="flex gap-2">
+                        <input value={newName} onChange={e => setNewName(e.target.value)} onKeyDown={e => e.key === 'Enter' && addCat()}
+                            placeholder="اسم التصنيف الجديد..." className="flex-1 rounded-xl border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500/30" autoFocus />
+                        <button onClick={addCat} className="flex items-center gap-1.5 rounded-xl bg-orange-600 hover:bg-orange-700 px-4 py-2 text-sm font-bold text-white transition-colors">
+                            <Plus className="h-4 w-4" />
+                        </button>
+                    </div>
+                </div>
+                <div className="px-5 pb-4 space-y-1.5 max-h-72 overflow-y-auto">
+                    {list.length === 0 && <p className="py-6 text-center text-sm text-muted-foreground">لا توجد تصنيفات بعد</p>}
+                    {list.map((cat, idx) => (
+                        <div key={idx} className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 group hover:border-orange-300 dark:hover:border-orange-500/30 transition-colors">
+                            {editIndex === idx ? (
+                                <div className="flex-1 space-y-1.5">
+                                    <input value={editVal} onChange={e => setEditVal(e.target.value)}
+                                        onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditIndex(null); }}
+                                        className="w-full rounded-lg border border-orange-400 px-2 py-1 text-sm focus:outline-none bg-background" autoFocus />
+                                </div>
+                            ) : (
+                                <div className="flex-1 flex items-center gap-2">
+                                    <span className={`shrink-0 h-5 w-5 rounded-full flex items-center justify-center bg-orange-100 text-orange-600 dark:bg-orange-500/20 dark:text-orange-400`}>
+                                        <Tv className="h-3 w-3" />
+                                    </span>
+                                    <span className="flex-1 text-sm font-medium text-foreground">{cat}</span>
+                                </div>
+                            )}
+                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                {editIndex === idx ? (
+                                    <>
+                                        <button onClick={saveEdit} className="rounded-md p-1 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 text-emerald-600"><Check className="h-3.5 w-3.5" /></button>
+                                        <button onClick={() => setEditIndex(null)} className="rounded-md p-1 hover:bg-muted text-muted-foreground"><X className="h-3.5 w-3.5" /></button>
+                                    </>
+                                ) : (
+                                    <>
+                                        <button onClick={() => startEdit(idx, cat)} className="rounded-md p-1 hover:bg-orange-50 dark:hover:bg-orange-500/10 text-orange-600"><Pencil className="h-3.5 w-3.5" /></button>
+                                        <button onClick={() => deleteCat(idx)} className="rounded-md p-1 hover:bg-red-50 dark:hover:bg-red-500/10 text-destructive"><Trash2 className="h-3.5 w-3.5" /></button>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+                <div className="flex gap-2 px-5 pb-5">
+                    <button onClick={() => onSave(list)} className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-orange-600 hover:bg-orange-700 py-2.5 text-sm font-bold text-white transition-colors">
+                        <Check className="h-4 w-4" /> حفظ التصنيفات
+                    </button>
+                    <button onClick={onClose} className="flex-1 rounded-xl border border-border py-2.5 text-sm font-medium hover:bg-muted transition-colors">إلغاء</button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 // Main Component
 export default function DevicesInventory() {
     const { toast } = useToast();
@@ -168,25 +265,21 @@ export default function DevicesInventory() {
 
     // Data
     const devices = getDevices();
-    const accessories = getDeviceAccessories();
-    const categories = getCategoriesBySection('device');
+    const [categories, setCategories] = useState<string[]>(() => loadCats('devices_cats', ['شاشات', 'ريسيفرات', 'راوترات']));
+    const [showCatManager, setShowCatManager] = useState(false);
+
+    const handleSaveCats = useCallback((updated: string[]) => {
+        saveCats('devices_cats', updated);
+        setCategories(updated);
+        setShowCatManager(false);
+        toast({ title: '✅ تم حفظ التصنيفات', description: `${updated.length} تصنيف` });
+    }, [toast]);
 
     // State
     const [search, setSearch] = useState('');
     const [conditionFilter, setConditionFilter] = useState<ConditionFilter>('all');
     const [categoryFilter, setCategoryFilter] = useState<string>('all');
     const [viewMode, setViewMode] = useState<ViewMode>('grid');
-    const [activeTab, setActiveTab] = useState('devices');
-
-    // Read navigation state from Dashboard
-    useEffect(() => {
-        const s = (location.state as { filter?: string } | null);
-        if (!s?.filter) return;
-        if (s.filter === 'accessory') { setActiveTab('accessories'); }
-        else if (s.filter === 'used') { setActiveTab('devices'); setConditionFilter('used'); }
-        else { setActiveTab('devices'); setConditionFilter('all'); }
-    }, [location.state]);
-
     // Dialogs
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -222,8 +315,7 @@ export default function DevicesInventory() {
         total: devices.length,
         available: devices.filter(d => d.quantity > 0).length,
         used: devices.filter(d => d.condition === 'used').length,
-        accessories: accessories.length,
-    }), [devices, accessories]);
+    }), [devices]);
 
     // Handlers
     const handleOpenForm = useCallback((item?: DeviceItem) => {
@@ -339,16 +431,16 @@ export default function DevicesInventory() {
                 </button>
             </div>
 
-            <div className="border-b border-border bg-card/50 backdrop-blur-sm sticky top-0 z-40">
+            <div className="border-b dark:border-white/5 bg-background/60 dark:bg-background/40 backdrop-blur-xl sticky top-0 z-40 shadow-[0_8px_30px_rgb(0,0,0,0.04)] dark:shadow-[0_8px_30px_rgb(0,0,0,0.1)]">
                 <div className="container mx-auto px-4 py-4">
                     <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                            <div className={`p-2.5 rounded-xl ${accentStyles.iconBg}`}>
-                                <Tv className={`h-6 w-6 ${accentStyles.iconText}`} />
+                        <div className="flex items-center gap-3 group">
+                            <div className={`p-3 rounded-2xl ${accentStyles.iconBg} shadow-inner transition-transform duration-500 group-hover:scale-105 group-hover:rotate-3`}>
+                                <Tv className={`h-7 w-7 ${accentStyles.iconText}`} />
                             </div>
                             <div>
-                                <h1 className="text-2xl font-bold text-foreground">الأجهزة والمنزلات</h1>
-                                <p className="text-sm text-muted-foreground">إدارة مخزون الأجهزة وإكسسواراتها</p>
+                                <h1 className="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-l from-orange-600 to-amber-400 drop-shadow-sm tracking-tight">الأجهزة والمنزلية</h1>
+                                <p className="text-sm font-medium text-muted-foreground mt-0.5">إدارة مخزون الأجهزة بفاعلية وتقنيات حديثة</p>
                             </div>
                         </div>
                         <div className="flex gap-2">
@@ -360,6 +452,10 @@ export default function DevicesInventory() {
                                 <Plus className="h-4 w-4 mr-2" />
                                 إضافة جهاز
                             </Button>
+                            <Button variant="outline" onClick={() => setShowCatManager(true)}>
+                                <Filter className="h-4 w-4 mr-2" />
+                                التصنيفات ({categories.length})
+                            </Button>
                         </div>
                     </div>
                 </div>
@@ -367,47 +463,29 @@ export default function DevicesInventory() {
 
             <div className="container mx-auto px-4 py-6 space-y-6">
                 {/* Stats Row */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                     <StatCard
                         title="إجمالي الأجهزة"
                         value={stats.total.toString()}
                         icon={Tv}
-                        iconGradient="from-orange-500/20 to-amber-500/20"
-                        iconColor="text-orange-500"
+                        variant="amber"
                     />
                     <StatCard
                         title="متاح للبيع"
                         value={stats.available.toString()}
                         icon={CheckCircle}
-                        iconGradient="from-emerald-500/20 to-green-500/20"
-                        iconColor="text-emerald-500"
+                        variant="green"
                     />
                     <StatCard
                         title="مستعمل"
                         value={stats.used.toString()}
                         icon={RefreshCw}
-                        iconGradient="from-purple-500/20 to-pink-500/20"
-                        iconColor="text-purple-500"
-                    />
-                    <StatCard
-                        title="إكسسوارات"
-                        value={stats.accessories.toString()}
-                        icon={Package}
-                        iconGradient="from-blue-500/20 to-indigo-500/20"
-                        iconColor="text-blue-500"
+                        variant="purple"
                     />
                 </div>
 
                 {/* Tabs & Filters */}
-                <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
-                    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-auto">
-                        <TabsList>
-                            <TabsTrigger value="devices">الأجهزة</TabsTrigger>
-                            <TabsTrigger value="accessories">الإكسسوارات</TabsTrigger>
-                        </TabsList>
-                    </Tabs>
-
-                    <div className="flex flex-wrap gap-2 items-center">
+                <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-end">                    <div className="flex flex-wrap gap-2 items-center">
                         {/* Search */}
                         <div className="relative">
                             <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -438,8 +516,8 @@ export default function DevicesInventory() {
                             </SelectTrigger>
                             <SelectContent>
                                 <SelectItem value="all">كل الفئات</SelectItem>
-                                {categories.map(cat => (
-                                    <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
+                                {categories.map((cat, i) => (
+                                    <SelectItem key={i} value={cat}>{cat}</SelectItem>
                                 ))}
                             </SelectContent>
                         </Select>
@@ -472,8 +550,6 @@ export default function DevicesInventory() {
                 </div>
 
                 {/* Content */}
-                {activeTab === 'devices' && (
-                    <>
                         {filteredDevices.length === 0 ? (
                             <div className="text-center py-12">
                                 <Tv className="h-16 w-16 mx-auto text-muted-foreground/20 mb-4" />
@@ -521,7 +597,7 @@ export default function DevicesInventory() {
                                                     <TableCell>{device.category}</TableCell>
                                                     <TableCell>
                                                         <Badge variant={device.condition === 'used' ? 'secondary' : 'default'}
-                                                            className={device.condition === 'used' ? 'bg-orange-100 text-orange-700' : 'bg-emerald-100 text-emerald-700'}>
+                                                            className={device.condition === 'used' ? 'bg-orange-100 dark:bg-orange-500/15 text-orange-700 dark:text-orange-400' : 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'}>
                                                             {device.condition === 'used' ? 'مستعمل' : 'جديد'}
                                                         </Badge>
                                                     </TableCell>
@@ -556,16 +632,6 @@ export default function DevicesInventory() {
                                 </Table>
                             </div>
                         )}
-                    </>
-                )}
-
-                {activeTab === 'accessories' && (
-                    <div className="text-center py-12">
-                        <Package className="h-16 w-16 mx-auto text-muted-foreground/20 mb-4" />
-                        <h3 className="text-lg font-semibold text-muted-foreground">الإكسسوارات</h3>
-                        <p className="text-sm text-muted-foreground/60">قسم الإكسسوارات قيد التطوير</p>
-                    </div>
-                )}
             </div>
 
             {/* Add/Edit Form Dialog */}
@@ -614,8 +680,8 @@ export default function DevicesInventory() {
                                     <SelectValue placeholder="اختر الفئة" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {categories.map(cat => (
-                                        <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
+                                    {categories.map((cat, i) => (
+                                        <SelectItem key={i} value={cat}>{cat}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
@@ -751,8 +817,12 @@ export default function DevicesInventory() {
                 open={isExcelOpen}
                 onOpenChange={setIsExcelOpen}
                 inventoryType="device"
-                onImport={(items) => {
-                    items.forEach(row => {
+                onSuccess={(count: number) => {
+                    toast({ title: '✅ تم الاستيراد', description: `تم استيراد ${count} جهاز` });
+                    window.location.reload();
+                }}
+                onDataSave={(items: Record<string, any>[]) => {
+                    items.forEach((row: Record<string, any>) => {
                         addDevice({
                             name: row.name || '',
                             model: row.model || '',
@@ -768,10 +838,17 @@ export default function DevicesInventory() {
                             description: row.description || '',
                         });
                     });
-                    toast({ title: '✅ تم الاستيراد', description: `تم استيراد ${items.length} جهاز` });
-                    window.location.reload();
                 }}
             />
+
+            {/* Device Categories Manager Modal */}
+            {showCatManager && (
+                <DeviceCategoriesManager
+                    cats={categories}
+                    onSave={handleSaveCats}
+                    onClose={() => setShowCatManager(false)}
+                />
+            )}
         </div>
     );
 }

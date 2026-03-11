@@ -294,14 +294,14 @@ export default function DiagnosticsPage() {
             <div className="rounded-2xl border border-border bg-card p-5">
                 <div className="flex items-center gap-6 flex-wrap">
                     <div className="text-center">
-                        <p className="text-5xl font-black tabular-nums" style={{ color: score >= 80 ? '#10b981' : score >= 60 ? '#f59e0b' : '#ef4444' }}>{score}</p>
+                        <p className={`text-5xl font-black tabular-nums ${score >= 80 ? 'text-emerald-500' : score >= 60 ? 'text-amber-500' : 'text-red-500'}`}>{score}</p>
                         <p className={`text-xs font-bold mt-1 ${scoreColor}`}>{scoreLabel}</p>
                         <p className="text-[10px] text-muted-foreground">نقاط الصحة</p>
                     </div>
                     <div className="flex-1 min-w-[200px]">
                         <div className="h-3 rounded-full bg-muted overflow-hidden mb-3">
-                            <div className="h-full rounded-full transition-all duration-1000"
-                                style={{ width: `${score}%`, background: score >= 80 ? '#10b981' : score >= 60 ? '#f59e0b' : '#ef4444' }} />
+                            <div className={`h-full rounded-full transition-all duration-1000 ${score >= 80 ? 'bg-emerald-500' : score >= 60 ? 'bg-amber-500' : 'bg-red-500'}`}
+                                style={{ width: `${score}%` }} />
                         </div>
                         <div className="grid grid-cols-3 gap-3">
                             {categories.map(cat => {
