@@ -6,6 +6,7 @@
 //          Device Accessories,  Device Spare Parts
 // ============================================================
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import {
     Plus, Trash2, Pencil, X, Check, Search, ImagePlus, ImageOff,
@@ -169,7 +170,7 @@ function CategoriesManager({ cats, onSave, onClose, addBtnClass }: {
         setEditIdx(null);
     };
 
-    return (
+    return createPortal(
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4" onClick={onClose}>
             <div className="w-full max-w-sm rounded-2xl border border-border bg-card shadow-2xl animate-scale-in overflow-hidden" onClick={e => e.stopPropagation()}>
                 {/* Header */}
@@ -262,7 +263,8 @@ function CategoriesManager({ cats, onSave, onClose, addBtnClass }: {
                     </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }
 
@@ -451,8 +453,8 @@ export default function SubSectionPage({ config }: { config: SubSectionPageConfi
             )}
 
             {/* Add/Edit Form Modal */}
-            {showForm && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm overflow-y-auto py-6 px-4" onClick={() => { setShowForm(false); setEditId(null); }}>
+            {showForm && createPortal(
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm overflow-y-auto py-6 px-4" onClick={() => { setShowForm(false); setEditId(null); }}>
                     <div className="w-full max-w-xl mx-auto rounded-2xl border border-border bg-card p-6 shadow-2xl space-y-4 animate-scale-in" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between">
                             <h2 className="text-lg font-bold">{editId ? '✏️ تعديل' : '➕ إضافة'} — {config.title}</h2>
@@ -535,7 +537,8 @@ export default function SubSectionPage({ config }: { config: SubSectionPageConfi
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* Table */}

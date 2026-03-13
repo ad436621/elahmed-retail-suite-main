@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Check, CreditCard, DollarSign, Search, Printer, Calendar, Smartphone, Monitor, Tv, Car, Layers, Send, Tag, CheckCircle2, Trash2, AlertTriangle, Download } from 'lucide-react';
 import { exportToExcel, INSTALLMENT_COLUMNS, prepareInstallmentsForExport } from '@/services/excelService';
 import { InstallmentContract } from '@/domain/types';
-import { getContracts, addContract, addPaymentToContract, deleteContract, markScheduleItemPaid } from '@/data/installmentsData';
+import { getContracts, addContract, addPaymentToContract, deleteContract, payInstallment } from '@/data/installmentsData';
 import { getAllInventoryProducts, updateProductQuantity } from '@/repositories/productRepository';
 import { saveMovements } from '@/repositories/stockRepository';
 import { validateStock } from '@/domain/stock';
@@ -124,7 +125,7 @@ export default function Installments() {
                 ? { ...contractData, productName: `تحويل ${form.transferType}`, contractType: 'transfer' as ContractType }
                 : { ...contractData, contractType: form.contractType };
 
-        const newContract = addContract(finalData as any);
+        const newContract = addContract(finalData as unknown as Omit<InstallmentContract, 'id' | 'createdAt' | 'updatedAt'>);
 
         // Deduct from stock if product was selected from inventory
         if (selectedProduct) {
@@ -164,28 +165,142 @@ export default function Installments() {
 
     // ─── Print ────────────────────────────────────────────────
     const printContract = (c: InstallmentContract) => {
-        const scheduleRows = c.schedule.map(s =>
-            `<tr><td>الشهر ${s.month}</td><td>${s.dueDate}</td><td>${s.amount.toLocaleString()} ج.م</td><td>${s.paid ? '✅ مدفوع' : '⏳ منتظر'}</td></tr>`
-        ).join('');
+        const scheduleRows = c.schedule.map(s => {
+            const extra = s.penalty ? `<br><span style="color:#dc2626;font-size:11px">(+${s.penalty} ج.م غرامة)</span>` : '';
+            return `<tr>
+                <td>القسط ${s.month}</td>
+                <td style="font-family:monospace;">${s.dueDate}</td>
+                <td><b>${(s.amount + (s.penalty || 0)).toLocaleString()}</b> ج.م ${extra}</td>
+                <td>${s.paid ? '<span style="color:#16a34a;font-weight:bold;">✅ مسدد</span>' : '<span style="color:#ea580c;font-weight:bold;">⏳ مستحق</span>'}</td>
+            </tr>`;
+        }).join('');
+        
         const cType = (c.contractType ?? 'product') as ContractType;
-        const html = `<html dir="rtl"><head><meta charset="UTF-8"><title>عقد أجل</title>
-        <style>body{font-family:Cairo,sans-serif;padding:32px;max-width:700px;margin:auto;}
-        h2{text-align:center;}table{width:100%;border-collapse:collapse;margin-top:16px;}td,th{border:1px solid #ddd;padding:8px;text-align:right;}th{background:#f5f5f5;}
-        </style></head><body>
-        <h2>💳 عقد ${TYPE_LABELS[cType]} بالأجل — ${c.contractNumber}</h2>
-        <p><b>العميل:</b> ${c.customerName} &nbsp; <b>البطاقة:</b> ${c.customerIdCard}</p>
-        <p><b>الضامن:</b> ${c.guarantorName} &nbsp; <b>بطاقة الضامن:</b> ${c.guarantorIdCard}</p>
-        <p><b>الموبايل:</b> ${c.customerPhone} &nbsp; <b>العنوان:</b> ${c.customerAddress}</p>
-        <p><b>${cType === 'transfer' ? 'نوع التحويل' : 'المنتج'}:</b> ${c.productName}</p>
-        ${c.notes ? `<p><b>ملاحظة:</b> ${c.notes}</p>` : ''}
-        <p><b>إجمالي الأجل:</b> ${(c.installmentPrice || (c as any).totalPrice || 0).toLocaleString()} ج.م &nbsp; <b>سعر الكاش:</b> ${c.cashPrice?.toLocaleString() || '—'} ج.م</p>
-        <p><b>المقدم:</b> ${c.downPayment.toLocaleString()} ج.م &nbsp; <b>الباقي:</b> ${c.remaining.toLocaleString()} ج.م</p>
-        <p><b>عدد الأشهر:</b> ${c.months} شهر &nbsp; <b>القسط الشهري:</b> ${c.monthlyInstallment.toLocaleString()} ج.م</p>
-        <table><thead><tr><th>الشهر</th><th>تاريخ الاستحقاق</th><th>المبلغ</th><th>الحالة</th></tr></thead>
-        <tbody>${scheduleRows}</tbody></table>
-        </body></html>`;
+        const totalP = (c.installmentPrice || (c as unknown as {totalPrice?: number}).totalPrice || 0);
+        
+        const html = `<!DOCTYPE html>
+<html dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>عقد ${TYPE_LABELS[cType]} بالأجل - ${c.contractNumber}</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap');
+    * { box-sizing: border-box; }
+    body { font-family: 'Cairo', sans-serif; padding: 40px; max-width: 900px; margin: auto; background: #fff; color: #0f172a; line-height: 1.6; }
+    .header { text-align: center; border-bottom: 3px solid #2563eb; padding-bottom: 20px; margin-bottom: 30px; }
+    .header h1 { margin: 0; color: #1e3a8a; font-size: 28px; font-weight: 900; letter-spacing: -0.5px; }
+    .header p { margin: 5px 0 0; color: #64748b; font-size: 15px; font-weight: 600; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
+    .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 30px;}
+    .box { border: 1px solid #cbd5e1; border-radius: 12px; padding: 20px; background: #f8fafc; }
+    .box h3 { margin-top: 0; border-bottom: 1px solid #e2e8f0; padding-bottom: 10px; color: #1e293b; font-size: 17px; margin-bottom: 15px; font-weight: 700; }
+    .row { display: flex; justify-content: space-between; margin-bottom: 10px; font-size: 14px; border-bottom: 1px dashed #e2e8f0; padding-bottom: 6px; }
+    .row:last-child { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
+    .row strong { color: #475569; font-weight: 600; }
+    .row span { font-weight: 700; color: #0f172a; }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }
+    th { background: #f1f5f9; color: #334155; font-weight: 700; padding: 12px; border: 1px solid #cbd5e1; text-align: right; }
+    td { padding: 12px; border: 1px solid #cbd5e1; text-align: right; vertical-align: middle; }
+    .terms { margin-top: 40px; font-size: 13px; color: #334155; border-top: 2px solid #e2e8f0; padding-top: 25px; background: #f8fafc; padding: 25px; border-radius: 12px; }
+    .terms h4 { margin: 0 0 15px; color: #0f172a; font-size: 16px; font-weight: 700; }
+    .terms ol { padding-right: 25px; margin: 0; }
+    .terms li { margin-bottom: 10px; text-align: justify; }
+    .signatures { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 20px; margin-top: 50px; text-align: center; }
+    .sig-block { background: #f1f5f9; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0; }
+    .sig-block h4 { margin: 0 0 10px; color: #334155; font-size: 15px; }
+    .sig-line { border-bottom: 2px dashed #94a3b8; margin: 50px 20px 20px; }
+    .sig-name { font-size: 13px; color: #64748b; font-weight: 600; }
+    @media print { body { padding: 0; max-width: none; } .box, .terms, .sig-block { border-color: #000; background: transparent; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>📝 عقد اتفاق بيع بالأجل / تقسيط</h1>
+    <p>رقم العقد: <span style="font-family:monospace;color:#0f172a;font-weight:700;">${c.contractNumber}</span> &nbsp;|&nbsp; تاريخ التحرير: <span style="font-family:monospace;color:#0f172a;font-weight:700;">${new Date().toLocaleDateString('ar-EG')}</span></p>
+  </div>
+
+  <div class="grid">
+    <div class="box">
+      <h3>👤 الطرف الأول (البائع / الدائن)</h3>
+      <div class="row"><strong>اسم الشركة / المعرض:</strong> <span>...............</span></div>
+      <div class="row"><strong>المدير المسئول:</strong> <span>...............</span></div>
+      <div class="row"><strong>رقم الهاتف:</strong> <span>...............</span></div>
+    </div>
+    
+    <div class="box">
+      <h3>👥 الطرف الثاني (المشتري / المدين)</h3>
+      <div class="row"><strong>الاســــــــــم:</strong> <span>${c.customerName || '—'}</span></div>
+      <div class="row"><strong>الرقم القومي:</strong> <span>${c.customerIdCard || '—'}</span></div>
+      <div class="row"><strong>رقم الهاتف:</strong> <span style="font-family:monospace">${c.customerPhone || '—'}</span></div>
+      <div class="row"><strong>العنـــــــوان:</strong> <span>${c.customerAddress || '—'}</span></div>
+    </div>
+  </div>
+
+  <div class="grid-3">
+    <div class="box">
+      <h3>📌 تفاصيل ${cType === 'transfer' ? 'التحويل' : cType === 'car' ? 'السيارة' : 'المنتج'}</h3>
+      <div class="row" style="flex-direction:column;border:none;">
+        <span style="font-size:16px;color:#2563eb;margin-top:5px;line-height:1.4;">${c.productName}</span>
+      </div>
+      ${c.notes ? `<div class="row" style="border:none;margin-top:10px;"><strong style="font-size:12px;">ملاحظة:</strong> <span style="font-size:13px">${c.notes}</span></div>` : ''}
+    </div>
+    <div class="box">
+      <h3>🛡️ بيانات الضامن المتضامن</h3>
+      <div class="row"><strong>الاســــــــــم:</strong> <span>${c.guarantorName || '—'}</span></div>
+      <div class="row"><strong>الرقم القومي:</strong> <span>${c.guarantorIdCard || '—'}</span></div>
+      <div class="row"><strong>رقم الهاتف:</strong> <span style="font-family:monospace">${c.guarantorPhone || '—'}</span></div>
+      <div class="row"><strong>العنـــــــوان:</strong> <span>${c.guarantorAddress || '—'}</span></div>
+    </div>
+    <div class="box" style="background:#eff6ff; border-color:#bfdbfe;">
+      <h3 style="color:#1d4ed8;border-bottom-color:#bfdbfe;">💰 القيم المالية</h3>
+      <div class="row"><strong>إجمالي قيمة التعاقد:</strong> <span style="color:#1d4ed8;font-size:16px">${totalP.toLocaleString()} ج.م</span></div>
+      <div class="row"><strong>المقدم المدفوع:</strong> <span>${c.downPayment.toLocaleString()} ج.م</span></div>
+      <div class="row"><strong>الباقي للتقسيط:</strong> <span style="color:#dc2626;font-size:16px">${c.remaining.toLocaleString()} ج.م</span></div>
+      <div class="row"><strong>عدد الأشهر / الأقساط:</strong> <span>${c.months} شهر</span></div>
+      <div class="row"><strong>قيمة القسط الشهري:</strong> <span>${c.monthlyInstallment.toLocaleString()} ج.م</span></div>
+    </div>
+  </div>
+
+  <h3 style="border-bottom: 2px solid #cbd5e1; padding-bottom: 8px; margin-bottom: 15px; color:#1e293b;">📅 جدول سداد الأقساط</h3>
+  <table>
+    <thead><tr><th>البيان</th><th>تاريخ الاستحقاق المتفق عليه</th><th>المبلغ المستحق</th><th>حالة السداد</th></tr></thead>
+    <tbody>${scheduleRows}</tbody>
+  </table>
+
+  <div class="terms">
+    <h4>⚖️ الشروط والأحكام والاتفاق</h4>
+    <p style="margin-top:0;font-weight:600;">أقر أنا الموقع أدناه (الطرف الثاني - المشتري) بصفتي بكامل أهليتي القانونية وأقر (الضامن المتضامن) بما يلي:</p>
+    <ol>
+      <li>بأنني استلمت (المنتج / السلعة / التحويل) المذكور بياناته أعلاه بحالة جيدة وخالية من العيوب واستلمتها استلاماً فعلياً.</li>
+      <li>أتعهد بسداد الأقساط الشهرية الموضحة بالجدول أعلاه في مواعيد استحقاقها تماماً وبدون أي تأخير للطرف الأول.</li>
+      <li>في حالة تأخري عن سداد أي قسط في موعده يحق للطرف الأول المطالبة بكامل المبلغ المتبقي فورا دفعة واحدة دون الحاجة لتنبيه أو إنذار.</li>
+      <li>في حالة التأخير يحق للطرف الأول احتساب غرامات تأخير وإضافتها على المديونية المتبقية حسب ما يراه مناسبا.</li>
+      <li>يقر الضامن بأنه ضامن متضامن متكافل مع الطرف الثاني في كافة التزاماته المادية ويسأل ماله الخاص عن سداد المديونية في حالة تعثر الطرف الثاني.</li>
+      <li>يخضع هذا العقد لأحكام القوانين المدنية والتجارية، وتعتبر محاكم الدائرة التابع لها الطرف الأول هي المختصة في حال نشوب أي نزاع قانوني.</li>
+    </ol>
+  </div>
+
+  <div class="signatures">
+    <div class="sig-block">
+      <h4>الطرف الأول (البائع)</h4>
+      <div class="sig-line"></div>
+      <div class="sig-name">الاسم / التوقيع / الختم</div>
+    </div>
+    <div class="sig-block">
+      <h4>الطرف الثاني (المشتري)</h4>
+      <div class="sig-line"></div>
+      <div class="sig-name">الاسم: ${c.customerName || ''}<br>التوقيع / البصمة</div>
+    </div>
+    <div class="sig-block">
+      <h4>الضامن المتضامن</h4>
+      <div class="sig-line"></div>
+      <div class="sig-name">الاسم: ${c.guarantorName || ''}<br>التوقيع / البصمة</div>
+    </div>
+  </div>
+</body>
+</html>`;
         const w = window.open('', '_blank');
-        if (w) { w.document.write(html); w.document.close(); w.print(); }
+        if (w) { w.document.write(html); w.document.close(); w.focus(); setTimeout(() => w.print(), 250); }
     };
 
     const filtered = useMemo(() => contracts.filter(c =>
@@ -244,248 +359,286 @@ export default function Installments() {
             </div>
 
             {/* ─── New Contract Modal ─────────────────────────────── */}
-            {showForm && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm overflow-y-auto py-6" onClick={() => setShowForm(false)}>
-                    <div className="w-full max-w-lg mx-4 rounded-3xl border border-border bg-card p-6 shadow-2xl space-y-4 animate-scale-in" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center justify-between">
-                            <h2 className="text-lg font-bold text-foreground">
-                                {form.contractType === 'transfer' ? '🔄 عقد أجل تحويل مالي'
-                                    : form.contractType === 'car' ? '🚗 عقد أجل سيارة'
-                                        : '📦 عقد أجل بضاعة'}
+            {showForm && createPortal(
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-6" onClick={() => setShowForm(false)}>
+                    <div className="w-full max-w-2xl rounded-3xl border border-border bg-card shadow-2xl flex flex-col max-h-[90vh] animate-scale-in" onClick={e => e.stopPropagation()}>
+                        {/* Header */}
+                        <div className="flex items-center justify-between shrink-0 p-5 border-b border-border/50">
+                            <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
+                                {form.contractType === 'transfer' ? <><Send className="h-6 w-6 text-amber-500" /> عقد أجل تحويل مالي</>
+                                    : form.contractType === 'car' ? <><Car className="h-6 w-6 text-sky-500" /> عقد أجل سيارة</>
+                                        : <><Tag className="h-6 w-6 text-primary" /> عقد أجل بضاعة</>}
                             </h2>
-                            <button onClick={() => setShowForm(false)} className="rounded-lg p-1.5 hover:bg-muted transition-colors">
+                            <button onClick={() => setShowForm(false)} className="rounded-full p-2 bg-muted/50 hover:bg-muted transition-colors">
                                 <X className="h-5 w-5 text-muted-foreground" />
                             </button>
                         </div>
 
-                        {/* Contract type switcher */}
-                        <div className="flex rounded-xl overflow-hidden border border-border/60">
-                            {(['product', 'transfer', 'car'] as ContractType[]).map(t => (
-                                <button key={t}
-                                    onClick={() => setForm(f => ({ ...f, contractType: t, productName: '', productId: '' }))}
-                                    className={`flex-1 py-2 text-xs font-bold transition-all ${form.contractType === t
-                                        ? t === 'product' ? 'bg-primary text-primary-foreground'
-                                            : t === 'transfer' ? 'bg-amber-500 text-white'
-                                                : 'bg-sky-600 text-white'
-                                        : 'text-muted-foreground hover:bg-muted/50'
-                                        }`}>
-                                    {t === 'product' ? '📦 بضاعة' : t === 'transfer' ? '🔄 تحويل' : '🚗 سيارة'}
-                                </button>
-                            ))}
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-3">
-                            <div>
-                                <label className="mb-1 block text-xs font-semibold text-muted-foreground">اسم العميل *</label>
-                                <input data-validation="text-only" value={form.customerName}
-                                    onChange={e => setForm(f => ({ ...f, customerName: e.target.value }))} className={IC} />
-                            </div>
-                            <div>
-                                <label className="mb-1 block text-xs font-semibold text-muted-foreground">رقم البطاقة</label>
-                                <input value={form.customerIdCard}
-                                    onChange={e => setForm(f => ({ ...f, customerIdCard: e.target.value }))} className={IC} />
-                            </div>
-                            <div>
-                                <label className="mb-1 block text-xs font-semibold text-muted-foreground">الضامن</label>
-                                <input data-validation="text-only" value={form.guarantorName}
-                                    onChange={e => setForm(f => ({ ...f, guarantorName: e.target.value }))} className={IC} />
-                            </div>
-                            <div>
-                                <label className="mb-1 block text-xs font-semibold text-muted-foreground">بطاقة الضامن</label>
-                                <input value={form.guarantorIdCard}
-                                    onChange={e => setForm(f => ({ ...f, guarantorIdCard: e.target.value }))} className={IC} />
-                            </div>
-                            <div>
-                                <label className="mb-1 block text-xs font-semibold text-muted-foreground">موبايل العميل</label>
-                                <input data-validation="phone" value={form.customerPhone}
-                                    onChange={e => setForm(f => ({ ...f, customerPhone: e.target.value }))} className={IC} />
-                            </div>
-                            <div>
-                                <label className="mb-1 block text-xs font-semibold text-muted-foreground">العنوان</label>
-                                <input value={form.customerAddress}
-                                    onChange={e => setForm(f => ({ ...f, customerAddress: e.target.value }))} className={IC} />
+                        {/* Scrolling Content */}
+                        <div className="overflow-y-auto p-5 space-y-6">
+                            
+                            {/* Type Switch */}
+                            <div className="flex rounded-xl overflow-hidden border border-border/60 bg-muted/30 p-1 gap-1 w-full max-w-md mx-auto">
+                                {(['product', 'transfer', 'car'] as ContractType[]).map(t => (
+                                    <button key={t}
+                                        onClick={() => setForm(f => ({ ...f, contractType: t, productName: '', productId: '' }))}
+                                        className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${form.contractType === t
+                                            ? t === 'product' ? 'bg-primary text-primary-foreground shadow-sm'
+                                                : t === 'transfer' ? 'bg-amber-500 text-white shadow-sm'
+                                                    : 'bg-sky-600 text-white shadow-sm'
+                                            : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                                            }`}>
+                                        {t === 'product' ? <><Tag className="h-4 w-4"/> بضاعة</> : t === 'transfer' ? <><Send className="h-4 w-4"/> تحويل</> : <><Car className="h-4 w-4"/> سيارة</>}
+                                    </button>
+                                ))}
                             </div>
 
-                            {/* ── Section based on contract type ── */}
-                            {form.contractType === 'transfer' ? (
-                                <>
-                                    <div className="col-span-2">
-                                        <label className="mb-1 block text-xs font-semibold text-amber-600">🔄 نوع التحويل *</label>
-                                        <select value={form.transferType}
-                                            onChange={e => setForm(f => ({ ...f, transferType: e.target.value }))} className={IC}>
-                                            {TRANSFER_TYPES_LIST.map(t => <option key={t}>{t}</option>)}
-                                        </select>
+                            {/* Section: Customer Info */}
+                            <div className="space-y-4">
+                                <h3 className="font-semibold text-sm text-primary flex items-center gap-2 border-b border-border/50 pb-2"><CreditCard className="h-4 w-4" /> بيانات العميل الأساسية</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">اسم العميل <span className="text-destructive">*</span></label>
+                                        <input data-validation="text-only" value={form.customerName}
+                                            onChange={e => setForm(f => ({ ...f, customerName: e.target.value }))} className={IC} placeholder="الاسم الرباعي..." />
                                     </div>
-                                    <div className="col-span-2">
-                                        <label className="mb-1 block text-xs font-semibold text-muted-foreground">ملاحظة (اختياري)</label>
-                                        <input value={form.notes}
-                                            onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-                                            placeholder="تفاصيل إضافية عن التحويل..."
-                                            className={IC} />
+                                    <div>
+                                        <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">موبايل العميل</label>
+                                        <input data-validation="phone" value={form.customerPhone}
+                                            onChange={e => setForm(f => ({ ...f, customerPhone: e.target.value }))} className={IC} placeholder="01X..." />
                                     </div>
-                                </>
-                            ) : (
-                                <div className="col-span-2">
-                                    <label className="mb-1 block text-xs font-semibold text-muted-foreground">
-                                        {form.contractType === 'car' ? '🚗 اسم السيارة / الموديل *' : '📦 المنتج (من المخزون)'}
-                                    </label>
-                                    {form.contractType !== 'car' && (
-                                        <>
-                                            <div className="flex gap-1 mb-2 overflow-x-auto pb-1">
-                                                {productCategories.map(cat => {
-                                                    const Icon = cat.icon;
-                                                    return (
-                                                        <button key={cat.id} type="button" onClick={() => setProductCategory(cat.id)}
-                                                            className={`flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-all ${productCategory === cat.id ? 'bg-primary text-primary-foreground' : 'bg-muted/50 text-muted-foreground hover:bg-muted'}`}>
-                                                            <Icon className="h-3 w-3" />{cat.label}
-                                                        </button>
-                                                    );
-                                                })}
-                                            </div>
-                                            <select value={form.productId || ''}
-                                                onChange={e => {
-                                                    if (!e.target.value) { setForm(f => ({ ...f, productId: '', productName: '', cashPrice: 0, installmentPrice: 0 })); return; }
-                                                    const p = inventory.find(x => x.id === e.target.value);
-                                                    if (p) {
-                                                        const installP = Math.ceil(p.sellingPrice * 1.3);
-                                                        setForm(f => ({ ...f, productId: p.id, productName: p.name, cashPrice: p.sellingPrice, installmentPrice: installP }));
-                                                    }
-                                                }}
-                                                className={IC}>
-                                                <option value="">-- اختر منتج للصرف من المخزون --</option>
-                                                {filteredInventory.map(p => (
-                                                    <option key={p.id} value={p.id} disabled={p.quantity === 0}>
-                                                        {p.name} {p.quantity === 0 ? '(نفد المخزون)' : `(${p.sellingPrice} ج.م - ${p.quantity} قطعة)`}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                            <label className="mb-1 mt-2 block text-xs font-semibold text-muted-foreground">أو أدخل يدوياً (بدون خصم من المخزون)</label>
-                                        </>
-                                    )}
-                                    <input value={form.productName}
-                                        onChange={e => setForm(f => ({ ...f, productName: e.target.value, productId: '' }))}
-                                        placeholder={form.contractType === 'car' ? 'مثال: تويوتا كورولا 2022' : 'اسم المنتج...'}
-                                        className={IC} />
+                                    <div>
+                                        <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">رقم البطاقة</label>
+                                        <input value={form.customerIdCard}
+                                            onChange={e => setForm(f => ({ ...f, customerIdCard: e.target.value }))} className={IC} placeholder="14 رقم..." />
+                                    </div>
+                                    <div>
+                                        <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">العنوان</label>
+                                        <input value={form.customerAddress}
+                                            onChange={e => setForm(f => ({ ...f, customerAddress: e.target.value }))} className={IC} placeholder="المدينة، الحي..." />
+                                    </div>
                                 </div>
-                            )}
+                            </div>
 
-                            <div>
-                                <label className="mb-1 block text-xs font-semibold text-muted-foreground">سعر الكاش (ج.م)</label>
-                                <input type="number" min={0} value={form.cashPrice}
-                                    onChange={e => setForm(f => ({ ...f, cashPrice: +e.target.value }))} className={IC} />
+                            {/* Section: Guarantor Info */}
+                            <div className="space-y-4 bg-muted/10 p-4 rounded-2xl border border-border/30">
+                                <h3 className="font-semibold text-sm text-primary flex items-center gap-2 border-b border-border/50 pb-2"><Layers className="h-4 w-4" /> تفاصيل الضامن (اختياري)</h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">اسم الضامن</label>
+                                        <input data-validation="text-only" value={form.guarantorName}
+                                            onChange={e => setForm(f => ({ ...f, guarantorName: e.target.value }))} className={IC} placeholder="اسم الضامن..." />
+                                    </div>
+                                    <div>
+                                        <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">بطاقة الضامن</label>
+                                        <input value={form.guarantorIdCard}
+                                            onChange={e => setForm(f => ({ ...f, guarantorIdCard: e.target.value }))} className={IC} placeholder="14 رقم..." />
+                                    </div>
+                                </div>
                             </div>
-                            <div>
-                                <label className="mb-1 block text-xs font-semibold text-muted-foreground">إجمالي الأجل (ج.م) *</label>
-                                <input type="number" min={0} value={form.installmentPrice}
-                                    onChange={e => setForm(f => ({ ...f, installmentPrice: +e.target.value }))} className={IC} />
+                            
+                            {/* Section: Product/Transfer Info */}
+                            <div className="space-y-4">
+                                <h3 className="font-semibold text-sm text-primary flex items-center gap-2 border-b border-border/50 pb-2">
+                                    {form.contractType === 'transfer' ? <><Send className="h-4 w-4"/> بيانات التحويل</> : <><Tag className="h-4 w-4"/> بيانات المنتج</>}
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {form.contractType === 'transfer' ? (
+                                        <>
+                                            <div className="md:col-span-2">
+                                                <label className="mb-1.5 block text-xs font-semibold text-amber-600">🔄 نوع التحويل <span className="text-destructive">*</span></label>
+                                                <select value={form.transferType}
+                                                    onChange={e => setForm(f => ({ ...f, transferType: e.target.value }))} className={IC}>
+                                                    {TRANSFER_TYPES_LIST.map(t => <option key={t}>{t}</option>)}
+                                                </select>
+                                            </div>
+                                            <div className="md:col-span-2">
+                                                <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">ملاحظة (اختياري)</label>
+                                                <input value={form.notes}
+                                                    onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+                                                    placeholder="تفاصيل إضافية عن التحويل..."
+                                                    className={IC} />
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="md:col-span-2">
+                                            <label className="mb-1.5 block text-xs font-semibold text-foreground">
+                                                {form.contractType === 'car' ? '🚗 اسم السيارة / الموديل *' : '📦 المنتج (من المخزون)'}
+                                            </label>
+                                            {form.contractType !== 'car' && (
+                                                <div className="bg-muted/30 border border-border/50 p-4 rounded-xl space-y-3 mb-3">
+                                                    <div className="flex gap-1 overflow-x-auto pb-1 scrollbar-thin">
+                                                        {productCategories.map(cat => {
+                                                            const Icon = cat.icon;
+                                                            return (
+                                                                <button key={cat.id} type="button" onClick={() => setProductCategory(cat.id)}
+                                                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0 ${productCategory === cat.id ? 'bg-primary text-primary-foreground shadow-sm' : 'bg-background border border-border text-muted-foreground hover:bg-muted'}`}>
+                                                                    <Icon className="h-3.5 w-3.5" />{cat.label}
+                                                                </button>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                    <select value={form.productId || ''}
+                                                        onChange={e => {
+                                                            if (!e.target.value) { setForm(f => ({ ...f, productId: '', productName: '', cashPrice: 0, installmentPrice: 0 })); return; }
+                                                            const p = inventory.find(x => x.id === e.target.value);
+                                                            if (p) {
+                                                                const installP = Math.ceil(p.sellingPrice * 1.3);
+                                                                setForm(f => ({ ...f, productId: p.id, productName: p.name, cashPrice: p.sellingPrice, installmentPrice: installP }));
+                                                            }
+                                                        }}
+                                                        className={IC}>
+                                                        <option value="">-- اختر منتج للصرف من المخزون --</option>
+                                                        {filteredInventory.map(p => (
+                                                            <option key={p.id} value={p.id} disabled={p.quantity === 0}>
+                                                                {p.name} {p.quantity === 0 ? '(نفد المخزون)' : `(${p.sellingPrice.toLocaleString()} ج.م - ${p.quantity} قطعة)`}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                    <div className="flex items-center gap-2">
+                                                        <hr className="flex-1 border-border/50" />
+                                                        <span className="text-[10px] text-muted-foreground">أو</span>
+                                                        <hr className="flex-1 border-border/50" />
+                                                    </div>
+                                                </div>
+                                            )}
+                                            <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">اسم المنتج (يدوي بدون خصم من المخزون)</label>
+                                            <input value={form.productName}
+                                                onChange={e => setForm(f => ({ ...f, productName: e.target.value, productId: '' }))}
+                                                placeholder={form.contractType === 'car' ? 'مثال: تويوتا كورولا 2022' : 'اسم المنتج...'}
+                                                className={IC} />
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                            <div>
-                                <label className="mb-1 block text-xs font-semibold text-muted-foreground">المقدم (ج.م)</label>
-                                <input type="number" min={0} value={form.downPayment}
-                                    onChange={e => setForm(f => ({ ...f, downPayment: +e.target.value }))} className={IC} />
-                            </div>
-                            <div>
-                                <label className="mb-1 block text-xs font-semibold text-muted-foreground">عدد الأشهر</label>
-                                <input type="number" min={1} value={form.months}
-                                    onChange={e => setForm(f => ({ ...f, months: +e.target.value }))} className={IC} />
+
+                            {/* Section: Financials */}
+                            <div className="space-y-4">
+                                <h3 className="font-semibold text-sm text-primary flex items-center gap-2 border-b border-border/50 pb-2"><DollarSign className="h-4 w-4" /> التفاصيل المالية</h3>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                    <div>
+                                        <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">سعر الكاش (ج.م)</label>
+                                        <input type="number" min={0} value={form.cashPrice || ''}
+                                            onChange={e => setForm(f => ({ ...f, cashPrice: +e.target.value }))} className={IC} />
+                                    </div>
+                                    <div>
+                                        <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">إجمالي الأجل <span className="text-destructive">*</span></label>
+                                        <input type="number" min={0} value={form.installmentPrice || ''}
+                                            onChange={e => setForm(f => ({ ...f, installmentPrice: +e.target.value }))} className={IC} />
+                                    </div>
+                                    <div>
+                                        <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">المقدم (ج.م)</label>
+                                        <input type="number" min={0} value={form.downPayment || ''}
+                                            onChange={e => setForm(f => ({ ...f, downPayment: +e.target.value }))} className={IC} />
+                                    </div>
+                                    <div>
+                                        <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">عدد الأشهر</label>
+                                        <input type="number" min={1} value={form.months || ''}
+                                            onChange={e => setForm(f => ({ ...f, months: +e.target.value }))} className={IC} />
+                                    </div>
+                                </div>
+
+                                {form.installmentPrice > 0 && (
+                                    <div className="rounded-2xl border border-blue-200 bg-blue-50/50 p-4 grid grid-cols-3 gap-2 text-center text-sm shadow-inner transition-all">
+                                        <div><p className="text-muted-foreground text-xs mb-1">المبلغ المتبقي</p><p className="font-bold text-blue-700 text-lg">{remaining.toLocaleString()} ج.م</p></div>
+                                        <div className="border-x border-blue-200/50"><p className="text-muted-foreground text-xs mb-1">القسط الشهري</p><p className="font-bold text-primary text-lg">{monthly.toLocaleString()} ج.م</p></div>
+                                        <div><p className="text-muted-foreground text-xs mb-1">عدد الأشهر</p><p className="font-bold text-foreground text-lg">{form.months}</p></div>
+                                    </div>
+                                )}
                             </div>
                         </div>
 
-                        {form.installmentPrice > 0 && (
-                            <div className="rounded-xl border border-blue-200 bg-blue-50 p-3 grid grid-cols-3 gap-2 text-center text-xs">
-                                <div><p className="text-muted-foreground">الباقي</p><p className="font-bold text-blue-700 text-base">{remaining.toLocaleString()} ج.م</p></div>
-                                <div><p className="text-muted-foreground">القسط الشهري</p><p className="font-bold text-primary text-base">{monthly.toLocaleString()} ج.م</p></div>
-                                <div><p className="text-muted-foreground">عدد الأشهر</p><p className="font-bold text-foreground text-base">{form.months}</p></div>
-                            </div>
-                        )}
-
-                        <div className="flex gap-2 pt-1">
+                        {/* Footer */}
+                        <div className="flex gap-3 p-5 shrink-0 border-t border-border/50 bg-muted/20">
                             <button onClick={handleSubmit}
-                                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-all">
-                                <Check className="h-4 w-4" /> إنشاء عقد الأجل
+                                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground shadow-md shadow-primary/20 hover:bg-primary/90 transition-all hover:-translate-y-0.5">
+                                <Check className="h-5 w-5" /> إنشاء العقد
                             </button>
                             <button onClick={() => setShowForm(false)}
-                                className="flex-1 rounded-xl border border-border py-2.5 text-sm font-medium hover:bg-muted transition-colors">إلغاء</button>
+                                className="px-6 rounded-xl border border-border/80 bg-background text-foreground py-3 text-sm font-semibold hover:bg-muted transition-colors">إلغاء</button>
                         </div>
                     </div>
                 </div>
-            )}
+            , document.body)}
 
             {/* ─── Payment Modal ──────────────────────────────────── */}
-            {showPayment && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowPayment(null)}>
-                    <div className="w-full max-w-sm mx-4 rounded-3xl border border-border bg-card p-6 shadow-2xl space-y-4 animate-scale-in" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center justify-between">
-                            <h2 className="text-lg font-bold text-foreground">تسجيل دفعة</h2>
-                            <button onClick={() => setShowPayment(null)} className="rounded-lg p-1.5 hover:bg-muted transition-colors">
-                                <X className="h-5 w-5 text-muted-foreground" />
+            {showPayment && createPortal(
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowPayment(null)}>
+                    <div className="w-full max-w-sm rounded-3xl border border-border bg-card shadow-2xl animate-scale-in" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between p-5 border-b border-border/50">
+                            <h2 className="text-lg font-bold text-foreground flex items-center gap-2">تسجيل دفعة جديدة</h2>
+                            <button onClick={() => setShowPayment(null)} className="rounded-full p-2 hover:bg-muted transition-colors">
+                                <X className="h-4 w-4 text-muted-foreground" />
                             </button>
                         </div>
-                        <div className="space-y-3">
-                            <div><label className="mb-1 block text-xs font-semibold text-muted-foreground">المبلغ (ج.م)</label>
-                                <input type="number" min={0} value={payment.amount}
-                                    onChange={e => setPayment(p => ({ ...p, amount: +e.target.value }))} className={IC} /></div>
-                            <div><label className="mb-1 block text-xs font-semibold text-muted-foreground">التاريخ</label>
+                        <div className="space-y-4 p-5">
+                            <div><label className="mb-1.5 block text-xs font-semibold text-muted-foreground">المبلغ المدفوع (ج.م)</label>
+                                <input type="number" min={0} value={payment.amount || ''}
+                                    onChange={e => setPayment(p => ({ ...p, amount: +e.target.value }))} className={IC} autoFocus /></div>
+                            <div><label className="mb-1.5 block text-xs font-semibold text-muted-foreground">التاريخ</label>
                                 <input type="date" value={payment.date}
                                     onChange={e => setPayment(p => ({ ...p, date: e.target.value }))} className={IC} /></div>
-                            <div><label className="mb-1 block text-xs font-semibold text-muted-foreground">ملاحظة</label>
-                                <input value={payment.note}
+                            <div><label className="mb-1.5 block text-xs font-semibold text-muted-foreground">ملاحظة (اختياري)</label>
+                                <input value={payment.note} placeholder="رقم الإيصال أو أي تفاصيل إضافية..."
                                     onChange={e => setPayment(p => ({ ...p, note: e.target.value }))} className={IC} /></div>
                         </div>
-                        <div className="flex gap-2">
+                        <div className="flex gap-3 p-5 border-t border-border/50 bg-muted/20">
                             <button onClick={() => handlePayment(showPayment)}
-                                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500 transition-all">
-                                <Check className="h-4 w-4" /> تسجيل الدفعة
+                                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 text-sm font-bold text-white shadow hover:bg-emerald-500 transition-all">
+                                <Check className="h-5 w-5" /> حفظ وتسجيل الدفعة
                             </button>
                             <button onClick={() => setShowPayment(null)}
-                                className="flex-1 rounded-xl border border-border py-2.5 text-sm font-medium hover:bg-muted transition-colors">إلغاء</button>
+                                className="px-5 rounded-xl border border-border/80 bg-background py-3 text-sm font-semibold hover:bg-muted transition-colors">إلغاء</button>
                         </div>
                     </div>
                 </div>
-            )}
+            , document.body)}
 
             {/* ─── Schedule Modal ────────────────────────────────── */}
-            {showSchedule && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setShowSchedule(null)}>
-                    <div className="w-full max-w-md mx-4 rounded-3xl border border-border bg-card p-6 shadow-2xl animate-scale-in max-h-[85vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center justify-between mb-2">
-                            <h3 className="text-lg font-bold text-foreground">جدول الأقساط الشهرية</h3>
-                            <button onClick={() => setShowSchedule(null)} className="rounded-lg p-1.5 hover:bg-muted transition-colors">
-                                <X className="h-5 w-5 text-muted-foreground" />
+            {showSchedule && createPortal(
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowSchedule(null)}>
+                    <div className="w-full max-w-md rounded-3xl border border-border bg-card shadow-2xl animate-scale-in flex flex-col max-h-[85vh]" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between shrink-0 p-5 border-b border-border/50">
+                            <h3 className="text-lg font-bold text-foreground flex items-center gap-2"><Calendar className="h-5 w-5 text-blue-600" /> جدول الأقساط الشهرية</h3>
+                            <button onClick={() => setShowSchedule(null)} className="rounded-full p-2 bg-muted/50 hover:bg-muted transition-colors">
+                                <X className="h-4 w-4 text-muted-foreground" />
                             </button>
                         </div>
-                        <p className="text-sm mb-1 font-semibold text-foreground">{showSchedule.customerName}</p>
-                        <p className="text-xs text-muted-foreground mb-4">{showSchedule.productName} — قسط شهري: <span className="font-bold text-primary">{showSchedule.monthlyInstallment.toLocaleString()} ج.م</span></p>
-                        <div className="space-y-2">
+                        <div className="p-5 pb-2 shrink-0 bg-muted/10 border-b border-border/30">
+                            <p className="text-sm mb-1 font-semibold text-foreground flex items-center gap-2"><CreditCard className="h-4 w-4 text-muted-foreground" /> {showSchedule.customerName}</p>
+                            <p className="text-xs text-muted-foreground mb-1">{showSchedule.productName} — قسط شهري: <span className="font-bold text-primary">{showSchedule.monthlyInstallment.toLocaleString()} ج.م</span></p>
+                        </div>
+                        
+                        <div className="overflow-y-auto p-4 space-y-3">
                             {showSchedule.schedule.map(s => {
                                 const today = new Date().toISOString().slice(0, 10);
                                 const isOverdue = !s.paid && s.dueDate < today;
                                 return (
-                                    <div key={s.month} className={`flex items-center justify-between rounded-xl px-3 py-2.5 border text-sm gap-2 ${s.paid ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20'
-                                        : isOverdue ? 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/20'
-                                            : 'bg-muted/30 border-border'
+                                    <div key={s.month} className={`flex items-center justify-between rounded-2xl px-4 py-3 border text-sm gap-2 transition-all hover:scale-[1.01] ${s.paid ? 'bg-emerald-50/50 dark:bg-emerald-500/5 border-emerald-200 dark:border-emerald-500/20 shadow-sm'
+                                        : isOverdue ? 'bg-red-50/80 dark:bg-red-500/10 border-red-200 dark:border-red-500/20 shadow-sm'
+                                            : 'bg-background hover:bg-muted/30 border-border shadow-sm'
                                         }`}>
-                                        <div className="flex items-center gap-2 min-w-0">
-                                            <span className={`font-bold text-xs w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${s.paid ? 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400' : isOverdue ? 'bg-red-100 dark:bg-red-500/15 text-red-700 dark:text-red-400' : 'bg-primary/10 text-primary'
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <span className={`font-black text-sm w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${s.paid ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400' : isOverdue ? 'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400' : 'bg-primary/10 text-primary'
                                                 }`}>{s.month}</span>
                                             <div>
-                                                <p className="text-xs text-muted-foreground">{s.dueDate}</p>
+                                                <p className="text-xs text-muted-foreground mb-0.5">{s.dueDate}</p>
                                                 <p className={`font-bold text-sm ${s.paid ? 'text-emerald-700 dark:text-emerald-400' : isOverdue ? 'text-red-600 dark:text-red-400' : 'text-foreground'}`}>{s.amount.toLocaleString()} ج.م</p>
                                             </div>
                                         </div>
                                         {s.paid ? (
-                                            <span className="flex items-center gap-1 text-xs text-emerald-600 font-semibold shrink-0"><CheckCircle2 className="h-4 w-4" /> مدفوع</span>
+                                            <span className="flex items-center gap-1.5 px-3 py-1 text-xs text-emerald-600 bg-emerald-100/50 rounded-lg font-bold shrink-0"><CheckCircle2 className="h-4 w-4" /> مدفوع</span>
                                         ) : (
                                             <button
                                                 onClick={() => {
-                                                    markScheduleItemPaid(showSchedule.id, s.month);
+                                                    payInstallment(showSchedule.id, s.month, s.amount);
                                                     refresh();
                                                     // Update showSchedule state to reflect change
                                                     setShowSchedule(prev => prev ? { ...prev, schedule: prev.schedule.map(x => x.month === s.month ? { ...x, paid: true } : x), paidTotal: prev.paidTotal + s.amount, remaining: Math.max(0, prev.remaining - s.amount) } : null);
                                                 }}
-                                                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 ${isOverdue ? 'bg-red-600 text-white hover:bg-red-700' : 'bg-primary text-primary-foreground hover:bg-primary/90'
+                                                className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 shadow-sm ${isOverdue ? 'bg-red-600 text-white hover:bg-red-500' : 'bg-primary text-primary-foreground hover:bg-primary/90'
                                                     }`}>
-                                                <DollarSign className="h-3.5 w-3.5" /> {isOverdue ? 'دفع (متأخر)' : 'دفع'}
+                                                <DollarSign className="h-4 w-4" /> {isOverdue ? 'دفع متأخر' : 'دفع الآن'}
                                             </button>
                                         )}
                                     </div>
@@ -493,13 +646,15 @@ export default function Installments() {
                             })}
                         </div>
                         {/* Totals summary */}
-                        <div className="mt-4 rounded-xl bg-muted/30 border border-border p-3 grid grid-cols-2 gap-2 text-center text-xs">
-                            <div><p className="text-muted-foreground">تم السداد</p><p className="font-bold text-emerald-600 text-base">{showSchedule.paidTotal.toLocaleString()} ج.م</p></div>
-                            <div><p className="text-muted-foreground">الباقي</p><p className="font-bold text-primary text-base">{showSchedule.remaining.toLocaleString()} ج.م</p></div>
+                        <div className="p-4 shrink-0 bg-muted/20 border-t border-border/50">
+                            <div className="rounded-2xl border border-border/80 bg-background p-4 grid grid-cols-2 gap-3 text-center text-sm shadow-sm">
+                                <div className="border-l border-border/50"><p className="text-muted-foreground text-xs mb-1 font-semibold">المبلغ المسدد</p><p className="font-black text-emerald-600 text-lg">{showSchedule.paidTotal.toLocaleString()} ج.م</p></div>
+                                <div><p className="text-muted-foreground text-xs mb-1 font-semibold">المبلغ المتبقي</p><p className="font-black text-primary text-lg">{showSchedule.remaining.toLocaleString()} ج.م</p></div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            )}
+            , document.body)}
 
             {/* ─── Contracts List ────────────────────────────────── */}
             <div className="space-y-4">
@@ -507,7 +662,7 @@ export default function Installments() {
                     <div className="rounded-2xl border border-border bg-card p-12 text-center text-muted-foreground">لا توجد عقود</div>
                 ) : paginatedItems.map(c => {
                     const cType = (c.contractType ?? 'product') as ContractType;
-                    const totalPrice = c.installmentPrice || (c as any).totalPrice || 0;
+                    const totalPrice = c.installmentPrice || (c as unknown as {totalPrice?: number}).totalPrice || 0;
                     return (
                         <div key={c.id} className="rounded-2xl border border-border bg-card p-5 space-y-4 hover:border-primary/30 transition-all hover:shadow-md">
                             <div className="flex items-start justify-between flex-wrap gap-2">
@@ -592,34 +747,35 @@ export default function Installments() {
             <PaginationBar page={page} totalPages={totalPages} totalItems={totalItems} pageSize={pageSize} onPrev={prevPage} onNext={nextPage} onPage={setPage} />
 
             {/* ─── Confirm Delete Dialog ─── */}
-            {deleteTarget && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4" onClick={() => setDeleteTarget(null)}>
-                    <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-2xl animate-scale-in" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-red-100 dark:bg-red-500/15">
-                                <AlertTriangle className="h-5 w-5 text-red-600" />
-                            </div>
-                            <div>
-                                <h3 className="font-bold text-foreground">تأكيد حذف العقد</h3>
-                                <p className="text-xs text-muted-foreground">هذا الإجراء لا يمكن التراجع عنه</p>
-                            </div>
+            {deleteTarget && createPortal(
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setDeleteTarget(null)}>
+                    <div className="w-full max-w-sm rounded-[2rem] border border-border bg-card p-6 shadow-2xl animate-scale-in text-center" onClick={e => e.stopPropagation()}>
+                        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-100 dark:bg-red-500/20 mx-auto mb-4 border-4 border-white dark:border-card shadow-sm">
+                            <AlertTriangle className="h-8 w-8 text-red-600" />
                         </div>
-                        <p className="text-sm text-foreground mb-1">هل تريد حذف عقد الأجل:</p>
-                        <p className="text-sm font-bold text-foreground mb-1">«{deleteTarget.customerName} — {deleteTarget.productName}»</p>
-                        <p className="text-xs text-muted-foreground mb-4">رقم العقد: {deleteTarget.contractNumber}</p>
-                        <div className="flex gap-2">
+                        <h3 className="font-black text-xl text-foreground mb-1">تأكيد الحذف</h3>
+                        <p className="text-sm text-muted-foreground mb-6">هذا الإجراء نهائي ولا يمكن التراجع عنه.</p>
+                        
+                        <div className="bg-muted/30 border border-border/50 rounded-2xl p-4 mb-6 text-right">
+                            <p className="text-xs text-muted-foreground mb-1">هل أنت متأكد من حذف العقد؟</p>
+                            <p className="text-sm font-bold text-foreground mb-1 break-words">«{deleteTarget.customerName}»</p>
+                            <p className="text-xs text-foreground font-semibold break-words bg-primary/10 text-primary py-1 px-2 rounded-md inline-block mt-1 mb-2">{deleteTarget.productName}</p>
+                            <p className="text-[11px] text-muted-foreground flex items-center gap-1"><Layers className="h-3 w-3"/> رقم العقد: <span className="font-mono">{deleteTarget.contractNumber}</span></p>
+                        </div>
+
+                        <div className="flex gap-3">
                             <button onClick={() => { deleteContract(deleteTarget.id); setDeleteTarget(null); refresh(); toast({ title: '🗑️ تم حذف العقد', description: deleteTarget.customerName }); }}
-                                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-red-600 hover:bg-red-700 py-2.5 text-sm font-bold text-white transition-all">
-                                <Trash2 className="h-4 w-4" /> نعم، احذف
+                                className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-red-600 hover:bg-red-500 py-3 text-sm font-bold text-white shadow-md shadow-red-600/20 transition-all">
+                                <Trash2 className="h-4 w-4" /> نعم، احذف العقد
                             </button>
                             <button onClick={() => setDeleteTarget(null)}
-                                className="flex-1 rounded-xl border border-border py-2.5 text-sm font-medium hover:bg-muted transition-colors">
-                                إلغاء
+                                className="px-5 rounded-xl border border-border/80 bg-background text-foreground py-3 text-sm font-semibold hover:bg-muted transition-colors">
+                                تراجع
                             </button>
                         </div>
                     </div>
                 </div>
-            )}
+            , document.body)}
         </div>
     );
 }

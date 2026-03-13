@@ -8,6 +8,12 @@
  */
 export function getStorageItem<T>(key: string, fallback: T): T {
     try {
+        if (window.electron && window.electron.ipcRenderer) {
+            const data = window.electron.ipcRenderer.sendSync('store-get', key);
+            if (data !== null && data !== undefined) return data as T;
+            return fallback;
+        }
+
         const raw = localStorage.getItem(key);
         if (raw === null) return fallback;
         return JSON.parse(raw) as T;
@@ -21,6 +27,11 @@ export function getStorageItem<T>(key: string, fallback: T): T {
  * #19 FIX: Checks storage usage and warns when approaching limits.
  */
 export function setStorageItem<T>(key: string, value: T): void {
+    if (window.electron && window.electron.ipcRenderer) {
+        window.electron.ipcRenderer.sendSync('store-set', key, value);
+        return;
+    }
+
     const data = JSON.stringify(value);
     try {
         localStorage.setItem(key, data);
@@ -60,5 +71,9 @@ function checkStorageUsage(): void {
  * Remove a key from localStorage.
  */
 export function removeStorageItem(key: string): void {
+    if (window.electron && window.electron.ipcRenderer) {
+        window.electron.ipcRenderer.sendSync('store-delete', key);
+        return;
+    }
     localStorage.removeItem(key);
 }

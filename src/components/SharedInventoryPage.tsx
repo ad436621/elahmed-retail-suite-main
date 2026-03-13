@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
     Plus, Trash2, Pencil, X, Check, Headphones, Search,
@@ -123,7 +124,7 @@ function SharedCategoriesManager({
         setEditIndex(null);
     };
 
-    return (
+    return createPortal(
         <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4" onClick={onClose}>
             <div className="w-full max-w-md rounded-2xl border border-border bg-card shadow-2xl animate-scale-in overflow-hidden" onClick={e => e.stopPropagation()}>
                 {/* Header */}
@@ -188,7 +189,8 @@ function SharedCategoriesManager({
                     <button onClick={onClose} className="flex-1 rounded-xl border border-border py-2.5 text-sm font-medium hover:bg-muted transition-colors">إلغاء</button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }
 
@@ -473,8 +475,8 @@ export default function SharedInventoryPage({ config }: { config: SharedInventor
             )}
 
             {/* ── Add/Edit Form Modal ── */}
-            {showForm && (
-                <div className="fixed inset-0 z-50 flex items-start justify-center bg-black/50 backdrop-blur-sm overflow-y-auto py-4 px-4" onClick={() => { setShowForm(false); setEditId(null); }}>
+            {showForm && createPortal(
+                <div className="fixed inset-0 z-[100] flex items-start justify-center bg-black/50 backdrop-blur-sm overflow-y-auto py-4 px-4" onClick={() => { setShowForm(false); setEditId(null); }}>
                     <div className="w-full max-w-xl rounded-2xl border border-border bg-card shadow-2xl animate-scale-in my-8" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-border">
                             <h2 className="text-base font-bold text-foreground">{editId ? '✏️ تعديل المنتج' : '➕ إضافة منتج'}</h2>
@@ -549,7 +551,8 @@ export default function SharedInventoryPage({ config }: { config: SharedInventor
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* ── Categories Manager Modal ── */}

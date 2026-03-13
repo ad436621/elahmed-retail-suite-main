@@ -3,6 +3,7 @@
 // ============================================================
 
 import { useState, useMemo, useCallback, memo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
     Tv, Plus, Search, Trash2, Pencil, X, Check, LayoutGrid, List, Tag,
@@ -193,8 +194,8 @@ function DeviceCategoriesManager({
         setEditIndex(null);
     };
 
-    return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4" onClick={onClose}>
+    return createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4" onClick={onClose}>
             <div className="w-full max-w-md rounded-2xl border border-border bg-card shadow-2xl animate-scale-in overflow-hidden" onClick={e => e.stopPropagation()}>
                 <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-muted/30">
                     <div className="flex items-center gap-2">
@@ -254,7 +255,8 @@ function DeviceCategoriesManager({
                     <button onClick={onClose} className="flex-1 rounded-xl border border-border py-2.5 text-sm font-medium hover:bg-muted transition-colors">إلغاء</button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }
 

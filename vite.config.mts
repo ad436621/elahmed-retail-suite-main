@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 import { copyFileSync, existsSync, mkdirSync } from "fs";
+import electron from "vite-plugin-electron/simple";
 
 // Custom plugin: copies the GX GLEAMEX logo to public/logo.png on startup
 function copyLogoPlugin() {
@@ -39,6 +40,29 @@ export default defineConfig(({ mode }) => ({
     copyLogoPlugin(),
     react(),
     mode === "development" && componentTagger(),
+    electron({
+      main: {
+        entry: "electron/main.ts",
+        vite: {
+          build: {
+            rollupOptions: {
+              external: ['electron', 'better-sqlite3', 'fs', 'path', 'url'],
+            }
+          }
+        }
+      },
+      preload: {
+        input: path.join(__dirname, "electron/preload.ts"),
+        vite: {
+          build: {
+            rollupOptions: {
+              external: ['electron'],
+            }
+          }
+        }
+      },
+      renderer: {},
+    }),
   ].filter(Boolean),
   resolve: {
     alias: {

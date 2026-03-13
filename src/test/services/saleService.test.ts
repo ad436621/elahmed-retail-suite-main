@@ -34,18 +34,18 @@ vi.mock('@/domain/audit', () => ({
 
 // Mock batchesData to avoid localStorage dependency
 vi.mock('@/data/batchesData', () => {
-    let batches: any[] = [];
+    let batches: unknown[] = [];
     return {
         getBatchesForProduct: vi.fn((productId: string) =>
             batches
-                .filter((b: any) => b.productId === productId && b.remainingQty > 0)
-                .sort((a: any, b: any) => a.purchaseDate.localeCompare(b.purchaseDate))
+                .filter((b: unknown) => (b as { productId: string }).productId === productId && (b as { remainingQty: number }).remainingQty > 0)
+                .sort((a: unknown, b: unknown) => (a as { purchaseDate: string }).purchaseDate.localeCompare((b as { purchaseDate: string }).purchaseDate))
         ),
         getBatches: vi.fn(() => [...batches]),
-        saveBatches: vi.fn((b: any[]) => { batches = b; }),
+        saveBatches: vi.fn((b: unknown[]) => { batches = b; }),
         updateBatchQty: vi.fn(),
         getWeightedAvgCost: vi.fn(() => null),
-        __setMockBatches: (b: any[]) => { batches = b; },
+        __setMockBatches: (b: unknown[]) => { batches = b; },
     };
 });
 
@@ -68,7 +68,7 @@ const makeProduct = (overrides = {}) => ({
     minimumMarginPct: 10,
     createdAt: '2024-01-01',
     updatedAt: '2024-01-01',
-    deletedAt: null,
+    deletedAt: null as string | null,
     ...overrides,
 });
 
@@ -100,7 +100,7 @@ const makeSale = (overrides = {}) => ({
     id: 'sale-1',
     invoiceNumber: 'INV-2024-0001',
     date: '2024-01-15T10:00:00Z',
-    items: [],
+    items: [] as CartItem[],
     subtotal: 1500,
     discount: 0,
     total: 1500,
@@ -109,14 +109,14 @@ const makeSale = (overrides = {}) => ({
     marginPct: 33.3,
     paymentMethod: 'cash' as PaymentMethod,
     employee: 'Ahmed',
-    voidedAt: null,
-    voidReason: null,
-    voidedBy: null,
+    voidedAt: null as string | null,
+    voidReason: null as string | null,
+    voidedBy: null as string | null,
     ...overrides,
-});
+}) as unknown as import('@/domain/types').Sale;
 
 beforeEach(async () => {
-    const mod = await import('@/data/batchesData') as any;
+    const mod = await import('@/data/batchesData') as unknown as { __setMockBatches: (b: unknown[]) => void };
     mod.__setMockBatches([makeBatch()]);
     vi.clearAllMocks();
 });
@@ -168,7 +168,7 @@ describe('processSale', () => {
 
     it('should record correct payment method', () => {
         const cart = [makeCartItem()];
-        const result = processSale(cart, 0, 'cash' as any, 'user-1', 'Ahmed');
+        const result = processSale(cart, 0, 'cash' as unknown as PaymentMethod, 'user-1', 'Ahmed');
         expect(result.sale.paymentMethod).toBe('cash');
     });
 });

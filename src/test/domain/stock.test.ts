@@ -56,8 +56,8 @@ describe('validateStock', () => {
         try {
             validateStock(product, 5);
             expect.fail('should have thrown');
-        } catch (e: any) {
-            expect(e.message).toContain('iPhone 15');
+        } catch (e: unknown) {
+            expect((e as Error).message).toContain('iPhone 15');
         }
     });
 
@@ -100,8 +100,8 @@ describe('calculateNewQuantity', () => {
         try {
             calculateNewQuantity(3, -10);
             expect.fail('should have thrown');
-        } catch (e: any) {
-            expect(e.message).toContain('negative');
+        } catch (e: unknown) {
+            expect((e as Error).message).toContain('negative');
         }
     });
 
@@ -125,12 +125,12 @@ describe('createStockMovement', () => {
     });
 
     it('should generate a UUID id', () => {
-        const movement = createStockMovement('prod-1', 'purchase', 5, 10, 'restock', 'user-1');
+        const movement = createStockMovement('prod-1', 'stock_in' as import('@/domain/types').StockMovementType, 5, 10, 'restock', 'user-1');
         expect(movement.id).toMatch(/^[0-9a-f-]{36}$/i);
     });
 
     it('should have a valid ISO timestamp', () => {
-        const movement = createStockMovement('prod-1', 'purchase', 5, 0, 'initial', 'user-1');
+        const movement = createStockMovement('prod-1', 'stock_in' as import('@/domain/types').StockMovementType, 5, 0, 'initial', 'user-1');
         expect(new Date(movement.timestamp).getTime()).not.toBeNaN();
     });
 

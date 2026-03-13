@@ -418,6 +418,8 @@ export interface InstallmentScheduleItem {
   month: number;
   dueDate: string;
   amount: number;
+  paidAmount: number; // For tracking partial payments
+  penalty: number;    // For adding late fees
   paid: boolean;
 }
 
@@ -430,6 +432,8 @@ export interface InstallmentContract {
   customerIdCard: string;
   guarantorName: string;
   guarantorIdCard: string;
+  guarantorPhone?: string;
+  guarantorAddress?: string;
   customerPhone: string;
   customerAddress: string;
   productName: string;
@@ -440,12 +444,15 @@ export interface InstallmentContract {
   downPayment: number;
   months: number;
   monthlyInstallment: number;
+  firstInstallmentDate?: string;
   schedule: InstallmentScheduleItem[];
   payments: InstallmentPayment[];
   paidTotal: number;
   remaining: number;
   notes?: string;
   status: 'active' | 'completed' | 'overdue';
+  settledEarly?: boolean;
+  settlementDiscount?: number;
   createdAt: string;
   updatedAt: string;
 }

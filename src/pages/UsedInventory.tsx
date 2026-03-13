@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { Plus, Trash2, Pencil, X, Check, Archive, Search, ImagePlus, ImageOff, AlignLeft, Smartphone, Laptop, Monitor, Layers } from 'lucide-react';
 import { UsedDevice, UsedDeviceType } from '@/domain/types';
 import { getUsedDevices, addUsedDevice, updateUsedDevice, deleteUsedDevice } from '@/data/usedDevicesData';
@@ -129,8 +130,8 @@ export default function UsedInventory() {
             </div>
 
             {/* Form Modal */}
-            {showForm && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm overflow-y-auto py-6 px-4" onClick={() => { setShowForm(false); setEditId(null); }}>
+            {showForm && createPortal(
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm overflow-y-auto py-6 px-4" onClick={() => { setShowForm(false); setEditId(null); }}>
                     <div className="w-full max-w-xl mx-auto rounded-3xl border border-border bg-card p-6 shadow-2xl space-y-4 animate-scale-in" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between">
                             <h2 className="text-lg font-bold text-foreground">{editId ? 'تعديل جهاز مستعمل' : 'إضافة جهاز مستعمل'}</h2>
@@ -189,7 +190,8 @@ export default function UsedInventory() {
                             <button onClick={() => { setShowForm(false); setEditId(null); }} className="flex-1 rounded-xl border border-border py-2.5 text-sm font-medium hover:bg-muted transition-colors">إلغاء</button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* ── Grid View ── */}
