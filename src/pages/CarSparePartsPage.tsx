@@ -3,6 +3,7 @@ import { Car, Wrench, Fuel } from 'lucide-react';
 import SubSectionPage, { SubSectionPageConfig } from '@/components/SubSectionPage';
 import { createSubInventory } from '@/data/subInventoryData';
 import { STORAGE_KEYS } from '@/config';
+import { CAR_SPARE_COLUMNS } from '@/services/excelService';
 
 const db = createSubInventory(STORAGE_KEYS.CAR_SPARE_PARTS);
 
@@ -26,6 +27,8 @@ const config: SubSectionPageConfig = {
     updateItem: db.update,
     deleteItem: db.remove,
     getCapital: db.capital,
+    exportColumns: CAR_SPARE_COLUMNS,
+    exportFileName: 'قطع_غيار_السيارات',
 };
 
 export default function CarSparePartsPage() {

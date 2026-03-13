@@ -2,6 +2,7 @@
 import { Monitor, Headphones, Wrench } from 'lucide-react';
 import SubSectionPage, { SubSectionPageConfig } from '@/components/SubSectionPage';
 import { computerAccessoriesDB } from '@/data/subInventoryData';
+import { COMPUTER_ACCESSORY_COLUMNS } from '@/services/excelService';
 
 const ACC_CATEGORIES = ['ماوس', 'كيبورد', 'شنطة', 'شاشة', 'سماعة', 'كاميرا ويب', 'ماوس باد', 'USB Hub', 'أخرى'];
 
@@ -23,6 +24,8 @@ const config: SubSectionPageConfig = {
     updateItem: computerAccessoriesDB.update,
     deleteItem: computerAccessoriesDB.remove,
     getCapital: computerAccessoriesDB.capital,
+    exportColumns: COMPUTER_ACCESSORY_COLUMNS,
+    exportFileName: 'اكسسورات_الكمبيوترات',
 };
 
 export default function ComputerAccessoriesPage() {

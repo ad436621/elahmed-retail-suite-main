@@ -3,7 +3,8 @@
 // ============================================================
 
 import { useState, useMemo } from 'react';
-import { Users, Plus, Search, Pencil, Trash2, Phone, MapPin, X, Save, MessageSquare } from 'lucide-react';
+import { Users, Plus, Search, Pencil, Trash2, Phone, MapPin, X, Save, MessageSquare, Download } from 'lucide-react';
+import { exportToExcel, CUSTOMER_COLUMNS, prepareCustomersForExport } from '@/services/excelService';
 import {
     getCustomers, addCustomer, updateCustomer, deleteCustomer,
     type Customer,
@@ -159,10 +160,16 @@ export default function CustomersPage() {
                     </h1>
                     <p className="text-sm text-muted-foreground mt-1">{customers.length} عميل مسجل</p>
                 </div>
+                <div className="flex items-center gap-2">
                 <button onClick={handleAdd}
                     className="flex items-center gap-2 rounded-2xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-colors shadow-lg">
                     <Plus className="h-4 w-4" /> إضافة عميل
                 </button>
+                <button onClick={() => exportToExcel({ data: prepareCustomersForExport(customers), columns: CUSTOMER_COLUMNS, fileName: 'العملاء' })}
+                    className="flex items-center gap-2 rounded-2xl border border-emerald-300 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10 px-5 py-2.5 text-sm font-bold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-all shadow-sm">
+                    <Download className="h-4 w-4" /> تصدير Excel
+                </button>
+                </div>
             </div>
 
             {/* Search */}

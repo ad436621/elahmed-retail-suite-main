@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Plus, Trash2, Pencil, X, Check, Car, Search, ImagePlus, ImageOff, AlignLeft, LayoutGrid, List, FileSpreadsheet, Wrench, Fuel } from 'lucide-react';
+import { Plus, Trash2, Pencil, X, Check, Car, Search, ImagePlus, ImageOff, AlignLeft, LayoutGrid, List, FileSpreadsheet, Wrench, Fuel, Download } from 'lucide-react';
+import { exportToExcel, CAR_COLUMNS, prepareConditionForExport } from '@/services/excelService';
 import { CarItem } from '@/domain/types';
 import { getCars, addCar, updateCar, deleteCar, getNewCars, getUsedCars, getCarsCapital, getCarsProfit } from '@/data/carsData';
 import { loadCats, saveCats } from '@/data/categoriesData';
@@ -278,6 +279,9 @@ export default function CarsInventory() {
                     </button>
                     <button onClick={() => setShowExcelRestore(true)} className="flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition-all shadow-md">
                         <FileSpreadsheet className="h-4 w-4" /> استرداد من Excel
+                    </button>
+                    <button onClick={() => exportToExcel({ data: prepareConditionForExport(items), columns: CAR_COLUMNS, fileName: 'السيارات' })} className="flex items-center gap-2 rounded-xl border border-emerald-300 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10 px-4 py-2.5 text-sm font-semibold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-all shadow-md">
+                        <Download className="h-4 w-4" /> تصدير Excel
                     </button>
                 </div>
             </div>

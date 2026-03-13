@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
-import { X, Check, CreditCard, DollarSign, Search, Printer, Calendar, Smartphone, Monitor, Tv, Car, Layers, Send, Tag, CheckCircle2, Trash2, AlertTriangle } from 'lucide-react';
+import { X, Check, CreditCard, DollarSign, Search, Printer, Calendar, Smartphone, Monitor, Tv, Car, Layers, Send, Tag, CheckCircle2, Trash2, AlertTriangle, Download } from 'lucide-react';
+import { exportToExcel, INSTALLMENT_COLUMNS, prepareInstallmentsForExport } from '@/services/excelService';
 import { InstallmentContract } from '@/domain/types';
 import { getContracts, addContract, addPaymentToContract, deleteContract, markScheduleItemPaid } from '@/data/installmentsData';
 import { getAllInventoryProducts, updateProductQuantity } from '@/repositories/productRepository';
@@ -214,6 +215,11 @@ export default function Installments() {
                     </div>
                 </div>
                 <div className="flex gap-2 flex-wrap">
+                    <button
+                        onClick={() => exportToExcel({ data: prepareInstallmentsForExport(contracts), columns: INSTALLMENT_COLUMNS, fileName: 'التقسيط' })}
+                        className="flex items-center gap-1.5 rounded-xl border border-emerald-300 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10 px-4 py-2.5 text-sm font-semibold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-all shadow-sm">
+                        <Download className="h-4 w-4" /> تصدير Excel
+                    </button>
                     {(['product', 'transfer', 'car'] as ContractType[]).map(t => (
                         <button key={t}
                             onClick={() => { setForm({ ...emptyForm, contractType: t }); setShowForm(true); }}

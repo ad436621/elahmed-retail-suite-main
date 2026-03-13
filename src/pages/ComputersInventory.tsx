@@ -8,6 +8,7 @@ import {
     getComputers, addComputer, updateComputer, deleteComputer,
 } from '@/data/computersData';
 import { ComputerItem } from '@/domain/types';
+import { COMPUTER_COLUMNS } from '@/services/excelService';
 
 const config: SharedInventoryConfig = {
     icon: <Laptop className="h-5 w-5" />,
@@ -23,6 +24,8 @@ const config: SharedInventoryConfig = {
     deleteDevice: deleteComputer,
     deviceStorageKey: 'gx_computers_v2',
 
+    exportColumns: COMPUTER_COLUMNS,
+    exportFileName: 'الكمبيوترات',
 
     extraDeviceField: {
         key: 'processor',

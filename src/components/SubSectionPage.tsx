@@ -9,8 +9,9 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Plus, Trash2, Pencil, X, Check, Search, ImagePlus, ImageOff,
-    AlertTriangle, FolderOpen, Settings2
+    AlertTriangle, FolderOpen, Settings2, Download
 } from 'lucide-react';
+import { exportToExcel, ExcelColumn } from '@/services/excelService';
 import { useToast } from '@/hooks/use-toast';
 import { useConfirm } from '@/components/ConfirmDialog';
 import { cn } from '@/lib/utils';
@@ -59,6 +60,10 @@ export interface SubSectionPageConfig {
     updateItem: (id: string, updates: Partial<SubItem>) => void;
     deleteItem: (id: string) => void;
     getCapital?: () => number;
+    /** Columns definition for Excel export */
+    exportColumns?: ExcelColumn[];
+    /** File name prefix for Excel export */
+    exportFileName?: string;
 }
 
 // ─── LocalStorage helpers ────────────────────────────────────
@@ -396,6 +401,13 @@ export default function SubSectionPage({ config }: { config: SubSectionPageConfi
                         className="flex items-center gap-2 rounded-xl border border-border bg-muted/50 px-4 py-2.5 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition-all shadow-sm">
                         <Settings2 className="h-4 w-4" /> التصنيفات ({cats.length})
                     </button>
+                    {config.exportColumns && (
+                        <button
+                            onClick={() => exportToExcel({ data: items, columns: config.exportColumns!, fileName: config.exportFileName || config.title })}
+                            className="flex items-center gap-2 rounded-xl border border-emerald-300 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10 px-4 py-2.5 text-sm font-semibold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-all shadow-sm">
+                            <Download className="h-4 w-4" /> تصدير Excel
+                        </button>
+                    )}
                     <button
                         onClick={() => { setShowForm(true); setEditId(null); setForm(emptyForm()); }}
                         className={cn('flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold text-white transition-all shadow-md', config.addBtnClass)}>

@@ -4,7 +4,8 @@
 // ============================================================
 
 import { useState, useMemo, useCallback } from 'react';
-import { Plus, Trash2, Pencil, X, Check, AlertTriangle, Search, TrendingDown, Package } from 'lucide-react';
+import { Plus, Trash2, Pencil, X, Check, AlertTriangle, Search, TrendingDown, Package, Download } from 'lucide-react';
+import { exportToExcel, DAMAGED_COLUMNS, prepareDamagedForExport } from '@/services/excelService';
 import { DamagedItem, DamagedItemCategory } from '@/domain/types';
 import { getDamagedItems, addDamagedItem, updateDamagedItem, deleteDamagedItem } from '@/data/damagedData';
 import { getAllInventoryProducts, updateProductQuantity } from '@/repositories/productRepository';
@@ -192,11 +193,18 @@ export default function DamagedItemsPage() {
                         <p className="text-xs text-muted-foreground">{items.length} عنصر مسجل</p>
                     </div>
                 </div>
+                <div className="flex items-center gap-2">
                 <button
                     onClick={() => { setShowForm(true); setEditId(null); setForm(emptyForm); }}
                     className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-all shadow-md">
                     <Plus className="h-4 w-4" /> إضافة هالك
                 </button>
+                <button
+                    onClick={() => exportToExcel({ data: prepareDamagedForExport(items), columns: DAMAGED_COLUMNS, fileName: 'الهالك_والتلف' })}
+                    className="flex items-center gap-2 rounded-xl border border-emerald-300 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10 px-4 py-2.5 text-sm font-semibold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-all shadow-sm">
+                    <Download className="h-4 w-4" /> تصدير Excel
+                </button>
+                </div>
             </div>
 
             {/* ── Stats Strip ──────────────────────────────────── */}

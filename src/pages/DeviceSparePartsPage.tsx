@@ -2,6 +2,7 @@
 import { Tv, Headphones, Wrench } from 'lucide-react';
 import SubSectionPage, { SubSectionPageConfig } from '@/components/SubSectionPage';
 import { deviceSparePartsDB } from '@/data/subInventoryData';
+import { DEVICE_SPARE_COLUMNS } from '@/services/excelService';
 
 const PARTS_CATEGORIES = ['بورد تليفزيون', 'الباور', 'شاشات', 'سبيكر', 'LED Strips', 'ريموت', 'أخرى'];
 
@@ -23,6 +24,8 @@ const config: SubSectionPageConfig = {
     updateItem: deviceSparePartsDB.update,
     deleteItem: deviceSparePartsDB.remove,
     getCapital: deviceSparePartsDB.capital,
+    exportColumns: DEVICE_SPARE_COLUMNS,
+    exportFileName: 'قطع_غيار_الأجهزة',
 };
 
 export default function DeviceSparePartsPage() {

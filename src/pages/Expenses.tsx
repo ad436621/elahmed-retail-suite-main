@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Plus, Trash2, X, Check, TrendingDown } from 'lucide-react';
+import { Plus, Trash2, X, Check, TrendingDown, Download } from 'lucide-react';
+import { exportToExcel, EXPENSE_COLUMNS, prepareExpensesForExport } from '@/services/excelService';
 import { Expense, ExpenseCategory } from '@/domain/types';
 import { getExpenses, addExpense, deleteExpense, getExpenseCategoryLabel } from '@/data/expensesData';
 import { useToast } from '@/hooks/use-toast';
@@ -79,10 +80,16 @@ export default function Expenses() {
                         <p className="text-sm text-muted-foreground">{expenses.length} قيد</p>
                     </div>
                 </div>
+            <div className="flex items-center gap-2">
                 <button onClick={() => { setShowForm(true); setForm(emptyForm); }}
                     className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-all shadow-lg shadow-primary/20">
                     <Plus className="h-4 w-4" /> إضافة مصروف
                 </button>
+                <button onClick={() => exportToExcel({ data: prepareExpensesForExport(expenses), columns: EXPENSE_COLUMNS, fileName: 'المصروفات' })}
+                    className="flex items-center gap-2 rounded-xl border border-emerald-300 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10 px-4 py-2.5 text-sm font-semibold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-all shadow-sm">
+                    <Download className="h-4 w-4" /> تصدير Excel
+                </button>
+            </div>
             </div>
 
             {/* Summary Card */}

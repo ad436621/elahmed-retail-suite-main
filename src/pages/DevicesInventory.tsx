@@ -9,6 +9,7 @@ import {
     FileSpreadsheet, Download, Upload, ShoppingCart, RefreshCw, Filter,
     CheckCircle, Package, AlertCircle, MoreHorizontal, Headphones, Wrench
 } from 'lucide-react';
+import { exportToExcel, DEVICE_COLUMNS, prepareConditionForExport } from '@/services/excelService';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -447,6 +448,10 @@ export default function DevicesInventory() {
                             <Button variant="outline" onClick={() => setIsExcelOpen(true)}>
                                 <FileSpreadsheet className="h-4 w-4 mr-2" />
                                 Excel
+                            </Button>
+                            <Button variant="outline" onClick={() => exportToExcel({ data: prepareConditionForExport(devices), columns: DEVICE_COLUMNS, fileName: 'الأجهزة' })} className="border-emerald-300 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-500/20">
+                                <Download className="h-4 w-4 mr-2" />
+                                تصدير Excel
                             </Button>
                             <Button onClick={() => handleOpenForm()}>
                                 <Plus className="h-4 w-4 mr-2" />

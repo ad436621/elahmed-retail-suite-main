@@ -2,6 +2,7 @@
 import { Tv, Headphones, Wrench } from 'lucide-react';
 import SubSectionPage, { SubSectionPageConfig } from '@/components/SubSectionPage';
 import { deviceAccessoriesDB } from '@/data/subInventoryData';
+import { DEVICE_ACCESSORY_COLUMNS } from '@/services/excelService';
 
 const ACC_CATEGORIES = ['ريموت', 'كابلات HDMI', 'حوامل', 'فلاتر', 'مجففات فلاتر', 'أحزمة', 'أخرى'];
 
@@ -23,6 +24,8 @@ const config: SubSectionPageConfig = {
     updateItem: deviceAccessoriesDB.update,
     deleteItem: deviceAccessoriesDB.remove,
     getCapital: deviceAccessoriesDB.capital,
+    exportColumns: DEVICE_ACCESSORY_COLUMNS,
+    exportFileName: 'اكسسورات_الأجهزة',
 };
 
 export default function DeviceAccessoriesPage() {

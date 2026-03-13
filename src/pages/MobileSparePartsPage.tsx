@@ -8,8 +8,9 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import {
     Plus, Trash2, Pencil, X, Check, Smartphone, Headphones, Search,
     AlignLeft, LayoutGrid, List, Tag, FileSpreadsheet, ImageOff,
-    Filter, SlidersHorizontal, RotateCcw, Package, Wrench
+    Filter, SlidersHorizontal, RotateCcw, Package, Wrench, Download
 } from 'lucide-react';
+import { exportToExcel, MOBILE_SPARE_COLUMNS } from '@/services/excelService';
 import {
     getMobileSpareParts, addMobileSparePart, updateMobileSparePart, deleteMobileSparePart,
 } from '@/data/mobilesData';
@@ -483,6 +484,10 @@ export default function MobileSparePartsPage() {
                 <button onClick={() => setShowExcelRestore(true)}
                     className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2 text-xs font-bold text-white hover:bg-blue-700 transition-all shadow-sm">
                     <FileSpreadsheet className="h-3.5 w-3.5" /> استرداد Excel
+                </button>
+                <button onClick={() => exportToExcel({ data: mobiles, columns: MOBILE_SPARE_COLUMNS, fileName: 'قطع_غيار_الموبايل' })}
+                    className="flex items-center gap-1.5 rounded-xl border border-emerald-300 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10 px-3 py-2 text-xs font-bold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-all shadow-sm">
+                    <Download className="h-3.5 w-3.5" /> تصدير Excel
                 </button>
                 <button onClick={() => setShowCatManager(true)}
                     className="flex items-center gap-1.5 rounded-xl border border-dashed border-primary/40 px-3 py-2 text-xs font-bold text-primary hover:bg-primary/5 transition-all">

@@ -1,4 +1,5 @@
-import { Search, Ban, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Ban, ChevronLeft, ChevronRight, Download } from 'lucide-react';
+import { exportToExcel, SALES_COLUMNS, prepareSalesForExport } from '@/services/excelService';
 import { useState, useMemo, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
@@ -87,6 +88,10 @@ const Sales = () => {
               className="rounded border-border" />
             عرض الملغية
           </label>
+          <button onClick={() => exportToExcel({ data: prepareSalesForExport(allSales), columns: SALES_COLUMNS, fileName: 'المبيعات' })}
+            className="flex items-center gap-1.5 rounded-xl border border-emerald-300 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10 px-3 py-2 text-xs font-bold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-all shadow-sm">
+            <Download className="h-3.5 w-3.5" /> تصدير Excel
+          </button>
         </div>
       </div>
 

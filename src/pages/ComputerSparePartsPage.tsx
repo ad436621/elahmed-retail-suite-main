@@ -2,6 +2,7 @@
 import { Monitor, Headphones, Wrench } from 'lucide-react';
 import SubSectionPage, { SubSectionPageConfig } from '@/components/SubSectionPage';
 import { computerSparePartsDB } from '@/data/subInventoryData';
+import { COMPUTER_SPARE_COLUMNS } from '@/services/excelService';
 
 const PARTS_CATEGORIES = ['رام RAM', 'SSD / HDD', 'بطارية لابتوب', 'شاشة لابتوب', 'كيبورد لابتوب', 'مروحة', 'باور ساندي', 'بورد', 'أخرى'];
 
@@ -23,6 +24,8 @@ const config: SubSectionPageConfig = {
     updateItem: computerSparePartsDB.update,
     deleteItem: computerSparePartsDB.remove,
     getCapital: computerSparePartsDB.capital,
+    exportColumns: COMPUTER_SPARE_COLUMNS,
+    exportFileName: 'قطع_غيار_الكمبيوترات',
 };
 
 export default function ComputerSparePartsPage() {

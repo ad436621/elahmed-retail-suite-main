@@ -5,8 +5,9 @@
 import { useState, useMemo } from 'react';
 import {
     Users, Plus, Pencil, Trash2, X, Save, DollarSign,
-    TrendingDown, Award, ChevronDown, ChevronUp,
+    TrendingDown, Award, ChevronDown, ChevronUp, Download,
 } from 'lucide-react';
+import { exportToExcel, EMPLOYEE_COLUMNS, prepareEmployeesForExport } from '@/services/excelService';
 import {
     getEmployees, addEmployee, updateEmployee, deleteEmployee,
     getSalaryRecords, paySalary, addAdvance, getPendingAdvancesTotal,
@@ -222,10 +223,16 @@ export default function EmployeesPage() {
                         إجمالي الرواتب: {fmt(employees.reduce((s, e) => s + e.baseSalary, 0))} ج.م
                     </p>
                 </div>
+                <div className="flex items-center gap-2">
                 <button onClick={() => { setEditTarget(undefined); setShowModal(true); }}
                     className="flex items-center gap-2 rounded-2xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-colors shadow-lg">
                     <Plus className="h-4 w-4" /> إضافة موظف
                 </button>
+                <button onClick={() => exportToExcel({ data: prepareEmployeesForExport(employees), columns: EMPLOYEE_COLUMNS, fileName: 'الموظفين' })}
+                    className="flex items-center gap-2 rounded-2xl border border-emerald-300 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10 px-5 py-2.5 text-sm font-bold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-all shadow-sm">
+                    <Download className="h-4 w-4" /> تصدير Excel
+                </button>
+                </div>
             </div>
 
             {employees.length === 0 ? (

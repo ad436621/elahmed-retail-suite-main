@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
-import { Truck, Plus, X, Check, Search, Trash2, Pencil, Phone, MapPin, DollarSign, AlertCircle } from 'lucide-react';
+import { Truck, Plus, X, Check, Search, Trash2, Pencil, Phone, MapPin, DollarSign, AlertCircle, Download } from 'lucide-react';
+import { exportToExcel, SUPPLIER_COLUMNS, prepareSuppliersForExport } from '@/services/excelService';
 import { getSuppliers, addSupplier, updateSupplier, deleteSupplier, addSupplierTransaction, getTotalOwedToSuppliers, type Supplier } from '@/data/suppliersData';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
@@ -66,10 +67,16 @@ export default function SuppliersPage() {
                         <p className="text-xs text-muted-foreground">{suppliers.length} مورد • مستحقات: <span className="text-red-600 font-bold">{fmt(totalOwed)} ج.م</span></p>
                     </div>
                 </div>
+                <div className="flex items-center gap-2">
                 <button onClick={() => { setForm(emptyForm); setEditId(null); setShowForm(true); }}
                     className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-all shadow-sm">
                     <Plus className="h-4 w-4" /> إضافة مورد
                 </button>
+                <button onClick={() => exportToExcel({ data: prepareSuppliersForExport(suppliers), columns: SUPPLIER_COLUMNS, fileName: 'الموردون' })}
+                    className="flex items-center gap-2 rounded-xl border border-emerald-300 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10 px-4 py-2.5 text-sm font-semibold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-all shadow-sm">
+                    <Download className="h-4 w-4" /> تصدير Excel
+                </button>
+                </div>
             </div>
 
             {/* Stats */}
