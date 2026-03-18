@@ -34,10 +34,10 @@ interface InventoryProductCardProps {
  * Shows image preview, condition/category badges, price, stock status, and action buttons.
  */
 export function InventoryProductCard({ item, onEdit, onDelete }: InventoryProductCardProps) {
-    const isDevice = item._type === 'device';
-    const extras = isDevice
-        ? [item.storage, item.ram, item.processor, item.color].filter(Boolean).join(' · ')
-        : [item.model, item.color].filter(Boolean).join(' · ');
+    const isAccessoryOrSpare = item._type === 'accessory' || item._type === 'spare-part';
+    const extras = isAccessoryOrSpare
+        ? [item.model, item.color].filter(Boolean).join(' · ')
+        : [item.storage, item.ram, item.processor, item.color].filter(Boolean).join(' · ');
     const conditionBadge = item.condition === 'used' ? 'مستعمل' : 'جديد';
 
     return (

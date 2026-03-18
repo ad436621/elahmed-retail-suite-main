@@ -76,7 +76,7 @@ interface MobileSubFormState {
 
 interface InventoryViewItem {
     _raw: MobileSubInventoryRecord;
-    _type: 'device';
+    _type: 'accessory' | 'spare-part';
     id: string;
     name: string;
     barcode?: string;
@@ -368,8 +368,9 @@ export default function MobileSubInventoryPage<T extends MobileSubInventoryRecor
         const list: InventoryViewItem[] = [];
         mobiles.forEach(m => {
             const cat = categories.find(c => c === m.category); // Changed to find by string directly
+            const type: InventoryViewItem['_type'] = m.inventoryType === 'mobile_spare_part' ? 'spare-part' : 'accessory';
             list.push({
-                _raw: m, _type: 'device',
+                _raw: m, _type: type,
                 id: m.id, name: m.name, barcode: m.barcode, image: m.image, description: m.description,
                 quantity: m.quantity, salePrice: m.salePrice, newCostPrice: m.newCostPrice, oldCostPrice: m.oldCostPrice,
                 category: m.category, condition: m.condition || 'new', categoryName: cat, // categoryName is now string
@@ -812,9 +813,7 @@ export default function MobileSubInventoryPage<T extends MobileSubInventoryRecor
                                             <tr><td colSpan={11} className="py-14 text-center text-muted-foreground">لا توجد منتجات</td></tr>
                                         ) : filteredList.map((item, i) => {
                                             const avgCost = getWeightedAvgCost(item.id) || item.newCostPrice;
-                                            const details = item._type === 'device'
-                                                ? [item.storage, item.ram, item.color].filter(Boolean).join(' · ')
-                                                : [item.model, item.color].filter(Boolean).join(' · ');
+                                            const details = [item.model, item.color].filter(Boolean).join(' · ');
                                             return (
                                                 <tr key={item.id} className={`border-b border-border/40 hover:bg-muted/20 transition-colors ${i % 2 !== 0 ? 'bg-muted/10' : ''}`}>
                                                     <td className="px-3 py-2"><input type="checkbox" className="rounded" /></td>

@@ -135,7 +135,7 @@ export function addMobileSparePart(item: Omit<MobileSparePart, 'id' | 'createdAt
     if (newItem.quantity > 0) {
         addBatch({
             productId: newItem.id,
-            inventoryType: 'mobile_accessory', // We reuse this or create mobile_spare_part in batches config later if needed
+            inventoryType: 'mobile_spare_part',
             productName: newItem.name,
             costPrice: newItem.newCostPrice || newItem.oldCostPrice || 0,
             salePrice: newItem.salePrice,

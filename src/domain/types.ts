@@ -140,6 +140,7 @@ export interface PriceHistoryEntry {
 export type BatchInventoryType =
   | 'mobile'
   | 'mobile_accessory'
+  | 'mobile_spare_part'
   | 'device'
   | 'device_accessory'
   | 'computer'
