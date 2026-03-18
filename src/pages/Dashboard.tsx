@@ -30,6 +30,7 @@ import {
   GlobalSearch, HeroKPI, MetricPill, InventoryRow,
   BarRow, SectionLabel, fmt, fmtFull, pct,
 } from '@/components/dashboard/DashboardWidgets';
+import { filterActiveSales, summarizeSales } from '@/lib/statistics';
 import { AlertsPanel } from '@/components/dashboard/AlertsPanel';
 import { BestSellers } from '@/components/dashboard/BestSellers';
 import { WeeklyBarChart, MonthlyTrendChart } from '@/components/dashboard/SalesCharts';
@@ -199,25 +200,19 @@ export default function Dashboard() {
   const currentOtherRev = useMemo(() => lrd ? otherRevenues.filter(o => (o.date || '') >= lrd) : otherRevenues, [otherRevenues, lrd]);
 
   // ── Financial KPIs ────────────────────────────────────────
-  // BUG FIX: exclude voided sales from ALL financial calculations
-  const validSales = useMemo(() => sales.filter(s => !s.voidedAt), [sales]);
-  const totalRevenue = useMemo(() => validSales.reduce((s, x) => s + (x.total ?? 0), 0), [validSales]);
-  // Guard against corrupted grossProfit values (NaN, undefined, or impossible negatives per item)
-  const totalProfit = useMemo(() => validSales.reduce((s, x) => {
-    const gp = x.grossProfit ?? 0;
-    return s + (isFinite(gp) ? gp : 0);
-  }, 0), [validSales]);
+  const validSales = useMemo(() => filterActiveSales(sales), [sales]);
+  const salesSummary = useMemo(() => summarizeSales(validSales), [validSales]);
   const totalExpenses = useMemo(() => currentExpenses.reduce((s, e) => s + e.amount, 0), [currentExpenses]);
   const totalDamaged = useMemo(() => currentDamaged.reduce((s, d) => s + d.totalLoss, 0), [currentDamaged]);
   const maintRevenue = useMemo(() => currentMaint.reduce((s, m) => s + m.totalSale, 0), [currentMaint]);
   const maintProfit = useMemo(() => currentMaint.reduce((s, m) => s + (isFinite(m.netProfit) ? m.netProfit : 0), 0), [currentMaint]);
   const totalOtherRev = useMemo(() => currentOtherRev.reduce((s, o) => s + o.amount, 0), [currentOtherRev]);
-  const netProfit = totalProfit + maintProfit + totalOtherRev - totalExpenses - totalDamaged;
+  const netProfit = salesSummary.totalProfit + maintProfit + totalOtherRev - totalExpenses - totalDamaged;
 
   // ── Averages & Ratios ─────────────────────────────────────
-  const avgInvoice = validSales.length > 0 ? totalRevenue / validSales.length : 0;
-  const profitMarginPct = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
-  const returnRate = totalRevenue > 0 ? (totalDamaged / totalRevenue) * 100 : 0;
+  const avgInvoice = salesSummary.avgInvoice;
+  const profitMarginPct = salesSummary.profitMarginPercent;
+  const returnRate = salesSummary.totalRevenue > 0 ? (totalDamaged / salesSummary.totalRevenue) * 100 : 0;
 
   // ── Today ─────────────────────────────────────────────────
   const todayStr = new Date().toISOString().slice(0, 10);

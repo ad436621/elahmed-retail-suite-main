@@ -2,7 +2,7 @@
 // Unit Tests — LocalStorage Helper
 // ============================================================
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { getStorageItem, setStorageItem, removeStorageItem } from '@/lib/localStorageHelper';
 
 // jsdom provides localStorage in vitest test environment
@@ -78,6 +78,13 @@ describe('setStorageItem', () => {
         setStorageItem('nval', null);
         expect(getStorageItem<null | string>('nval', 'fallback')).toBeNull();
     });
+
+    it('should dispatch local-storage event when setting a value', () => {
+        const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
+        setStorageItem('event-key', 'event-value');
+        expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({ type: 'local-storage' }));
+        dispatchSpy.mockRestore();
+    });
 });
 
 describe('removeStorageItem', () => {
@@ -89,6 +96,14 @@ describe('removeStorageItem', () => {
 
     it('should not throw when removing a non-existent key', () => {
         expect(() => removeStorageItem('does-not-exist')).not.toThrow();
+    });
+
+    it('should dispatch local-storage event when removing a value', () => {
+        setStorageItem('event-remove-key', 'x');
+        const dispatchSpy = vi.spyOn(window, 'dispatchEvent');
+        removeStorageItem('event-remove-key');
+        expect(dispatchSpy).toHaveBeenCalledWith(expect.objectContaining({ type: 'local-storage' }));
+        dispatchSpy.mockRestore();
     });
 
     it('should cause getStorageItem to return fallback after removal', () => {

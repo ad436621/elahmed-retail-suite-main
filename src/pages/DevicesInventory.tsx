@@ -828,21 +828,21 @@ export default function DevicesInventory() {
                     toast({ title: '✅ تم الاستيراد', description: `تم استيراد ${count} جهاز` });
                     window.location.reload();
                 }}
-                onDataSave={(items: Record<string, any>[]) => {
-                    items.forEach((row: Record<string, any>) => {
+                onDataSave={(items: Record<string, unknown>[]) => {
+                    items.forEach((row: Record<string, unknown>) => {
                         addDevice({
-                            name: row.name || '',
-                            model: row.model || '',
-                            barcode: row.barcode || crypto.randomUUID().slice(0, 8).toUpperCase(),
-                            category: row.category || '',
-                            condition: row.condition || 'new',
-                            color: row.color || '',
+                            name: typeof row.name === 'string' ? row.name : '',
+                            model: typeof row.model === 'string' ? row.model : '',
+                            barcode: typeof row.barcode === 'string' && row.barcode ? row.barcode : crypto.randomUUID().slice(0, 8).toUpperCase(),
+                            category: typeof row.category === 'string' ? row.category : '',
+                            condition: row.condition === 'used' ? 'used' : 'new',
+                            color: typeof row.color === 'string' ? row.color : '',
                             quantity: Number(row.quantity) || 0,
                             oldCostPrice: Number(row.oldCostPrice) || 0,
                             newCostPrice: Number(row.newCostPrice) || 0,
                             salePrice: Number(row.salePrice) || 0,
-                            notes: row.notes || '',
-                            description: row.description || '',
+                            notes: typeof row.notes === 'string' ? row.notes : '',
+                            description: typeof row.description === 'string' ? row.description : '',
                         });
                     });
                 }}

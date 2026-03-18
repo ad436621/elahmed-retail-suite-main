@@ -15,11 +15,70 @@ import { getWeightedAvgCost } from '@/data/batchesData';
 import { ProductBatchesModal } from '@/components/ProductBatchesModal';
 import { loadCats, saveCats } from '@/data/categoriesData';
 import { ExcelColumnMappingDialog } from '@/components/ExcelColumnMappingDialog';
+import { cn } from '@/lib/utils';
 
 // ─── Types ────────────────────────────────────────────────────
 
 export type CategorySection = 'computer' | 'device';
 export type InventoryColor = 'indigo' | 'orange';
+type SharedInventoryCondition = 'new' | 'used';
+
+interface SharedInventoryRecord extends Record<string, unknown> {
+    id: string;
+    name: string;
+    model: string;
+    barcode?: string;
+    category?: string;
+    condition?: SharedInventoryCondition;
+    color: string;
+    quantity: number;
+    oldCostPrice: number;
+    newCostPrice: number;
+    salePrice: number;
+    notes: string;
+    description: string;
+    image?: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+interface SharedInventoryPayload {
+    name: string;
+    model: string;
+    barcode?: string;
+    category?: string;
+    condition?: SharedInventoryCondition;
+    color: string;
+    quantity: number;
+    oldCostPrice: number;
+    newCostPrice: number;
+    salePrice: number;
+    notes: string;
+    description: string;
+    image?: string;
+    [key: string]: unknown;
+}
+
+interface SharedInventoryViewItem {
+    _raw: SharedInventoryRecord;
+    _type: 'device';
+    id: string;
+    name: string;
+    barcode?: string;
+    image?: string;
+    description: string;
+    quantity: number;
+    salePrice: number;
+    newCostPrice: number;
+    oldCostPrice: number;
+    category?: string;
+    condition: SharedInventoryCondition;
+    categoryName?: string;
+    model: string;
+    color: string;
+    extra: string;
+    notes: string;
+}
 
 export interface SharedInventoryConfig {
     /** Icon shown in page header (e.g. <Laptop />) */
@@ -34,9 +93,9 @@ export interface SharedInventoryConfig {
     excelInventoryType: string;
 
     // ─ Devices CRUD ─
-    getDevices: () => any[];
-    addDevice: (payload: any) => void;
-    updateDevice: (id: string, payload: any) => void;
+    getDevices: () => SharedInventoryRecord[];
+    addDevice: (payload: SharedInventoryPayload) => void;
+    updateDevice: (id: string, payload: SharedInventoryPayload) => void;
     deleteDevice: (id: string) => void;
     deviceStorageKey: string;
 
@@ -48,7 +107,7 @@ export interface SharedInventoryConfig {
     };
 
     /** Transforms a raw row from Excel into the device payload */
-    buildDeviceFromExcelRow: (row: Record<string, any>) => any;
+    buildDeviceFromExcelRow: (row: Record<string, unknown>) => void;
 
     /** Optional nav section for sub-page navigation buttons */
     navSection?: 'computers' | 'devices';
@@ -74,18 +133,32 @@ const IC = "w-full rounded-xl border border-input bg-background px-3 py-2.5 text
 const accentStyles: Record<InventoryColor, {
     iconBg: string; iconText: string; iconBorder: string;
     filterActive: string; categoryActive: string; categoryHover: string;
+    managerTag: string; managerBadge: string; managerFocus: string;
+    managerButton: string; managerHoverBorder: string; managerInputBorder: string;
 }> = {
     indigo: {
         iconBg: 'bg-indigo-100 dark:bg-indigo-500/15', iconText: 'text-indigo-600 dark:text-indigo-400', iconBorder: 'border-indigo-200 dark:border-indigo-500/20',
         filterActive: 'bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-500/30',
         categoryActive: 'bg-indigo-50 dark:bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border-indigo-300 dark:border-indigo-500/30',
         categoryHover: 'hover:bg-muted/50',
+        managerTag: 'text-indigo-500',
+        managerBadge: 'bg-indigo-100 dark:bg-indigo-500/15 text-indigo-600 dark:text-indigo-400',
+        managerFocus: 'focus:ring-indigo-500/30',
+        managerButton: 'bg-indigo-600 hover:bg-indigo-700',
+        managerHoverBorder: 'hover:border-indigo-300 dark:hover:border-indigo-500/30',
+        managerInputBorder: 'border-indigo-400',
     },
     orange: {
         iconBg: 'bg-orange-100 dark:bg-orange-500/15', iconText: 'text-orange-600 dark:text-orange-400', iconBorder: 'border-orange-200 dark:border-orange-500/20',
         filterActive: 'bg-orange-50 dark:bg-orange-500/15 text-orange-700 dark:text-orange-300 border-orange-300 dark:border-orange-500/30',
         categoryActive: 'bg-orange-50 dark:bg-orange-500/15 text-orange-700 dark:text-orange-300 border-orange-300 dark:border-orange-500/30',
         categoryHover: 'hover:bg-muted/50',
+        managerTag: 'text-orange-500',
+        managerBadge: 'bg-orange-100 dark:bg-orange-500/15 text-orange-600 dark:text-orange-400',
+        managerFocus: 'focus:ring-orange-500/30',
+        managerButton: 'bg-orange-600 hover:bg-orange-700',
+        managerHoverBorder: 'hover:border-orange-300 dark:hover:border-orange-500/30',
+        managerInputBorder: 'border-orange-400',
     },
 };
 
@@ -104,6 +177,7 @@ function SharedCategoriesManager({
     const [newName, setNewName] = useState('');
     const [editIndex, setEditIndex] = useState<number | null>(null);
     const [editVal, setEditVal] = useState('');
+    const styles = accentStyles[accentColor];
 
     const addCat = () => {
         const n = newName.trim();
@@ -130,9 +204,9 @@ function SharedCategoriesManager({
                 {/* Header */}
                 <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-muted/30">
                     <div className="flex items-center gap-2">
-                        <Tag className={`h-5 w-5 text-${accentColor}-500`} />
+                        <Tag className={cn('h-5 w-5', styles.managerTag)} />
                         <h3 className="text-base font-bold">إدارة التصنيفات</h3>
-                        <span className={`rounded-full bg-${accentColor}-100 dark:bg-${accentColor}-500/15 text-${accentColor}-600 dark:text-${accentColor}-400 text-[10px] font-bold px-2 py-0.5`}>{list.length}</span>
+                        <span className={cn('rounded-full text-[10px] font-bold px-2 py-0.5', styles.managerBadge)}>{list.length}</span>
                     </div>
                     <button onClick={onClose} className="rounded-lg p-1.5 hover:bg-muted text-muted-foreground"><X className="h-4 w-4" /></button>
                 </div>
@@ -224,18 +298,20 @@ export default function SharedInventoryPage({ config }: { config: SharedInventor
     }, [location.state]);
 
     const unifiedProducts = useMemo(() => {
-        const list: any[] = [];
+        const list: SharedInventoryViewItem[] = [];
         devices.forEach(d => {
+            const extraValue = config.extraDeviceField ? d[config.extraDeviceField.key] : '';
             list.push({
                 _raw: d, _type: 'device',
                 id: d.id, name: d.name, barcode: d.barcode, image: d.image, description: d.description,
                 quantity: d.quantity, salePrice: d.salePrice, newCostPrice: d.newCostPrice, oldCostPrice: d.oldCostPrice,
                 category: d.category, condition: d.condition || 'new', categoryName: d.category,
-                model: d.model, color: d.color, extra: config.extraDeviceField ? d[config.extraDeviceField.key] : '',
+                model: d.model, color: d.color, extra: typeof extraValue === 'string' ? extraValue : '',
+                notes: d.notes,
             });
         });
         return list;
-    }, [devices, categories, config.extraDeviceField]);
+    }, [devices, config.extraDeviceField]);
 
     const filteredList = useMemo(() => {
         let res = unifiedProducts;
@@ -269,7 +345,7 @@ export default function SharedInventoryPage({ config }: { config: SharedInventor
         if (!f.name.trim() || !f.category) { toast({ title: 'خطأ', description: 'الاسم والتصنيف مطلوبان', variant: 'destructive' }); return; }
         if (f.barcode && isBarcodeDuplicate(f.barcode, editId || undefined)) { toast({ title: 'خطأ', description: 'الباركود المدخل مكرر', variant: 'destructive' }); return; }
 
-        const payload: any = {
+        const payload: SharedInventoryPayload = {
             name: f.name, barcode: f.barcode, category: f.category, condition: f.condition,
             quantity: f.quantity, model: f.model, color: f.color,
             oldCostPrice: f.oldCostPrice, newCostPrice: f.newCostPrice, salePrice: f.salePrice,
@@ -282,7 +358,6 @@ export default function SharedInventoryPage({ config }: { config: SharedInventor
         toast({ title: '✅ تم الحفظ بنجاح', description: f.name });
         setShowForm(false); setEditId(null);
         refreshData();
-        setTimeout(() => window.dispatchEvent(new Event('local-storage-sync')), 200);
     };
 
     const openAdd = () => {
@@ -291,7 +366,7 @@ export default function SharedInventoryPage({ config }: { config: SharedInventor
         setShowForm(true);
     };
 
-    const openEdit = (item: any) => {
+    const openEdit = (item: SharedInventoryViewItem) => {
         setF({
             name: item.name, barcode: item.barcode || '', category: item.category || '', condition: item.condition,
             quantity: item.quantity, oldCostPrice: item.oldCostPrice, newCostPrice: item.newCostPrice, salePrice: item.salePrice,
@@ -407,7 +482,6 @@ export default function SharedInventoryPage({ config }: { config: SharedInventor
                             onEdit={() => openEdit(item)}
                             onDelete={() => {
                                 config.deleteDevice(item.id);
-                                setTimeout(() => window.dispatchEvent(new Event('local-storage-sync')), 100);
                             }}
                         />
                     ))}
@@ -462,7 +536,7 @@ export default function SharedInventoryPage({ config }: { config: SharedInventor
                                             <td className="px-3 py-2 text-left">
                                                 <div className="flex justify-end gap-1.5">
                                                     <button onClick={() => openEdit(item)} className="rounded-lg p-1.5 hover:bg-primary/10 text-primary transition-colors"><Pencil className="h-3.5 w-3.5" /></button>
-                                                    <button onClick={() => { config.deleteDevice(item.id); setTimeout(() => window.dispatchEvent(new Event('local-storage-sync')), 100); }} className="rounded-lg p-1.5 hover:bg-red-50 dark:hover:bg-red-500/10 text-destructive transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
+                                                    <button onClick={() => { config.deleteDevice(item.id); }} className="rounded-lg p-1.5 hover:bg-red-50 dark:hover:bg-red-500/10 text-destructive transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -579,8 +653,8 @@ export default function SharedInventoryPage({ config }: { config: SharedInventor
             <ExcelColumnMappingDialog
                 open={showExcelRestore}
                 onOpenChange={setShowExcelRestore}
-                inventoryType={config.excelInventoryType as any}
-                onSuccess={() => window.dispatchEvent(new Event('local-storage-sync'))}
+                inventoryType={config.excelInventoryType}
+                onSuccess={() => undefined}
                 onDataSave={data => {
                     data.forEach(row => {
                         config.buildDeviceFromExcelRow(row);

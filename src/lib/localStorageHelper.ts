@@ -26,15 +26,21 @@ export function getStorageItem<T>(key: string, fallback: T): T {
  * Serialize and save a value to localStorage.
  * #19 FIX: Checks storage usage and warns when approaching limits.
  */
+function dispatchStorageEvent(key: string): void {
+    window.dispatchEvent(new CustomEvent('local-storage', { detail: { key } }));
+}
+
 export function setStorageItem<T>(key: string, value: T): void {
     if (window.electron && window.electron.ipcRenderer) {
         window.electron.ipcRenderer.sendSync('store-set', key, value);
+        dispatchStorageEvent(key);
         return;
     }
 
     const data = JSON.stringify(value);
     try {
         localStorage.setItem(key, data);
+        dispatchStorageEvent(key);
     } catch (e) {
         console.error(`[localStorage] ⚠ Failed to save key "${key}" — storage may be full!`, e);
         return;
@@ -73,7 +79,9 @@ function checkStorageUsage(): void {
 export function removeStorageItem(key: string): void {
     if (window.electron && window.electron.ipcRenderer) {
         window.electron.ipcRenderer.sendSync('store-delete', key);
+        dispatchStorageEvent(key);
         return;
     }
     localStorage.removeItem(key);
+    dispatchStorageEvent(key);
 }

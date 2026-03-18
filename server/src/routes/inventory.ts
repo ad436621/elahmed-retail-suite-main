@@ -2,6 +2,7 @@
 // ELAHMED RETAIL SUITE — Inventory Routes
 // ============================================================
 
+import { Prisma } from '@prisma/client';
 import { Router, Response } from 'express';
 import prisma from '../lib/prisma.js';
 import { AuthRequest } from '../middleware/auth.js';
@@ -11,11 +12,18 @@ const router = Router();
 // Get inventory summary
 router.get('/summary', async (req: AuthRequest, res: Response) => {
     try {
-        const [totalProducts, totalValue, lowStock, categories] = await Promise.all([
+        const [totalProducts, quantitySummary, inventoryProducts, lowStock, categories] = await Promise.all([
             prisma.product.count({ where: { deletedAt: null } }),
             prisma.product.aggregate({
                 _sum: { quantity: true },
                 where: { deletedAt: null },
+            }),
+            prisma.product.findMany({
+                where: { deletedAt: null },
+                select: {
+                    quantity: true,
+                    costPrice: true,
+                },
             }),
             prisma.product.count({
                 where: {
@@ -31,12 +39,22 @@ router.get('/summary', async (req: AuthRequest, res: Response) => {
             }),
         ]);
 
+        const totalValue = inventoryProducts.reduce(
+            (sum: number, product: { costPrice: Prisma.Decimal; quantity: number }) =>
+                sum + Number(product.costPrice) * product.quantity,
+            0
+        );
+
         res.json({
             totalProducts,
-            totalQuantity: totalProducts._sum.quantity || 0,
-            totalValue: totalValue._sum.quantity || 0,
+            totalQuantity: quantitySummary._sum.quantity || 0,
+            totalValue,
             lowStock,
-            byCategory: categories.map(c => ({
+            byCategory: categories.map((c: {
+                category: string;
+                _count: { id: number };
+                _sum: { quantity: number | null };
+            }) => ({
                 category: c.category,
                 count: c._count.id,
                 quantity: c._sum.quantity || 0,
@@ -53,7 +71,7 @@ router.get('/movements', async (req: AuthRequest, res: Response) => {
     try {
         const { productId, type, startDate, endDate, page = 1, limit = 100 } = req.query;
 
-        const where: any = {};
+        const where: Prisma.StockMovementWhereInput = {};
 
         if (productId) where.productId = productId;
         if (type) where.type = type;
@@ -108,24 +126,30 @@ router.post('/adjust', async (req: AuthRequest, res: Response) => {
     try {
         const { productId, quantity, reason } = req.body;
 
-        if (!productId || !quantity || !reason) {
+        if (!productId || quantity === undefined || !reason) {
             res.status(400).json({ error: 'Product, quantity, and reason required' });
             return;
         }
 
-        const product = await prisma.product.findUnique({ where: { productId } });
+        const adjustment = Number(quantity);
+        if (!Number.isFinite(adjustment) || adjustment === 0) {
+            res.status(400).json({ error: 'Quantity must be a non-zero number' });
+            return;
+        }
+
+        const product = await prisma.product.findUnique({ where: { id: productId } });
         if (!product || product.deletedAt) {
             res.status(404).json({ error: 'Product not found' });
             return;
         }
 
-        const newQty = product.quantity + quantity;
+        const newQty = product.quantity + adjustment;
         if (newQty < 0) {
             res.status(400).json({ error: 'Insufficient stock' });
             return;
         }
 
-        const result = await prisma.$transaction(async (tx) => {
+        const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
             const updated = await tx.product.update({
                 where: { id: productId },
                 data: { quantity: newQty },
@@ -135,7 +159,7 @@ router.post('/adjust', async (req: AuthRequest, res: Response) => {
                 data: {
                     productId,
                     type: 'manual_adjustment',
-                    quantityChange: quantity,
+                    quantityChange: adjustment,
                     previousQty: product.quantity,
                     newQty: updated.quantity,
                     reason,
@@ -158,7 +182,7 @@ router.get('/audit', async (req: AuthRequest, res: Response) => {
     try {
         const { userId, action, entityType, startDate, endDate, page = 1, limit = 100 } = req.query;
 
-        const where: any = {};
+        const where: Prisma.AuditLogWhereInput = {};
 
         if (userId) where.userId = userId;
         if (action) where.action = action;

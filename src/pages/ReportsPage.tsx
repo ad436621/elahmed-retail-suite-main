@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { getAllSales } from '@/repositories/saleRepository';
 import { getMobiles, getMobileAccessories } from '@/data/mobilesData';
+import { filterActiveSales, summarizeSales } from '@/lib/statistics';
 import { getDevices, getDeviceAccessories } from '@/data/devicesData';
 import { getComputers, getComputerAccessories } from '@/data/computersData';
 import { getMaintenanceOrders } from '@/data/maintenanceData';
@@ -173,16 +174,16 @@ export default function ReportsPage() {
     );
 
     // ── Core KPIs ─────────────────────────────────────────────
-    const totalRevenue = useMemo(() => sales.reduce((s, x) => s + x.total, 0), [sales]);
-    const totalProfit = useMemo(() => sales.reduce((s, x) => s + (x.grossProfit ?? 0), 0), [sales]);
+    const activeSales = useMemo(() => filterActiveSales(sales), [sales]);
+    const salesSummary = useMemo(() => summarizeSales(activeSales), [activeSales]);
     const totalExpenses = useMemo(() => filteredExpenses.reduce((s, e) => s + e.amount, 0), [filteredExpenses]);
     const maintRevenue = useMemo(() => filteredMaint.reduce((s, m) => s + m.totalSale, 0), [filteredMaint]);
     const maintProfit = useMemo(() => filteredMaint.reduce((s, m) => s + m.netProfit, 0), [filteredMaint]);
     const totalOtherRev = useMemo(() => otherRevenues.filter(o => inRange(o.date, from, to)).reduce((s, o) => s + o.amount, 0), [otherRevenues, from, to]);
     const totalDamaged = useMemo(() => damagedItems.filter(d => inRange(d.date, from, to)).reduce((s, d) => s + d.totalLoss, 0), [damagedItems, from, to]);
-    const netProfit = totalProfit + maintProfit + totalOtherRev - totalExpenses - totalDamaged;
-    const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
-    const avgInvoice = sales.length > 0 ? totalRevenue / sales.length : 0;
+    const netProfit = salesSummary.totalProfit + maintProfit + totalOtherRev - totalExpenses - totalDamaged;
+    const profitMargin = salesSummary.profitMarginPercent;
+    const avgInvoice = salesSummary.avgInvoice;
 
     // ── Inventory Values ──────────────────────────────────────
     const mobileInvValue = useMemo(() => mobiles.reduce((s, m) => s + (getWeightedAvgCost(m.id) || m.newCostPrice) * (m.quantity || 1), 0), [mobiles]);

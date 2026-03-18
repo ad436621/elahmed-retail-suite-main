@@ -6,8 +6,13 @@ import { ConfirmProvider } from "@/components/ConfirmDialog";
 
 // --- Global Setup for Reactive LocalStorage ---
 const originalSetItem = localStorage.setItem;
+const originalRemoveItem = localStorage.removeItem;
 localStorage.setItem = function (key, value) {
     originalSetItem.apply(this, [key, value]);
+    window.dispatchEvent(new CustomEvent('local-storage', { detail: { key } }));
+};
+localStorage.removeItem = function (key) {
+    originalRemoveItem.apply(this, [key]);
     window.dispatchEvent(new CustomEvent('local-storage', { detail: { key } }));
 };
 // ----------------------------------------------

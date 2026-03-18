@@ -1,21 +1,4 @@
-"use strict";
-const electron = require("electron");
-const path = require("path");
-const url = require("url");
-const fs = require("fs");
-const Database = require("better-sqlite3");
-var _documentCurrentScript = typeof document !== "undefined" ? document.currentScript : null;
-function initializeDatabase() {
-  const isDev = process.env.NODE_ENV !== "production";
-  const userDataPath = electron.app.getPath("userData");
-  const dbPath = path.join(userDataPath, isDev ? "retail_dev.sqlite" : "retail_prod.sqlite");
-  console.log(`Initializing SQLite database at: ${dbPath}`);
-  const db2 = new Database(dbPath, {
-    verbose: isDev ? console.log : void 0
-  });
-  db2.pragma("journal_mode = WAL");
-  db2.pragma("foreign_keys = ON");
-  db2.exec(`
+"use strict";const T=require("electron"),o=require("path"),R=require("url"),i=require("fs"),p=require("better-sqlite3");var L=typeof document<"u"?document.currentScript:null;function X(){const t=process.env.NODE_ENV!=="production",r=T.app.getPath("userData"),e=o.join(r,t?"retail_dev.sqlite":"retail_prod.sqlite");console.log(`Initializing SQLite database at: ${e}`);const E=new p(e,{verbose:t?console.log:void 0});return E.pragma("journal_mode = WAL"),E.pragma("foreign_keys = ON"),E.exec(`
     CREATE TABLE IF NOT EXISTS settings (
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL
@@ -154,113 +137,8 @@ function initializeDatabase() {
       paymentDate TEXT,
       FOREIGN KEY (contractId) REFERENCES installments(id) ON DELETE CASCADE
     );
-  `);
-  return db2;
-}
-const __dirname$1 = path.dirname(url.fileURLToPath(typeof document === "undefined" ? require("url").pathToFileURL(__filename).href : _documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === "SCRIPT" && _documentCurrentScript.src || new URL("main.js", document.baseURI).href));
-let db = null;
-let mainWindow = null;
-function createWindow() {
-  mainWindow = new electron.BrowserWindow({
-    width: 1280,
-    height: 800,
-    icon: path.join(__dirname$1, "../public/logo.png"),
-    webPreferences: {
-      nodeIntegration: false,
-      contextIsolation: true,
-      preload: path.join(__dirname$1, "preload.cjs")
-      // compiled preload
-    }
-  });
-  const isDev = process.env.NODE_ENV !== "production";
-  if (isDev && process.env.VITE_DEV_SERVER_URL) {
-    mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
-    mainWindow.webContents.openDevTools();
-  } else {
-    mainWindow.loadFile(path.join(__dirname$1, "../dist/index.html"));
-    mainWindow.webContents.on("devtools-opened", () => {
-      mainWindow == null ? void 0 : mainWindow.webContents.closeDevTools();
-    });
-  }
-  mainWindow.setMenuBarVisibility(false);
-}
-electron.ipcMain.on("store-get", (event, key) => {
-  if (!db) {
-    event.returnValue = null;
-    return;
-  }
-  try {
-    const row = db.prepare("SELECT value FROM settings WHERE key = ?").get(key);
-    event.returnValue = row ? JSON.parse(row.value) : null;
-  } catch (err) {
-    console.error("store-get error:", err);
-    event.returnValue = null;
-  }
-});
-electron.ipcMain.on("store-set", (event, key, value) => {
-  if (!db) {
-    event.returnValue = false;
-    return;
-  }
-  try {
-    db.prepare(`
+  `),E}const m=R.fileURLToPath(typeof document>"u"?require("url").pathToFileURL(__filename).href:L&&L.tagName.toUpperCase()==="SCRIPT"&&L.src||new URL("main.js",document.baseURI).href),c=o.dirname(m);let n=null,a=null;function l(){a=new T.BrowserWindow({width:1280,height:800,icon:o.join(c,"../public/logo.png"),webPreferences:{nodeIntegration:!1,contextIsolation:!0,preload:o.join(c,"preload.cjs")}}),process.env.NODE_ENV!=="production"&&process.env.VITE_DEV_SERVER_URL?(a.loadURL(process.env.VITE_DEV_SERVER_URL),a.webContents.openDevTools()):(a.loadFile(o.join(c,"../dist/index.html")),a.webContents.on("devtools-opened",()=>{a==null||a.webContents.closeDevTools()})),a.setMenuBarVisibility(!1)}T.ipcMain.on("store-get",(t,r)=>{if(!n){t.returnValue=null;return}try{const e=n.prepare("SELECT value FROM settings WHERE key = ?").get(r);t.returnValue=e?JSON.parse(e.value):null}catch(e){console.error("store-get error:",e),t.returnValue=null}});T.ipcMain.on("store-set",(t,r,e)=>{if(!n){t.returnValue=!1;return}try{n.prepare(`
       INSERT INTO settings (key, value) 
       VALUES (?, ?) 
       ON CONFLICT(key) DO UPDATE SET value = excluded.value
-    `).run(key, JSON.stringify(value));
-    event.returnValue = true;
-  } catch (err) {
-    console.error("store-set error:", err);
-    event.returnValue = false;
-  }
-});
-electron.ipcMain.on("store-delete", (event, key) => {
-  if (!db) {
-    event.returnValue = false;
-    return;
-  }
-  try {
-    db.prepare("DELETE FROM settings WHERE key = ?").run(key);
-    event.returnValue = true;
-  } catch (err) {
-    console.error("store-delete error:", err);
-    event.returnValue = false;
-  }
-});
-electron.app.whenReady().then(() => {
-  db = initializeDatabase();
-  createWindow();
-  electron.app.on("activate", () => {
-    if (electron.BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
-    }
-  });
-});
-electron.app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") {
-    electron.app.quit();
-  }
-});
-electron.ipcMain.handle("ping", () => "pong");
-electron.ipcMain.handle("save-image", async (event, base64Data) => {
-  try {
-    const userDataPath = electron.app.getPath("userData");
-    const imagesDir = path.join(userDataPath, "images");
-    if (!fs.existsSync(imagesDir)) {
-      fs.mkdirSync(imagesDir, { recursive: true });
-    }
-    const matches = base64Data.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-    if (!matches || matches.length !== 3) {
-      return { success: false, error: "Invalid base64 format" };
-    }
-    const ext = matches[1].split("/")[1] || "png";
-    const buffer = Buffer.from(matches[2], "base64");
-    const fileName = `img_${Date.now()}.${ext}`;
-    const filePath = path.join(imagesDir, fileName);
-    fs.writeFileSync(filePath, buffer);
-    return { success: true, path: `local-img://${fileName}` };
-  } catch (error) {
-    console.error("Error saving image:", error);
-    return { success: false, error: error.message };
-  }
-});
+    `).run(r,JSON.stringify(e)),t.returnValue=!0}catch(E){console.error("store-set error:",E),t.returnValue=!1}});T.ipcMain.on("store-delete",(t,r)=>{if(!n){t.returnValue=!1;return}try{n.prepare("DELETE FROM settings WHERE key = ?").run(r),t.returnValue=!0}catch(e){console.error("store-delete error:",e),t.returnValue=!1}});T.app.whenReady().then(()=>{n=X(),l(),T.app.on("activate",()=>{T.BrowserWindow.getAllWindows().length===0&&l()})});T.app.on("window-all-closed",()=>{process.platform!=="darwin"&&T.app.quit()});T.ipcMain.handle("ping",()=>"pong");T.ipcMain.handle("save-image",async(t,r)=>{try{const e=T.app.getPath("userData"),E=o.join(e,"images");i.existsSync(E)||i.mkdirSync(E,{recursive:!0});const s=r.match(/^data:([A-Za-z+/.-]+);base64,(.+)$/);if(!s||s.length!==3)return{success:!1,error:"Invalid base64 format"};const u=s[1].split("/")[1]||"png",d=Buffer.from(s[2],"base64"),N=`img_${Date.now()}.${u}`,A=o.join(E,N);return i.writeFileSync(A,d),{success:!0,path:`local-img://${N}`}}catch(e){return console.error("Error saving image:",e),{success:!1,error:e instanceof Error?e.message:"Unknown error"}}});

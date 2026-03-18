@@ -56,7 +56,9 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
                     try {
                         const parsed = JSON.parse(saved);
                         setSettings(prev => ({ ...prev, ...parsed }));
-                    } catch (err) { }
+                    } catch (err) {
+                        console.error('Failed to sync settings from storage', err);
+                    }
                 }
             }
         };

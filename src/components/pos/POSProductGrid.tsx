@@ -83,10 +83,6 @@ export default function POSProductGrid({ products, onAdd, cartProductIds, select
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
-    if (products.length === 0) {
-        return <EmptyState selectedTab={selectedTab} subMode={subMode} />;
-    }
-
     // Keyboard navigation handler
     const handleKeyDown = useCallback((e: React.KeyboardEvent, product: Product, index: number) => {
         const cols = getColCount();
@@ -143,6 +139,19 @@ export default function POSProductGrid({ products, onAdd, cartProductIds, select
             cardEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
         }
     }, [selectedIndex]);
+
+    useEffect(() => {
+        if (products.length === 0) {
+            setSelectedIndex(0);
+            return;
+        }
+
+        setSelectedIndex((current) => Math.min(current, products.length - 1));
+    }, [products.length]);
+
+    if (products.length === 0) {
+        return <EmptyState selectedTab={selectedTab} subMode={subMode} />;
+    }
 
     return (
         <div

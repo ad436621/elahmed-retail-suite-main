@@ -1,14 +1,1 @@
-"use strict";
-const electron = require("electron");
-electron.contextBridge.exposeInMainWorld("electron", {
-  ipcRenderer: {
-    invoke: (channel, ...args) => electron.ipcRenderer.invoke(channel, ...args),
-    sendSync: (channel, ...args) => electron.ipcRenderer.sendSync(channel, ...args),
-    on: (channel, listener) => {
-      electron.ipcRenderer.on(channel, (event, ...args) => listener(...args));
-    },
-    removeListener: (channel, listener) => {
-      electron.ipcRenderer.removeListener(channel, listener);
-    }
-  }
-});
+"use strict";const t=require("electron"),i=new Map;function s(n){let e=i.get(n);return e||(e=new WeakMap,i.set(n,e)),e}t.contextBridge.exposeInMainWorld("electron",{ipcRenderer:{invoke:(n,...e)=>t.ipcRenderer.invoke(n,...e),sendSync:(n,...e)=>t.ipcRenderer.sendSync(n,...e),on:(n,e)=>{const r=(c,...o)=>e(...o);s(n).set(e,r),t.ipcRenderer.on(n,r)},removeListener:(n,e)=>{const r=s(n).get(e);r&&t.ipcRenderer.removeListener(n,r)}}});

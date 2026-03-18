@@ -109,21 +109,21 @@ export function preloadDashboardData(): void {
         import('@/data/expensesData'),
         import('@/data/carsData'),
     ]).then(([mobiles, devices, computers, maintenance, installments, expenses, cars]) => {
-        try { preloadData('mobiles', mobiles.getMobiles); } catch { }
-        try { preloadData('mobileAccessories', mobiles.getMobileAccessories); } catch { }
-        try { preloadData('devices', devices.getDevices); } catch { }
-        try { preloadData('deviceAccessories', devices.getDeviceAccessories); } catch { }
-        try { preloadData('computers', computers.getComputers); } catch { }
-        try { preloadData('computerAccessories', computers.getComputerAccessories); } catch { }
-        try { preloadData('maintenance', maintenance.getMaintenanceOrders); } catch { }
-        try { preloadData('installments', installments.getContracts); } catch { }
-        try { preloadData('expenses', expenses.getExpenses); } catch { }
-        try { preloadData('cars', cars.getCars); } catch { }
+        try { preloadData('mobiles', mobiles.getMobiles); } catch { /* Optional preload */ }
+        try { preloadData('mobileAccessories', mobiles.getMobileAccessories); } catch { /* Optional preload */ }
+        try { preloadData('devices', devices.getDevices); } catch { /* Optional preload */ }
+        try { preloadData('deviceAccessories', devices.getDeviceAccessories); } catch { /* Optional preload */ }
+        try { preloadData('computers', computers.getComputers); } catch { /* Optional preload */ }
+        try { preloadData('computerAccessories', computers.getComputerAccessories); } catch { /* Optional preload */ }
+        try { preloadData('maintenance', maintenance.getMaintenanceOrders); } catch { /* Optional preload */ }
+        try { preloadData('installments', installments.getContracts); } catch { /* Optional preload */ }
+        try { preloadData('expenses', expenses.getExpenses); } catch { /* Optional preload */ }
+        try { preloadData('cars', cars.getCars); } catch { /* Optional preload */ }
     });
 
     import('@/repositories/saleRepository').then(sales => {
-        try { preloadData('sales', sales.getAllSales); } catch { }
-    }).catch(() => { });
+        try { preloadData('sales', sales.getAllSales); } catch { /* Optional preload */ }
+    }).catch(() => { /* Optional preload */ });
 }
 
 export default useFastData;

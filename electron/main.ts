@@ -4,10 +4,10 @@ import { fileURLToPath } from 'url';
 import fs from 'fs';
 import { initializeDatabase } from './db';
 
-// @ts-ignore
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
-let db: any = null;
+let db: ReturnType<typeof initializeDatabase> | null = null;
 
 let mainWindow: BrowserWindow | null = null;
 
@@ -57,7 +57,7 @@ ipcMain.on('store-get', (event, key: string) => {
   }
 });
 
-ipcMain.on('store-set', (event, key: string, value: any) => {
+ipcMain.on('store-set', (event, key: string, value: unknown) => {
   if (!db) { event.returnValue = false; return; }
   try {
     db.prepare(`
@@ -113,7 +113,7 @@ ipcMain.handle('save-image', async (event, base64Data: string) => {
       fs.mkdirSync(imagesDir, { recursive: true });
     }
 
-    const matches = base64Data.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+    const matches = base64Data.match(/^data:([A-Za-z+/.-]+);base64,(.+)$/);
     if (!matches || matches.length !== 3) {
       return { success: false, error: 'Invalid base64 format' };
     }
@@ -125,8 +125,9 @@ ipcMain.handle('save-image', async (event, base64Data: string) => {
 
     fs.writeFileSync(filePath, buffer);
     return { success: true, path: `local-img://${fileName}` }; // Custom protocol or just return path
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Error saving image:', error);
-    return { success: false, error: error.message };
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return { success: false, error: message };
   }
 });

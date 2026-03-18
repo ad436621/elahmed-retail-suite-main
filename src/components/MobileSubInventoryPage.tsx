@@ -3,7 +3,7 @@
 // action bar, data table, and side panel for quick add/filter
 // ============================================================
 
-import { useState, useEffect, useMemo } from 'react';
+import { ReactNode, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
@@ -11,11 +11,8 @@ import {
     AlignLeft, LayoutGrid, List, Tag, FileSpreadsheet, ImageOff,
     Filter, SlidersHorizontal, RotateCcw, Package, Wrench, Download
 } from 'lucide-react';
-import { exportToExcel, MOBILE_COLUMNS, prepareConditionForExport } from '@/services/excelService';
-import {
-    getMobiles, addMobile, updateMobile, deleteMobile,
-} from '@/data/mobilesData';
-import { MobileItem } from '@/domain/types';
+import { exportToExcel } from '@/services/excelService';
+import { MobileAccessory, MobileSparePart } from '@/domain/types';
 import { getWeightedAvgCost } from '@/data/batchesData';
 import { useToast } from '@/hooks/use-toast';
 import { useInventoryData } from '@/hooks/useInventoryData';
@@ -25,26 +22,60 @@ import { ProductBatchesModal } from '@/components/ProductBatchesModal';
 import { loadCats, saveCats } from '@/data/categoriesData';
 import { ExcelColumnMappingDialog } from '@/components/ExcelColumnMappingDialog';
 import { useConfirm } from '@/components/ConfirmDialog';
+import type { ExcelColumn } from '@/services/excelService';
 
 const IC = 'w-full rounded-xl border border-border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all';
 
-const emptyForm = {
-    name: '', barcode: '', category: '', condition: 'new' as 'new' | 'like_new' | 'used' | 'broken',
-    quantity: 1, oldCostPrice: 0, newCostPrice: 0, salePrice: 0,
-    storage: '', ram: '', color: '', supplier: '', serialNumber: '',
-    imei2: '', model: '', description: '', image: '', notes: '', subcategory: '',
-    boxNumber: '', source: '', taxExcluded: false,
-};
+type MobileSubInventoryRecord = MobileAccessory | MobileSparePart;
+type MobileSubCondition = 'new' | 'like_new' | 'used' | 'broken';
+type MobileSubSection = 'accessories' | 'spare-parts';
 
-interface UnitEntry {
-    imei1: string;
-    imei2: string;
-    color: string;
+export interface MobileSubInventoryConfig<T extends MobileSubInventoryRecord> {
+    section: MobileSubSection;
+    pageTitle: string;
+    managerTitle: string;
+    formSpecsTitle: string;
+    subcategoryPlaceholder: string;
+    modelPlaceholder: string;
+    categoryStorageKey: string;
+    defaultCategories: string[];
+    inventoryStorageKey: string;
+    exportColumns: ExcelColumn[];
+    exportFileName: string;
+    barcodePrefix: string;
+    excelInventoryType: string;
+    getItems: () => T[];
+    addItem: (item: Omit<T, 'id' | 'createdAt' | 'updatedAt'>) => T;
+    updateItem: (id: string, updates: Partial<T>) => void;
+    deleteItem: (id: string) => void;
+    buildExcelItem: (row: Record<string, unknown>) => Omit<T, 'id' | 'createdAt' | 'updatedAt'>;
+}
+
+interface MobileSubFormState {
+    name: string;
     barcode: string;
+    category: string;
+    condition: MobileSubCondition;
+    quantity: number;
+    oldCostPrice: number;
+    newCostPrice: number;
+    salePrice: number;
+    color: string;
+    supplier: string;
+    serialNumber: string;
+    imei2: string;
+    model: string;
+    description: string;
+    image: string;
+    notes: string;
+    subcategory: string;
+    boxNumber: string;
+    source: string;
+    taxExcluded: boolean;
 }
 
 interface InventoryViewItem {
-    _raw: MobileItem;
+    _raw: MobileSubInventoryRecord;
     _type: 'device';
     id: string;
     name: string;
@@ -56,27 +87,33 @@ interface InventoryViewItem {
     newCostPrice: number;
     oldCostPrice: number;
     category?: string;
-    condition: NonNullable<MobileItem['condition']>;
+    condition: MobileSubCondition;
     categoryName?: string;
-    storage: string;
-    ram: string;
+    subcategory: string;
+    model: string;
     color: string;
-    supplier: string;
-    serialNumber: string;
+    supplier?: string;
+    serialNumber?: string;
 }
 
+const emptyForm: MobileSubFormState = {
+    name: '', barcode: '', category: '', condition: 'new' as 'new' | 'like_new' | 'used' | 'broken',
+    quantity: 1, oldCostPrice: 0, newCostPrice: 0, salePrice: 0,
+    color: '', supplier: '', serialNumber: '',
+    imei2: '', model: '', description: '', image: '', notes: '', subcategory: '',
+    boxNumber: '', source: '', taxExcluded: false,
+};
+
+interface UnitEntry {
+    imei1: string;
+    imei2: string;
+    color: string;
+    barcode: string;
+}
 const emptyUnit = (): UnitEntry => ({ imei1: '', imei2: '', color: '', barcode: '' });
 
 const fmt = (n: number) => n.toLocaleString('ar-EG');
 
-// ─── Predefined Options ──────────────────────────────────────
-const BRAND_OPTIONS = [
-    'Samsung', 'Apple', 'Huawei', 'Xiaomi', 'Oppo', 'Vivo', 'Realme',
-    'OnePlus', 'Nokia', 'Motorola', 'Honor', 'Tecno', 'Infinix', 'Itel',
-    'Google', 'Sony', 'LG', 'Lenovo', 'Nothing',
-];
-const STORAGE_OPTIONS = ['16GB', '32GB', '64GB', '128GB', '256GB', '512GB', '1TB'];
-const RAM_OPTIONS = ['2GB', '3GB', '4GB', '6GB', '8GB', '12GB', '16GB'];
 const CONDITION_OPTIONS = [
     { v: 'new', l: 'جديد' },
     { v: 'like_new', l: 'مثل الجديد' },
@@ -84,45 +121,60 @@ const CONDITION_OPTIONS = [
     { v: 'broken', l: 'معطل' },
 ] as const;
 
+// ─── Predefined Options ──────────────────────────────────────
+const BRAND_OPTIONS = [
+    'Samsung', 'Apple', 'Huawei', 'Xiaomi', 'Oppo', 'Vivo', 'Realme',
+    'OnePlus', 'Nokia', 'Motorola', 'Honor', 'Tecno', 'Infinix', 'Itel',
+    'Google', 'Sony', 'LG', 'Lenovo', 'Nothing',
+];
+
 
 // ─── Mobile Categories Manager Modal ─────────────────────────
 
-function MobilesCategoriesManager({
-    cats, onClose, onSave
+function MobileCategoriesManager({
+    cats,
+    title,
+    icon,
+    itemIconClass,
+    onSave,
+    onClose,
 }: {
     cats: string[];
-    onClose: () => void;
+    title: string;
+    icon: ReactNode;
+    itemIconClass: string;
     onSave: (cats: string[]) => void;
+    onClose: () => void;
 }) {
     const [list, setList] = useState<string[]>([...cats]);
     const [newName, setNewName] = useState('');
-    const [editIndex, setEditIndex] = useState<number | null>(null);
+    const [editIdx, setEditIdx] = useState<number | null>(null);
     const [editVal, setEditVal] = useState('');
 
     const addCat = () => {
         const n = newName.trim();
-        if (!n) return;
-        if (list.includes(n)) return; // duplicate check
+        if (!n || list.includes(n)) return;
         setList(l => [...l, n]);
         setNewName('');
     };
 
     const deleteCat = (idx: number) => {
         setList(l => l.filter((_, i) => i !== idx));
-        if (editIndex === idx) setEditIndex(null);
+        if (editIdx === idx) setEditIdx(null);
     };
 
-    const startEdit = (cat: string, idx: number) => {
-        setEditIndex(idx);
-        setEditVal(cat);
+    const startEdit = (idx: number) => {
+        setEditIdx(idx);
+        setEditVal(list[idx]);
     };
 
     const saveEdit = () => {
-        if (editIndex === null) return;
+        if (editIdx === null) return;
         const n = editVal.trim();
         if (!n) return;
-        setList(l => l.map((c, i) => i === editIndex ? n : c));
-        setEditIndex(null);
+        if (list.filter((_, i) => i !== editIdx).includes(n)) return;
+        setList(l => l.map((c, i) => i === editIdx ? n : c));
+        setEditIdx(null);
     };
 
     return createPortal(
@@ -131,8 +183,8 @@ function MobilesCategoriesManager({
                 {/* Header */}
                 <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-muted/30">
                     <div className="flex items-center gap-2">
-                        <Tag className="h-5 w-5 text-primary" />
-                        <h3 className="text-base font-bold">إدارة تصنيفات الموبايلات</h3>
+                        <span className="text-primary">{icon}</span>
+                        <h3 className="text-base font-bold">{title}</h3>
                         <span className="rounded-full bg-primary/10 text-primary text-[10px] font-bold px-2 py-0.5">{list.length}</span>
                     </div>
                     <button onClick={onClose} className="rounded-lg p-1.5 hover:bg-muted text-muted-foreground">
@@ -165,16 +217,15 @@ function MobilesCategoriesManager({
                     )}
                     {list.map((cat, idx) => (
                         <div key={idx}
-                            className="group flex items-center justify-between rounded-xl border border-border bg-muted/30 px-3 py-2.5 hover:bg-muted/50 transition-colors"
-                        >
-                            {editIndex === idx ? (
-                                <div className="flex-1 ml-3">
+                            className="flex items-center gap-2 rounded-xl border border-border bg-background px-3 py-2 group hover:border-primary/30 transition-colors">
+                            {editIdx === idx ? (
+                                <div className="flex-1 space-y-1.5">
                                     <input
                                         value={editVal}
                                         onChange={e => setEditVal(e.target.value)}
                                         onKeyDown={e => {
                                             if (e.key === 'Enter') saveEdit();
-                                            if (e.key === 'Escape') setEditIndex(null);
+                                            if (e.key === 'Escape') setEditIdx(null);
                                         }}
                                         className="w-full rounded-lg border border-primary/40 px-2 py-1 text-sm focus:outline-none bg-background"
                                         autoFocus
@@ -182,27 +233,27 @@ function MobilesCategoriesManager({
                                 </div>
                             ) : (
                                 <div className="flex-1 flex items-center gap-2">
-                                    <span className="shrink-0 h-5 w-5 rounded-full flex items-center justify-center bg-cyan-100 text-cyan-600 dark:bg-cyan-500/20 dark:text-cyan-400">
-                                        <Smartphone className="h-3 w-3" />
+                                    <span className={categoryIconClass}>
+                                        <Tag className="h-3 w-3" />
                                     </span>
                                     <span className="flex-1 text-sm font-medium text-foreground">{cat}</span>
                                 </div>
                             )}
                             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                {editIndex === idx ? (
+                                {editIdx === idx ? (
                                     <>
                                         <button onClick={saveEdit}
                                             className="rounded-md p-1 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 text-emerald-600">
                                             <Check className="h-3.5 w-3.5" />
                                         </button>
-                                        <button onClick={() => setEditIndex(null)}
+                                        <button onClick={() => setEditIdx(null)}
                                             className="rounded-md p-1 hover:bg-muted text-muted-foreground">
                                             <X className="h-3.5 w-3.5" />
                                         </button>
                                     </>
                                 ) : (
                                     <>
-                                        <button onClick={() => startEdit(cat, idx)}
+                                        <button onClick={() => startEdit(idx)}
                                             className="rounded-md p-1 hover:bg-primary/10 text-primary">
                                             <Pencil className="h-3.5 w-3.5" />
                                         </button>
@@ -236,15 +287,54 @@ function MobilesCategoriesManager({
 
 // ─── Main Component ──────────────────────────────────────────
 
-export default function MobilesInventory() {
+export default function MobileSubInventoryPage<T extends MobileSubInventoryRecord>({
+    config,
+}: {
+    config: MobileSubInventoryConfig<T>;
+}) {
     const { toast } = useToast();
     const location = useLocation();
     const navigate = useNavigate();
     const { confirm } = useConfirm();
+    const {
+        section,
+        pageTitle,
+        managerTitle,
+        formSpecsTitle,
+        subcategoryPlaceholder,
+        modelPlaceholder,
+        categoryStorageKey,
+        defaultCategories,
+        inventoryStorageKey,
+        exportColumns,
+        exportFileName,
+        barcodePrefix,
+        excelInventoryType,
+        getItems,
+        addItem,
+        updateItem,
+        deleteItem,
+        buildExcelItem,
+    } = config;
+    const sectionIcon = section === 'accessories' ? <Headphones className="h-4 w-4" /> : <Wrench className="h-4 w-4" />;
+    const sectionHeaderIcon = section === 'accessories' ? <Headphones className="h-5 w-5 text-cyan-600" /> : <Wrench className="h-5 w-5 text-orange-600" />;
+    const activeSectionButtonClass = section === 'accessories'
+        ? 'flex items-center gap-2 rounded-xl bg-cyan-500 px-5 py-2.5 text-sm font-bold text-white shadow-md ring-2 ring-cyan-500 ring-offset-1'
+        : 'flex items-center gap-2 rounded-xl bg-orange-600 px-5 py-2.5 text-sm font-bold text-white shadow-md ring-2 ring-orange-500 ring-offset-1';
+    const inactiveAccessoriesButtonClass = 'flex items-center gap-2 rounded-xl bg-muted px-5 py-2.5 text-sm font-bold text-muted-foreground hover:bg-cyan-500 hover:text-white transition-all shadow-sm';
+    const inactiveSparePartsButtonClass = 'flex items-center gap-2 rounded-xl bg-muted px-5 py-2.5 text-sm font-bold text-muted-foreground hover:bg-orange-600 hover:text-white transition-all shadow-sm';
+    const headerCardClass = section === 'accessories'
+        ? 'flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-100 border border-cyan-200'
+        : 'flex h-11 w-11 items-center justify-center rounded-xl bg-orange-100 border border-orange-200';
+    const activeCategoryClass = section === 'accessories'
+        ? 'bg-cyan-50 text-cyan-700 border-cyan-300 shadow-sm'
+        : 'bg-orange-50 text-orange-700 border-orange-300 shadow-sm';
+    const categoryIconClass = section === 'accessories'
+        ? 'shrink-0 h-5 w-5 rounded-full flex items-center justify-center bg-cyan-100 text-cyan-600 dark:bg-cyan-500/10 dark:text-cyan-400'
+        : 'shrink-0 h-5 w-5 rounded-full flex items-center justify-center bg-orange-100 text-orange-600 dark:bg-orange-500/10 dark:text-orange-400';
 
-    const [categories, setCategories] = useState<string[]>(() => loadCats('mobiles_main_cats', ['موبايلات', 'تابلت', 'ساعات ذكية']));
-
-    const mobiles = useInventoryData(getMobiles, ['gx_mobiles_v2']);
+    const [categories, setCategories] = useState<string[]>(() => loadCats(categoryStorageKey, defaultCategories));
+    const mobiles = useInventoryData(getItems, [inventoryStorageKey]);
     const [search, setSearch] = useState('');
     const [activeFilter, setActiveFilter] = useState<string>('all');
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
@@ -262,8 +352,6 @@ export default function MobilesInventory() {
     const [editId, setEditId] = useState<string | null>(null);
     const [f, setF] = useState(emptyForm);
     const [customSupplier, setCustomSupplier] = useState(false);
-    const [customStorage, setCustomStorage] = useState(false);
-    const [customRam, setCustomRam] = useState(false);
 
     const [showCatManager, setShowCatManager] = useState(false);
     const [activeBatchesModal, setActiveBatchesModal] = useState<{ id: string; name: string } | null>(null);
@@ -279,16 +367,17 @@ export default function MobilesInventory() {
     const unifiedProducts = useMemo(() => {
         const list: InventoryViewItem[] = [];
         mobiles.forEach(m => {
+            const cat = categories.find(c => c === m.category); // Changed to find by string directly
             list.push({
                 _raw: m, _type: 'device',
                 id: m.id, name: m.name, barcode: m.barcode, image: m.image, description: m.description,
                 quantity: m.quantity, salePrice: m.salePrice, newCostPrice: m.newCostPrice, oldCostPrice: m.oldCostPrice,
-                category: m.category, condition: m.condition || 'new', categoryName: m.category,
-                storage: m.storage, ram: m.ram, color: m.color, supplier: m.supplier, serialNumber: m.serialNumber
+                category: m.category, condition: m.condition || 'new', categoryName: cat, // categoryName is now string
+                subcategory: m.subcategory, model: m.model, color: m.color, supplier: m.supplier, serialNumber: m.serialNumber
             });
         });
         return list;
-    }, [mobiles]);
+    }, [mobiles, categories]);
 
     // ── Extract unique suppliers for filter dropdown ──
     const uniqueSuppliers = useMemo(() => {
@@ -354,11 +443,11 @@ export default function MobilesInventory() {
 
     // ── Handlers ──
     const refreshData = () => {
-        setCategories(loadCats('mobiles_main_cats', ['موبايلات', 'تابلت', 'ساعات ذكية']));
+        setCategories(loadCats(categoryStorageKey, defaultCategories));
     };
 
     const handleSaveCats = (updated: string[]) => {
-        saveCats('mobiles_main_cats', updated);
+        saveCats(categoryStorageKey, updated);
         setCategories(updated);
         setShowCatManager(false);
         toast({ title: '✅ تم حفظ التصنيفات', description: `${updated.length} تصنيف` });
@@ -371,10 +460,10 @@ export default function MobilesInventory() {
         if (editId) {
             // ─ تعديل وحدة واحدة ─
             const u = units[0] || emptyUnit();
-            updateMobile(editId, {
-                name: f.name, barcode: u.barcode || f.barcode, deviceType: 'mobile',
-                category: f.category, condition: f.condition, quantity: f.quantity,
-                storage: f.storage, ram: f.ram, color: u.color || f.color, supplier: f.supplier,
+            updateItem(editId, {
+                name: f.name, barcode: u.barcode || f.barcode,
+                category: f.category, subcategory: f.subcategory, model: f.model, condition: f.condition, quantity: f.quantity,
+                color: u.color || f.color, supplier: f.supplier,
                 oldCostPrice: f.oldCostPrice, newCostPrice: f.newCostPrice, salePrice: f.salePrice,
                 serialNumber: u.imei1 || f.serialNumber, imei2: u.imei2 || f.imei2,
                 boxNumber: f.boxNumber, source: f.source, taxExcluded: f.taxExcluded,
@@ -389,10 +478,10 @@ export default function MobilesInventory() {
                 return;
             }
             validUnits.forEach(u => {
-                addMobile({
-                    name: f.name, barcode: u.barcode || `MOB-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-                    deviceType: 'mobile', category: f.category, condition: f.condition,
-                    quantity: 1, storage: f.storage, ram: f.ram, color: u.color || f.color,
+                addItem({
+                    name: f.name, barcode: u.barcode || `${barcodePrefix}${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                    category: f.category, subcategory: f.subcategory, model: f.model, condition: f.condition,
+                    quantity: 1, color: u.color || f.color,
                     supplier: f.supplier, oldCostPrice: f.oldCostPrice, newCostPrice: f.newCostPrice,
                     salePrice: f.salePrice, serialNumber: u.imei1, imei2: u.imei2,
                     boxNumber: f.boxNumber, source: f.source, taxExcluded: f.taxExcluded,
@@ -406,23 +495,21 @@ export default function MobilesInventory() {
         refreshData();
     };
 
-    const openAdd = () => { setEditId(null); setF(emptyForm); setCustomSupplier(false); setCustomStorage(false); setCustomRam(false); setShowForm(true); };
+    const openAdd = () => { setEditId(null); setF(emptyForm); setCustomSupplier(false); setShowForm(true); };
     const openEdit = (item: InventoryViewItem) => {
         setEditId(item.id);
         setF({
             name: item.name, barcode: item.barcode || '', category: item.category,
             condition: item.condition, quantity: item.quantity,
             oldCostPrice: item.oldCostPrice, newCostPrice: item.newCostPrice, salePrice: item.salePrice,
-            storage: item.storage || '', ram: item.ram || '', color: item.color || '',
+            subcategory: item.subcategory || item._raw?.subcategory || '', model: item.model || item._raw?.model || '', color: item.color || '',
             supplier: item.supplier || '', serialNumber: item.serialNumber || '',
-            imei2: item._raw?.imei2 || '', model: item.model || '', description: item.description || '', image: item.image || '',
+            imei2: item._raw?.imei2 || '', description: item.description || '', image: item.image || '',
             boxNumber: item._raw?.boxNumber || '', source: item._raw?.source || '', taxExcluded: item._raw?.taxExcluded || false,
-            notes: '', subcategory: '',
+            notes: '',
         });
         setUnits([{ imei1: item.serialNumber || '', imei2: item._raw?.imei2 || '', color: item.color || '', barcode: item.barcode || '' }]);
         setCustomSupplier(!!item.supplier && !BRAND_OPTIONS.includes(item.supplier));
-        setCustomStorage(!!item.storage && !STORAGE_OPTIONS.includes(item.storage));
-        setCustomRam(!!item.ram && !RAM_OPTIONS.includes(item.ram));
         setShowForm(true);
     };
     const closeForm = () => setShowForm(false);
@@ -435,7 +522,7 @@ export default function MobilesInventory() {
             danger: true,
         });
         if (!ok) return;
-        deleteMobile(item.id);
+        deleteItem(item.id);
         toast({ title: '🗑️ تم حذف المنتج' });
     };
 
@@ -446,26 +533,26 @@ export default function MobilesInventory() {
             {/* ═══ Section Navigation ═══ */}
             <div className="flex gap-2 flex-wrap mb-4">
                 <button onClick={() => navigate('/mobiles')}
-                    className="flex items-center gap-2 rounded-xl bg-cyan-600 px-5 py-2.5 text-sm font-bold text-white shadow-md ring-2 ring-cyan-300 ring-offset-1">
+                    className="flex items-center gap-2 rounded-xl bg-muted px-5 py-2.5 text-sm font-bold text-muted-foreground hover:bg-cyan-600 hover:text-white transition-all shadow-sm">
                     <Smartphone className="h-4 w-4" /> الموبيلات
                 </button>
                 <button onClick={() => navigate('/mobiles/accessories')}
-                    className="flex items-center gap-2 rounded-xl bg-muted px-5 py-2.5 text-sm font-bold text-muted-foreground hover:bg-cyan-500 hover:text-white transition-all shadow-sm">
+                    className={section === 'accessories' ? activeSectionButtonClass : inactiveAccessoriesButtonClass}>
                     <Headphones className="h-4 w-4" /> الإكسسورات
                 </button>
                 <button onClick={() => navigate('/mobiles/spare-parts')}
-                    className="flex items-center gap-2 rounded-xl bg-muted px-5 py-2.5 text-sm font-bold text-muted-foreground hover:bg-orange-600 hover:text-white transition-all shadow-sm">
+                    className={section === 'spare-parts' ? activeSectionButtonClass : inactiveSparePartsButtonClass}>
                     <Wrench className="h-4 w-4" /> قطع الغيار
                 </button>
             </div>
 
             <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
                 <div className="flex items-center gap-3">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-cyan-100 border border-cyan-200">
-                        <Smartphone className="h-5 w-5 text-cyan-600" />
+                    <div className={headerCardClass}>
+                        {sectionHeaderIcon}
                     </div>
                     <div>
-                        <h1 className="text-2xl font-black text-foreground">مخزون الموبايلات</h1>
+                        <h1 className="text-2xl font-black text-foreground">{pageTitle}</h1>
                         <p className="text-xs text-muted-foreground mt-0.5">{unifiedProducts.length} منتج مسجل • {filteredList.length} ظاهر</p>
                     </div>
                 </div>
@@ -487,7 +574,6 @@ export default function MobilesInventory() {
                         <span className="text-purple-600 text-sm">📦</span>
                     </div>
                     <div>
-                        <p className="text-[10px] text-muted-foreground font-bold">إجمالي القطع</p>
                         <p className="text-xl font-black text-foreground tabular-nums">{stats.totalItems}</p>
                     </div>
                 </div>
@@ -521,7 +607,7 @@ export default function MobilesInventory() {
                     className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-3 py-2 text-xs font-bold text-white hover:bg-blue-700 transition-all shadow-sm">
                     <FileSpreadsheet className="h-3.5 w-3.5" /> استرداد Excel
                 </button>
-                <button onClick={() => exportToExcel({ data: prepareConditionForExport(mobiles), columns: MOBILE_COLUMNS, fileName: 'الموبايلات' })}
+                <button onClick={() => exportToExcel({ data: mobiles, columns: exportColumns, fileName: exportFileName })}
                     className="flex items-center gap-1.5 rounded-xl border border-emerald-300 dark:border-emerald-500/30 bg-emerald-50 dark:bg-emerald-500/10 px-3 py-2 text-xs font-bold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-all shadow-sm">
                     <Download className="h-3.5 w-3.5" /> تصدير Excel
                 </button>
@@ -601,10 +687,10 @@ export default function MobilesInventory() {
                                 <label className="flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground mb-1">
                                     <SlidersHorizontal className="h-3 w-3 text-primary" /> حالة الجهاز
                                 </label>
-                                <div className="flex flex-wrap gap-1.5">
+                                <div className="flex gap-1">
                                     {[{ v: 'all' as const, l: 'الكل' }, { v: 'new' as const, l: 'جديد' }, { v: 'like_new' as const, l: 'مثل الجديد' }, { v: 'used' as const, l: 'مستعمل' }, { v: 'broken' as const, l: 'معطل' }].map(opt => (
                                         <button key={opt.v} onClick={() => setFilterCondition(opt.v)}
-                                            className={`flex-auto px-2 min-w-[30%] py-1.5 text-[11px] font-bold rounded-lg border transition-all ${filterCondition === opt.v
+                                            className={`flex-1 py-1 text-[11px] font-bold rounded-lg border transition-all ${filterCondition === opt.v
                                                 ? opt.v === 'used' || opt.v === 'broken' ? 'bg-orange-100 text-orange-700 border-orange-300' : opt.v === 'new' || opt.v === 'like_new' ? 'bg-emerald-100 text-emerald-700 border-emerald-300' : 'bg-primary/10 text-primary border-primary/30'
                                                 : 'bg-transparent text-muted-foreground border-border hover:bg-muted/50'
                                                 }`}>{opt.l}</button>
@@ -673,8 +759,8 @@ export default function MobilesInventory() {
                         <div className="shrink-0 w-px h-6 bg-border mx-1 self-center" />
                         {categories.map((c, i) => (
                             <button key={i} onClick={() => setActiveFilter(c)}
-                                className={`shrink-0 rounded-xl px-4 py-2 text-sm font-semibold border transition-all flex items-center gap-2 ${activeFilter === c ? 'bg-cyan-50 text-cyan-700 border-cyan-300 shadow-sm' : 'bg-card border-border text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}>
-                                <Smartphone className="h-4 w-4 opacity-70" />
+                                className={`shrink-0 rounded-xl px-4 py-2 text-sm font-semibold border transition-all flex items-center gap-2 ${activeFilter === c ? activeCategoryClass : 'bg-card border-border text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}>
+                                {sectionIcon}
                                 {c}
                             </button>
                         ))}
@@ -742,7 +828,7 @@ export default function MobilesInventory() {
                                                         </div>
                                                     </td>
                                                     <td className="px-3 py-2 text-[11px] text-muted-foreground">{details || '—'}</td>
-                                                    <td className="px-3 py-2 text-xs font-semibold text-primary">{item.category || '—'}</td>
+                                                    <td className="px-3 py-2 text-xs font-semibold text-primary">{item.categoryName || '—'}</td>
                                                     <td className="px-3 py-2">
                                                         <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${item.condition === 'used' || item.condition === 'broken' ? 'bg-orange-100 dark:bg-orange-500/15 text-orange-700 dark:text-orange-400' : 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'}`}>
                                                             {item.condition === 'new' ? 'جديد' : item.condition === 'like_new' ? 'مثل الجديد' : item.condition === 'broken' ? 'معطل' : 'مستعمل'}
@@ -779,9 +865,9 @@ export default function MobilesInventory() {
 
             {/* ─── Product Form Modal ─── */}
             {showForm && createPortal(
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 sm:p-6" onClick={closeForm}>
-                    <div className="w-full max-w-xl max-h-[90vh] flex flex-col rounded-2xl border border-border bg-card shadow-2xl animate-scale-in" onClick={e => e.stopPropagation()}>
-                        <div className="flex-none flex items-center justify-between px-4 pt-4 pb-3 border-b border-border">
+                <div className="fixed inset-0 z-[9999] flex items-start justify-center bg-black/50 backdrop-blur-sm overflow-y-auto py-4 px-4" onClick={closeForm}>
+                    <div className="w-full max-w-xl rounded-2xl border border-border bg-card shadow-2xl animate-scale-in my-8" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-border">
                             <h2 className="text-base font-bold text-foreground">
                                 {editId ? '✏️ تعديل المنتج' : '➕ إضافة منتج'}
                             </h2>
@@ -790,16 +876,16 @@ export default function MobilesInventory() {
                             </button>
                         </div>
 
-                        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                        <div className="p-4 space-y-4">
                             <ImageUpload value={f.image} onChange={v => setF(p => ({ ...p, image: v }))} />
 
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="col-span-2 sm:col-span-1">
                                     <label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase">التصنيف *</label>
                                     <select value={f.category} onChange={e => setF(p => ({ ...p, category: e.target.value }))} className={IC}>
-                                        <option value="">-- اختر --</option>
-                                        {categories.map((c, i) => <option key={i} value={c}>{c}</option>)}
-                                    </select>
+                                        {categories.map((c, i) => (
+                                        <option key={i} value={c}>{c}</option>
+                                    ))}</select>
                                 </div>
                                 <div className="col-span-2 sm:col-span-1">
                                     <div className="flex flex-wrap gap-2 h-auto text-center mt-1">
@@ -818,31 +904,12 @@ export default function MobilesInventory() {
                             </div>
 
                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-muted/20 p-3 rounded-xl border border-border/40">
-                                        <div className="col-span-full mb-1"><span className="text-xs font-bold text-primary flex items-center gap-1"><Smartphone className="w-3.5 h-3.5" /> مواصفات الجهاز</span></div>
-                                        {/* التخزين */}
-                                        <div>
-                                            <label className="mb-1 block text-xs text-muted-foreground">التخزين</label>
-                                            <select value={customStorage ? '__other__' : f.storage} onChange={e => { const v = e.target.value; if (v === '__other__') { setCustomStorage(true); setF(p => ({ ...p, storage: '' })); } else { setCustomStorage(false); setF(p => ({ ...p, storage: v })); } }} className={IC}>
-                                                <option value="">-- اختر --</option>
-                                                {STORAGE_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
-                                                <option value="__other__">أخرى...</option>
-                                            </select>
-                                            {customStorage && (
-                                                <input value={f.storage} onChange={e => setF(p => ({ ...p, storage: e.target.value }))} placeholder="أدخل الحجم..." className={`${IC} mt-1.5`} autoFocus />
-                                            )}
-                                        </div>
-                                        {/* الرام */}
-                                        <div>
-                                            <label className="mb-1 block text-xs text-muted-foreground">الرام</label>
-                                            <select value={customRam ? '__other__' : f.ram} onChange={e => { const v = e.target.value; if (v === '__other__') { setCustomRam(true); setF(p => ({ ...p, ram: '' })); } else { setCustomRam(false); setF(p => ({ ...p, ram: v })); } }} className={IC}>
-                                                <option value="">-- اختر --</option>
-                                                {RAM_OPTIONS.map(r => <option key={r} value={r}>{r}</option>)}
-                                                <option value="__other__">أخرى...</option>
-                                            </select>
-                                            {customRam && (
-                                                <input value={f.ram} onChange={e => setF(p => ({ ...p, ram: e.target.value }))} placeholder="أدخل الرام..." className={`${IC} mt-1.5`} autoFocus />
-                                            )}
-                                        </div>
+                                        <div className="col-span-full mb-1"><span className="text-xs font-bold text-primary flex items-center gap-1">{sectionIcon} {formSpecsTitle}</span></div>
+                                        {/* نوع الإكسسوار */}
+                                        <div><label className="mb-1 block text-xs text-muted-foreground">النوع / التحديد</label><input value={f.subcategory} onChange={e => setF(p => ({ ...p, subcategory: e.target.value }))} placeholder={subcategoryPlaceholder} className={IC} /></div>
+                                        {/* الموديل */}
+                                        <div><label className="mb-1 block text-xs text-muted-foreground">موديل الهاتف المطابق</label><input value={f.model} onChange={e => setF(p => ({ ...p, model: e.target.value }))} placeholder={modelPlaceholder} className={IC} /></div>
+
                                         {/* اللون */}
                                         <div><label className="mb-1 block text-xs text-muted-foreground">اللون</label><input data-validation="text-only" value={f.color} onChange={e => setF(p => ({ ...p, color: e.target.value }))} className={IC} /></div>
                                         {/* الشركة */}
@@ -928,7 +995,7 @@ export default function MobilesInventory() {
                             </div>
                         </div>
 
-                        <div className="flex-none flex gap-2 px-4 py-4 border-t border-border bg-muted/10 rounded-b-2xl">
+                        <div className="flex gap-2 px-4 pb-4 border-t border-border pt-3 bg-muted/10 rounded-b-2xl">
                             <button onClick={handleFormSubmit}
                                 className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-all shadow-md">
                                 <Check className="h-4 w-4" /> {editId ? 'حفظ التعديلات' : 'إضافة المنتج'}
@@ -945,8 +1012,11 @@ export default function MobilesInventory() {
 
             {/* Categories Manager Modal */}
             {showCatManager && (
-                <MobilesCategoriesManager
+                <MobileCategoriesManager
                     cats={categories}
+                    title={managerTitle}
+                    icon={sectionIcon}
+                    itemIconClass={categoryIconClass}
                     onSave={handleSaveCats}
                     onClose={() => setShowCatManager(false)}
                 />
@@ -967,21 +1037,11 @@ export default function MobilesInventory() {
             <ExcelColumnMappingDialog
                 open={showExcelRestore}
                 onOpenChange={setShowExcelRestore}
-                inventoryType="mobile"
+                inventoryType={excelInventoryType}
                 onSuccess={() => undefined}
                 onDataSave={(data) => {
                     data.forEach(row => {
-                        const mobile: Omit<MobileItem, 'id' | 'createdAt' | 'updatedAt'> = {
-                            name: row.name || '', barcode: row.barcode || '', deviceType: row.deviceType || 'mobile',
-                            category: row.category || '', condition: row.condition || 'new',
-                            quantity: Number(row.quantity) || 0, storage: row.storage || '', ram: row.ram || '',
-                            color: row.color || '', supplier: row.supplier || '',
-                            oldCostPrice: Number(row.oldCostPrice) || 0, newCostPrice: Number(row.newCostPrice) || 0,
-                            salePrice: Number(row.salePrice) || 0, serialNumber: row.serialNumber || '',
-                            boxNumber: row.boxNumber || '', source: row.source || '', taxExcluded: row.taxExcluded === 'true' || row.taxExcluded === true,
-                            notes: row.notes || '', description: row.description || '',
-                        };
-                        addMobile(mobile);
+                        addItem(buildExcelItem(row));
                     });
                 }}
             />
