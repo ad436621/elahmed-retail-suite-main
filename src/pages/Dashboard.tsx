@@ -202,6 +202,7 @@ export default function Dashboard() {
   // ── Financial KPIs ────────────────────────────────────────
   const validSales = useMemo(() => filterActiveSales(sales), [sales]);
   const salesSummary = useMemo(() => summarizeSales(validSales), [validSales]);
+  const totalRevenue = salesSummary.totalRevenue;
   const totalExpenses = useMemo(() => currentExpenses.reduce((s, e) => s + e.amount, 0), [currentExpenses]);
   const totalDamaged = useMemo(() => currentDamaged.reduce((s, d) => s + d.totalLoss, 0), [currentDamaged]);
   const maintRevenue = useMemo(() => currentMaint.reduce((s, m) => s + m.totalSale, 0), [currentMaint]);
