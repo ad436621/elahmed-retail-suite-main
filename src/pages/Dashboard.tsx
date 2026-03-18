@@ -211,6 +211,7 @@ export default function Dashboard() {
   const netProfit = salesSummary.totalProfit + maintProfit + totalOtherRev - totalExpenses - totalDamaged;
 
   // ── Averages & Ratios ─────────────────────────────────────
+  const totalProfit = salesSummary.totalProfit;
   const avgInvoice = salesSummary.avgInvoice;
   const profitMarginPct = salesSummary.profitMarginPercent;
   const returnRate = salesSummary.totalRevenue > 0 ? (totalDamaged / salesSummary.totalRevenue) * 100 : 0;
