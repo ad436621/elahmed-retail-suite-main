@@ -15,7 +15,7 @@ const SPARE_PARTS_KEY = STORAGE_KEYS.MOBILE_SPARE_PARTS;
 // ─── Mobiles ────────────────────────────────────────────────
 
 export function getMobiles(): MobileItem[] {
-    return getStorageItem<MobileItem[]>(MOBILES_KEY, []);
+    return getStorageItem<MobileItem[]>(MOBILES_KEY, []).filter(m => !m.isArchived && !m.deletedAt);
 }
 
 export function saveMobiles(items: MobileItem[]): void {
@@ -23,7 +23,7 @@ export function saveMobiles(items: MobileItem[]): void {
 }
 
 export function addMobile(item: Omit<MobileItem, 'id' | 'createdAt' | 'updatedAt'>): MobileItem {
-    const all = getMobiles();
+    const all = getStorageItem<MobileItem[]>(MOBILES_KEY, []);
     const newItem: MobileItem = {
         ...item,
         id: crypto.randomUUID(),
@@ -53,19 +53,23 @@ export function addMobile(item: Omit<MobileItem, 'id' | 'createdAt' | 'updatedAt
 }
 
 export function updateMobile(id: string, updates: Partial<MobileItem>): void {
-    saveMobiles(getMobiles().map(m =>
+    const all = getStorageItem<MobileItem[]>(MOBILES_KEY, []);
+    saveMobiles(all.map(m =>
         m.id === id ? { ...m, ...updates, updatedAt: new Date().toISOString() } : m
     ));
 }
 
 export function deleteMobile(id: string): void {
-    saveMobiles(getMobiles().filter(m => m.id !== id));
+    const all = getStorageItem<MobileItem[]>(MOBILES_KEY, []);
+    saveMobiles(all.map(m =>
+        m.id === id ? { ...m, isArchived: true, deletedAt: new Date().toISOString() } : m
+    ));
 }
 
 // ─── Mobile Accessories ──────────────────────────────────────
 
 export function getMobileAccessories(): MobileAccessory[] {
-    return getStorageItem<MobileAccessory[]>(ACCESSORIES_KEY, []);
+    return getStorageItem<MobileAccessory[]>(ACCESSORIES_KEY, []).filter(m => !m.isArchived && !m.deletedAt);
 }
 
 export function saveMobileAccessories(items: MobileAccessory[]): void {
@@ -73,7 +77,7 @@ export function saveMobileAccessories(items: MobileAccessory[]): void {
 }
 
 export function addMobileAccessory(item: Omit<MobileAccessory, 'id' | 'createdAt' | 'updatedAt'>): MobileAccessory {
-    const all = getMobileAccessories();
+    const all = getStorageItem<MobileAccessory[]>(ACCESSORIES_KEY, []);
     const newItem: MobileAccessory = {
         ...item,
         id: crypto.randomUUID(),
@@ -114,7 +118,7 @@ export function deleteMobileAccessory(id: string): void {
 // ─── Mobile Spare Parts ──────────────────────────────────────
 
 export function getMobileSpareParts(): MobileSparePart[] {
-    return getStorageItem<MobileSparePart[]>(SPARE_PARTS_KEY, []);
+    return getStorageItem<MobileSparePart[]>(SPARE_PARTS_KEY, []).filter(m => !m.isArchived && !m.deletedAt);
 }
 
 export function saveMobileSpareParts(items: MobileSparePart[]): void {
@@ -122,7 +126,7 @@ export function saveMobileSpareParts(items: MobileSparePart[]): void {
 }
 
 export function addMobileSparePart(item: Omit<MobileSparePart, 'id' | 'createdAt' | 'updatedAt'>): MobileSparePart {
-    const all = getMobileSpareParts();
+    const all = getStorageItem<MobileSparePart[]>(SPARE_PARTS_KEY, []);
     const newItem: MobileSparePart = {
         ...item,
         id: crypto.randomUUID(),

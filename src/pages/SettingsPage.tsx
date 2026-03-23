@@ -7,7 +7,7 @@ import { useTheme } from '@/contexts/ThemeContext';
 import { useSettings } from '@/contexts/SettingsContext';
 import { useToast } from '@/hooks/use-toast';
 import {
-  Sun, Moon, Globe, Plus, X, Printer, Save, Upload, Image,
+  Sun, Moon, Globe, Plus, X, Printer, Save, Upload, Image as ImageIcon,
   Settings, Building2, Bell, Database, Shield, Type,
   Minus as MinusIcon, Plus as PlusIcon,
   Wallet, Receipt, Hash, AlertTriangle, Info,
@@ -185,7 +185,7 @@ const SettingsPage = () => {
                     <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">شعار الشركة (Logo)</label>
                     <div className="flex items-center gap-3">
                       <div className="h-14 w-14 rounded-xl overflow-hidden border-2 border-border bg-muted flex items-center justify-center shrink-0">
-                        {formData.logoUrl ? <img src={formData.logoUrl} alt="Logo" className="h-full w-full object-contain" /> : <Image className="h-6 w-6 text-muted-foreground/40" />}
+                        {formData.logoUrl ? <img src={formData.logoUrl} alt="Logo" className="h-full w-full object-contain" /> : <ImageIcon className="h-6 w-6 text-muted-foreground/40" />}
                       </div>
                       <div className="flex-1">
                         <input ref={logoInputRef} type="file" accept="image/*" className="hidden" onChange={handleLogoUpload} />

@@ -58,9 +58,10 @@ export default function TransferTab() {
     const [actionMode, setActionMode] = useState<ActionMode>('withdraw');
 
     useEffect(() => {
-        const ws = getWallets();
-        setWallets(ws);
-        if (ws.length > 0) setWalletId(ws[0].id);
+        getWallets().then(ws => {
+            setWallets(ws);
+            if (ws.length > 0) setWalletId(ws[0].id);
+        });
 
         const all = getStorageItem<PosTransfer[]>(TRANSFER_KEY, []);
         const today = new Date().toDateString();
@@ -70,13 +71,16 @@ export default function TransferTab() {
     const totalCommission = todayTransfers.reduce((s, t) => s + t.commission, 0);
     const selectedWallet = wallets.find(w => w.id === walletId);
 
-    const handleRegister = () => {
+    const handleRegister = async () => {
         const amt = Number(amount);
         const com = Number(commission);
         if (amt <= 0) { toast({ title: '⚠️ أدخل مبلغ التحويل', variant: 'destructive' }); return; }
         if (!walletId) { toast({ title: '⚠️ اختر المحفظة', variant: 'destructive' }); return; }
 
-        if (com > 0) deposit(walletId, com, `عمولة تحويل ${type} — ${customer || 'عميل'}`);
+        try {
+            if (com > 0) {
+                await deposit(walletId, com, `عمولة تحويل ${type} — ${customer || 'عميل'}`, undefined, 'transfer_commission');
+            }
 
         const newTransfer: PosTransfer = {
             id: crypto.randomUUID(),
@@ -88,12 +92,16 @@ export default function TransferTab() {
         setStorageItem(TRANSFER_KEY, [...allSaved, newTransfer]);
         setTodayTransfers(prev => [...prev, newTransfer]);
         setCustomer(''); setPhone(''); setAmount(''); setCommission('');
-        setWallets(getWallets());
+        const updatedWallets = await getWallets();
+        setWallets(updatedWallets);
 
         toast({
             title: '✅ تم تسجيل التحويل',
             description: `${type} — ${amt.toLocaleString('ar-EG')} ج.م${com > 0 ? ` + ${com} ج.م عمولة في ${selectedWallet?.name}` : ''}`,
         });
+        } catch (err: any) {
+            toast({ title: '❌ خطأ', description: err.message, variant: 'destructive' });
+        }
     };
 
     return (

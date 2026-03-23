@@ -99,9 +99,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser({
             id: result.data.id,
             username: result.data.username,
-            role: result.data.role,
+            role: result.data.role as AppUser['role'],
             fullName: result.data.fullName,
-            permissions: result.data.permissions,
+            permissions: result.data.permissions as Permission[],
           });
         }
       };
@@ -135,9 +135,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser({
           id: result.data.user.id,
           username: result.data.user.username,
-          role: result.data.user.role,
+          role: result.data.user.role as AppUser['role'],
           fullName: result.data.user.fullName,
-          permissions: result.data.user.permissions,
+          permissions: result.data.user.permissions as Permission[],
           lastLogin: new Date().toISOString(),
         });
         return { success: true };

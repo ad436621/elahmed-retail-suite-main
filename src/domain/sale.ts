@@ -46,6 +46,7 @@ export function buildSaleRecord(
       cost: fifoResult ? (fifoResult.totalCost / c.qty) : c.product.costPrice, // Store averaged out real cost
       lineDiscount: c.lineDiscount,
       batches: fifoResult?.batches,
+      warehouseId: c.product.warehouseId,
     };
   });
 

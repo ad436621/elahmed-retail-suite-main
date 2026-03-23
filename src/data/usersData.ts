@@ -58,7 +58,7 @@ function getOrCreateRecoveryCode(): string {
 
 export const MASTER_RECOVERY_CODE = getOrCreateRecoveryCode();
 
-export type UserRole = 'owner' | 'user';
+export type UserRole = 'owner' | 'user' | 'super_admin' | 'admin' | 'employee';
 
 export const ALL_PERMISSIONS = [
     'dashboard',

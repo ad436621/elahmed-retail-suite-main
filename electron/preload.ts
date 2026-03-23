@@ -34,11 +34,6 @@ contextBridge.exposeInMainWorld('electron', {
 
       ipcRenderer.removeListener(channel, wrappedListener);
       channelListeners.delete(listener);
-
-      // Clean up empty maps to reduce memory footprint
-      if (channelListeners.size === 0) {
-        listenerMap.delete(channel);
-      }
     }
   }
 });

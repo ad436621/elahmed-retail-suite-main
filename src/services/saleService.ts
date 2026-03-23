@@ -92,7 +92,8 @@ export function processSale(
       item.product.quantity,
       `Sale ${invoiceNumber}`,
       employeeId,
-      sale.id
+      sale.id,
+      item.product.warehouseId
     )
   );
 

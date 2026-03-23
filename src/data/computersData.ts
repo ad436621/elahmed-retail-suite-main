@@ -14,7 +14,7 @@ const ACCESSORIES_KEY = STORAGE_KEYS.COMPUTER_ACCESSORIES;
 // ─── Computers ────────────────────────────────────────────────
 
 export function getComputers(): ComputerItem[] {
-    return getStorageItem<ComputerItem[]>(COMPUTERS_KEY, []);
+    return getStorageItem<ComputerItem[]>(COMPUTERS_KEY, []).filter(c => !c.isArchived && !c.deletedAt);
 }
 
 export function saveComputers(items: ComputerItem[]): void {
@@ -22,7 +22,7 @@ export function saveComputers(items: ComputerItem[]): void {
 }
 
 export function addComputer(item: Omit<ComputerItem, 'id' | 'createdAt' | 'updatedAt'>): ComputerItem {
-    const all = getComputers();
+    const all = getStorageItem<ComputerItem[]>(COMPUTERS_KEY, []);
     const newItem: ComputerItem = {
         ...item,
         id: crypto.randomUUID(),
@@ -51,19 +51,23 @@ export function addComputer(item: Omit<ComputerItem, 'id' | 'createdAt' | 'updat
 }
 
 export function updateComputer(id: string, updates: Partial<ComputerItem>): void {
-    saveComputers(getComputers().map(c =>
+    const all = getStorageItem<ComputerItem[]>(COMPUTERS_KEY, []);
+    saveComputers(all.map(c =>
         c.id === id ? { ...c, ...updates, updatedAt: new Date().toISOString() } : c
     ));
 }
 
 export function deleteComputer(id: string): void {
-    saveComputers(getComputers().filter(c => c.id !== id));
+    const all = getStorageItem<ComputerItem[]>(COMPUTERS_KEY, []);
+    saveComputers(all.map(c =>
+        c.id === id ? { ...c, isArchived: true, deletedAt: new Date().toISOString() } : c
+    ));
 }
 
 // ─── Computer Accessories ─────────────────────────────────────
 
 export function getComputerAccessories(): ComputerAccessory[] {
-    return getStorageItem<ComputerAccessory[]>(ACCESSORIES_KEY, []);
+    return getStorageItem<ComputerAccessory[]>(ACCESSORIES_KEY, []).filter(a => !a.isArchived && !a.deletedAt);
 }
 
 export function saveComputerAccessories(items: ComputerAccessory[]): void {
@@ -71,7 +75,7 @@ export function saveComputerAccessories(items: ComputerAccessory[]): void {
 }
 
 export function addComputerAccessory(item: Omit<ComputerAccessory, 'id' | 'createdAt' | 'updatedAt'>): ComputerAccessory {
-    const all = getComputerAccessories();
+    const all = getStorageItem<ComputerAccessory[]>(ACCESSORIES_KEY, []);
     const newItem: ComputerAccessory = {
         ...item,
         id: crypto.randomUUID(),
@@ -100,11 +104,15 @@ export function addComputerAccessory(item: Omit<ComputerAccessory, 'id' | 'creat
 }
 
 export function updateComputerAccessory(id: string, updates: Partial<ComputerAccessory>): void {
-    saveComputerAccessories(getComputerAccessories().map(a =>
+    const all = getStorageItem<ComputerAccessory[]>(ACCESSORIES_KEY, []);
+    saveComputerAccessories(all.map(a =>
         a.id === id ? { ...a, ...updates, updatedAt: new Date().toISOString() } : a
     ));
 }
 
 export function deleteComputerAccessory(id: string): void {
-    saveComputerAccessories(getComputerAccessories().filter(a => a.id !== id));
+    const all = getStorageItem<ComputerAccessory[]>(ACCESSORIES_KEY, []);
+    saveComputerAccessories(all.map(a =>
+        a.id === id ? { ...a, isArchived: true, deletedAt: new Date().toISOString() } : a
+    ));
 }

@@ -7,7 +7,7 @@ import SharedInventoryPage, { SharedInventoryConfig } from '@/components/SharedI
 import {
     getComputers, addComputer, updateComputer, deleteComputer,
 } from '@/data/computersData';
-import { ComputerItem } from '@/domain/types';
+import { ComputerItem, ComputerDeviceType } from '@/domain/types';
 import { COMPUTER_COLUMNS } from '@/services/excelService';
 
 const config: SharedInventoryConfig = {
@@ -18,7 +18,7 @@ const config: SharedInventoryConfig = {
     excelInventoryType: 'computer',
     navSection: 'computers',
 
-    getDevices: getComputers,
+    getDevices: getComputers as unknown as SharedInventoryConfig['getDevices'],
     addDevice: addComputer,
     updateDevice: updateComputer,
     deleteDevice: deleteComputer,
@@ -35,20 +35,20 @@ const config: SharedInventoryConfig = {
 
     buildDeviceFromExcelRow: (row) => {
         const computer: Omit<ComputerItem, 'id' | 'createdAt' | 'updatedAt'> = {
-            name: row.name || '',
-            model: row.model || '',
-            barcode: row.barcode || '',
-            deviceType: row.deviceType || 'computer',
-            category: row.category || '',
-            condition: row.condition || 'new',
-            color: row.color || '',
+            name: (row.name as string) || '',
+            model: (row.model as string) || '',
+            barcode: (row.barcode as string) || '',
+            deviceType: (row.deviceType as ComputerDeviceType) || 'computer',
+            category: (row.category as string) || '',
+            condition: (row.condition as 'new' | 'used') || 'new',
+            color: (row.color as string) || '',
             quantity: Number(row.quantity) || 0,
-            processor: row.processor || '',
+            processor: (row.processor as string) || '',
             oldCostPrice: Number(row.oldCostPrice) || 0,
             newCostPrice: Number(row.newCostPrice) || 0,
             salePrice: Number(row.salePrice) || 0,
-            notes: row.notes || '',
-            description: row.description || '',
+            notes: (row.notes as string) || '',
+            description: (row.description as string) || '',
         };
         addComputer(computer);
     },

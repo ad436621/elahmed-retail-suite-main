@@ -9,7 +9,7 @@ import { STORAGE_KEYS } from '@/config';
 const KEY = STORAGE_KEYS.CARS;
 
 export function getCars(): CarItem[] {
-    return getStorageItem<CarItem[]>(KEY, []);
+    return getStorageItem<CarItem[]>(KEY, []).filter(c => !c.isArchived && !c.deletedAt);
 }
 
 export function saveCars(items: CarItem[]): void {
@@ -17,7 +17,7 @@ export function saveCars(items: CarItem[]): void {
 }
 
 export function addCar(item: Omit<CarItem, 'id' | 'createdAt' | 'updatedAt'>): CarItem {
-    const all = getCars();
+    const all = getStorageItem<CarItem[]>(KEY, []);
     const newItem: CarItem = {
         ...item,
         id: crypto.randomUUID(),
@@ -29,13 +29,17 @@ export function addCar(item: Omit<CarItem, 'id' | 'createdAt' | 'updatedAt'>): C
 }
 
 export function updateCar(id: string, updates: Partial<CarItem>): void {
-    saveCars(getCars().map(c =>
+    const all = getStorageItem<CarItem[]>(KEY, []);
+    saveCars(all.map(c =>
         c.id === id ? { ...c, ...updates, updatedAt: new Date().toISOString() } : c
     ));
 }
 
 export function deleteCar(id: string): void {
-    saveCars(getCars().filter(c => c.id !== id));
+    const all = getStorageItem<CarItem[]>(KEY, []);
+    saveCars(all.map(c =>
+        c.id === id ? { ...c, isArchived: true, deletedAt: new Date().toISOString() } : c
+    ));
 }
 
 export function getNewCars(): CarItem[] {

@@ -3,6 +3,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
 import { initializeDatabase } from './db';
+import { runDataMigration } from './migration';
+import { setupIpcHandlers } from './ipcHandlers';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -49,7 +51,7 @@ function createWindow() {
 ipcMain.on('store-get', (event, key: string) => {
   if (!db) { event.returnValue = null; return; }
   try {
-    const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key);
+    const row = db.prepare('SELECT value FROM settings WHERE key = ?').get(key) as { value: string } | undefined;
     event.returnValue = row ? JSON.parse(row.value) : null;
   } catch (err) {
     console.error('store-get error:', err);
@@ -85,6 +87,8 @@ ipcMain.on('store-delete', (event, key: string) => {
 
 app.whenReady().then(() => {
   db = initializeDatabase();
+  runDataMigration(db);
+  setupIpcHandlers(db);
   createWindow();
 
   app.on('activate', () => {

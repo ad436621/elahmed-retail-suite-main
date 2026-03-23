@@ -104,13 +104,7 @@ const emptyForm: MobileSubFormState = {
     boxNumber: '', source: '', taxExcluded: false,
 };
 
-interface UnitEntry {
-    imei1: string;
-    imei2: string;
-    color: string;
-    barcode: string;
-}
-const emptyUnit = (): UnitEntry => ({ imei1: '', imei2: '', color: '', barcode: '' });
+// removed UnitEntry
 
 const fmt = (n: number) => n.toLocaleString('ar-EG');
 
@@ -356,7 +350,6 @@ export default function MobileSubInventoryPage<T extends MobileSubInventoryRecor
     const [showCatManager, setShowCatManager] = useState(false);
     const [activeBatchesModal, setActiveBatchesModal] = useState<{ id: string; name: string } | null>(null);
     const [showExcelRestore, setShowExcelRestore] = useState(false);
-    const [units, setUnits] = useState<UnitEntry[]>([emptyUnit()]);
 
     useEffect(() => {
         const s = (location.state as { filter?: string })?.filter;
@@ -404,7 +397,7 @@ export default function MobileSubInventoryPage<T extends MobileSubInventoryRecor
         // IMEI / Serial filter
         if (filterImei.trim()) {
             const imeiLower = filterImei.toLowerCase();
-            res = res.filter(p => p.serialNumber && p.serialNumber.toLowerCase().includes(imeiLower));
+            res = res.filter(p => (p.serialNumber && p.serialNumber.toLowerCase().includes(imeiLower)) || (p.barcode && p.barcode.toLowerCase().includes(imeiLower)));
         }
         // Supplier filter
         if (filterSupplier !== 'all') {
@@ -459,37 +452,29 @@ export default function MobileSubInventoryPage<T extends MobileSubInventoryRecor
         if (!f.name.trim()) { toast({ title: '⚠️ أدخل اسم المنتج', variant: 'destructive' }); return; }
         
         if (editId) {
-            // ─ تعديل وحدة واحدة ─
-            const u = units[0] || emptyUnit();
+            // ─ تعديل ─
             updateItem(editId, {
-                name: f.name, barcode: u.barcode || f.barcode,
+                name: f.name, barcode: f.barcode,
                 category: f.category, subcategory: f.subcategory, model: f.model, condition: f.condition, quantity: f.quantity,
-                color: u.color || f.color, supplier: f.supplier,
+                color: f.color, supplier: f.supplier,
                 oldCostPrice: f.oldCostPrice, newCostPrice: f.newCostPrice, salePrice: f.salePrice,
-                serialNumber: u.imei1 || f.serialNumber, imei2: u.imei2 || f.imei2,
+                serialNumber: undefined, imei2: undefined,
                 boxNumber: f.boxNumber, source: f.source, taxExcluded: f.taxExcluded,
                 notes: '', description: f.description, image: f.image,
             });
             toast({ title: '✅ تم تعديل المنتج' });
         } else {
-            // ─ إضافة: سجل منفصل لكل وحدة ─
-            const validUnits = units.filter(u => u.imei1.trim());
-            if (validUnits.length === 0) {
-                toast({ title: '⚠️ أدخل IMEI 1 لوحدة واحدة على الأقل', variant: 'destructive' });
-                return;
-            }
-            validUnits.forEach(u => {
-                addItem({
-                    name: f.name, barcode: u.barcode || `${barcodePrefix}${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-                    category: f.category, subcategory: f.subcategory, model: f.model, condition: f.condition,
-                    quantity: 1, color: u.color || f.color,
-                    supplier: f.supplier, oldCostPrice: f.oldCostPrice, newCostPrice: f.newCostPrice,
-                    salePrice: f.salePrice, serialNumber: u.imei1, imei2: u.imei2,
-                    boxNumber: f.boxNumber, source: f.source, taxExcluded: f.taxExcluded,
-                    notes: '', description: f.description, image: f.image,
-                });
+            // ─ إضافة سجل واحد بالكمية ─
+            addItem({
+                name: f.name, barcode: f.barcode || `${barcodePrefix}${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                category: f.category, subcategory: f.subcategory, model: f.model, condition: f.condition,
+                quantity: f.quantity, color: f.color,
+                supplier: f.supplier, oldCostPrice: f.oldCostPrice, newCostPrice: f.newCostPrice,
+                salePrice: f.salePrice, serialNumber: undefined, imei2: undefined,
+                boxNumber: f.boxNumber, source: f.source, taxExcluded: f.taxExcluded,
+                notes: '', description: f.description, image: f.image,
             });
-            toast({ title: `✅ تم إضافة ${validUnits.length} وحدة` });
+            toast({ title: `✅ تمت الإضافة بنجاح` });
         }
         
         closeForm();
@@ -509,7 +494,6 @@ export default function MobileSubInventoryPage<T extends MobileSubInventoryRecor
             boxNumber: item._raw?.boxNumber || '', source: item._raw?.source || '', taxExcluded: item._raw?.taxExcluded || false,
             notes: '',
         });
-        setUnits([{ imei1: item.serialNumber || '', imei2: item._raw?.imei2 || '', color: item.color || '', barcode: item.barcode || '' }]);
         setCustomSupplier(!!item.supplier && !BRAND_OPTIONS.includes(item.supplier));
         setShowForm(true);
     };
@@ -801,7 +785,6 @@ export default function MobileSubInventoryPage<T extends MobileSubInventoryRecor
                                             <th className="px-3 py-3 text-right">الموديل</th>
                                             <th className="px-3 py-3 text-right">الفئة</th>
                                             <th className="px-3 py-3 text-right">الحالة</th>
-                                            <th className="px-3 py-3 text-right">IMEI</th>
                                             <th className="px-3 py-3 text-center">الكمية</th>
                                             <th className="px-3 py-3 text-right">سعر البيع</th>
                                             <th className="px-3 py-3 text-right">هامش الربح</th>
@@ -832,10 +815,6 @@ export default function MobileSubInventoryPage<T extends MobileSubInventoryRecor
                                                         <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${item.condition === 'used' || item.condition === 'broken' ? 'bg-orange-100 dark:bg-orange-500/15 text-orange-700 dark:text-orange-400' : 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'}`}>
                                                             {item.condition === 'new' ? 'جديد' : item.condition === 'like_new' ? 'مثل الجديد' : item.condition === 'broken' ? 'معطل' : 'مستعمل'}
                                                         </span>
-                                                    </td>
-                                                    <td className="px-3 py-2 text-[10px] text-muted-foreground font-mono">
-                                                        <div>{item.serialNumber || '—'}</div>
-                                                        {item._raw?.imei2 && <div className="text-muted-foreground/60">{item._raw.imei2}</div>}
                                                     </td>
                                                     <td className="px-3 py-2 text-center">
                                                         <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${item.quantity === 0 ? 'bg-red-100 dark:bg-red-500/15 text-red-600 dark:text-red-400' : 'bg-muted text-foreground'}`}>{item.quantity}</span>
@@ -935,52 +914,7 @@ export default function MobileSubInventoryPage<T extends MobileSubInventoryRecor
                                             </label>
                                         </div>
                                     </div>
-                                    {/* ─── جدول الوحدات (IMEI) ─── */}
-                                    <div className="bg-primary/5 dark:bg-primary/10 rounded-xl border border-primary/20 dark:border-primary/30 p-3 space-y-2">
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-xs font-bold text-primary flex items-center gap-1">📱 بيانات الوحدات ({units.length})</span>
-                                            {!editId && (
-                                                <button type="button" onClick={() => setUnits(u => [...u, emptyUnit()])}
-                                                    className="flex items-center gap-1 rounded-lg bg-primary/10 dark:bg-primary/20 text-primary px-2.5 py-1 text-[10px] font-bold hover:bg-primary/20 dark:hover:bg-primary/30 transition-colors">
-                                                    <Plus className="h-3 w-3" /> وحدة جديدة
-                                                </button>
-                                            )}
-                                        </div>
-                                        <div className="overflow-x-auto rounded-lg border border-border bg-card">
-                                            <table className="w-full text-xs">
-                                                <thead>
-                                                    <tr className="bg-muted/30 border-b border-border">
-                                                        <th className="px-2 py-1.5 text-right font-semibold text-muted-foreground w-6">#</th>
-                                                        <th className="px-2 py-1.5 text-right font-semibold text-muted-foreground">IMEI 1 *</th>
-                                                        <th className="px-2 py-1.5 text-right font-semibold text-muted-foreground">IMEI 2</th>
-                                                        <th className="px-2 py-1.5 text-right font-semibold text-muted-foreground">اللون</th>
-                                                        <th className="px-2 py-1.5 text-right font-semibold text-muted-foreground">الباركود</th>
-                                                        {!editId && units.length > 1 && <th className="px-1 py-1.5 w-8"></th>}
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    {units.map((u, idx) => (
-                                                        <tr key={idx} className="border-b border-border/40 last:border-0">
-                                                            <td className="px-2 py-1 text-center font-bold text-muted-foreground">{idx + 1}</td>
-                                                            <td className="px-1 py-1"><input value={u.imei1} onChange={e => { const v = e.target.value; setUnits(us => us.map((uu, i) => i === idx ? { ...uu, imei1: v } : uu)); }} placeholder="IMEI 1" className="w-full rounded-md border border-border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary/40" /></td>
-                                                            <td className="px-1 py-1"><input value={u.imei2} onChange={e => { const v = e.target.value; setUnits(us => us.map((uu, i) => i === idx ? { ...uu, imei2: v } : uu)); }} placeholder="اختياري" className="w-full rounded-md border border-border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary/40" /></td>
-                                                            <td className="px-1 py-1"><input value={u.color} onChange={e => { const v = e.target.value; setUnits(us => us.map((uu, i) => i === idx ? { ...uu, color: v } : uu)); }} placeholder="اللون" className="w-full rounded-md border border-border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary/40" /></td>
-                                                            <td className="px-1 py-1"><input value={u.barcode} onChange={e => { const v = e.target.value; setUnits(us => us.map((uu, i) => i === idx ? { ...uu, barcode: v } : uu)); }} placeholder="تلقائي" className="w-full rounded-md border border-border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary/40" /></td>
-                                                            {!editId && units.length > 1 && (
-                                                                <td className="px-1 py-1 text-center">
-                                                                    <button type="button" onClick={() => setUnits(us => us.filter((_, i) => i !== idx))}
-                                                                        className="rounded-md p-1 hover:bg-red-50 dark:hover:bg-red-500/10 text-red-500 transition-colors">
-                                                                        <Trash2 className="h-3 w-3" />
-                                                                    </button>
-                                                                </td>
-                                                            )}
-                                                        </tr>
-                                                    ))}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                        <p className="text-[10px] text-muted-foreground">💡 كل وحدة تُسجَّل كسجل منفصل في المخزون بـ IMEI خاص بها</p>
-                                    </div>
+                                    {/* IMEI Section Removed */}
                             <div>
                                 <label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase flex items-center gap-1"><AlignLeft className="h-3 w-3" /> ملاحظات / تفاصيل</label>
                                 <textarea value={f.description} onChange={e => setF(p => ({ ...p, description: e.target.value }))} rows={2} className={`${IC} resize-none`} />

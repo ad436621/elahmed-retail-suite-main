@@ -14,7 +14,7 @@ const ACCESSORIES_KEY = STORAGE_KEYS.DEVICE_ACCESSORIES;
 // ─── Devices ─────────────────────────────────────────────────
 
 export function getDevices(): DeviceItem[] {
-    return getStorageItem<DeviceItem[]>(DEVICES_KEY, []);
+    return getStorageItem<DeviceItem[]>(DEVICES_KEY, []).filter(d => !d.isArchived && !d.deletedAt);
 }
 
 export function saveDevices(items: DeviceItem[]): void {
@@ -22,7 +22,7 @@ export function saveDevices(items: DeviceItem[]): void {
 }
 
 export function addDevice(item: Omit<DeviceItem, 'id' | 'createdAt' | 'updatedAt'>): DeviceItem {
-    const all = getDevices();
+    const all = getStorageItem<DeviceItem[]>(DEVICES_KEY, []);
     const newItem: DeviceItem = {
         ...item,
         id: crypto.randomUUID(),
@@ -51,19 +51,23 @@ export function addDevice(item: Omit<DeviceItem, 'id' | 'createdAt' | 'updatedAt
 }
 
 export function updateDevice(id: string, updates: Partial<DeviceItem>): void {
-    saveDevices(getDevices().map(d =>
+    const all = getStorageItem<DeviceItem[]>(DEVICES_KEY, []);
+    saveDevices(all.map(d =>
         d.id === id ? { ...d, ...updates, updatedAt: new Date().toISOString() } : d
     ));
 }
 
 export function deleteDevice(id: string): void {
-    saveDevices(getDevices().filter(d => d.id !== id));
+    const all = getStorageItem<DeviceItem[]>(DEVICES_KEY, []);
+    saveDevices(all.map(d =>
+        d.id === id ? { ...d, isArchived: true, deletedAt: new Date().toISOString() } : d
+    ));
 }
 
 // ─── Device Accessories ───────────────────────────────────────
 
 export function getDeviceAccessories(): DeviceAccessory[] {
-    return getStorageItem<DeviceAccessory[]>(ACCESSORIES_KEY, []);
+    return getStorageItem<DeviceAccessory[]>(ACCESSORIES_KEY, []).filter(a => !a.isArchived && !a.deletedAt);
 }
 
 export function saveDeviceAccessories(items: DeviceAccessory[]): void {
@@ -71,7 +75,7 @@ export function saveDeviceAccessories(items: DeviceAccessory[]): void {
 }
 
 export function addDeviceAccessory(item: Omit<DeviceAccessory, 'id' | 'createdAt' | 'updatedAt'>): DeviceAccessory {
-    const all = getDeviceAccessories();
+    const all = getStorageItem<DeviceAccessory[]>(ACCESSORIES_KEY, []);
     const newItem: DeviceAccessory = {
         ...item,
         id: crypto.randomUUID(),
@@ -99,11 +103,15 @@ export function addDeviceAccessory(item: Omit<DeviceAccessory, 'id' | 'createdAt
 }
 
 export function updateDeviceAccessory(id: string, updates: Partial<DeviceAccessory>): void {
-    saveDeviceAccessories(getDeviceAccessories().map(a =>
+    const all = getStorageItem<DeviceAccessory[]>(ACCESSORIES_KEY, []);
+    saveDeviceAccessories(all.map(a =>
         a.id === id ? { ...a, ...updates, updatedAt: new Date().toISOString() } : a
     ));
 }
 
 export function deleteDeviceAccessory(id: string): void {
-    saveDeviceAccessories(getDeviceAccessories().filter(a => a.id !== id));
+    const all = getStorageItem<DeviceAccessory[]>(ACCESSORIES_KEY, []);
+    saveDeviceAccessories(all.map(a =>
+        a.id === id ? { ...a, isArchived: true, deletedAt: new Date().toISOString() } : a
+    ));
 }

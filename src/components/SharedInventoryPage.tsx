@@ -15,6 +15,7 @@ import { getWeightedAvgCost } from '@/data/batchesData';
 import { ProductBatchesModal } from '@/components/ProductBatchesModal';
 import { loadCats, saveCats } from '@/data/categoriesData';
 import { ExcelColumnMappingDialog } from '@/components/ExcelColumnMappingDialog';
+import { getWarehouses, Warehouse } from '@/data/warehousesData';
 import { cn } from '@/lib/utils';
 
 // ─── Types ────────────────────────────────────────────────────
@@ -40,6 +41,8 @@ interface SharedInventoryRecord extends Record<string, unknown> {
     image?: string;
     createdAt: string;
     updatedAt: string;
+    warehouseId?: string;
+    isArchived?: boolean;
 }
 
 interface SharedInventoryPayload {
@@ -56,6 +59,8 @@ interface SharedInventoryPayload {
     notes: string;
     description: string;
     image?: string;
+    warehouseId?: string;
+    isArchived?: boolean;
     [key: string]: unknown;
 }
 
@@ -123,7 +128,7 @@ export interface SharedInventoryConfig {
 const makeEmptyForm = () => ({
     name: '', barcode: '', category: '', condition: 'new' as 'new' | 'used',
     quantity: 1, oldCostPrice: 0, newCostPrice: 0, salePrice: 0,
-    model: '', color: '', extra: '', notes: '', description: '', image: undefined as string | undefined
+    model: '', color: '', extra: '', notes: '', description: '', image: undefined as string | undefined, warehouseId: ''
 });
 
 const IC = "w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all placeholder:text-muted-foreground/60";
@@ -291,6 +296,11 @@ export default function SharedInventoryPage({ config }: { config: SharedInventor
     const [showCatManager, setShowCatManager] = useState(false);
     const [activeBatchesModal, setActiveBatchesModal] = useState<{ id: string; name: string } | null>(null);
     const [showExcelRestore, setShowExcelRestore] = useState(false);
+    const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+
+    useEffect(() => {
+        getWarehouses().then(setWarehouses).catch(console.error);
+    }, []);
 
     useEffect(() => {
         const s = (location.state as { filter?: string })?.filter;
@@ -350,6 +360,7 @@ export default function SharedInventoryPage({ config }: { config: SharedInventor
             quantity: f.quantity, model: f.model, color: f.color,
             oldCostPrice: f.oldCostPrice, newCostPrice: f.newCostPrice, salePrice: f.salePrice,
             notes: f.notes, description: f.description, image: f.image,
+            warehouseId: f.warehouseId || warehouses.find(w => w.isDefault)?.id || '',
         };
         if (config.extraDeviceField) payload[config.extraDeviceField.key] = f.extra;
         if (editId) config.updateDevice(editId, payload);
@@ -371,7 +382,8 @@ export default function SharedInventoryPage({ config }: { config: SharedInventor
             name: item.name, barcode: item.barcode || '', category: item.category || '', condition: item.condition,
             quantity: item.quantity, oldCostPrice: item.oldCostPrice, newCostPrice: item.newCostPrice, salePrice: item.salePrice,
             model: item.model || '', color: item.color || '', extra: item.extra || '',
-            notes: item.notes || '', description: item.description || '', image: item.image
+            notes: item.notes || '', description: item.description || '', image: item.image,
+            warehouseId: item._raw.warehouseId || ''
         });
         setEditId(item.id);
         setShowForm(true);
@@ -576,6 +588,16 @@ export default function SharedInventoryPage({ config }: { config: SharedInventor
                                         <button type="button" onClick={() => setF(p => ({ ...p, condition: 'new' }))} className={`flex-1 rounded-xl border text-sm font-semibold transition-all ${f.condition === 'new' ? 'bg-primary/10 border-primary text-primary' : 'bg-transparent border-input text-muted-foreground'}`}>جديد</button>
                                         <button type="button" onClick={() => setF(p => ({ ...p, condition: 'used' }))} className={`flex-1 rounded-xl border text-sm font-semibold transition-all ${f.condition === 'used' ? 'bg-orange-100 dark:bg-orange-500/15 border-orange-400 dark:border-orange-500/30 text-orange-700 dark:text-orange-400' : 'bg-transparent border-input text-muted-foreground'}`}>مستعمل</button>
                                     </div>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 mt-3">
+                                <div>
+                                    <label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase">المخزن *</label>
+                                    <select value={f.warehouseId} onChange={e => setF(p => ({ ...p, warehouseId: e.target.value }))} className={IC}>
+                                        <option value="">-- الافتراضي --</option>
+                                        {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                                    </select>
                                 </div>
                             </div>
 

@@ -37,6 +37,7 @@ export interface Product {
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
+  warehouseId?: string;
 }
 
 export interface CartItem {
@@ -55,6 +56,7 @@ export interface SaleItem {
   cost: number;
   lineDiscount: number;
   batches?: BatchSaleResult['batches']; // To track exact FIFO deductions for returns/profits
+  warehouseId?: string;
 }
 
 export interface Sale {
@@ -88,6 +90,7 @@ export interface StockMovement {
   referenceId: string | null;
   userId: string;
   timestamp: string;
+  warehouseId?: string;
 }
 
 export type AuditAction =
@@ -206,6 +209,9 @@ export interface MobileItem {
   notes: string;
   description: string;  // detailed product description
   image?: string;       // base64 data URL
+  warehouseId?: string; // Phase 4
+  isArchived?: boolean; // Phase 4
+  deletedAt?: string | null; // Phase 4
   createdAt: string;
   updatedAt: string;
 }
@@ -232,6 +238,9 @@ export interface MobileAccessory {
   notes: string;
   description: string;
   image?: string;
+  warehouseId?: string; // Phase 4
+  isArchived?: boolean; // Phase 4
+  deletedAt?: string | null; // Phase 4
   createdAt: string;
   updatedAt: string;
 }
@@ -258,6 +267,9 @@ export interface MobileSparePart {
   notes: string;
   description: string;
   image?: string;
+  warehouseId?: string; // Phase 4
+  isArchived?: boolean; // Phase 4
+  deletedAt?: string | null; // Phase 4
   createdAt: string;
   updatedAt: string;
 }
@@ -281,6 +293,9 @@ export interface DeviceItem {
   notes: string;
   description: string;
   image?: string;
+  warehouseId?: string; // Phase 4
+  isArchived?: boolean; // Phase 4
+  deletedAt?: string | null; // Phase 4
   createdAt: string;
   updatedAt: string;
 }
@@ -300,6 +315,9 @@ export interface DeviceAccessory {
   notes: string;
   description: string;
   image?: string;
+  warehouseId?: string; // Phase 4
+  isArchived?: boolean; // Phase 4
+  deletedAt?: string | null; // Phase 4
   createdAt: string;
   updatedAt: string;
 }
@@ -327,6 +345,9 @@ export interface ComputerItem {
   notes: string;
   description: string;
   image?: string;
+  warehouseId?: string; // Phase 4
+  isArchived?: boolean; // Phase 4
+  deletedAt?: string | null; // Phase 4
   createdAt: string;
   updatedAt: string;
 }
@@ -346,6 +367,9 @@ export interface ComputerAccessory {
   notes: string;
   description: string;
   image?: string;
+  warehouseId?: string; // Phase 4
+  isArchived?: boolean; // Phase 4
+  deletedAt?: string | null; // Phase 4
   createdAt: string;
   updatedAt: string;
 }
@@ -370,6 +394,9 @@ export interface UsedDevice {
   salePrice: number;
   description: string;
   image?: string;
+  warehouseId?: string; // Phase 4
+  isArchived?: boolean; // Phase 4
+  deletedAt?: string | null; // Phase 4
   createdAt: string;
   updatedAt: string;
 }
@@ -542,6 +569,9 @@ export interface CarItem {
   salePrice: number;       // sale price
   notes: string;
   image?: string;
+  warehouseId?: string; // Phase 4
+  isArchived?: boolean; // Phase 4
+  deletedAt?: string | null; // Phase 4
   createdAt: string;
   updatedAt: string;
 }

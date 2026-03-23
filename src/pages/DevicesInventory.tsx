@@ -32,6 +32,7 @@ import { ImageUpload } from '@/components/ImageUpload';
 import {
     getDevices, addDevice, updateDevice, deleteDevice,
 } from '@/data/devicesData';
+import { getWarehouses, Warehouse } from '@/data/warehousesData';
 import { DeviceItem } from '@/domain/types';
 import { loadCats, saveCats } from '@/data/categoriesData';
 import { getWeightedAvgCost } from '@/data/batchesData';
@@ -58,13 +59,14 @@ interface DeviceFormData {
     notes: string;
     description: string;
     image?: string;
+    warehouseId: string;
 }
 
 const emptyForm = (): DeviceFormData => ({
     name: '', model: '', barcode: '', category: '',
     condition: 'new', color: '', quantity: 1,
     oldCostPrice: 0, newCostPrice: 0, salePrice: 0,
-    notes: '', description: '', image: undefined
+    notes: '', description: '', image: undefined, warehouseId: ''
 });
 
 // Accent styles for orange theme
@@ -270,6 +272,11 @@ export default function DevicesInventory() {
     const devices = getDevices();
     const [categories, setCategories] = useState<string[]>(() => loadCats('devices_cats', ['شاشات', 'ريسيفرات', 'راوترات']));
     const [showCatManager, setShowCatManager] = useState(false);
+    const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+
+    useEffect(() => {
+        getWarehouses().then(setWarehouses).catch(console.error);
+    }, []);
 
     const handleSaveCats = useCallback((updated: string[]) => {
         saveCats('devices_cats', updated);
@@ -338,6 +345,7 @@ export default function DevicesInventory() {
                 notes: item.notes || '',
                 description: item.description || '',
                 image: item.image,
+                warehouseId: item.warehouseId || '',
             });
         } else {
             setEditingId(null);
@@ -374,6 +382,7 @@ export default function DevicesInventory() {
             notes: form.notes,
             description: form.description,
             image: form.image,
+            warehouseId: form.warehouseId || warehouses.find(w => w.isDefault)?.id || '',
         };
 
         if (editingId) {
@@ -689,6 +698,20 @@ export default function DevicesInventory() {
                                 <SelectContent>
                                     {categories.map((cat, i) => (
                                         <SelectItem key={i} value={cat}>{cat}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+
+                        <div>
+                            <label className="text-sm font-medium mb-1.5 block">المخزن *</label>
+                            <Select value={form.warehouseId} onValueChange={(v) => setForm(f => ({ ...f, warehouseId: v }))}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="-- الافتراضي --" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {warehouses.map(w => (
+                                        <SelectItem key={w.id} value={w.id}>{w.name}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>

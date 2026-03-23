@@ -2,7 +2,7 @@
 // صفحة التقارير — Reports Page
 // ============================================================
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import {
     BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
     XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area,
@@ -150,8 +150,17 @@ export default function ReportsPage() {
     // #18 FIX: New module data
     const suppliers = useMemo(() => getSuppliers(), []);
     const supplierTxns = useMemo(() => getSupplierTransactions(), []);
-    const wallets = useMemo(() => getWallets(), []);
-    const walletTxns = useMemo(() => getWalletTransactions(), []);
+    
+    // #18 FIX Async wallets data
+    const [wallets, setWallets] = useState<any[]>([]);
+    const [walletTxns, setWalletTxns] = useState<any[]>([]);
+    const [walletTotalBalance, setWalletTotalBalance] = useState(0);
+    
+    useEffect(() => {
+        getWallets().then(setWallets).catch(console.error);
+        getWalletTransactions().then(setWalletTxns).catch(console.error);
+        getTotalBalance().then(setWalletTotalBalance).catch(console.error);
+    }, []);
     const employees = useMemo(() => getEmployees(), []);
 
     // ── Date filtering ─────────────────────────────────────────
@@ -169,7 +178,7 @@ export default function ReportsPage() {
         [expenses, from, to]
     );
     const filteredContracts = useMemo(
-        () => contracts.filter(c => inRange(c.createdAt ?? c.date, from, to)),
+        () => contracts.filter(c => inRange(c.createdAt || (c as any).date, from, to)),
         [contracts, from, to]
     );
 
@@ -184,6 +193,8 @@ export default function ReportsPage() {
     const netProfit = salesSummary.totalProfit + maintProfit + totalOtherRev - totalExpenses - totalDamaged;
     const profitMargin = salesSummary.profitMarginPercent;
     const avgInvoice = salesSummary.avgInvoice;
+    const totalRevenue = salesSummary.totalRevenue;
+    const totalProfit = salesSummary.totalProfit;
 
     // ── Inventory Values ──────────────────────────────────────
     const mobileInvValue = useMemo(() => mobiles.reduce((s, m) => s + (getWeightedAvgCost(m.id) || m.newCostPrice) * (m.quantity || 1), 0), [mobiles]);
@@ -871,7 +882,7 @@ export default function ReportsPage() {
                                         <div key={t.id} className="flex items-center justify-between p-2.5 rounded-lg border border-border/30">
                                             <div>
                                                 <p className="text-xs font-semibold text-foreground">{t.type === 'purchase' ? '🛒 شراء' : t.type === 'payment' ? '💸 سداد' : '↩ مرتجع'}</p>
-                                                <p className="text-[10px] text-muted-foreground">{t.date?.slice(0, 10)}</p>
+                                                <p className="text-[10px] text-muted-foreground">{(t as any).date?.slice(0, 10)}</p>
                                             </div>
                                             <span className={`text-sm font-black tabular-nums ${t.type === 'purchase' ? 'text-red-500' : 'text-emerald-500'}`}>
                                                 {t.type === 'purchase' ? '+' : '-'}{fmt(t.amount)} ج.م
@@ -891,7 +902,7 @@ export default function ReportsPage() {
             {activeTab === 'wallets' && (
                 <div className="space-y-6">
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                        <KPICard label="إجمالي الرصيد" value={`${fmt(getTotalBalance())} ج.م`} sub="كل المحافظ" icon={DollarSign} color="bg-emerald-500" />
+                        <KPICard label="إجمالي الرصيد" value={`${fmt(walletTotalBalance)} ج.م`} sub="كل المحافظ" icon={DollarSign} color="bg-emerald-500" />
                         <KPICard label="عدد المحافظ" value={`${wallets.length}`} sub="محافظ وحسابات" icon={Receipt} color="bg-primary" />
                         <KPICard label="معاملات الإيداع" value={`${walletTxns.filter(t => t.type === 'deposit').length}`} icon={TrendingUp} color="bg-blue-500" />
                         <KPICard label="معاملات السحب" value={`${walletTxns.filter(t => t.type === 'withdrawal').length}`} icon={TrendingDown} color="bg-red-500" />
@@ -905,7 +916,7 @@ export default function ReportsPage() {
                             ) : (
                                 <div className="space-y-3">
                                     {[...wallets].sort((a, b) => b.balance - a.balance).map(w => {
-                                        const total = Math.max(getTotalBalance(), 1);
+                                        const total = Math.max(walletTotalBalance, 1);
                                         const pctW = Math.round((w.balance / total) * 100);
                                         return (
                                             <div key={w.id} className="space-y-1.5">
@@ -954,9 +965,9 @@ export default function ReportsPage() {
                 <div className="space-y-6">
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                         <KPICard label="إجمالي الموظفين" value={`${employees.length}`} sub="موظف مسجل" icon={Users} color="bg-primary" />
-                        <KPICard label="موظفون نشطون" value={`${employees.filter(e => e.status === 'active').length}`} icon={TrendingUp} color="bg-emerald-500" />
-                        <KPICard label="موظفون مستقيلون" value={`${employees.filter(e => e.status === 'resigned').length}`} icon={TrendingDown} color="bg-red-500" />
-                        <KPICard label="إجمالي الرواتب" value={`${fmt(employees.reduce((s, e) => s + (e.salary || 0), 0))} ج.م`} sub="شهرياً" icon={DollarSign} color="bg-amber-500" />
+                        <KPICard label="موظفون نشطون" value={`${employees.filter(e => e.isActive).length}`} icon={TrendingUp} color="bg-emerald-500" />
+                        <KPICard label="موظفون مستقيلون" value={`${employees.filter(e => !e.isActive).length}`} icon={TrendingDown} color="bg-red-500" />
+                        <KPICard label="إجمالي الرواتب" value={`${fmt(employees.reduce((s, e) => s + (e.baseSalary || 0), 0))} ج.م`} sub="شهرياً" icon={DollarSign} color="bg-amber-500" />
                     </div>
 
                     <Card>
@@ -979,10 +990,10 @@ export default function ReportsPage() {
                                             <tr key={e.id} className="border-b border-border/20 hover:bg-muted/30 transition-colors">
                                                 <td className="py-2.5 px-3 font-medium text-foreground">{e.name}</td>
                                                 <td className="py-2.5 px-3 text-muted-foreground">{e.position || '—'}</td>
-                                                <td className="py-2.5 px-3 font-bold tabular-nums">{fmt(e.salary || 0)} ج.م</td>
+                                                <td className="py-2.5 px-3 font-bold tabular-nums">{fmt(e.baseSalary || 0)} ج.م</td>
                                                 <td className="py-2.5 px-3">
-                                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${e.status === 'active' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
-                                                        {e.status === 'active' ? 'نشط' : 'غير نشط'}
+                                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${e.isActive ? 'bg-emerald-500/10 text-emerald-500' : 'bg-red-500/10 text-red-500'}`}>
+                                                        {e.isActive ? 'نشط' : 'غير نشط'}
                                                     </span>
                                                 </td>
                                             </tr>

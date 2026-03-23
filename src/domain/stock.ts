@@ -46,7 +46,8 @@ export function createStockMovement(
   previousQuantity: number,
   reason: string,
   userId: string,
-  referenceId: string | null = null
+  referenceId: string | null = null,
+  warehouseId?: string
 ): StockMovement {
   const newQuantity = calculateNewQuantity(previousQuantity, quantityChange);
 
@@ -61,6 +62,7 @@ export function createStockMovement(
     referenceId,
     userId,
     timestamp: new Date().toISOString(),
+    warehouseId,
   };
 }
 

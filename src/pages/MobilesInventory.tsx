@@ -15,6 +15,7 @@ import { exportToExcel, MOBILE_COLUMNS, prepareConditionForExport } from '@/serv
 import {
     getMobiles, addMobile, updateMobile, deleteMobile,
 } from '@/data/mobilesData';
+import { getWarehouses, Warehouse } from '@/data/warehousesData';
 import { MobileItem } from '@/domain/types';
 import { getWeightedAvgCost } from '@/data/batchesData';
 import { useToast } from '@/hooks/use-toast';
@@ -33,7 +34,7 @@ const emptyForm = {
     quantity: 1, oldCostPrice: 0, newCostPrice: 0, salePrice: 0,
     storage: '', ram: '', color: '', supplier: '', serialNumber: '',
     imei2: '', model: '', description: '', image: '', notes: '', subcategory: '',
-    boxNumber: '', source: '', taxExcluded: false,
+    boxNumber: '', source: '', taxExcluded: false, warehouseId: '',
 };
 
 interface UnitEntry {
@@ -48,6 +49,7 @@ interface InventoryViewItem {
     _type: 'device';
     id: string;
     name: string;
+    model?: string;
     barcode?: string;
     image?: string;
     description: string;
@@ -63,6 +65,7 @@ interface InventoryViewItem {
     color: string;
     supplier: string;
     serialNumber: string;
+    warehouseId: string;
 }
 
 const emptyUnit = (): UnitEntry => ({ imei1: '', imei2: '', color: '', barcode: '' });
@@ -243,6 +246,11 @@ export default function MobilesInventory() {
     const { confirm } = useConfirm();
 
     const [categories, setCategories] = useState<string[]>(() => loadCats('mobiles_main_cats', ['موبايلات', 'تابلت', 'ساعات ذكية']));
+    const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+
+    useEffect(() => {
+        getWarehouses().then(setWarehouses).catch(console.error);
+    }, []);
 
     const mobiles = useInventoryData(getMobiles, ['gx_mobiles_v2']);
     const [search, setSearch] = useState('');
@@ -284,7 +292,8 @@ export default function MobilesInventory() {
                 id: m.id, name: m.name, barcode: m.barcode, image: m.image, description: m.description,
                 quantity: m.quantity, salePrice: m.salePrice, newCostPrice: m.newCostPrice, oldCostPrice: m.oldCostPrice,
                 category: m.category, condition: m.condition || 'new', categoryName: m.category,
-                storage: m.storage, ram: m.ram, color: m.color, supplier: m.supplier, serialNumber: m.serialNumber
+                storage: m.storage, ram: m.ram, color: m.color, supplier: m.supplier, serialNumber: m.serialNumber,
+                warehouseId: m.warehouseId || ''
             });
         });
         return list;
@@ -378,7 +387,7 @@ export default function MobilesInventory() {
                 oldCostPrice: f.oldCostPrice, newCostPrice: f.newCostPrice, salePrice: f.salePrice,
                 serialNumber: u.imei1 || f.serialNumber, imei2: u.imei2 || f.imei2,
                 boxNumber: f.boxNumber, source: f.source, taxExcluded: f.taxExcluded,
-                notes: '', description: f.description, image: f.image,
+                notes: '', description: f.description, image: f.image, warehouseId: f.warehouseId,
             });
             toast({ title: '✅ تم تعديل المنتج' });
         } else {
@@ -396,7 +405,7 @@ export default function MobilesInventory() {
                     supplier: f.supplier, oldCostPrice: f.oldCostPrice, newCostPrice: f.newCostPrice,
                     salePrice: f.salePrice, serialNumber: u.imei1, imei2: u.imei2,
                     boxNumber: f.boxNumber, source: f.source, taxExcluded: f.taxExcluded,
-                    notes: '', description: f.description, image: f.image,
+                    notes: '', description: f.description, image: f.image, warehouseId: f.warehouseId || warehouses.find(w => w.isDefault)?.id || '',
                 });
             });
             toast({ title: `✅ تم إضافة ${validUnits.length} وحدة` });
@@ -417,7 +426,7 @@ export default function MobilesInventory() {
             supplier: item.supplier || '', serialNumber: item.serialNumber || '',
             imei2: item._raw?.imei2 || '', model: item.model || '', description: item.description || '', image: item.image || '',
             boxNumber: item._raw?.boxNumber || '', source: item._raw?.source || '', taxExcluded: item._raw?.taxExcluded || false,
-            notes: '', subcategory: '',
+            notes: '', subcategory: '', warehouseId: item.warehouseId || '',
         });
         setUnits([{ imei1: item.serialNumber || '', imei2: item._raw?.imei2 || '', color: item.color || '', barcode: item.barcode || '' }]);
         setCustomSupplier(!!item.supplier && !BRAND_OPTIONS.includes(item.supplier));
@@ -804,9 +813,19 @@ export default function MobilesInventory() {
                                 <div className="col-span-2 sm:col-span-1">
                                     <div className="flex flex-wrap gap-2 h-auto text-center mt-1">
                                                         {[{v: 'new', l: 'جديد'}, {v: 'like_new', l: 'مثل الجديد'}, {v: 'used', l: 'مستعمل'}, {v: 'broken', l: 'معطل'}].map(cond => (
-                                                            <button key={cond.v} type="button" onClick={() => setF(p => ({ ...p, condition: cond.v }))} className={`flex-1 py-1.5 rounded-xl border text-[13px] font-semibold transition-all ${f.condition === cond.v ? 'bg-primary/10 border-primary text-primary' : 'bg-transparent border-input text-muted-foreground'}`}>{cond.l}</button>
+                                                            <button key={cond.v} type="button" onClick={() => setF(p => ({ ...p, condition: cond.v as typeof p.condition }))} className={`flex-1 py-1.5 rounded-xl border text-[13px] font-semibold transition-all ${f.condition === cond.v ? 'bg-primary/10 border-primary text-primary' : 'bg-transparent border-input text-muted-foreground'}`}>{cond.l}</button>
                                                         ))}
                                     </div>
+                                </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-1">
+                                <div>
+                                    <label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase">المخزن *</label>
+                                    <select value={f.warehouseId} onChange={e => setF(p => ({ ...p, warehouseId: e.target.value }))} className={IC}>
+                                        <option value="">-- الافتراضي --</option>
+                                        {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                                    </select>
                                 </div>
                             </div>
 
@@ -814,8 +833,10 @@ export default function MobilesInventory() {
 
                             <div className="grid grid-cols-2 gap-3">
                                 <div><label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase">اسم المنتج *</label><input data-validation="text-only" value={f.name} onChange={e => setF(p => ({ ...p, name: e.target.value }))} className={IC} autoFocus /></div>
-                                <div><label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase">الباركود</label><input value={f.barcode} onChange={e => setF(p => ({ ...p, barcode: e.target.value }))} placeholder="تلقائي" className={IC} /></div>
+                                <div><label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase">الباركود</label><input value={f.barcode} onChange={e => setF(p => ({ ...p, barcode: e.target.value }))} placeholder="اتركه فارغاً للتوليد التلقائي" className={`${IC} font-mono`} /></div>
                             </div>
+
+                            <div className="border-t border-border/50" />
 
                                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-muted/20 p-3 rounded-xl border border-border/40">
                                         <div className="col-span-full mb-1"><span className="text-xs font-bold text-primary flex items-center gap-1"><Smartphone className="w-3.5 h-3.5" /> مواصفات الجهاز</span></div>

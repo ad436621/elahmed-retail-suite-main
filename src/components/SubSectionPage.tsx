@@ -29,6 +29,9 @@ export interface SubItem {
     costPrice: number;
     salePrice: number;
     minStock?: number;
+    barcode?: string;
+    supplier?: string;
+    condition?: 'new' | 'like_new' | 'used' | 'broken';
     notes?: string;
     image?: string;
     createdAt?: string;
@@ -272,7 +275,7 @@ function CategoriesManager({ cats, onSave, onClose, addBtnClass }: {
 
 const IC = 'w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all';
 const emptyForm = (): Omit<SubItem, 'id' | 'createdAt' | 'updatedAt'> => ({
-    name: '', brand: '', category: '', model: '',
+    name: '', brand: '', category: '', model: '', barcode: '', supplier: '', condition: 'new',
     quantity: 0, costPrice: 0, salePrice: 0, minStock: 2, notes: '', image: undefined,
 });
 
@@ -332,6 +335,7 @@ export default function SubSectionPage({ config }: { config: SubSectionPageConfi
             name: item.name, brand: item.brand ?? '', category: item.category ?? '',
             model: item.model ?? '', quantity: item.quantity, costPrice: item.costPrice,
             salePrice: item.salePrice, minStock: item.minStock ?? 2,
+            barcode: item.barcode ?? '', supplier: item.supplier ?? '', condition: item.condition ?? 'new',
             notes: item.notes ?? '', image: item.image,
         });
         setEditId(item.id); setShowForm(true);
@@ -477,8 +481,25 @@ export default function SubSectionPage({ config }: { config: SubSectionPageConfi
                                 <input value={form.brand ?? ''} onChange={e => setForm(f => ({ ...f, brand: e.target.value }))} className={IC} />
                             </div>
                             <div>
+                                <label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase">الباركود</label>
+                                <input value={form.barcode ?? ''} onChange={e => setForm(f => ({ ...f, barcode: e.target.value }))} placeholder="تلقائي إن تُرِك فارغاً" className={IC} />
+                            </div>
+                            <div>
                                 <label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase">الموديل</label>
                                 <input value={form.model ?? ''} onChange={e => setForm(f => ({ ...f, model: e.target.value }))} className={IC} />
+                            </div>
+                            <div>
+                                <label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase">الحالة</label>
+                                <select value={form.condition ?? 'new'} onChange={e => setForm(f => ({ ...f, condition: e.target.value as any }))} className={IC}>
+                                    <option value="new">جديد</option>
+                                    <option value="like_new">مثل الجديد</option>
+                                    <option value="used">مستعمل</option>
+                                    <option value="broken">معطل</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase">المورد</label>
+                                <input value={form.supplier ?? ''} onChange={e => setForm(f => ({ ...f, supplier: e.target.value }))} className={IC} />
                             </div>
                             {cats.length > 0 && (
                                 <div>
@@ -551,6 +572,8 @@ export default function SubSectionPage({ config }: { config: SubSectionPageConfi
                             {cats.length > 0 && (
                                 <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground">التصنيف</th>
                             )}
+                            <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground">الحالة</th>
+                            <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground">المورد</th>
                             <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground">الكمية</th>
                             <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground">سعر الشراء</th>
                             <th className="px-4 py-3 text-right text-xs font-semibold text-muted-foreground">سعر البيع</th>
@@ -561,7 +584,7 @@ export default function SubSectionPage({ config }: { config: SubSectionPageConfi
                     <tbody>
                         {filtered.length === 0 ? (
                             <tr>
-                                <td colSpan={cats.length ? 8 : 7}
+                                <td colSpan={cats.length ? 10 : 9}
                                     className="py-16 text-center text-muted-foreground">
                                     <span className={cn('block mx-auto mb-3 opacity-20 [&>svg]:h-10 [&>svg]:w-10 [&>svg]:mx-auto', config.iconText)}>
                                         {config.icon}
@@ -603,6 +626,12 @@ export default function SubSectionPage({ config }: { config: SubSectionPageConfi
                                         ) : '—'}
                                     </td>
                                 )}
+                                <td className="px-4 py-3">
+                                    <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${item.condition === 'used' || item.condition === 'broken' ? 'bg-orange-100 dark:bg-orange-500/15 text-orange-700 dark:text-orange-400' : 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'}`}>
+                                        {item.condition === 'new' ? 'جديد' : item.condition === 'like_new' ? 'مثل الجديد' : item.condition === 'broken' ? 'معطل' : item.condition === 'used' ? 'مستعمل' : 'جديد'}
+                                    </span>
+                                </td>
+                                <td className="px-4 py-3 text-xs text-muted-foreground">{item.supplier || '—'}</td>
                                 <td className="px-4 py-3">
                                     <span className={cn('font-bold text-sm',
                                         item.minStock !== undefined && item.quantity <= item.minStock

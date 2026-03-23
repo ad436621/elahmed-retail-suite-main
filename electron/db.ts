@@ -157,6 +157,83 @@ export function initializeDatabase() {
       paymentDate TEXT,
       FOREIGN KEY (contractId) REFERENCES installments(id) ON DELETE CASCADE
     );
+
+    -- ==========================================
+    -- NEW RELATIONAL TABLES (ELOS MIGRATION)
+    -- ==========================================
+
+    CREATE TABLE IF NOT EXISTS warehouses (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      location TEXT,
+      isDefault INTEGER DEFAULT 0,
+      notes TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS accessories (
+      id TEXT PRIMARY KEY,
+      warehouseId TEXT,
+      inventoryType TEXT NOT NULL, -- 'mobile_accessory', 'computer_spare_part', etc.
+      name TEXT NOT NULL,
+      category TEXT,
+      subcategory TEXT,
+      model TEXT,
+      barcode TEXT,
+      quantity INTEGER DEFAULT 0,
+      costPrice REAL DEFAULT 0,
+      salePrice REAL DEFAULT 0,
+      minStock INTEGER DEFAULT 0,
+      condition TEXT DEFAULT 'new',
+      supplier TEXT,
+      color TEXT,
+      notes TEXT,
+      image TEXT,
+      createdAt TEXT,
+      updatedAt TEXT,
+      FOREIGN KEY (warehouseId) REFERENCES warehouses(id)
+    );
+
+    CREATE TABLE IF NOT EXISTS partners (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      phone TEXT,
+      address TEXT,
+      partnershipType TEXT NOT NULL, -- 'investor', 'franchise', etc.
+      sharePercent REAL DEFAULT 0,
+      profitShareDevices REAL DEFAULT 0,
+      profitShareAccessories REAL DEFAULT 0,
+      capitalAmount REAL DEFAULT 0,
+      active INTEGER DEFAULT 1,
+      notes TEXT,
+      createdAt TEXT,
+      updatedAt TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS partner_transactions (
+      id TEXT PRIMARY KEY,
+      partnerId TEXT NOT NULL,
+      type TEXT NOT NULL, -- 'investment', 'withdrawal', 'profit_distribution'
+      amount REAL NOT NULL,
+      description TEXT,
+      createdAt TEXT,
+      FOREIGN KEY (partnerId) REFERENCES partners(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS safe_transactions (
+      id TEXT PRIMARY KEY,
+      walletId TEXT NOT NULL, -- link to wallet UUID
+      type TEXT NOT NULL, -- 'deposit', 'withdrawal', 'transfer_in', 'transfer_out'
+      subType TEXT, -- 'opening_balance', 'partner_investment', 'expense', 'sale', 'purchase'
+      amount REAL NOT NULL,
+      category TEXT,
+      description TEXT,
+      paymentMethod TEXT,
+      affectsCapital INTEGER DEFAULT 0,
+      affectsProfit INTEGER DEFAULT 0,
+      createdBy TEXT,
+      relatedId TEXT, -- invoiceId, expenseId, etc.
+      createdAt TEXT
+    );
   `);
 
   return db;

@@ -3,7 +3,7 @@
 // Data access layer — persisted to localStorage
 // ============================================================
 
-import { Product, ProductSource, MobileItem, MobileAccessory, DeviceItem, DeviceAccessory, ComputerItem, ComputerAccessory, CarItem } from '@/domain/types';
+import { Product, ProductSource, ProductCondition, MobileItem, MobileAccessory, DeviceItem, DeviceAccessory, ComputerItem, ComputerAccessory, CarItem } from '@/domain/types';
 import { getMobiles, getMobileAccessories, updateMobile, updateMobileAccessory } from '@/data/mobilesData';
 import { getComputers, getComputerAccessories, updateComputer, updateComputerAccessory } from '@/data/computersData';
 import { getDevices, getDeviceAccessories, updateDevice, updateDeviceAccessory } from '@/data/devicesData';
@@ -82,7 +82,7 @@ const mapToProduct = (
   item: InventoryItem,
   categoryLabel: string,
   source: ProductSource = 'legacy',
-  condition?: 'new' | 'used',
+  condition?: ProductCondition,
   categoryId?: string,
 ): Product => ({
   id: item.id,
@@ -102,6 +102,7 @@ const mapToProduct = (
   createdAt: getCreatedAt(item),
   updatedAt: getUpdatedAt(item),
   deletedAt: null,
+  warehouseId: 'warehouseId' in item ? (item as any).warehouseId : undefined,
 });
 
 export function getAllInventoryProducts(): Product[] {

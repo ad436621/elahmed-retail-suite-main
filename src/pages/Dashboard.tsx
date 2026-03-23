@@ -64,7 +64,7 @@ const DAY_SHORT: Record<number, string> = {
   0: 'الأحد', 1: 'الاثنين', 2: 'الثلاثاء', 3: 'الأربعاء', 4: 'الخميس', 5: 'الجمعة', 6: 'السبت',
 };
 
-function WeeklyBarChart({ data }: { data: { day: string; rev: number; count: number }[] }) {
+function InlineWeeklyBarChart({ data }: { data: { day: string; rev: number; count: number }[] }) {
   const max = Math.max(...data.map(d => d.rev), 1);
   const todayIdx = new Date().getDay();
   // Rebuild with corrected short names using index
@@ -379,10 +379,14 @@ export default function Dashboard() {
   const thisMonthCount = useMemo(() => allSales.filter(s => !s.voidedAt && s.date?.startsWith(thisMonthStr)).length, [allSales, thisMonthStr]);
 
   // #17 FIX: New module stats — connected to real data sources
-  const walletTotalBalance = useMemo(() => getTotalBalance(), []);
-  const suppliersOwed = useMemo(() => getTotalOwedToSuppliers(), []);
-  const overdueReminders = useMemo(() => getPendingRemindersCount(), []);
-  const unpaidPurchases = useMemo(() => getTotalUnpaidPurchases(), []);
+  const [walletTotalBalance, setWalletTotalBalance] = useState(0);
+  useEffect(() => {
+    getTotalBalance().then(setWalletTotalBalance).catch(console.error);
+  }, [refreshKey]);
+
+  const suppliersOwed = useMemo(() => getTotalOwedToSuppliers(), [refreshKey]);
+  const overdueReminders = useMemo(() => getPendingRemindersCount(), [refreshKey]);
+  const unpaidPurchases = useMemo(() => getTotalUnpaidPurchases(), [refreshKey]);
 
   // ── Date display ──────────────────────────────────────────
   const dateLabel = new Date().toLocaleDateString('ar-EG', {

@@ -2,8 +2,8 @@
 // Wallets Page — Multi-wallet / treasury management
 // ============================================================
 
-import { useState, useMemo } from 'react';
-import { Wallet, Plus, TrendingUp, TrendingDown, ArrowLeftRight, X, Save, ChevronDown, ChevronUp, Trash2, Star } from 'lucide-react';
+import { useState, useMemo, useEffect } from 'react';
+import { Wallet, Plus, TrendingUp, TrendingDown, ArrowLeftRight, X, Save, ChevronDown, ChevronUp, Trash2, Star, Loader2 } from 'lucide-react';
 import {
     getWallets, getTransactions, addWallet, deleteWallet,
     deposit, withdraw, transfer, getTotalBalance,
@@ -31,23 +31,34 @@ function OperationModal({ wallet, wallets, type, onClose, onDone }: { wallet: Wa
     const [reason, setReason] = useState('');
     const [toWalletId, setToWalletId] = useState(wallets.find(w => w.id !== wallet.id)?.id ?? '');
     const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
 
     const labels: Record<OpType, string> = { deposit: 'إيداع في', withdrawal: 'سحب من', transfer: 'تحويل من' };
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         const amt = parseFloat(amount);
         if (!amt || amt <= 0) { setError('أدخل مبلغاً صحيحاً'); return; }
         if (!reason.trim()) { setError('أدخل سبب العملية'); return; }
         if ((type === 'withdrawal' || type === 'transfer') && amt > wallet.balance) { setError('الرصيد غير كافٍ'); return; }
-        if (type === 'transfer') { if (!toWalletId) { setError('اختر محفظة الوجهة'); return; } transfer(wallet.id, toWalletId, amt, reason); }
-        else if (type === 'deposit') deposit(wallet.id, amt, reason);
-        else withdraw(wallet.id, amt, reason);
-        onDone(); onClose();
+        if (type === 'transfer') { if (!toWalletId) { setError('اختر محفظة الوجهة'); return; } }
+
+        setLoading(true);
+        try {
+            if (type === 'transfer') await transfer(wallet.id, toWalletId, amt, reason);
+            else if (type === 'deposit') await deposit(wallet.id, amt, reason);
+            else await withdraw(wallet.id, amt, reason);
+            onDone();
+            onClose();
+        } catch (err: any) {
+            setError(err.message || 'حدث خطأ أثناء العملية');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in text-right" dir="rtl">
             <div className="w-full max-w-sm bg-card rounded-3xl border border-border shadow-2xl animate-scale-in">
                 <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-border/50">
                     <h2 className="text-base font-extrabold">{labels[type]} {wallet.name}</h2>
@@ -75,8 +86,8 @@ function OperationModal({ wallet, wallets, type, onClose, onDone }: { wallet: Wa
                             className="w-full rounded-xl border border-border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
                     </div>
                     <div className="flex gap-2 pt-1">
-                        <button type="submit" className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-colors">
-                            <Save className="h-4 w-4" /> تأكيد
+                        <button disabled={loading} type="submit" className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50">
+                            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} {loading ? 'جاري التنفيذ...' : 'تأكيد'}
                         </button>
                         <button type="button" onClick={onClose} className="rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted transition-colors">إلغاء</button>
                     </div>
@@ -93,16 +104,25 @@ function AddWalletModal({ onClose, onDone }: { onClose: () => void; onDone: () =
     const [icon, setIcon] = useState('💵');
     const [color, setColor] = useState(WALLET_COLORS[0].value);
     const [balance, setBalance] = useState('0');
+    const [loading, setLoading] = useState(false);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!name.trim()) return;
-        addWallet({ name, icon, color, balance: parseFloat(balance) || 0, isDefault: false });
-        onDone(); onClose();
+        setLoading(true);
+        try {
+            await addWallet({ name, icon, color, balance: parseFloat(balance) || 0, isDefault: false });
+            onDone();
+            onClose();
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm animate-fade-in text-right" dir="rtl">
             <div className="w-full max-w-sm bg-card rounded-3xl border border-border shadow-2xl animate-scale-in">
                 <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-border/50">
                     <h2 className="text-base font-extrabold">إضافة محفظة جديدة</h2>
@@ -138,8 +158,8 @@ function AddWalletModal({ onClose, onDone }: { onClose: () => void; onDone: () =
                         </div>
                     </div>
                     <div className="flex gap-2 pt-1">
-                        <button type="submit" className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-colors">
-                            <Save className="h-4 w-4" /> إضافة
+                        <button disabled={loading} type="submit" className="flex-1 flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-colors disabled:opacity-50">
+                            {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />} إضافة
                         </button>
                         <button type="button" onClick={onClose} className="rounded-xl border border-border px-4 py-2.5 text-sm font-medium text-muted-foreground hover:bg-muted transition-colors">إلغاء</button>
                     </div>
@@ -151,9 +171,13 @@ function AddWalletModal({ onClose, onDone }: { onClose: () => void; onDone: () =
 
 // ─── Wallet Card ─────────────────────────────────────────────
 
-function WalletCard({ wallet, allWallets, onOperation, onRefresh, onDelete }: { wallet: WalletType; allWallets: WalletType[]; onOperation: (w: WalletType, op: OpType) => void; onRefresh: () => void; onDelete: (w: WalletType) => void }) {
+function WalletCard({ wallet, allWallets, walletTxns, onOperation, onDelete }: { wallet: WalletType; allWallets: WalletType[]; walletTxns: WalletTransaction[]; onOperation: (w: WalletType, op: OpType) => void; onDelete: (w: WalletType) => void }) {
     const [showTxns, setShowTxns] = useState(false);
-    const txns = useMemo(() => getTransactions(wallet.id).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 20), [wallet.id, showTxns]);
+    
+    // Sort transactions latest first
+    const txns = useMemo(() => {
+        return [...walletTxns].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 20);
+    }, [walletTxns]);
 
     const txnLabel: Record<WalletTransaction['type'], string> = { deposit: 'إيداع', withdrawal: 'سحب', transfer_in: 'تحويل وارد', transfer_out: 'تحويل صادر' };
     const txnColor: Record<WalletTransaction['type'], string> = { deposit: 'text-emerald-600', withdrawal: 'text-rose-600', transfer_in: 'text-blue-600', transfer_out: 'text-amber-600' };
@@ -221,26 +245,44 @@ function WalletCard({ wallet, allWallets, onOperation, onRefresh, onDelete }: { 
 // ─── Main Page ───────────────────────────────────────────────
 
 export default function WalletsPage() {
-    const [wallets, setWallets] = useState(getWallets);
+    const [wallets, setWallets] = useState<WalletType[]>([]);
+    const [allTxns, setAllTxns] = useState<WalletTransaction[]>([]);
+    const [loading, setLoading] = useState(true);
+    
     const [showAdd, setShowAdd] = useState(false);
     const [opModal, setOpModal] = useState<{ wallet: WalletType; type: OpType } | null>(null);
     const { confirm } = useConfirm();
-    const refresh = () => setWallets(getWallets());
-    const totalBalance = useMemo(() => getTotalBalance(), [wallets]);
+
+    const loadData = async () => {
+        setLoading(true);
+        try {
+            const [ws, ts] = await Promise.all([getWallets(), getTransactions()]);
+            setWallets(ws);
+            setAllTxns(ts);
+        } catch (e) {
+            console.error('Failed to load wallets data', e);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        loadData();
+    }, []);
+
+    const totalBalance = useMemo(() => wallets.reduce((sum, w) => sum + w.balance, 0), [wallets]);
 
     // Compute today's totals
     const today = new Date().toISOString().slice(0, 10);
     const { todayIn, todayOut } = useMemo(() => {
         let todayIn = 0, todayOut = 0;
-        wallets.forEach(w => {
-            getTransactions(w.id).forEach(t => {
-                if (!t.date.startsWith(today)) return;
-                if (t.type === 'deposit' || t.type === 'transfer_in') todayIn += t.amount;
-                else todayOut += t.amount;
-            });
+        allTxns.forEach(t => {
+            if (!t.date.startsWith(today)) return;
+            if (t.type === 'deposit' || t.type === 'transfer_in') todayIn += t.amount;
+            else todayOut += t.amount;
         });
         return { todayIn, todayOut };
-    }, [wallets, today]);
+    }, [allTxns, today]);
 
     // Default wallet for quick actions
     const defaultWallet = useMemo(() => wallets.find(w => w.isDefault) || wallets[0], [wallets]);
@@ -248,8 +290,20 @@ export default function WalletsPage() {
     const handleDeleteWallet = async (w: WalletType) => {
         const balanceWarning = w.balance > 0 ? `\n⚠️ تحذير: هذه المحفظة تحتوي على رصيد ${fmt(w.balance)} ج.م!` : '';
         const ok = await confirm({ title: 'حذف محفظة', message: `هل أنت متأكد من حذف محفظة "${w.name}"؟ سيتم حذف جميع العمليات المرتبطة.${balanceWarning}`, confirmLabel: 'حذف', danger: true });
-        if (ok) { deleteWallet(w.id); refresh(); }
+        if (ok) {
+            await deleteWallet(w.id);
+            loadData();
+        }
     };
+
+    if (loading && wallets.length === 0) {
+        return (
+            <div className="flex flex-col items-center justify-center p-20 opacity-70">
+                <Loader2 className="h-10 w-10 animate-spin text-primary mb-4" />
+                <p className="text-muted-foreground font-medium animate-pulse">جاري تحميل بيانات الخزينة...</p>
+            </div>
+        );
+    }
 
     return (
         <div className="space-y-6 max-w-5xl mx-auto">
@@ -272,7 +326,7 @@ export default function WalletsPage() {
                     {/* Left: balance info */}
                     <div className="space-y-4">
                         <p className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
-                            <Wallet className="h-4 w-4" /> إجمالي الرصيد الكلي
+                            <Wallet className="h-4 w-4" /> إجمالي الرصيد الكلي المتاح
                         </p>
                         <p
                             className="font-black leading-none tracking-tight"
@@ -299,7 +353,7 @@ export default function WalletsPage() {
                                 <p className="text-lg font-black" style={{ color: '#ef4444' }}>-{fmt(todayOut)} ج.م</p>
                             </div>
                             <div>
-                                <p className="text-[11px] text-muted-foreground font-semibold">عدد المحافظ</p>
+                                <p className="text-[11px] text-muted-foreground font-semibold">عدد المحافظ / الخزن</p>
                                 <p className="text-lg font-black text-foreground">{wallets.length}</p>
                             </div>
                         </div>
@@ -328,7 +382,7 @@ export default function WalletsPage() {
                                     className="flex items-center gap-3 px-6 py-3.5 rounded-xl font-bold text-white text-sm transition-all hover:-translate-y-0.5"
                                     style={{ background: 'linear-gradient(135deg,#3b82f6,#2563eb)', boxShadow: '0 4px 15px rgba(59,130,246,0.35)' }}
                                 >
-                                    <ArrowLeftRight className="h-5 w-5" /> تحويل
+                                    <ArrowLeftRight className="h-5 w-5" /> تحويل داخلي
                                 </button>
                             )}
                         </div>
@@ -339,24 +393,26 @@ export default function WalletsPage() {
             {/* Header row */}
             <div className="flex items-center justify-between flex-wrap gap-3">
                 <h2 className="text-lg font-extrabold text-foreground flex items-center gap-2">
-                    <Wallet className="h-5 w-5 text-primary" /> المحافظ ({wallets.length})
+                    <Wallet className="h-5 w-5 text-primary" /> الخزن والمحافظ ({wallets.length})
                 </h2>
                 <button onClick={() => setShowAdd(true)} className="flex items-center gap-2 rounded-2xl bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-colors shadow-lg">
                     <Plus className="h-4 w-4" /> محفظة جديدة
                 </button>
             </div>
 
+            {loading && <div className="h-1 bg-primary/20 rounded-full w-full overflow-hidden"><div className="h-full bg-primary w-1/3 animate-pulse" /></div>}
+
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {wallets.map(w => (
-                    <WalletCard key={w.id} wallet={w} allWallets={wallets}
+                    <WalletCard key={w.id} wallet={w} allWallets={wallets} 
+                        walletTxns={allTxns.filter(t => t.walletId === w.id)}
                         onOperation={(wallet, type) => setOpModal({ wallet, type })}
-                        onRefresh={refresh}
                         onDelete={handleDeleteWallet} />
                 ))}
             </div>
 
-            {showAdd && <AddWalletModal onClose={() => setShowAdd(false)} onDone={refresh} />}
-            {opModal && <OperationModal wallet={opModal.wallet} wallets={wallets} type={opModal.type} onClose={() => setOpModal(null)} onDone={refresh} />}
+            {showAdd && <AddWalletModal onClose={() => setShowAdd(false)} onDone={loadData} />}
+            {opModal && <OperationModal wallet={opModal.wallet} wallets={wallets} type={opModal.type} onClose={() => setOpModal(null)} onDone={loadData} />}
         </div>
     );
 }
