@@ -1,0 +1,409 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   ELOS Design Tokens - Central Theme System
+   Version: 3.0
+   Description: Single source of truth for all theme colors and design tokens
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════
+   🌙 DARK THEME (Default)
+   ═══════════════════════════════════════ */
+:root {
+  /* Default dark theme when no data-theme is set */
+  /* Core Backgrounds */
+  --ds-bg: #0a0e14;
+  --ds-bg-secondary: #151921;
+  --ds-bg-tertiary: #1a1f29;
+  --ds-bg-card: #1e2530;
+  --ds-bg-hover: #252b38;
+  --ds-bg-elevated: #1f2533;
+
+  /* Text Colors */
+  --ds-text: #f1f5f9;
+  --ds-text-secondary: #94a3b8;
+  --ds-text-muted: #64748b;
+  --ds-text-inverse: #0a0e14;
+  --ds-text-disabled: #5c6577;
+
+  /* Border Colors */
+  --ds-border: #1e2530;
+  --ds-border-light: #2a3441;
+  --ds-border-focus: #3b82f6;
+  --ds-border-hover: #3a4556;
+
+  /* Brand / Accent Colors */
+  --ds-brand: #3b82f6;
+  --ds-brand-hover: #2563eb;
+  --ds-brand-active: #1d4ed8;
+  --ds-brand-contrast: #ffffff;
+  --ds-brand-light: rgba(59, 130, 246, 0.15);
+  --ds-brand-lighter: rgba(59, 130, 246, 0.08);
+  --ds-brand-glow: rgba(59, 130, 246, 0.3);
+
+  /* Status Colors - Success */
+  --ds-success: #10b981;
+  --ds-success-hover: #059669;
+  --ds-success-bg: rgba(16, 185, 129, 0.15);
+  --ds-success-light: rgba(16, 185, 129, 0.08);
+  --ds-success-glow: rgba(16, 185, 129, 0.3);
+
+  /* Status Colors - Warning */
+  --ds-warning: #f59e0b;
+  --ds-warning-hover: #d97706;
+  --ds-warning-bg: rgba(245, 158, 11, 0.15);
+  --ds-warning-light: rgba(245, 158, 11, 0.08);
+  --ds-warning-glow: rgba(245, 158, 11, 0.3);
+
+  /* Status Colors - Danger */
+  --ds-danger: #ef4444;
+  --ds-danger-hover: #dc2626;
+  --ds-danger-bg: rgba(239, 68, 68, 0.15);
+  --ds-danger-light: rgba(239, 68, 68, 0.08);
+  --ds-danger-glow: rgba(239, 68, 68, 0.3);
+
+  /* Status Colors - Info */
+  --ds-info: #06b6d4;
+  --ds-info-hover: #0891b2;
+  --ds-info-bg: rgba(6, 182, 212, 0.15);
+  --ds-info-light: rgba(6, 182, 212, 0.08);
+  --ds-info-glow: rgba(6, 182, 212, 0.3);
+
+  /* Additional Colors */
+  --ds-purple: #a855f7;
+  --ds-purple-bg: rgba(168, 85, 247, 0.15);
+  --ds-pink: #ec4899;
+  --ds-pink-bg: rgba(236, 72, 153, 0.15);
+  --ds-cyan: #06b6d4;
+  --ds-orange: #f59e0b;
+
+  /* Shadows */
+  --ds-shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3);
+  --ds-shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --ds-shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.5);
+  --ds-shadow-xl: 0 12px 32px rgba(0, 0, 0, 0.6);
+  --ds-shadow-glow: 0 0 20px var(--ds-brand-glow);
+
+  /* Border Radius */
+  --ds-radius-sm: 8px;
+  --ds-radius-md: 12px;
+  --ds-radius-lg: 16px;
+  --ds-radius-xl: 20px;
+  --ds-radius-full: 9999px;
+
+  /* Overlay */
+  --ds-overlay: rgba(0, 0, 0, 0.7);
+
+  /* Scrollbar - Dark Theme (غامق ومتناسق) */
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: rgba(60, 70, 90, 0.5);
+  --scrollbar-thumb-hover: rgba(80, 95, 120, 0.7);
+  --scrollbar-width: 5px;
+
+  /* Safe Area (for footer/bottom spacing) */
+  --app-safe-bottom: 2px;
+  --footer-height: 32px;
+
+  /* Typography - Minimum sizes enforced (accessibility) */
+  --ds-font-xs: 14px;        /* Minimum readable: labels, captions (was 12-13px) */
+  --ds-font-sm: 14px;        /* Minimum readable: small body text */
+  --ds-font-base: 16px;      /* Base body text (accessibility minimum) */
+  --ds-font-md: 18px;        /* Subheadings */
+  --ds-font-lg: 20px;        /* Section headings */
+  --ds-font-xl: 24px;        /* Page titles */
+  --ds-font-2xl: 28px;       /* Hero headings */
+  --ds-font-3xl: 32px;       /* Large displays */
+  
+  /* Glass effects (dark mode) */
+  --ds-bg-glass: rgba(10, 14, 20, 0.92);
+  --ds-card-glass: rgba(30, 37, 48, 0.95);
+
+  /* Chart.js colors (dark mode) */
+  --chart-grid: rgba(255, 255, 255, 0.1);
+  --chart-text: var(--ds-text-muted);
+
+  /* ═══════════════════════════════════════
+     🎨 SHELL / SPA LAYOUT TOKENS (Dark Mode)
+     ═══════════════════════════════════════ */
+  /* Shell base */
+  --shell-bg: var(--ds-bg);
+  --shell-surface: var(--ds-bg-secondary);
+  --shell-border: var(--ds-border);
+  --shell-shadow: var(--ds-shadow-lg);
+  --overlay-bg: var(--ds-overlay);
+
+  /* Sidebar */
+  --sidebar-bg: linear-gradient(180deg, #0d1117 0%, #161b22 50%, #0d1117 100%);
+  --sidebar-surface: #0d1117;
+  --sidebar-border: var(--ds-border);
+  --sidebar-text: #f1f5f9;
+  --sidebar-text-muted: #8b93a6;
+  --sidebar-hover: rgba(255, 255, 255, 0.05);
+  --sidebar-active: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(168, 85, 247, 0.15) 100%);
+
+  /* Legacy shell-sidebar aliases for backward compatibility */
+  --shell-sidebar-bg: var(--sidebar-bg);
+  --shell-sidebar-bg-solid: var(--sidebar-surface);
+  --shell-sidebar-border: var(--sidebar-border);
+  --shell-sidebar-shadow: -4px 0 24px rgba(0, 0, 0, 0.3);
+  --shell-sidebar-header-bg: rgba(0, 0, 0, 0.2);
+  --shell-sidebar-footer-bg: rgba(0, 0, 0, 0.2);
+
+  /* Navigation items */
+  --shell-nav-hover-bg: var(--sidebar-hover);
+  --shell-nav-hover-border: var(--ds-border);
+  --shell-nav-active-bg: var(--sidebar-active);
+  --shell-nav-active-border: rgba(59, 130, 246, 0.3);
+  --shell-nav-active-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+
+  /* Topbar */
+  --topbar-bg: var(--ds-bg-secondary);
+  --topbar-border: var(--ds-border);
+  --topbar-text: var(--ds-text);
+  --shell-topbar-bg: var(--topbar-bg);
+  --shell-topbar-border: var(--topbar-border);
+
+  /* Titlebar (custom window title bar) */
+  --titlebar-bg: var(--topbar-bg);
+  --titlebar-border: var(--topbar-border);
+  --titlebar-text: var(--topbar-text);
+  --titlebar-muted: var(--ds-text-muted);
+  --control-hover: var(--ds-bg-hover);
+  --control-close-hover: var(--ds-danger);
+
+  /* User card */
+  --shell-user-avatar-bg: linear-gradient(135deg, var(--ds-success), var(--ds-cyan));
+
+  /* Buttons in shell */
+  --shell-btn-danger-bg: rgba(239, 68, 68, 0.1);
+  --shell-btn-danger-border: rgba(239, 68, 68, 0.2);
+  --shell-btn-danger-hover-bg: rgba(239, 68, 68, 0.2);
+  --shell-btn-danger-hover-border: rgba(239, 68, 68, 0.4);
+
+  --shell-btn-theme-bg: linear-gradient(135deg, #6366f1, #8b5cf6);
+  --shell-btn-theme-border: #6366f1;
+  --shell-btn-theme-hover-bg: linear-gradient(135deg, #4f46e5, #7c3aed);
+  --shell-btn-theme-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+
+  /* Logout modal */
+  --shell-logout-confirm-bg: linear-gradient(135deg, #ef4444, #dc2626);
+  --shell-logout-confirm-hover-bg: linear-gradient(135deg, #dc2626, #b91c1c);
+  --shell-logout-confirm-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+
+  /* POS action buttons */
+  --shell-pos-receive-bg: #059669;
+  --shell-pos-barcode-bg: #8b5cf6;
+  --shell-pos-fullscreen-bg: #0ea5e9;
+  --shell-pos-fullscreen-active-bg: #dc2626;
+
+  /* Time display */
+  --shell-time-bg: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%);
+  --shell-time-border: rgba(59, 130, 246, 0.2);
+}
+
+/* Explicit dark theme selector - inherits from :root above */
+/* No additional rules needed - all DS variables inherit from :root */
+
+/* ═══════════════════════════════════════
+   🌞 LIGHT THEME - Enhanced Visual Separation & Contrast
+   ═══════════════════════════════════════ */
+html[data-theme="light"] {
+  /* Core Backgrounds - Tinted base for card contrast */
+  --ds-bg: #f5f7fa;
+  --ds-bg-secondary: #eef1f5;
+  --ds-bg-tertiary: #e8ecf1;
+  --ds-bg-card: #ffffff;
+  --ds-bg-hover: #e2e6ec;
+  --ds-bg-elevated: #ffffff;
+
+  /* Text Colors - Strong contrast for readability (WCAG AA+) */
+  --ds-text: #111827;
+  --ds-text-secondary: #374151;
+  --ds-text-muted: #6b7280;
+  --ds-text-inverse: #ffffff;
+  --ds-text-disabled: #9ca3af;
+
+  /* Border Colors - Clearly visible separation */
+  --ds-border: #d1d5db;
+  --ds-border-light: #e5e7eb;
+  --ds-border-focus: #2563eb;
+  --ds-border-hover: #9ca3af;
+
+  /* Brand / Accent Colors - Professional blue */
+  --ds-brand: #2563eb;
+  --ds-brand-hover: #1d4ed8;
+  --ds-brand-active: #1e40af;
+  --ds-brand-contrast: #ffffff;
+  --ds-brand-light: rgba(37, 99, 235, 0.12);
+  --ds-brand-lighter: rgba(37, 99, 235, 0.08);
+  --ds-brand-glow: rgba(37, 99, 235, 0.25);
+
+  /* Focus States - Visible but not harsh */
+  --ds-focus-ring: rgba(59, 130, 246, 0.35);
+  --ds-focus-shadow: 0 0 0 3px rgba(59, 130, 246, 0.35);
+
+  /* Status Colors - Success */
+  --ds-success: #059669;
+  --ds-success-hover: #047857;
+  --ds-success-bg: rgba(5, 150, 105, 0.12);
+  --ds-success-light: rgba(5, 150, 105, 0.06);
+  --ds-success-glow: rgba(5, 150, 105, 0.25);
+
+  /* Status Colors - Warning */
+  --ds-warning: #d97706;
+  --ds-warning-hover: #b45309;
+  --ds-warning-bg: rgba(217, 119, 6, 0.12);
+  --ds-warning-light: rgba(217, 119, 6, 0.06);
+  --ds-warning-glow: rgba(217, 119, 6, 0.25);
+
+  /* Status Colors - Danger */
+  --ds-danger: #dc2626;
+  --ds-danger-hover: #b91c1c;
+  --ds-danger-bg: rgba(220, 38, 38, 0.12);
+  --ds-danger-light: rgba(220, 38, 38, 0.06);
+  --ds-danger-glow: rgba(220, 38, 38, 0.25);
+
+  /* Status Colors - Info */
+  --ds-info: #0284c7;
+  --ds-info-hover: #0369a1;
+  --ds-info-bg: rgba(2, 132, 199, 0.12);
+  --ds-info-light: rgba(2, 132, 199, 0.06);
+  --ds-info-glow: rgba(2, 132, 199, 0.25);
+
+  /* Additional Colors */
+  --ds-purple: #7c3aed;
+  --ds-purple-bg: rgba(124, 58, 237, 0.12);
+  --ds-pink: #db2777;
+  --ds-pink-bg: rgba(219, 39, 119, 0.12);
+  --ds-cyan: #0891b2;
+  --ds-orange: #ea580c;
+
+  /* Shadows - Noticeably visible elevation on light backgrounds */
+  --ds-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.08);
+  --ds-shadow-md: 0 4px 8px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.08);
+  --ds-shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.15), 0 4px 8px rgba(0, 0, 0, 0.1);
+  --ds-shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.18), 0 8px 16px rgba(0, 0, 0, 0.1);
+  --ds-shadow-glow: 0 0 24px var(--ds-brand-glow);
+
+  /* Border Radius */
+  --ds-radius-sm: 8px;
+  --ds-radius-md: 12px;
+  --ds-radius-lg: 16px;
+  --ds-radius-xl: 20px;
+  --ds-radius-full: 9999px;
+
+  /* Overlay */
+  --ds-overlay: rgba(15, 23, 42, 0.5);
+
+  /* Scrollbar - Light Theme */
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: rgba(148, 163, 184, 0.4);
+  --scrollbar-thumb-hover: rgba(148, 163, 184, 0.6);
+  --scrollbar-width: 6px;
+
+  /* Safe Area (for footer/bottom spacing) */
+  --app-safe-bottom: 2px;
+  --footer-height: 32px;
+
+  /* Typography - Minimum sizes enforced (accessibility) */
+  --ds-font-xs: 14px;        /* Minimum readable: labels, captions (was 12-13px) */
+  --ds-font-sm: 14px;        /* Minimum readable: small body text */
+  --ds-font-base: 16px;      /* Base body text (accessibility minimum) */
+  --ds-font-md: 18px;        /* Subheadings */
+  --ds-font-lg: 20px;        /* Section headings */
+  --ds-font-xl: 24px;        /* Page titles */
+  --ds-font-2xl: 28px;       /* Hero headings */
+  --ds-font-3xl: 32px;       /* Large displays */
+  
+  /* Glass effects (light mode) */
+  --ds-bg-glass: rgba(248, 250, 252, 0.92);
+  --ds-card-glass: rgba(255, 255, 255, 0.95);
+
+  /* Chart.js colors (light mode) */
+  --chart-grid: rgba(0, 0, 0, 0.08);
+  --chart-text: var(--ds-text-muted);
+
+  /* ═══════════════════════════════════════
+     🎨 SHELL / SPA LAYOUT TOKENS (Light Mode)
+     Sidebar uses light theme for consistency
+     ═══════════════════════════════════════ */
+  /* Shell base */
+  --shell-bg: var(--ds-bg);
+  --shell-surface: var(--ds-bg-secondary);
+  --shell-border: var(--ds-border);
+  --shell-shadow: var(--ds-shadow-lg);
+  --overlay-bg: var(--ds-overlay);
+
+  /* Sidebar - Integrated light theme with clear hierarchy */
+  --sidebar-bg: var(--ds-bg-secondary);
+  --sidebar-surface: var(--ds-bg-card);
+  --sidebar-border: var(--ds-border);
+  --sidebar-text: var(--ds-text);
+  --sidebar-text-muted: var(--ds-text-muted);
+  --sidebar-hover: var(--ds-bg-hover);
+  --sidebar-active: var(--ds-brand-light);
+
+  /* Legacy shell-sidebar aliases */
+  --shell-sidebar-bg: var(--sidebar-bg);
+  --shell-sidebar-bg-solid: var(--sidebar-surface);
+  --shell-sidebar-border: var(--sidebar-border);
+  --shell-sidebar-shadow: var(--ds-shadow-sm);
+  --shell-sidebar-header-bg: var(--ds-bg-tertiary);
+  --shell-sidebar-footer-bg: var(--ds-bg-tertiary);
+
+  /* Navigation items (light mode) - Clear, professional states */
+  --shell-nav-hover-bg: var(--ds-bg-hover);
+  --shell-nav-hover-border: transparent;
+  --shell-nav-active-bg: var(--ds-brand-light);
+  --shell-nav-active-border: var(--ds-border-focus);
+  --shell-nav-active-shadow: none;
+
+  /* Topbar */
+  --topbar-bg: var(--ds-bg-card);
+  --topbar-border: var(--ds-border);
+  --topbar-text: var(--ds-text);
+  --shell-topbar-bg: var(--topbar-bg);
+  --shell-topbar-border: var(--topbar-border);
+  --shell-topbar-shadow: var(--ds-shadow-sm);
+
+  /* Titlebar (custom window title bar) */
+  --titlebar-bg: var(--topbar-bg);
+  --titlebar-border: var(--topbar-border);
+  --titlebar-text: var(--topbar-text);
+  --titlebar-muted: var(--ds-text-muted);
+  --control-hover: var(--ds-bg-hover);
+  --control-close-hover: var(--ds-danger);
+
+  /* User card */
+  --shell-user-avatar-bg: linear-gradient(135deg, var(--ds-success), var(--ds-cyan));
+
+  /* Buttons in shell */
+  --shell-btn-danger-bg: rgba(239, 68, 68, 0.2);
+  --shell-btn-danger-border: rgba(239, 68, 68, 0.3);
+  --shell-btn-danger-hover-bg: rgba(239, 68, 68, 0.3);
+  --shell-btn-danger-hover-border: rgba(239, 68, 68, 0.5);
+
+  --shell-btn-theme-bg: linear-gradient(135deg, #6366f1, #8b5cf6);
+  --shell-btn-theme-border: #6366f1;
+  --shell-btn-theme-hover-bg: linear-gradient(135deg, #4f46e5, #7c3aed);
+  --shell-btn-theme-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+
+  /* Logout modal */
+  --shell-logout-confirm-bg: linear-gradient(135deg, #ef4444, #dc2626);
+  --shell-logout-confirm-hover-bg: linear-gradient(135deg, #dc2626, #b91c1c);
+  --shell-logout-confirm-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+
+  /* POS action buttons */
+  --shell-pos-receive-bg: #059669;
+  --shell-pos-barcode-bg: #7c3aed;
+  --shell-pos-fullscreen-bg: #0284c7;
+  --shell-pos-fullscreen-active-bg: #dc2626;
+
+  /* Time display */
+  --shell-time-bg: linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(124, 58, 237, 0.1) 100%);
+  --shell-time-border: rgba(37, 99, 235, 0.2);
+}
+
+/* ═══════════════════════════════════════
+   NOTE: Legacy variable aliases are in tokens-alias.css
+   This file contains ONLY Design System tokens (--ds-*)
+   ═══════════════════════════════════════ */
+

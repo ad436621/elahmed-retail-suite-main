@@ -1,0 +1,430 @@
+// safe.js - إدارة الخزنة المطورة v3.0 - نسخة محسّنة
+// نظام المحافظ المتعددة - إعادة كتابة احترافية
+
+/**
+ * ═══════════════════════════════════════════════════════════════════
+ * 📚 DOCUMENTATION
+ * ═══════════════════════════════════════════════════════════════════
+ * 
+ * هذا الملف يحتوي على كود محسّن لإدارة الخزنة مع دعم المحافظ المتعددة
+ * 
+ * البنية الحالية في قاعدة البيانات:
+ * - safe_transactions: wallet_id (INTEGER), wallet_type (TEXT), target_wallet (TEXT)
+ * - payment_wallets: id, name, type, is_default, is_active
+ * 
+ * ملاحظات مهمة:
+ * 1. target_wallet يستخدم wallet_type (TEXT) وليس wallet_id - للتوافق مع البيانات القديمة
+ * 2. التحويلات الواردة تُحسب بناءً على wallet_type في target_wallet
+ * 3. التحويلات الصادرة تُحسب بناءً على wallet_id أو wallet_type
+ */
+
+// Fallbacks for utils
+if (!window.Logger) {
+  window.Logger = {
+    log: console.log,
+    warn: console.warn,
+    error: console.error,
+    debug: console.debug,
+    info: console.info
+  };
+}
+
+if (!window.fmt) {
+  window.fmt = (n, decimals = 2) => {
+    return Number(n || 0).toLocaleString('en-US', {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals
+    });
+  };
+}
+
+if (!window.escapeHtml) {
+  window.escapeHtml = (text) => {
+    if (text === null || text === undefined) return '';
+    const div = document.createElement('div');
+    div.textContent = String(text);
+    return div.innerHTML;
+  };
+}
+
+const fmt = window.fmt;
+const escapeHtml = window.escapeHtml;
+const Logger = window.Logger;
+
+// ═══════════════════════════════════════════════════════════════════
+// 📦 STATE MANAGEMENT
+// ═══════════════════════════════════════════════════════════════════
+
+let transactions = [];
+let shiftClosings = [];
+let flowChart = null;
+let expensesChart = null;
+let paymentWallets = [];
+let walletBalances = { cash: 0, mobile_wallet: 0, bank: 0 };
+
+// Wallet Configuration
+const WALLET_CONFIG = {
+  cash: { name: 'كاش سائل', icon: '💵', color: 'var(--success)' },
+  mobile_wallet: { name: 'محفظة إلكترونية', icon: '📱', color: 'var(--purple)' },
+  bank: { name: 'حساب بنكي', icon: '🏦', color: 'var(--accent)' }
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// 💳 PAYMENT WALLETS MANAGEMENT
+// ═══════════════════════════════════════════════════════════════════
+
+/**
+ * تحميل جميع المحافظ الفعلية من قاعدة البيانات
+ * @returns {Promise<Array>} قائمة المحافظ
+ */
+async function loadPaymentWallets() {
+  try {
+    const res = await fetch('elos-db://payment-wallets?active_only=true');
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(errorText || 'Failed to fetch payment wallets');
+    }
+    paymentWallets = await res.json();
+    Logger.log('[SAFE] Loaded payment wallets:', paymentWallets.length);
+    return paymentWallets;
+  } catch (error) {
+    Logger.error('[SAFE] Failed to load payment wallets:', error);
+    showToast('خطأ في تحميل المحافظ', 'error');
+    return [];
+  }
+}
+
+/**
+ * تحديث قائمة المحافظ في dropdown الإيداع
+ */
+async function updateDepositWalletsList() {
+  const walletTypeSelect = document.getElementById('depositWallet');
+  const walletSelectGroup = document.getElementById('depositWalletSelectGroup');
+  const walletSelect = document.getElementById('depositWalletSelect');
+  
+  if (!walletTypeSelect || !walletSelectGroup || !walletSelect) {
+    Logger.warn('[SAFE] Deposit wallet select elements not found');
+    return;
+  }
+  
+  const walletType = walletTypeSelect.value;
+  
+  // Load wallets if not already loaded
+  if (paymentWallets.length === 0) {
+    await loadPaymentWallets();
+  }
+  
+  // Filter wallets by type
+  const filteredWallets = paymentWallets.filter(w => w.type === walletType);
+  
+  if (filteredWallets.length === 0) {
+    walletSelectGroup.style.display = 'none';
+    walletSelect.innerHTML = '<option value="">لا توجد محافظ متاحة</option>';
+    return;
+  }
+  
+  // Show the select and populate options
+  walletSelectGroup.style.display = 'block';
+  walletSelect.innerHTML = filteredWallets.map(w => {
+    const isDefault = w.is_default ? ' (افتراضي)' : '';
+    const displayName = escapeHtml(w.name) + isDefault;
+    return `<option value="${w.id}" ${w.is_default ? 'selected' : ''}>${displayName}</option>`;
+  }).join('');
+}
+
+/**
+ * تحديث قائمة المحافظ في dropdown السحب
+ */
+async function updateWithdrawWalletsList() {
+  const walletTypeSelect = document.getElementById('withdrawWallet');
+  const walletSelectGroup = document.getElementById('withdrawWalletSelectGroup');
+  const walletSelect = document.getElementById('withdrawWalletSelect');
+  
+  if (!walletTypeSelect || !walletSelectGroup || !walletSelect) {
+    Logger.warn('[SAFE] Withdraw wallet select elements not found');
+    return;
+  }
+  
+  const walletType = walletTypeSelect.value;
+  
+  // Load wallets if not already loaded
+  if (paymentWallets.length === 0) {
+    await loadPaymentWallets();
+  }
+  
+  // Filter wallets by type
+  const filteredWallets = paymentWallets.filter(w => w.type === walletType);
+  
+  if (filteredWallets.length === 0) {
+    walletSelectGroup.style.display = 'none';
+    walletSelect.innerHTML = '<option value="">لا توجد محافظ متاحة</option>';
+    return;
+  }
+  
+  // Show the select and populate options
+  walletSelectGroup.style.display = 'block';
+  walletSelect.innerHTML = filteredWallets.map(w => {
+    const isDefault = w.is_default ? ' (افتراضي)' : '';
+    const displayName = escapeHtml(w.name) + isDefault;
+    return `<option value="${w.id}" ${w.is_default ? 'selected' : ''}>${displayName}</option>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// 💰 BALANCE LOADING
+// ═══════════════════════════════════════════════════════════════════
+
+/**
+ * تحميل رصيد الخزنة والمحافظ
+ * يدعم النظام الجديد (wallets array) والقديم (grouped by type)
+ */
+async function loadBalance() {
+  try {
+    const res = await fetch('elos-db://safe-balance');
+    if (!res.ok) {
+      const errorText = await res.text();
+      throw new Error(errorText || 'Failed to fetch balance');
+    }
+
+    const data = await res.json();
+    
+    if (!data) {
+      throw new Error('Invalid response from server');
+    }
+
+    const balance = Number(data.balance || 0);
+    const deposits = Number(data.deposits || 0);
+    const withdrawals = Number(data.withdrawals || 0);
+    const netFlow = Number(data.netFlow || 0);
+
+    // تحديث عرض المحافظ
+    if (data.wallets) {
+      // النظام الجديد: wallets as array - عرض كل محفظة بشكل منفصل
+      if (Array.isArray(data.wallets) && data.wallets.length > 0) {
+        Logger.log('[SAFE] Rendering', data.wallets.length, 'individual wallets');
+        renderWalletsCards(data.wallets);
+        
+        // حساب الأرصدة المجمعة للتوافق العكسي
+        const walletsByType = { cash: 0, mobile_wallet: 0, bank: 0 };
+        data.wallets.forEach(w => {
+          if (walletsByType.hasOwnProperty(w.type)) {
+            walletsByType[w.type] += Number(w.balance || 0);
+          }
+        });
+        walletBalances.cash = walletsByType.cash;
+        walletBalances.mobile_wallet = walletsByType.mobile_wallet;
+        walletBalances.bank = walletsByType.bank;
+      } 
+      // النظام القديم: wallets grouped by type - للتوافق العكسي
+      else if (data.wallets.cash || data.wallets.mobile_wallet || data.wallets.bank) {
+        Logger.log('[SAFE] Using legacy wallet format');
+        walletBalances.cash = Number(data.wallets.cash?.balance || 0);
+        walletBalances.mobile_wallet = Number(data.wallets.mobile_wallet?.balance || 0);
+        walletBalances.bank = Number(data.wallets.bank?.balance || 0);
+
+        // عرض المحافظ الثلاثة القديمة (للتوافق العكسي)
+        const legacyWallets = [
+          { 
+            id: 'cash', 
+            name: 'كاش سائل', 
+            type: 'cash', 
+            balance: walletBalances.cash, 
+            is_default: true 
+          },
+          { 
+            id: 'mobile_wallet', 
+            name: 'محفظة إلكترونية', 
+            type: 'mobile_wallet', 
+            balance: walletBalances.mobile_wallet, 
+            is_default: false 
+          },
+          { 
+            id: 'bank', 
+            name: 'حساب بنكي', 
+            type: 'bank', 
+            balance: walletBalances.bank, 
+            is_default: false 
+          }
+        ];
+        renderWalletsCards(legacyWallets);
+      }
+    }
+
+    // تحديث العرض الإجمالي
+    updateBalanceDisplay(balance, deposits, withdrawals, netFlow);
+
+  } catch (error) {
+    Logger.error('[SAFE] Error loading balance:', error);
+    showToast('خطأ في تحميل الرصيد: ' + (error.message || 'Unknown error'), 'error');
+  }
+}
+
+/**
+ * تحديث عرض الرصيد الإجمالي
+ */
+function updateBalanceDisplay(balance, deposits, withdrawals, netFlow) {
+  const totalBalanceEl = document.getElementById('totalBalance');
+  if (totalBalanceEl) {
+    totalBalanceEl.textContent = fmt(balance);
+  }
+
+  const totalDepositsEl = document.getElementById('totalDeposits');
+  if (totalDepositsEl) {
+    totalDepositsEl.textContent = deposits.toLocaleString();
+  }
+
+  const totalWithdrawalsEl = document.getElementById('totalWithdrawals');
+  if (totalWithdrawalsEl) {
+    totalWithdrawalsEl.textContent = withdrawals.toLocaleString();
+  }
+
+  const netFlowEl = document.getElementById('netFlow');
+  if (netFlowEl) {
+    netFlowEl.textContent = (netFlow >= 0 ? '+' : '') + netFlow.toLocaleString();
+    netFlowEl.className = `balance-stat-value ${netFlow >= 0 ? 'positive' : 'negative'}`;
+  }
+
+  // تحديث رصيد الهيدر
+  const headerBalanceEl = document.getElementById('headerBalance');
+  if (headerBalanceEl) {
+    if (balance >= 1000000) {
+      headerBalanceEl.textContent = (balance / 1000000).toFixed(1) + 'M';
+    } else if (balance >= 1000) {
+      headerBalanceEl.textContent = (balance / 1000).toFixed(0) + 'k';
+    } else {
+      headerBalanceEl.textContent = balance.toFixed(0);
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// 🎨 WALLET RENDERING
+// ═══════════════════════════════════════════════════════════════════
+
+/**
+ * عرض جميع المحافظ الفعلية كبطاقات منفصلة
+ * @param {Array} wallets - قائمة المحافظ مع أرصدتها
+ */
+function renderWalletsCards(wallets) {
+  const container = document.getElementById('walletsGrid');
+  if (!container) {
+    Logger.warn('[SAFE] Wallets grid container not found');
+    return;
+  }
+  
+  if (!wallets || wallets.length === 0) {
+    container.innerHTML = `
+      <div style="grid-column: 1 / -1; text-align: center; padding: 40px; color: var(--text-secondary);">
+        <div style="font-size: 24px; margin-bottom: 10px;">💼</div>
+        <div>لا توجد محافظ متاحة</div>
+        <div style="margin-top: 10px; font-size: 12px; opacity: 0.7;">
+          يمكنك إضافة محافظ من زر "إدارة المحافظ والحسابات"
+        </div>
+      </div>
+    `;
+    return;
+  }
+  
+  // أيقونات المحافظ
+  const walletIcons = {
+    cash: '💵',
+    mobile_wallet: '📱',
+    bank: '🏦'
+  };
+  
+  let html = '';
+  
+  wallets.forEach(wallet => {
+    const icon = walletIcons[wallet.type] || '💼';
+    const balance = Number(wallet.balance || 0);
+    const walletId = wallet.id;
+    const walletName = escapeHtml(wallet.name || '');
+    const isDefault = wallet.is_default ? ' <span style="font-size: 11px; color: var(--success); opacity: 0.8;">(افتراضي)</span>' : '';
+    
+    html += `
+      <div class="wallet-card" data-wallet-id="${walletId}" data-wallet-type="${wallet.type}">
+        <div class="wallet-header">
+          <div class="wallet-icon">${icon}</div>
+          <div class="wallet-name">${walletName}${isDefault}</div>
+        </div>
+        <div class="wallet-balance">
+          <span class="wallet-amount" data-wallet-balance="${walletId}">${fmt(balance)}</span>
+          <span class="wallet-currency">ج.م</span>
+        </div>
+        <div class="wallet-actions">
+          <button class="wallet-btn deposit" onclick="openDepositModalById(${walletId})" title="إيداع">
+            <span>📥</span>
+          </button>
+          <button class="wallet-btn withdraw" onclick="openWithdrawModalById(${walletId})" title="سحب">
+            <span>📤</span>
+          </button>
+          <button class="wallet-btn transfer" onclick="openTransferModalFromWallet(${walletId})" title="تحويل">
+            <span>🔄</span>
+          </button>
+          <button class="wallet-btn history" onclick="openWalletHistoryById(${walletId})" title="السجل">
+            <span>📋</span>
+          </button>
+        </div>
+      </div>
+    `;
+  });
+  
+  container.innerHTML = html;
+  Logger.log('[SAFE] Rendered', wallets.length, 'wallet cards');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// 🚀 INITIALIZATION
+// ═══════════════════════════════════════════════════════════════════
+
+/**
+ * تهيئة الصفحة
+ */
+(async function init() {
+  try {
+    Logger.log('[SAFE] 💰 Safe Management v3.0 - Initializing...');
+    
+    initClock();
+    initModalCloseHandlers();
+    
+    // Load payment wallets
+    await loadPaymentWallets();
+    
+    // Load data
+    await Promise.all([
+      loadBalance(),
+      loadTransactions(),
+      loadShiftClosings()
+    ]);
+    
+    // Initialize charts and stats
+    initCharts();
+    calculateStats();
+    
+    Logger.log('[SAFE] ✅ Safe Management Ready!');
+  } catch (error) {
+    Logger.error('[SAFE] Initialization error:', error);
+    showToast('خطأ في تهيئة الصفحة', 'error');
+  }
+})();
+
+// Make functions available globally
+if (typeof window !== 'undefined') {
+  window.updateDepositWalletsList = updateDepositWalletsList;
+  window.updateWithdrawWalletsList = updateWithdrawWalletsList;
+  window.openDepositModalById = openDepositModalById;
+  window.openWithdrawModalById = openWithdrawModalById;
+  window.openTransferModalFromWallet = openTransferModalFromWallet;
+  window.openWalletHistoryById = openWalletHistoryById;
+}
+
+
+
+
+
+
+
+
+
+
+

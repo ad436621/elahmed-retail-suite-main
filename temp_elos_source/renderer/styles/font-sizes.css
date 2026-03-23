@@ -1,0 +1,810 @@
+/**
+ * ELOS Global Font Size & Button Improvements
+ * تحسينات حجم الخطوط والأزرار
+ * Version: 3.0 - Dynamic Font Scaling Support
+ *
+ * هذا الملف يحل مشكلة الخطوط الصغيرة على الشاشات الصغيرة
+ * + تحسين شكل وألوان الأزرار في الوضعين الفاتح والغامق
+ * + تصغير الأزرار لمنع السكرول الزائد
+ * + دعم التحكم الديناميكي في حجم الخط عبر --font-scale
+ */
+
+/* ═══════════════════════════════════════
+   FONT SCALE CSS VARIABLES
+   متغيرات التحكم في حجم الخط
+   ═══════════════════════════════════════ */
+:root {
+  --font-scale: 1;
+  --base-font-size: 16px;
+
+  /* Scaled font sizes - تحسب تلقائياً */
+  --fs-xs: calc(12px * var(--font-scale));
+  --fs-sm: calc(13px * var(--font-scale));
+  --fs-base: calc(16px * var(--font-scale));
+  --fs-md: calc(17px * var(--font-scale));
+  --fs-lg: calc(20px * var(--font-scale));
+  --fs-xl: calc(24px * var(--font-scale));
+  --fs-2xl: calc(28px * var(--font-scale));
+  --fs-3xl: calc(32px * var(--font-scale));
+  --fs-4xl: calc(38px * var(--font-scale));
+}
+
+/* ═══════════════════════════════════════
+   BASE FONT SIZE - حجم الخط الأساسي
+   ═══════════════════════════════════════ */
+body {
+  font-size: calc(16px * var(--font-scale, 1)) !important;
+  line-height: 1.6 !important;
+}
+
+/* ═══════════════════════════════════════
+   HEADINGS - العناوين
+   ═══════════════════════════════════════ */
+h1, .h1 {
+  font-size: calc(32px * var(--font-scale, 1)) !important;
+  font-weight: 800 !important;
+}
+
+h2, .h2 {
+  font-size: calc(26px * var(--font-scale, 1)) !important;
+  font-weight: 700 !important;
+}
+
+h3, .h3 {
+  font-size: calc(22px * var(--font-scale, 1)) !important;
+  font-weight: 700 !important;
+}
+
+h4, .h4 {
+  font-size: calc(18px * var(--font-scale, 1)) !important;
+  font-weight: 600 !important;
+}
+
+h5, .h5 {
+  font-size: calc(16px * var(--font-scale, 1)) !important;
+  font-weight: 600 !important;
+}
+
+h6, .h6 {
+  font-size: calc(15px * var(--font-scale, 1)) !important;
+  font-weight: 600 !important;
+}
+
+/* ═══════════════════════════════════════
+   PAGE TITLES - عناوين الصفحات
+   ═══════════════════════════════════════ */
+.page-title,
+.page-title-main {
+  font-size: calc(30px * var(--font-scale, 1)) !important;
+  font-weight: 900 !important;
+}
+
+.brand {
+  font-size: calc(24px * var(--font-scale, 1)) !important;
+  font-weight: 800 !important;
+}
+
+.welcome-msg {
+  font-size: calc(14px * var(--font-scale, 1)) !important;
+}
+
+/* ═══════════════════════════════════════
+   STATS & KPIs - الإحصائيات (أكبر)
+   ═══════════════════════════════════════ */
+.stat-value,
+.kpi-value {
+  font-size: calc(32px * var(--font-scale, 1)) !important;
+  font-weight: 900 !important;
+}
+
+.stat-label,
+.kpi-label {
+  font-size: calc(13px * var(--font-scale, 1)) !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.5px !important;
+}
+
+/* Stats in header */
+.header .stat-value,
+.hdr .stat-value {
+  font-size: calc(24px * var(--font-scale, 1)) !important;
+}
+
+.header .stat-label,
+.hdr .stat-label {
+  font-size: calc(12px * var(--font-scale, 1)) !important;
+}
+
+/* ═══════════════════════════════════════
+   PANELS & CARDS - اللوحات والبطاقات
+   ═══════════════════════════════════════ */
+.panel-title,
+.card-title {
+  font-size: calc(17px * var(--font-scale, 1)) !important;
+  font-weight: 700 !important;
+}
+
+.panel-header h2,
+.card-header h2 {
+  font-size: calc(17px * var(--font-scale, 1)) !important;
+}
+
+/* ═══════════════════════════════════════
+   FORMS - النماذج (أكبر)
+   ═══════════════════════════════════════ */
+label,
+.form-label,
+.label {
+  font-size: calc(14px * var(--font-scale, 1)) !important;
+  font-weight: 700 !important;
+}
+
+input,
+select,
+textarea,
+.input,
+.select,
+.search-input {
+  font-size: calc(16px * var(--font-scale, 1)) !important;
+  min-height: calc(48px * var(--font-scale, 1)) !important;
+  padding: calc(12px * var(--font-scale, 1)) calc(16px * var(--font-scale, 1)) !important;
+}
+
+input::placeholder,
+textarea::placeholder,
+.input::placeholder,
+.search-input::placeholder {
+  font-size: calc(15px * var(--font-scale, 1)) !important;
+}
+
+/* ═══════════════════════════════════════
+   TABLES - الجداول (أكبر)
+   ═══════════════════════════════════════ */
+table,
+.tbl {
+  font-size: calc(17px * var(--font-scale, 1)) !important;
+}
+
+th,
+.tbl th {
+  font-size: calc(15px * var(--font-scale, 1)) !important;
+  font-weight: 700 !important;
+  padding: calc(12px * var(--font-scale, 1)) calc(10px * var(--font-scale, 1)) !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+}
+
+td,
+.tbl td {
+  font-size: calc(16px * var(--font-scale, 1)) !important;
+  padding: calc(12px * var(--font-scale, 1)) calc(10px * var(--font-scale, 1)) !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+}
+
+/* Actions column alignment */
+.tbl td:last-child,
+.tbl th:last-child,
+.table td:last-child,
+.table th:last-child {
+  text-align: center !important;
+}
+
+.tbl .actions,
+.table .actions {
+  justify-content: center !important;
+}
+
+/* Checkbox in tables */
+.row-checkbox,
+#selectAllCheckbox,
+.tbl input[type="checkbox"],
+.table input[type="checkbox"] {
+  width: 16px !important;
+  height: 16px !important;
+  cursor: pointer !important;
+  accent-color: var(--accent) !important;
+}
+
+/* ═══════════════════════════════════════
+   BADGES & TAGS - الشارات والعلامات
+   ═══════════════════════════════════════ */
+.badge,
+.tag,
+.chip {
+  font-size: calc(13px * var(--font-scale, 1)) !important;
+  font-weight: 700 !important;
+  padding: calc(6px * var(--font-scale, 1)) calc(12px * var(--font-scale, 1)) !important;
+}
+
+.results-badge {
+  font-size: calc(15px * var(--font-scale, 1)) !important;
+  padding: calc(10px * var(--font-scale, 1)) calc(18px * var(--font-scale, 1)) !important;
+}
+
+/* ═══════════════════════════════════════
+   MODALS - النوافذ المنبثقة
+   ═══════════════════════════════════════ */
+.modal-title,
+.modal-header h2,
+.modal-header h3 {
+  font-size: calc(22px * var(--font-scale, 1)) !important;
+  font-weight: 700 !important;
+}
+
+.modal-body,
+.modal-content {
+  font-size: calc(16px * var(--font-scale, 1)) !important;
+}
+
+.modal-footer {
+  font-size: calc(15px * var(--font-scale, 1)) !important;
+}
+
+/* ═══════════════════════════════════════
+   SIDEBAR & NAVIGATION - الشريط الجانبي
+   ═══════════════════════════════════════ */
+.sidebar-item,
+.nav-item,
+.menu-item {
+  font-size: calc(15px * var(--font-scale, 1)) !important;
+  font-weight: 500 !important;
+}
+
+.sidebar-title,
+.nav-title {
+  font-size: calc(13px * var(--font-scale, 1)) !important;
+  font-weight: 700 !important;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ═══════════════════════════════════════
+   ALERTS & MESSAGES - التنبيهات والرسائل
+   ═══════════════════════════════════════ */
+.alert,
+.message,
+.toast,
+.notification {
+  font-size: calc(15px * var(--font-scale, 1)) !important;
+}
+
+.error-message,
+.success-message,
+.warning-message {
+  font-size: calc(15px * var(--font-scale, 1)) !important;
+  font-weight: 600 !important;
+}
+
+/* ═══════════════════════════════════════
+   EMPTY STATES - الحالات الفارغة
+   ═══════════════════════════════════════ */
+.empty-state {
+  font-size: calc(17px * var(--font-scale, 1)) !important;
+}
+
+.empty-text {
+  font-size: calc(20px * var(--font-scale, 1)) !important;
+  font-weight: 600 !important;
+}
+
+.empty-icon {
+  font-size: calc(80px * var(--font-scale, 1)) !important;
+}
+
+/* ═══════════════════════════════════════
+   TOOLTIPS & HELPERS - التلميحات
+   ═══════════════════════════════════════ */
+.tooltip,
+.helper-text,
+.hint {
+  font-size: calc(14px * var(--font-scale, 1)) !important;
+}
+
+/* ═══════════════════════════════════════
+   FOOTER - الفوتر
+   ═══════════════════════════════════════ */
+footer,
+.footer {
+  font-size: calc(14px * var(--font-scale, 1)) !important;
+}
+
+/* ═══════════════════════════════════════
+   SPECIFIC ELEMENTS - عناصر محددة
+   ═══════════════════════════════════════ */
+
+/* Price displays */
+.price,
+.amount,
+.total {
+  font-size: calc(18px * var(--font-scale, 1)) !important;
+  font-weight: 700 !important;
+}
+
+.price-large,
+.total-large {
+  font-size: calc(28px * var(--font-scale, 1)) !important;
+  font-weight: 900 !important;
+}
+
+/* IMEI and serial numbers */
+.imei,
+.serial,
+.num {
+  font-size: calc(14px * var(--font-scale, 1)) !important;
+  font-family: 'Courier New', monospace !important;
+}
+
+/* Date and time */
+.date,
+.time,
+.datetime {
+  font-size: calc(14px * var(--font-scale, 1)) !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   🎨 BUTTONS - الأزرار المحسنة
+   ═══════════════════════════════════════════════════════════════ */
+
+/* Base Button Style - Compact */
+button,
+.btn,
+.button {
+  font-size: calc(14px * var(--font-scale, 1)) !important;
+  font-weight: 600 !important;
+  padding: calc(8px * var(--font-scale, 1)) calc(16px * var(--font-scale, 1)) !important;
+  border-radius: 8px !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  cursor: pointer !important;
+  border: none !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: calc(6px * var(--font-scale, 1)) !important;
+}
+
+/* ═══════════════════════════════════════
+   PRIMARY BUTTON - الزر الرئيسي (أزرق)
+   ═══════════════════════════════════════ */
+.btn,
+.btn-primary,
+button[type="submit"] {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.35) !important;
+}
+
+.btn:hover,
+.btn-primary:hover,
+button[type="submit"]:hover {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(59, 130, 246, 0.45) !important;
+}
+
+.btn:active,
+.btn-primary:active,
+button[type="submit"]:active {
+  transform: translateY(0) scale(0.98) !important;
+}
+
+/* Light mode primary button */
+[data-theme="light"] .btn,
+[data-theme="light"] .btn-primary,
+[data-theme="light"] button[type="submit"] {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3) !important;
+}
+
+[data-theme="light"] .btn:hover,
+[data-theme="light"] .btn-primary:hover,
+[data-theme="light"] button[type="submit"]:hover {
+  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.4) !important;
+}
+
+/* ═══════════════════════════════════════
+   SUCCESS BUTTON - زر النجاح (أخضر)
+   ═══════════════════════════════════════ */
+.btn-success,
+.sell-btn {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35) !important;
+}
+
+.btn-success:hover,
+.sell-btn:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.45) !important;
+}
+
+[data-theme="light"] .btn-success,
+[data-theme="light"] .sell-btn {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+  box-shadow: 0 4px 14px rgba(5, 150, 105, 0.3) !important;
+}
+
+/* ═══════════════════════════════════════
+   WARNING BUTTON - زر التحذير (برتقالي)
+   ═══════════════════════════════════════ */
+.btn-warning,
+.archive-btn {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.35) !important;
+}
+
+.btn-warning:hover,
+.archive-btn:hover {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(245, 158, 11, 0.45) !important;
+}
+
+[data-theme="light"] .btn-warning,
+[data-theme="light"] .archive-btn {
+  background: linear-gradient(135deg, #d97706 0%, #b45309 100%) !important;
+  box-shadow: 0 4px 14px rgba(217, 119, 6, 0.3) !important;
+}
+
+/* ═══════════════════════════════════════
+   DANGER BUTTON - زر الخطر (أحمر)
+   ═══════════════════════════════════════ */
+.btn-danger,
+.delete-btn {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35) !important;
+}
+
+.btn-danger:hover,
+.delete-btn:hover {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.45) !important;
+}
+
+[data-theme="light"] .btn-danger,
+[data-theme="light"] .delete-btn {
+  background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.3) !important;
+}
+
+/* ═══════════════════════════════════════
+   INFO BUTTON - زر المعلومات (أزرق فاتح)
+   ═══════════════════════════════════════ */
+.btn-info,
+.details-btn {
+  background: linear-gradient(135deg, #0ea5e9 0%, #0284c7 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(14, 165, 233, 0.35) !important;
+}
+
+.btn-info:hover,
+.details-btn:hover {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(14, 165, 233, 0.45) !important;
+}
+
+[data-theme="light"] .btn-info,
+[data-theme="light"] .details-btn {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.3) !important;
+}
+
+/* ═══════════════════════════════════════
+   PURPLE BUTTON - الزر البنفسجي
+   ═══════════════════════════════════════ */
+.btn-purple,
+.edit-btn {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(139, 92, 246, 0.35) !important;
+}
+
+.btn-purple:hover,
+.edit-btn:hover {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 6px 20px rgba(139, 92, 246, 0.45) !important;
+}
+
+[data-theme="light"] .btn-purple,
+[data-theme="light"] .edit-btn {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%) !important;
+  box-shadow: 0 4px 14px rgba(124, 58, 237, 0.3) !important;
+}
+
+/* ═══════════════════════════════════════
+   GHOST/SECONDARY BUTTON - الزر الثانوي
+   ═══════════════════════════════════════ */
+.btn-ghost,
+.btn-secondary,
+.btn-outline {
+  background: rgba(59, 130, 246, 0.1) !important;
+  color: #3b82f6 !important;
+  border: 2px solid rgba(59, 130, 246, 0.3) !important;
+  box-shadow: none !important;
+}
+
+.btn-ghost:hover,
+.btn-secondary:hover,
+.btn-outline:hover {
+  background: rgba(59, 130, 246, 0.2) !important;
+  border-color: rgba(59, 130, 246, 0.5) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.2) !important;
+}
+
+[data-theme="light"] .btn-ghost,
+[data-theme="light"] .btn-secondary,
+[data-theme="light"] .btn-outline {
+  background: rgba(37, 99, 235, 0.08) !important;
+  color: #2563eb !important;
+  border: 2px solid rgba(37, 99, 235, 0.25) !important;
+}
+
+[data-theme="light"] .btn-ghost:hover,
+[data-theme="light"] .btn-secondary:hover,
+[data-theme="light"] .btn-outline:hover {
+  background: rgba(37, 99, 235, 0.15) !important;
+  border-color: rgba(37, 99, 235, 0.4) !important;
+}
+
+/* ═══════════════════════════════════════
+   ACTION BUTTONS - أزرار الإجراءات (في الجدول)
+   ═══════════════════════════════════════ */
+.action-btn {
+  font-size: calc(13px * var(--font-scale, 1)) !important;
+  padding: calc(6px * var(--font-scale, 1)) calc(8px * var(--font-scale, 1)) !important;
+  min-width: calc(30px * var(--font-scale, 1)) !important;
+  min-height: calc(30px * var(--font-scale, 1)) !important;
+  border-radius: 6px !important;
+}
+
+/* Action buttons in table - smaller inline display */
+.actions .action-btn,
+td .action-btn {
+  display: inline-flex !important;
+  padding: calc(5px * var(--font-scale, 1)) calc(8px * var(--font-scale, 1)) !important;
+  min-width: calc(28px * var(--font-scale, 1)) !important;
+  min-height: calc(28px * var(--font-scale, 1)) !important;
+  font-size: calc(12px * var(--font-scale, 1)) !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Light mode - remove ALL shadows in table */
+[data-theme="light"] .action-btn,
+[data-theme="light"] .actions .action-btn,
+[data-theme="light"] td .action-btn,
+[data-theme="light"] .tbl .action-btn {
+  box-shadow: none !important;
+}
+
+[data-theme="light"] .action-btn:hover,
+[data-theme="light"] .actions .action-btn:hover,
+[data-theme="light"] td .action-btn:hover,
+[data-theme="light"] .tbl .action-btn:hover {
+  box-shadow: none !important;
+}
+
+/* Remove shadows from badges in light mode */
+[data-theme="light"] .badge,
+[data-theme="light"] .tbl .badge {
+  box-shadow: none !important;
+}
+
+/* Remove any shadows from table cells in light mode */
+[data-theme="light"] .tbl td,
+[data-theme="light"] .tbl th {
+  box-shadow: none !important;
+}
+
+/* ═══════════════════════════════════════
+   TRANSFER BUTTON - زر التحويل
+   ═══════════════════════════════════════ */
+.transfer-btn,
+#btnBulkTransferDevices {
+  padding: calc(8px * var(--font-scale, 1)) calc(14px * var(--font-scale, 1)) !important;
+  font-size: calc(13px * var(--font-scale, 1)) !important;
+  margin-right: 10px !important;
+}
+
+/* ═══════════════════════════════════════
+   HEADER/NAV BUTTONS - أزرار الترويسة
+   ═══════════════════════════════════════ */
+.header-btn,
+.nav-btn {
+  font-size: calc(13px * var(--font-scale, 1)) !important;
+  font-weight: 600 !important;
+  padding: calc(8px * var(--font-scale, 1)) calc(14px * var(--font-scale, 1)) !important;
+  border-radius: 6px !important;
+}
+
+/* ═══════════════════════════════════════
+   SMALL BUTTONS - الأزرار الصغيرة
+   ═══════════════════════════════════════ */
+.btn-sm,
+.button-sm {
+  font-size: calc(12px * var(--font-scale, 1)) !important;
+  padding: calc(5px * var(--font-scale, 1)) calc(10px * var(--font-scale, 1)) !important;
+}
+
+/* ═══════════════════════════════════════
+   LARGE BUTTONS - الأزرار الكبيرة
+   ═══════════════════════════════════════ */
+.btn-lg,
+.button-lg {
+  font-size: calc(16px * var(--font-scale, 1)) !important;
+  padding: calc(12px * var(--font-scale, 1)) calc(24px * var(--font-scale, 1)) !important;
+}
+
+/* ═══════════════════════════════════════
+   DISABLED BUTTONS - الأزرار المعطلة
+   ═══════════════════════════════════════ */
+button:disabled,
+.btn:disabled,
+.button:disabled {
+  opacity: 0.5 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* ═══════════════════════════════════════
+   EXPORT/IMPORT BUTTONS - أزرار التصدير والاستيراد
+   ═══════════════════════════════════════ */
+button[onclick*="export"],
+button[onclick*="Export"] {
+  background: linear-gradient(135deg, #22c55e 0%, #16a34a 100%) !important;
+  color: white !important;
+}
+
+button[onclick*="import"],
+button[onclick*="Import"] {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+  color: white !important;
+}
+
+/* ═══════════════════════════════════════
+   POS SPECIFIC - خاص بنقطة البيع
+   ═══════════════════════════════════════ */
+
+/* Product cards */
+.product-name,
+.item-name {
+  font-size: calc(15px * var(--font-scale, 1)) !important;
+  font-weight: 600 !important;
+}
+
+.product-price,
+.item-price {
+  font-size: calc(16px * var(--font-scale, 1)) !important;
+  font-weight: 700 !important;
+}
+
+/* Cart items */
+.cart-item-name {
+  font-size: calc(15px * var(--font-scale, 1)) !important;
+}
+
+.cart-item-price {
+  font-size: calc(15px * var(--font-scale, 1)) !important;
+  font-weight: 600 !important;
+}
+
+.cart-item-qty {
+  font-size: calc(15px * var(--font-scale, 1)) !important;
+  font-weight: 700 !important;
+}
+
+/* Checkout totals */
+.checkout-label {
+  font-size: calc(15px * var(--font-scale, 1)) !important;
+}
+
+.checkout-value {
+  font-size: calc(17px * var(--font-scale, 1)) !important;
+  font-weight: 700 !important;
+}
+
+.checkout-total-label {
+  font-size: calc(18px * var(--font-scale, 1)) !important;
+  font-weight: 700 !important;
+}
+
+.checkout-total-value {
+  font-size: calc(28px * var(--font-scale, 1)) !important;
+  font-weight: 900 !important;
+}
+
+/* ═══════════════════════════════════════
+   RESPONSIVE - للشاشات الكبيرة
+   ═══════════════════════════════════════ */
+@media (min-width: 1600px) {
+  body {
+    font-size: calc(18px * var(--font-scale, 1)) !important;
+  }
+
+  .stat-value,
+  .kpi-value {
+    font-size: calc(38px * var(--font-scale, 1)) !important;
+  }
+
+  .tbl td {
+    font-size: calc(17px * var(--font-scale, 1)) !important;
+    padding: calc(14px * var(--font-scale, 1)) calc(12px * var(--font-scale, 1)) !important;
+  }
+
+  .tbl th {
+    font-size: calc(16px * var(--font-scale, 1)) !important;
+    padding: calc(14px * var(--font-scale, 1)) calc(12px * var(--font-scale, 1)) !important;
+  }
+
+  .page-title,
+  .page-title-main {
+    font-size: calc(36px * var(--font-scale, 1)) !important;
+  }
+
+  button,
+  .btn,
+  .button {
+    font-size: calc(15px * var(--font-scale, 1)) !important;
+    padding: calc(10px * var(--font-scale, 1)) calc(18px * var(--font-scale, 1)) !important;
+  }
+
+  .action-btn {
+    font-size: calc(14px * var(--font-scale, 1)) !important;
+    padding: calc(8px * var(--font-scale, 1)) calc(12px * var(--font-scale, 1)) !important;
+  }
+}
+
+/* ═══════════════════════════════════════
+   SMALL SCREENS - للشاشات الصغيرة
+   ═══════════════════════════════════════ */
+@media (max-width: 1366px) {
+  body {
+    font-size: calc(16px * var(--font-scale, 1)) !important;
+  }
+
+  .stat-value,
+  .kpi-value {
+    font-size: calc(30px * var(--font-scale, 1)) !important;
+  }
+
+  .header .stat-value,
+  .hdr .stat-value {
+    font-size: calc(22px * var(--font-scale, 1)) !important;
+  }
+
+  .page-title,
+  .page-title-main {
+    font-size: calc(28px * var(--font-scale, 1)) !important;
+  }
+
+  .tbl th {
+    font-size: calc(14px * var(--font-scale, 1)) !important;
+    padding: calc(10px * var(--font-scale, 1)) calc(8px * var(--font-scale, 1)) !important;
+  }
+
+  .tbl td {
+    font-size: calc(15px * var(--font-scale, 1)) !important;
+    padding: calc(10px * var(--font-scale, 1)) calc(8px * var(--font-scale, 1)) !important;
+  }
+
+  button,
+  .btn,
+  .button {
+    font-size: calc(13px * var(--font-scale, 1)) !important;
+    padding: calc(7px * var(--font-scale, 1)) calc(12px * var(--font-scale, 1)) !important;
+  }
+
+  .action-btn {
+    font-size: calc(12px * var(--font-scale, 1)) !important;
+    padding: calc(5px * var(--font-scale, 1)) calc(8px * var(--font-scale, 1)) !important;
+    min-width: calc(28px * var(--font-scale, 1)) !important;
+    min-height: calc(28px * var(--font-scale, 1)) !important;
+  }
+}

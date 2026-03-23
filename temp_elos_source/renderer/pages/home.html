@@ -1,0 +1,3960 @@
+<!-- صفحة الرئيسية - Home Page -->
+
+<style>
+  /* الـ container يأخذ كامل الشاشة مع scroll */
+  #page-container:has(.home-page) {
+    padding: 16px !important;
+    width: 100% !important;
+    height: 100% !important;
+    box-sizing: border-box !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+
+  /* ═══════════════════════════════════════
+     Custom Scrollbar - نفس تصميم نقطة البيع
+     ═══════════════════════════════════════ */
+  #page-container:has(.home-page)::-webkit-scrollbar,
+  .home-page *::-webkit-scrollbar,
+  .charts-section::-webkit-scrollbar,
+  .tab-content::-webkit-scrollbar,
+  .recent-list::-webkit-scrollbar,
+  .alerts-section::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  #page-container:has(.home-page)::-webkit-scrollbar-track,
+  .home-page *::-webkit-scrollbar-track,
+  .charts-section::-webkit-scrollbar-track,
+  .tab-content::-webkit-scrollbar-track,
+  .recent-list::-webkit-scrollbar-track,
+  .alerts-section::-webkit-scrollbar-track {
+    background: var(--card);
+    border-radius: 4px;
+  }
+  
+  #page-container:has(.home-page)::-webkit-scrollbar-thumb,
+  .home-page *::-webkit-scrollbar-thumb,
+  .charts-section::-webkit-scrollbar-thumb,
+  .tab-content::-webkit-scrollbar-thumb,
+  .recent-list::-webkit-scrollbar-thumb,
+  .alerts-section::-webkit-scrollbar-thumb {
+    background: var(--line);
+    border-radius: 4px;
+    transition: background var(--transition-fast, 0.2s ease);
+  }
+  
+  #page-container:has(.home-page)::-webkit-scrollbar-thumb:hover,
+  .home-page *::-webkit-scrollbar-thumb:hover,
+  .charts-section::-webkit-scrollbar-thumb:hover,
+  .tab-content::-webkit-scrollbar-thumb:hover,
+  .recent-list::-webkit-scrollbar-thumb:hover,
+  .alerts-section::-webkit-scrollbar-thumb:hover {
+    background: var(--brand);
+  }
+
+  /* Firefox scrollbar */
+  #page-container:has(.home-page),
+  .home-page *,
+  .charts-section,
+  .tab-content,
+  .recent-list,
+  .alerts-section {
+    scrollbar-width: thin;
+    scrollbar-color: var(--line) var(--card);
+  }
+
+  /* الصفحة الرئيسية - flexbox للتحكم في المساحة */
+  .home-page {
+    width: 100% !important;
+    min-height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 8px !important;
+    overflow: visible !important;
+  }
+
+  /* ═══════════════════════════════════════
+     Dashboard Header - Filters & Refresh
+     ═══════════════════════════════════════ */
+  .dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+    gap: 12px;
+  }
+
+  .quick-filters {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .filter-btn {
+    padding: 6px 12px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .filter-btn:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--accent);
+    color: var(--text-primary);
+  }
+
+  .filter-btn.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+  }
+
+  .refresh-btn {
+    padding: 6px 12px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .refresh-btn:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .refresh-btn.loading {
+    pointer-events: none;
+    opacity: 0.6;
+  }
+
+  .refresh-btn .icon {
+    font-size: 14px;
+    transition: transform 0.3s ease;
+  }
+
+  .refresh-btn.loading .icon {
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  /* ═══════════════════════════════════════
+     بطاقات الإحصائيات الرئيسية
+     ═══════════════════════════════════════ */
+  .home-page .stats-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .stat-card {
+    background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 10px;
+    text-align: center;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+  }
+
+  .stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+
+  .stat-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--accent);
+    opacity: 1;
+    transition: opacity 0.3s ease;
+  }
+
+  .stat-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    border-color: var(--accent);
+  }
+
+  .stat-card.devices::before { background: var(--accent); }
+  .stat-card.accessories::before { background: var(--purple); }
+  .stat-card.repair-parts::before { background: #f59e0b; }
+  .stat-card.sales::before { background: var(--success); }
+  .stat-card.safe::before { background: var(--warning); }
+
+  .stat-icon {
+    font-size: 20px;
+    margin-bottom: 4px;
+    display: block;
+  }
+
+  .stat-value {
+    font-size: 20px;
+    font-weight: 900;
+    color: var(--text-primary);
+    margin-bottom: 2px;
+    font-family: 'Tajawal', sans-serif;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-weight: 600;
+  }
+
+  .stat-trend {
+    font-size: 11px;
+    margin-top: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    font-weight: 600;
+  }
+
+  .stat-trend.positive {
+    color: var(--success);
+  }
+
+  .stat-trend.negative {
+    color: var(--danger);
+  }
+
+  .stat-trend.neutral {
+    color: var(--text-secondary);
+  }
+
+  .stat-card.devices .stat-value { color: var(--accent); }
+  .stat-card.accessories .stat-value { color: var(--purple); }
+  .stat-card.repair-parts .stat-value { color: #f59e0b; }
+  .stat-card.sales .stat-value { color: var(--success); }
+  .stat-card.safe .stat-value { color: var(--warning); }
+
+  /* ═══════════════════════════════════════
+     صف الإحصائيات الثانوية
+     ═══════════════════════════════════════ */
+  .home-page .secondary-stats {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .mini-stat {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 8px;
+    text-align: center;
+    transition: all 0.2s ease;
+  }
+
+  .mini-stat:hover {
+    border-color: var(--accent);
+    background: var(--bg-tertiary);
+    transform: translateY(-2px);
+  }
+
+  .mini-stat .value {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--text-primary);
+  }
+
+  .mini-stat .label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 4px;
+  }
+
+  .mini-stat.success .value { color: var(--success); }
+  .mini-stat.danger .value { color: var(--danger); }
+  .mini-stat.warning .value { color: var(--warning); }
+  .mini-stat.info .value { color: var(--cyan); }
+
+  /* ═══════════════════════════════════════
+     المحتوى الرئيسي - يأخذ باقي المساحة
+     ═══════════════════════════════════════ */
+  .home-page .home-main-content {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 10px;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  /* ═══════════════════════════════════════
+     قسم الرسوم البيانية
+     ═══════════════════════════════════════ */
+  .charts-section {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+  }
+
+  .chart-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    min-height: 240px;
+  }
+
+  .chart-card.full-width {
+    grid-column: 1 / -1;
+  }
+
+  .chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .chart-title {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .chart-actions {
+    display: flex;
+    gap: 4px;
+  }
+
+  .chart-action-btn {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s ease;
+  }
+
+  .chart-action-btn:hover {
+    background: var(--bg-tertiary);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* Loading Skeleton */
+  .skeleton {
+    background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--bg-secondary) 50%, var(--bg-tertiary) 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s ease-in-out infinite;
+    border-radius: 8px;
+  }
+
+  @keyframes skeleton-loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  .chart-container {
+    flex: 1;
+    position: relative;
+    min-height: 180px;
+  }
+
+  /* ═══════════════════════════════════════
+     قسم الأنشطة مع Tabs
+     ═══════════════════════════════════════ */
+  .activities-section {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-height: 0;
+  }
+
+  .section-title {
+    font-size: 14px;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .tabs-container {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .tabs-header {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 8px;
+  }
+
+  .tab-btn {
+    padding: 6px 12px;
+    background: transparent;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+  }
+
+  .tab-btn:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+  }
+
+  .tab-btn.active {
+    color: var(--accent);
+    background: rgba(59, 130, 246, 0.1);
+  }
+
+  .tab-btn.active::after {
+    content: '';
+    position: absolute;
+    bottom: -13px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--accent);
+  }
+
+  .tab-content {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+    display: none;
+  }
+
+  .tab-content.active {
+    display: block;
+  }
+
+  /* ═══════════════════════════════════════
+     آخر المعاملات
+     ═══════════════════════════════════════ */
+  .recent-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ═══════════════════════════════════════
+     قسم التنبيهات
+     ═══════════════════════════════════════ */
+  .alerts-section {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    max-height: 220px;
+    overflow: hidden;
+  }
+
+  .alert-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+    margin-bottom: 6px;
+    border-right: 3px solid var(--warning);
+    transition: all 0.2s ease;
+  }
+
+  .alert-item:hover {
+    transform: translateX(-4px);
+    border-right-color: var(--accent);
+  }
+
+  .alert-item.urgent {
+    border-right-color: var(--danger);
+    background: rgba(239, 68, 68, 0.05);
+  }
+
+  .alert-item.info {
+    border-right-color: var(--cyan);
+  }
+
+  .alert-icon {
+    font-size: 18px;
+    flex-shrink: 0;
+  }
+
+  .alert-content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .alert-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 2px;
+  }
+
+  .alert-message {
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  .alert-time {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  .recent-list {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
+  }
+
+  .recent-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background: var(--bg-tertiary);
+    border-radius: 8px;
+    margin-bottom: 6px;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+  }
+
+  .recent-item:hover {
+    border-color: var(--accent);
+    transform: translateX(-4px);
+  }
+
+  .recent-item:last-child {
+    margin-bottom: 0;
+  }
+
+  .recent-item .icon {
+    font-size: 18px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(59,130,246,0.1);
+    border-radius: 8px;
+    flex-shrink: 0;
+  }
+
+  .recent-item .info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .recent-item .title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .recent-item .meta {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+  }
+
+  .recent-item .amount {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--success);
+    flex-shrink: 0;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 20px;
+    color: var(--text-secondary);
+  }
+
+  .empty-state .icon {
+    font-size: 36px;
+    margin-bottom: 8px;
+    opacity: 0.5;
+  }
+
+  /* ═══════════════════════════════════════
+     Skeleton Loaders
+     ═══════════════════════════════════════ */
+  .skeleton-loader {
+    background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--bg-secondary) 50%, var(--bg-tertiary) 75%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s ease-in-out infinite;
+    border-radius: 8px;
+  }
+
+  .skeleton-stat {
+    height: 60px;
+    margin-bottom: 8px;
+  }
+
+  .skeleton-text {
+    height: 16px;
+    margin-bottom: 6px;
+    border-radius: 4px;
+  }
+
+  .skeleton-text.short {
+    width: 60%;
+  }
+
+  .skeleton-chart {
+    height: 180px;
+    width: 100%;
+  }
+
+  @keyframes skeleton-loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  /* ═══════════════════════════════════════
+     Advanced Analytics Cards
+     ═══════════════════════════════════════ */
+  .analytics-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-top: 8px;
+  }
+
+  .analytics-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    text-align: center;
+  }
+
+  .analytics-value {
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+  }
+
+  .analytics-label {
+    font-size: 11px;
+    color: var(--text-secondary);
+  }
+
+
+  /* ═══════════════════════════════════════
+     Responsive - شاشات أصغر
+     ═══════════════════════════════════════ */
+  @media (max-width: 1200px) {
+    .home-page .stats-row {
+      grid-template-columns: repeat(5, 1fr);
+    }
+    .home-page .secondary-stats {
+      grid-template-columns: repeat(3, 1fr);
+    }
+    .charts-section {
+      grid-template-columns: 1fr;
+    }
+    .home-page .home-main-content {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 900px) {
+    .home-page .stats-row {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .home-page .secondary-stats {
+      grid-template-columns: repeat(2, 1fr);
+    }
+    .home-page .home-main-content {
+      grid-template-columns: 1fr;
+    }
+    .activities-section {
+      order: -1;
+    }
+  }
+
+  /* ═══════════════════════════════════════
+     P0: Priority Alerts Zone - Critical Alerts at Top
+     ═══════════════════════════════════════ */
+  .priority-alerts-zone {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    flex-shrink: 0;
+    background: var(--ds-bg-secondary, var(--bg-secondary));
+    border: 1px solid var(--ds-border, var(--border));
+    border-radius: 12px;
+    padding: 12px;
+    box-shadow: var(--ds-shadow-sm, 0 1px 3px rgba(0,0,0,0.1));
+  }
+
+  .priority-alerts-zone[hidden] {
+    display: none !important;
+  }
+
+  .priority-alerts-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--ds-border-light, var(--border));
+    margin-bottom: 4px;
+  }
+
+  .priority-alerts-header__title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ds-text, var(--text-primary));
+  }
+
+  .priority-alerts-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  /* BEM: priority-alert--{severity} */
+  .priority-alert {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--ds-bg-card, var(--bg-secondary));
+    border: 1px solid var(--ds-border, var(--border));
+    border-radius: 10px;
+    transition: all 0.2s ease;
+    cursor: pointer;
+  }
+
+  .priority-alert:hover {
+    transform: translateX(-4px);
+    box-shadow: var(--ds-shadow-md, 0 4px 12px rgba(0,0,0,0.15));
+  }
+
+  /* Severity: Urgent (Red) */
+  .priority-alert--urgent,
+  .priority-alert.urgent {
+    border-right: 4px solid var(--ds-danger, var(--danger));
+    background: var(--ds-danger-light, rgba(239, 68, 68, 0.08));
+  }
+
+  /* Severity: Warning (Orange/Yellow) */
+  .priority-alert--warning,
+  .priority-alert.warning {
+    border-right: 4px solid var(--ds-warning, var(--warning));
+    background: var(--ds-warning-light, rgba(245, 158, 11, 0.08));
+  }
+
+  /* Severity: Info (Blue) */
+  .priority-alert--info,
+  .priority-alert.info {
+    border-right: 4px solid var(--ds-info, var(--cyan));
+    background: var(--ds-info-light, rgba(6, 182, 212, 0.08));
+  }
+
+  .priority-alert__icon,
+  .priority-alert-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255,255,255,0.1);
+    border-radius: 10px;
+  }
+
+  .priority-alert--urgent .priority-alert__icon,
+  .priority-alert.urgent .priority-alert-icon {
+    background: var(--ds-danger-bg, rgba(239, 68, 68, 0.15));
+  }
+
+  .priority-alert--warning .priority-alert__icon,
+  .priority-alert.warning .priority-alert-icon {
+    background: var(--ds-warning-bg, rgba(245, 158, 11, 0.15));
+  }
+
+  .priority-alert--info .priority-alert__icon,
+  .priority-alert.info .priority-alert-icon {
+    background: var(--ds-info-bg, rgba(6, 182, 212, 0.15));
+  }
+
+  .priority-alert__content,
+  .priority-alert-content {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .priority-alert__title,
+  .priority-alert-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--ds-text, var(--text-primary));
+    margin-bottom: 2px;
+  }
+
+  .priority-alert__desc,
+  .priority-alert-message {
+    font-size: 13px;
+    color: var(--ds-text-secondary, var(--text-secondary));
+  }
+
+  .priority-alert__actions,
+  .priority-alert-cta {
+    flex-shrink: 0;
+  }
+
+  .priority-alert__actions .btn,
+  .priority-alert-cta {
+    padding: 8px 16px;
+    background: var(--ds-brand, var(--accent));
+    color: var(--ds-brand-contrast, white);
+    border: none;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .priority-alert__actions .btn:hover,
+  .priority-alert-cta:hover {
+    background: var(--ds-brand-hover, var(--accent-hover));
+    transform: scale(1.02);
+  }
+
+  .priority-alert--urgent .priority-alert__actions .btn,
+  .priority-alert.urgent .priority-alert-cta {
+    background: var(--ds-danger, var(--danger));
+  }
+
+  .priority-alert--urgent .priority-alert__actions .btn:hover,
+  .priority-alert.urgent .priority-alert-cta:hover {
+    background: var(--ds-danger-hover, #dc2626);
+  }
+
+  /* btn-ghost - general ghost button style */
+  .btn-ghost {
+    background: transparent;
+    border: 1px solid var(--ds-border, var(--border));
+    color: var(--ds-text-secondary, var(--text-secondary));
+    padding: 4px 10px;
+    font-size: 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .btn-ghost:hover {
+    background: var(--ds-bg-hover, var(--bg-tertiary));
+    border-color: var(--ds-brand, var(--accent));
+    color: var(--ds-brand, var(--accent));
+  }
+
+  /* ═══════════════════════════════════════
+     P1: Quick Actions Bar
+     ═══════════════════════════════════════ */
+  .quick-actions-zone {
+    background: var(--ds-bg-card, var(--bg-secondary));
+    border: 1px solid var(--ds-border, var(--border));
+    border-radius: 12px;
+    padding: 12px 16px;
+    box-shadow: var(--ds-shadow-sm, 0 1px 3px rgba(0,0,0,0.08));
+  }
+
+  .quick-actions-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .quick-actions-header__title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ds-text, var(--text-primary));
+  }
+
+  .quick-actions-bar {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  .qa-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 18px;
+    background: var(--ds-bg, var(--bg-primary));
+    border: 1px solid var(--ds-border, var(--border));
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ds-text, var(--text-primary));
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+  }
+
+  .qa-btn:hover {
+    background: var(--ds-bg-hover, var(--bg-tertiary));
+    border-color: var(--ds-brand, var(--accent));
+    color: var(--ds-brand, var(--accent));
+    transform: translateY(-2px);
+    box-shadow: var(--ds-shadow-sm, 0 2px 8px rgba(0,0,0,0.1));
+  }
+
+  .qa-btn:active {
+    transform: translateY(0);
+  }
+
+  .qa-ico {
+    font-size: 18px;
+  }
+
+  .qa-kbd {
+    font-size: 11px;
+    padding: 2px 6px;
+    background: var(--ds-bg-tertiary, var(--bg-tertiary));
+    border: 1px solid var(--ds-border-light, var(--border));
+    border-radius: 4px;
+    color: var(--ds-text-muted, var(--text-muted));
+    font-family: monospace;
+    margin-inline-start: 4px;
+  }
+
+  /* Primary action variant */
+  .qa-btn--primary {
+    background: var(--ds-success, var(--success));
+    border-color: var(--ds-success, var(--success));
+    color: white;
+  }
+
+  .qa-btn--primary:hover {
+    background: var(--ds-success-hover, var(--success-hover));
+    border-color: var(--ds-success-hover, var(--success-hover));
+    color: white;
+  }
+
+  @media (max-width: 768px) {
+    .quick-actions-bar {
+      flex-wrap: wrap;
+    }
+    .qa-btn {
+      flex: 1 1 calc(50% - 5px);
+      min-width: 140px;
+      justify-content: center;
+    }
+    .qa-kbd {
+      display: none;
+    }
+  }
+
+  /* ═══════════════════════════════════════
+     P2: Repairs KPI Zone
+     ═══════════════════════════════════════ */
+  .kpi-zone {
+    background: var(--ds-bg-card, var(--bg-secondary));
+    border: 1px solid var(--ds-border, var(--border));
+    border-radius: 12px;
+    padding: 12px 16px;
+    box-shadow: var(--ds-shadow-sm, 0 1px 3px rgba(0,0,0,0.08));
+  }
+
+  .kpi-zone-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .kpi-zone-header__title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ds-text, var(--text-primary));
+  }
+
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  .kpi-card {
+    background: var(--ds-bg, var(--bg-primary));
+    border: 1px solid var(--ds-border-light, var(--border));
+    border-radius: 10px;
+    padding: 12px 14px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .kpi-card:hover {
+    border-color: var(--ds-brand, var(--accent));
+    transform: translateY(-2px);
+    box-shadow: var(--ds-shadow-sm, 0 2px 8px rgba(0,0,0,0.1));
+  }
+
+  .kpi-label {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ds-text-muted, var(--text-muted));
+    margin-bottom: 6px;
+  }
+
+  .kpi-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--ds-text, var(--text-primary));
+    line-height: 1.2;
+  }
+
+  .kpi-meta {
+    font-size: 11px;
+    color: var(--ds-text-muted, var(--text-muted));
+    margin-top: 4px;
+    min-height: 14px;
+  }
+
+  /* Danger state for overdue */
+  .kpi-card--danger {
+    border-color: var(--ds-danger, #dc2626);
+    border-width: 2px;
+  }
+
+  .kpi-card--danger .kpi-value {
+    color: var(--ds-danger, #dc2626);
+  }
+
+  .kpi-card--danger .kpi-label {
+    color: var(--ds-danger, #dc2626);
+    opacity: 0.85;
+  }
+
+  /* Neutral state when no overdue */
+  .kpi-card--neutral {
+    border-color: var(--ds-border-light, var(--border));
+    border-width: 1px;
+  }
+
+  .kpi-card--neutral .kpi-value {
+    color: var(--ds-success, #059669);
+  }
+
+  .kpi-card--neutral .kpi-label {
+    color: var(--ds-text-muted, var(--text-muted));
+  }
+
+  @media (max-width: 600px) {
+    .kpi-grid {
+      grid-template-columns: 1fr;
+    }
+    .kpi-card {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-align: start;
+    }
+    .kpi-value {
+      font-size: 20px;
+      order: -1;
+      min-width: 50px;
+    }
+    .kpi-label {
+      margin-bottom: 0;
+    }
+    .kpi-meta {
+      margin-top: 0;
+      margin-inline-start: auto;
+    }
+  }
+
+  /* ═══════════════════════════════════════
+     KPI Context - Yesterday Comparison
+     ═══════════════════════════════════════ */
+  .kpi-context {
+    font-size: 10px;
+    color: var(--ds-text-muted, var(--text-muted));
+    margin-top: 4px;
+    opacity: 0.85;
+    direction: rtl;
+  }
+
+  .kpi-context.loading {
+    opacity: 0.6;
+    font-style: italic;
+  }
+
+  .kpi-context.positive {
+    color: var(--ds-success, #059669);
+    opacity: 1;
+  }
+
+  .kpi-context.negative {
+    color: var(--ds-danger, #dc2626);
+    opacity: 1;
+  }
+
+  .kpi-context.neutral {
+    color: var(--ds-text-muted, var(--text-muted));
+    opacity: 0.75;
+  }
+
+  .kpi-context .arrow {
+    font-weight: 600;
+  }
+
+  /* Stat card context styling */
+  .stat-card .kpi-context {
+    font-size: 10px;
+    margin-top: 2px;
+  }
+</style>
+
+<div class="home-page">
+  <!-- ═══════════════════════════════════════
+       P0: Priority Alerts Zone - Critical Alerts at Top
+       Collapses when empty (no space taken)
+       ═══════════════════════════════════════ -->
+  <section id="priorityAlertsZone" class="priority-alerts-zone" hidden>
+    <div class="priority-alerts-header">
+      <span class="priority-alerts-header__title">🚨 تنبيهات عاجلة</span>
+      <button class="btn btn-ghost btn-sm" id="priorityAlertsRefreshBtn" type="button" onclick="loadPriorityAlerts(true)">تحديث</button>
+    </div>
+    <div id="priorityAlertsList" class="priority-alerts-list"></div>
+  </section>
+
+  <!-- ═══════════════════════════════════════
+       P1: Quick Actions Bar - What to do now
+       ═══════════════════════════════════════ -->
+  <section class="quick-actions-zone">
+    <div class="quick-actions-header">
+      <span class="quick-actions-header__title">⚡ إجراءات سريعة</span>
+    </div>
+    <div class="quick-actions-bar">
+      <button class="qa-btn qa-btn--primary" data-action="new-sale" type="button">
+        <span class="qa-ico">💰</span>
+        <span class="qa-txt">بيع جديد</span>
+      </button>
+      <button class="qa-btn" data-action="new-repair" type="button">
+        <span class="qa-ico">🔧</span>
+        <span class="qa-txt">صيانة جديدة</span>
+      </button>
+      <button class="qa-btn" data-action="quick-search" type="button">
+        <span class="qa-ico">🔍</span>
+        <span class="qa-txt">بحث سريع</span>
+        <kbd class="qa-kbd">Ctrl+K</kbd>
+      </button>
+      <button class="qa-btn" data-action="new-client" type="button">
+        <span class="qa-ico">👤</span>
+        <span class="qa-txt">عميل جديد</span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════
+       P2: Repairs KPIs - Key Repair Metrics
+       ═══════════════════════════════════════ -->
+  <section id="repairsKpiZone" class="kpi-zone repairs-kpi-zone">
+    <div class="kpi-zone-header">
+      <span class="kpi-zone-header__title">🔧 مؤشرات الصيانة</span>
+      <button class="btn btn-ghost btn-sm" type="button" data-route="repairs">عرض الكل</button>
+    </div>
+
+    <div class="kpi-grid">
+      <div class="kpi-card" id="kpiRepairsToday" data-filter="today">
+        <div class="kpi-label">واردة اليوم</div>
+        <div class="kpi-value" data-field="repairs_today">—</div>
+        <div class="kpi-context loading" id="repairsTodayContext">جارٍ المقارنة…</div>
+        <div class="kpi-meta" data-field="repairs_today_meta"></div>
+      </div>
+
+      <div class="kpi-card" id="kpiRepairsReady" data-filter="ready">
+        <div class="kpi-label">جاهزة للتسليم</div>
+        <div class="kpi-value" data-field="repairs_ready">—</div>
+        <div class="kpi-meta" data-field="repairs_ready_meta"></div>
+      </div>
+
+      <div class="kpi-card" id="kpiRepairsOverdue" data-filter="overdue">
+        <div class="kpi-label">متأخرة</div>
+        <div class="kpi-value" data-field="repairs_overdue">—</div>
+        <div class="kpi-meta" data-field="repairs_overdue_meta"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Dashboard Header -->
+  <div class="dashboard-header">
+    <div class="quick-filters">
+      <button class="filter-btn active" data-period="today">اليوم</button>
+      <button class="filter-btn" data-period="week">الأسبوع</button>
+      <button class="filter-btn" data-period="month">الشهر</button>
+    </div>
+    <button class="refresh-btn" id="refreshBtn" title="تحديث البيانات (R)">
+      <span class="icon">🔄</span>
+      <span>تحديث</span>
+    </button>
+  </div>
+
+  <!-- Advanced Analytics Row -->
+  <div class="analytics-row" id="advancedAnalytics" style="display: none;">
+    <div class="analytics-card">
+      <div class="analytics-value" id="avgSaleValue">--</div>
+      <div class="analytics-label">متوسط قيمة البيع</div>
+    </div>
+    <div class="analytics-card">
+      <div class="analytics-value" id="salesCount">--</div>
+      <div class="analytics-label">عدد المبيعات</div>
+    </div>
+    <div class="analytics-card">
+      <div class="analytics-value" id="profitMargin">--</div>
+      <div class="analytics-label">هامش الربح %</div>
+    </div>
+    <div class="analytics-card">
+      <div class="analytics-value" id="conversionRate">--</div>
+      <div class="analytics-label">معدل التحويل</div>
+    </div>
+  </div>
+
+  <!-- إحصائيات رئيسية -->
+  <div class="stats-row">
+    <div class="stat-card devices" onclick="router?.navigate('inventory')">
+      <span class="stat-icon">📱</span>
+      <div class="stat-value" id="totalDevices">--</div>
+      <div class="stat-label">أجهزة متاحة للبيع</div>
+      <div class="stat-trend neutral" id="devicesTrend"></div>
+    </div>
+    <div class="stat-card accessories" onclick="router?.navigate('accessories')">
+      <span class="stat-icon">🎧</span>
+      <div class="stat-value" id="totalAccessories">--</div>
+      <div class="stat-label">إجمالي الإكسسوارات</div>
+      <div class="stat-trend neutral" id="accessoriesTrend"></div>
+    </div>
+    <div class="stat-card repair-parts" onclick="router?.navigate('repair-parts')">
+      <span class="stat-icon">🔩</span>
+      <div class="stat-value" id="totalRepairParts">--</div>
+      <div class="stat-label">إجمالي قطع الغيار</div>
+    </div>
+    <div class="stat-card sales" onclick="router?.navigate('sales')">
+      <span class="stat-icon">💰</span>
+      <div class="stat-value" id="todaySales">--</div>
+      <div class="stat-label">مبيعات اليوم</div>
+      <div class="kpi-context loading" id="salesContext">جارٍ المقارنة…</div>
+      <div class="stat-trend neutral" id="salesTrend"></div>
+    </div>
+    <div class="stat-card safe" onclick="router?.navigate('safe')">
+      <span class="stat-icon">🏦</span>
+      <div class="stat-value" id="safeBalance">--</div>
+      <div class="stat-label">رصيد الخزينة</div>
+      <div class="kpi-context loading" id="safeContext">جارٍ المقارنة…</div>
+      <div class="stat-trend neutral" id="safeTrend"></div>
+    </div>
+  </div>
+
+  <!-- إحصائيات ثانوية -->
+  <div class="secondary-stats">
+    <div class="mini-stat success">
+      <div class="value" id="todayProfit">--</div>
+      <div class="label">ربح اليوم</div>
+    </div>
+    <div class="mini-stat info">
+      <div class="value" id="totalClients">--</div>
+      <div class="label">إجمالي العملاء</div>
+    </div>
+    <div class="mini-stat warning">
+      <div class="value" id="pendingPayments">--</div>
+      <div class="label">مديونيات العملاء</div>
+    </div>
+    <div class="mini-stat">
+      <div class="value" id="todayPurchases">--</div>
+      <div class="label">مشتريات اليوم</div>
+    </div>
+    <div class="mini-stat danger">
+      <div class="value" id="lowStock">--</div>
+      <div class="label">إكسسوارات منخفضة</div>
+    </div>
+    <div class="mini-stat info">
+      <div class="value" id="monthSales">--</div>
+      <div class="label" id="monthSalesLabel">مبيعات الشهر</div>
+    </div>
+  </div>
+
+  <!-- المحتوى الرئيسي -->
+  <div class="home-main-content">
+    <!-- قسم الرسوم البيانية -->
+    <div class="charts-section">
+      <!-- مبيعات 7 أيام -->
+      <div class="chart-card full-width">
+      <div class="chart-header">
+        <div class="chart-title">📈 مبيعات آخر 7 أيام</div>
+        <div class="chart-actions">
+          <button class="chart-action-btn" onclick="loadSalesChart()" title="تحديث">🔄</button>
+          <button class="chart-action-btn" onclick="router?.navigate('reports')" title="تقارير مفصلة">📊</button>
+        </div>
+      </div>
+        <div class="chart-container">
+          <canvas id="salesChart"></canvas>
+      </div>
+    </div>
+
+      <!-- توزيع المدفوعات -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">💳 توزيع المدفوعات</div>
+        </div>
+        <div class="chart-container">
+          <canvas id="paymentsChart"></canvas>
+        </div>
+      </div>
+
+      <!-- أعلى 5 عملاء -->
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">👥 أعلى 5 عملاء</div>
+        </div>
+        <div class="chart-container">
+          <canvas id="topClientsChart"></canvas>
+        </div>
+      </div>
+
+      <!-- تدفق الخزينة -->
+      <div class="chart-card full-width">
+        <div class="chart-header">
+          <div class="chart-title">💰 تدفق الخزينة (30 يوم)</div>
+        </div>
+        <div class="chart-container">
+          <canvas id="cashflowChart"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- قسم الأنشطة والتنبيهات -->
+    <div class="activities-section">
+      <!-- الأنشطة الحديثة مع Tabs -->
+      <div class="tabs-container">
+        <div class="tabs-header">
+          <button class="tab-btn active" data-tab="sales">المبيعات</button>
+          <button class="tab-btn" data-tab="purchases">المشتريات</button>
+          <button class="tab-btn" data-tab="repairs">الصيانة</button>
+          <button class="tab-btn" data-tab="transfers">التحويلات</button>
+          <button class="tab-btn" data-tab="transactions">الحركات</button>
+        </div>
+
+        <!-- محتوى تبويب المبيعات -->
+        <div class="tab-content active" id="tab-sales">
+      <div class="recent-list" id="recentSales">
+        <div class="empty-state">
+          <div class="icon">📋</div>
+          <div>جاري التحميل...</div>
+        </div>
+          </div>
+        </div>
+
+        <!-- محتوى تبويب المشتريات -->
+        <div class="tab-content" id="tab-purchases">
+          <div class="recent-list" id="recentPurchases">
+            <div class="empty-state">
+              <div class="icon">📋</div>
+              <div>جاري التحميل...</div>
+      </div>
+    </div>
+  </div>
+
+        <!-- محتوى تبويب الصيانة -->
+        <div class="tab-content" id="tab-repairs">
+          <div class="recent-list" id="recentRepairs">
+            <div class="empty-state">
+              <div class="icon">📋</div>
+              <div>جاري التحميل...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- محتوى تبويب التحويلات -->
+        <div class="tab-content" id="tab-transfers">
+          <div class="recent-list" id="recentTransfers">
+            <div class="empty-state">
+              <div class="icon">📋</div>
+              <div>جاري التحميل...</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- محتوى تبويب الحركات -->
+        <div class="tab-content" id="tab-transactions">
+          <div class="recent-list" id="recentTransactions">
+            <div class="empty-state">
+              <div class="icon">📋</div>
+              <div>جاري التحميل...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- التنبيهات -->
+      <div class="alerts-section">
+        <div class="section-title">⚠️ التنبيهات</div>
+        <div id="alertsList">
+          <div class="empty-state">
+            <div class="icon">🔔</div>
+            <div>لا توجد تنبيهات</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════
+// 🚀 Performance & Cache System
+// ═══════════════════════════════════════
+// Prevent re-declaration errors in SPA navigation - use var for hoisting compatibility
+if (typeof window._homeDataCache === 'undefined') {
+  window._homeDataCache = {
+    cache: new Map(),
+    TTL: 30000, // 30 seconds
+
+    get(key) {
+      const cached = this.cache.get(key);
+      if (!cached) return null;
+      if (Date.now() - cached.timestamp > this.TTL) {
+        this.cache.delete(key);
+        return null;
+      }
+      return cached.data;
+    },
+
+    set(key, data) {
+      this.cache.set(key, {
+        data,
+        timestamp: Date.now()
+      });
+    },
+
+    clear() {
+      this.cache.clear();
+    }
+  };
+}
+var DataCache = window._homeDataCache;
+
+// Debounce function - use window to prevent re-declaration
+if (typeof window._homeDebounce === 'undefined') {
+  window._homeDebounce = function(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+      const later = () => {
+        clearTimeout(timeout);
+        func(...args);
+      };
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+    };
+  };
+}
+var debounce = window._homeDebounce;
+
+// ═══════════════════════════════════════
+// 🎨 Chart.js colors - متوافق مع الثيم
+// ═══════════════════════════════════════
+function getChartColors() {
+  const root = document.documentElement;
+  const isDark = root.getAttribute('data-theme') !== 'light';
+  
+  return {
+    primary: 'rgba(59, 130, 246, 0.8)',
+    success: 'rgba(34, 197, 94, 0.8)',
+    warning: 'rgba(251, 191, 36, 0.8)',
+    danger: 'rgba(239, 68, 68, 0.8)',
+    purple: 'rgba(168, 85, 247, 0.8)',
+    cyan: 'rgba(6, 182, 212, 0.8)',
+    bg: isDark ? '#1a1f29' : '#ffffff',
+    text: isDark ? '#ffffff' : '#1a1f29',
+    grid: isDark ? '#374151' : '#e5e7eb'
+  };
+}
+
+var chartColors = getChartColors();
+
+// ═══════════════════════════════════════
+// 🎨 Theme Change Listener - تحديث ألوان الرسوم البيانية
+// ═══════════════════════════════════════
+function initThemeListener() {
+  // الاستماع لتغيير الثيم
+  window.addEventListener('themechange', (e) => {
+    console.log('[Home] Theme changed, updating chart colors...');
+    updateChartColors();
+  });
+  
+  // الاستماع لتغيير data-theme attribute
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.type === 'attributes' && mutation.attributeName === 'data-theme') {
+        console.log('[Home] Theme attribute changed, updating chart colors...');
+        updateChartColors();
+      }
+    });
+  });
+  
+  observer.observe(document.documentElement, {
+    attributes: true,
+    attributeFilter: ['data-theme']
+  });
+  
+  // الاستماع لتغييرات localStorage (للمزامنة عبر التبويبات)
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'elos_theme' || e.key === 'elos-theme') {
+      console.log('[Home] Theme changed in storage, updating chart colors...');
+      setTimeout(updateChartColors, 100); // تأخير بسيط للتأكد من تحديث الثيم
+    }
+  });
+}
+
+// تحديث ألوان الرسوم البيانية وإعادة رسمها
+function updateChartColors() {
+  // تحديث الألوان
+  chartColors = getChartColors();
+  
+  // إعادة رسم كل الرسوم البيانية
+  if (typeof Chart !== 'undefined' && charts) {
+    // إعادة رسم رسم مبيعات 7 أيام
+    if (charts.sales) {
+      const salesData = charts.sales.data;
+      const currentData = salesData.datasets[0].data;
+      // استرجاع التواريخ من Cache أو إعادة بنائها
+      const dates = [];
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        dates.push(date.toISOString().slice(0, 10));
+      }
+      charts.sales.destroy();
+      renderSalesChart(dates, currentData);
+    }
+    
+    // إعادة رسم رسم توزيع المدفوعات
+    if (charts.payments) {
+      const paymentsData = charts.payments.data;
+      if (paymentsData && paymentsData.datasets && paymentsData.datasets[0]) {
+        const data = paymentsData.datasets[0].data;
+        charts.payments.destroy();
+        renderPaymentsChart({
+          cash: data[0] || 0,
+          card: data[1] || 0,
+          transfer: data[2] || 0
+        });
+      }
+    }
+    
+    // إعادة رسم رسم أعلى 5 عملاء
+    if (charts.topClients) {
+      const clientsData = charts.topClients.data;
+      if (clientsData && clientsData.labels && clientsData.datasets && clientsData.datasets[0]) {
+        const top5 = clientsData.labels.map((label, i) => ({
+          name: label,
+          sales: clientsData.datasets[0].data[i] || 0
+        }));
+        charts.topClients.destroy();
+        renderTopClientsChart(top5);
+      }
+    }
+    
+    // إعادة رسم رسم تدفق الخزينة
+    if (charts.cashflow) {
+      const cashflowData = charts.cashflow.data;
+      if (cashflowData && cashflowData.datasets && cashflowData.datasets.length >= 2) {
+        const inflowData = cashflowData.datasets[0].data;
+        const outflowData = cashflowData.datasets[1].data;
+
+        // إنشاء تواريخ من الـ labels
+        const dates = [];
+        for (let i = 29; i >= 0; i--) {
+          const date = new Date();
+          date.setDate(date.getDate() - i);
+          dates.push(date.toISOString().slice(0, 10));
+        }
+
+        charts.cashflow.destroy();
+        renderCashflowChart(dates, inflowData, outflowData);
+      }
+    }
+  }
+}
+
+// تحميل Chart.js ديناميكياً
+async function loadChartJS() {
+  if (typeof Chart !== 'undefined') {
+    return Promise.resolve();
+  }
+  
+  return new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    
+    // تحديد المسار الصحيح بناءً على موقع الصفحة
+    // في SPA mode، الصفحات تُحمّل من pages/ لذا نحتاج ../libs/
+    // لكن يمكن أن تكون في جذر renderer أيضاً
+    let basePath = '';
+    const currentPath = window.location.pathname || '';
+    
+    if (currentPath.includes('/pages/') || currentPath.includes('pages/')) {
+      basePath = '../libs/';
+    } else if (currentPath.includes('renderer')) {
+      basePath = 'libs/';
+    } else {
+      // محاولة المسار النسبي من جذر renderer
+      basePath = '../libs/';
+    }
+    
+    script.src = basePath + 'chart.min.js';
+    
+    const tryAlternatePath = () => {
+      // محاولة مسار بديل
+      const altPath = basePath === '../libs/' ? 'libs/' : '../libs/';
+      script.src = altPath + 'chart.min.js';
+      script.onload = () => {
+        console.log('[Home] Chart.js loaded from alternate path:', script.src);
+        resolve();
+      };
+      script.onerror = () => {
+        console.error('[Home] Failed to load Chart.js from all paths');
+        reject(new Error('Chart.js failed to load'));
+      };
+    };
+    
+    script.onload = () => {
+      console.log('[Home] Chart.js loaded from:', script.src);
+      resolve();
+    };
+    script.onerror = tryAlternatePath;
+    
+    document.head.appendChild(script);
+  });
+}
+
+// تهيئة صفحة الرئيسية
+var currentPeriod = 'today';
+var refreshInterval = null;
+
+window.init_home = async function() {
+  console.log('[Home] Initializing Dashboard...');
+  
+  // تحميل Chart.js أولاً
+  try {
+    await loadChartJS();
+  } catch (error) {
+    console.warn('[Home] Chart.js not available, charts will be disabled');
+  }
+  
+  // تهيئة Quick Filters
+  initQuickFilters();
+
+  // تهيئة Refresh Button
+  initRefreshButton();
+
+  // تهيئة Keyboard Shortcuts
+  initKeyboardShortcuts();
+
+  // تهيئة Quick Actions Bar
+  initQuickActionsBar();
+
+  // تهيئة Repairs KPI Zone
+  initRepairsKpiZone();
+
+  // عرض Skeleton Loaders أولاً
+  showSkeletonLoaders();
+  
+  await loadAllData();
+  
+  // إخفاء Skeleton Loaders
+  hideSkeletonLoaders();
+  
+  // تحديث تلقائي كل 30 ثانية
+  refreshInterval = setInterval(() => {
+    loadAllData(false); // silent refresh
+  }, 30000);
+  
+  // Tabs handling
+  initTabs();
+  
+  // الاستماع لتغيير الثيم وتحديث ألوان الرسوم البيانية
+  initThemeListener();
+};
+
+// تحميل كل البيانات (مع Cache)
+async function loadAllData(showLoading = true, forceRefresh = false) {
+  if (showLoading) {
+    document.getElementById('refreshBtn')?.classList.add('loading');
+  }
+  
+  try {
+    // مسح Cache إذا force refresh
+    if (forceRefresh) {
+      DataCache.clear();
+      kpiContextCache = null;
+    }
+    
+    await Promise.all([
+      loadPriorityAlerts(forceRefresh),
+      loadHomeStats(forceRefresh),
+      loadRepairsKpis(forceRefresh),
+      loadAllCharts(forceRefresh),
+      loadRecentActivities(forceRefresh),
+      loadAlerts(forceRefresh)
+    ]);
+
+    // Load KPI context (yesterday comparison) AFTER main data is rendered
+    // This runs async and doesn't block the main render
+    loadKpiContextData(forceRefresh).catch(function(e) {
+      console.warn('[Home] KPI context load failed:', e);
+    });
+  } catch (error) {
+    console.error('[Home] Error loading data:', error);
+    showErrorState();
+  } finally {
+    if (showLoading) {
+      document.getElementById('refreshBtn')?.classList.remove('loading');
+    }
+  }
+}
+
+// Debounced version للاستخدام مع الأحداث
+var debouncedLoadData = debounce(loadAllData, 300);
+
+// تهيئة Quick Filters
+function initQuickFilters() {
+  const filterBtns = document.querySelectorAll('.filter-btn[data-period]');
+  filterBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+      // إزالة active من الكل
+      filterBtns.forEach(b => b.classList.remove('active'));
+      // إضافة active للزر المحدد
+      btn.classList.add('active');
+      
+      currentPeriod = btn.dataset.period;
+      loadAllData();
+    });
+  });
+}
+
+// تهيئة Refresh Button
+function initRefreshButton() {
+  const refreshBtn = document.getElementById('refreshBtn');
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', () => {
+      loadAllData(true, true); // force refresh
+    });
+  }
+}
+
+// ═══════════════════════════════════════
+// ⌨️ Keyboard Shortcuts
+// ═══════════════════════════════════════
+function initKeyboardShortcuts() {
+  document.addEventListener('keydown', (e) => {
+    // تجاهل إذا كان المستخدم يكتب في input
+    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) {
+      return;
+    }
+
+    // R - Refresh
+    if (e.key === 'r' || e.key === 'R') {
+      if (!e.ctrlKey && !e.altKey && !e.metaKey) {
+        e.preventDefault();
+        loadAllData(true, true);
+        showToast('تم تحديث البيانات', 'success');
+      }
+    }
+
+    // T - Today
+    if (e.key === 't' || e.key === 'T') {
+      if (!e.ctrlKey && !e.altKey && !e.metaKey) {
+        e.preventDefault();
+        switchPeriod('today');
+      }
+    }
+
+    // W - Week
+    if (e.key === 'w' || e.key === 'W') {
+      if (!e.ctrlKey && !e.altKey && !e.metaKey) {
+        e.preventDefault();
+        switchPeriod('week');
+      }
+    }
+
+    // M - Month
+    if (e.key === 'm' || e.key === 'M') {
+      if (!e.ctrlKey && !e.altKey && !e.metaKey) {
+        e.preventDefault();
+        switchPeriod('month');
+      }
+    }
+
+    // Ctrl+K - Quick Search
+    if (e.key === 'k' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      triggerQuickSearch();
+    }
+  });
+}
+
+// تغيير الفترة من الكيبورد
+function switchPeriod(period) {
+  const btn = document.querySelector(`.filter-btn[data-period="${period}"]`);
+  if (btn) {
+    btn.click();
+    showToast(`تم التبديل إلى: ${period === 'today' ? 'اليوم' : period === 'week' ? 'الأسبوع' : 'الشهر'}`, 'info');
+  }
+}
+
+// ═══════════════════════════════════════
+// ⚡ Quick Actions Bar
+// ═══════════════════════════════════════
+function initQuickActionsBar() {
+  var bar = document.querySelector('.quick-actions-bar');
+  if (!bar) return;
+
+  // Event delegation - single listener on the bar
+  bar.addEventListener('click', function(e) {
+    var btn = e.target.closest('.qa-btn');
+    if (!btn) return;
+
+    var action = btn.dataset.action;
+    handleQuickAction(action);
+  });
+}
+
+function handleQuickAction(action) {
+  switch (action) {
+    case 'new-sale':
+      router?.navigate('pos');
+      break;
+    case 'new-repair':
+      router?.navigate('repairs');
+      break;
+    case 'quick-search':
+      triggerQuickSearch();
+      break;
+    case 'new-client':
+      router?.navigate('clients');
+      break;
+  }
+}
+
+// Flag لمنع التكرار - استخدام window لتجنب إعادة التعريف في SPA mode
+if (typeof window.isTriggeringSearch === 'undefined') {
+  window.isTriggeringSearch = false;
+}
+
+function triggerQuickSearch() {
+  // منع التكرار
+  if (window.isTriggeringSearch) {
+    console.warn('[QuickSearch] Already triggering, ignoring duplicate call');
+    return;
+  }
+  
+  window.isTriggeringSearch = true;
+  
+  try {
+    // طريقة 1: استخدام GlobalSearch مباشرة إذا كان متاحاً
+    if (window.globalSearch && typeof window.globalSearch.toggle === 'function') {
+      window.globalSearch.toggle();
+    } 
+    // طريقة 2: إرسال custom event فقط (بدون keyboard event)
+    else if (window.dispatchEvent) {
+      window.dispatchEvent(new CustomEvent('open-search'));
+    }
+    // طريقة 3: محاولة فتح البحث يدوياً
+    else {
+      const searchModal = document.getElementById('global-search-modal');
+      if (searchModal) {
+        searchModal.classList.add('open');
+        const input = searchModal.querySelector('.search-input');
+        if (input) input.focus();
+      }
+    }
+  } catch (error) {
+    console.error('[QuickSearch] Error:', error);
+  } finally {
+    // إعادة تعيين الـ flag بعد 100ms
+    setTimeout(() => {
+      window.isTriggeringSearch = false;
+    }, 100);
+  }
+}
+
+// ═══════════════════════════════════════
+// 🔧 Repairs KPIs
+// ═══════════════════════════════════════
+var repairsKpiCache = null;
+
+function initRepairsKpiZone() {
+  var zone = document.getElementById('repairsKpiZone');
+  if (!zone) return;
+
+  // Event delegation for card clicks
+  zone.addEventListener('click', function(e) {
+    var card = e.target.closest('.kpi-card');
+    if (card) {
+      var filter = card.dataset.filter;
+      navigateToRepairs(filter);
+      return;
+    }
+
+    var routeBtn = e.target.closest('[data-route]');
+    if (routeBtn) {
+      router?.navigate(routeBtn.dataset.route);
+    }
+  });
+}
+
+function navigateToRepairs(filter) {
+  // Navigate to repairs page with filter if supported
+  if (filter && router?.navigate) {
+    // Try to pass filter as query param
+    router.navigate('repairs', { filter: filter });
+  } else {
+    router?.navigate('repairs');
+  }
+}
+
+function computeRepairsKpis(repairs) {
+  var today = new Date();
+  var todayStr = today.toISOString().slice(0, 10);
+
+  var repairsToday = 0;
+  var repairsReady = 0;
+  var repairsOverdue = 0;
+
+  repairs.forEach(function(r) {
+    // Skip delivered or cancelled
+    if (r.status === 'delivered' || r.status === 'cancelled') return;
+
+    // Today's repairs (received today)
+    var createdDate = (r.created_at || r.received_date || '').slice(0, 10);
+    if (createdDate === todayStr) {
+      repairsToday++;
+    }
+
+    // Ready for delivery
+    if (r.status === 'ready' || r.status === 'completed' || r.status === 'done') {
+      repairsReady++;
+    }
+
+    // Overdue (expected_date passed and not delivered)
+    if (r.expected_date) {
+      var expectedDate = new Date(r.expected_date);
+      if (expectedDate < today && r.status !== 'delivered' && r.status !== 'cancelled') {
+        repairsOverdue++;
+      }
+    }
+  });
+
+  return {
+    repairs_today: repairsToday,
+    repairs_ready: repairsReady,
+    repairs_overdue: repairsOverdue
+  };
+}
+
+function renderRepairsKpis(kpis) {
+  var setKpiValue = function(field, value) {
+    var el = document.querySelector('[data-field="' + field + '"]');
+    if (el) el.textContent = value;
+  };
+
+  setKpiValue('repairs_today', kpis.repairs_today);
+  setKpiValue('repairs_ready', kpis.repairs_ready);
+  setKpiValue('repairs_overdue', kpis.repairs_overdue);
+
+  // Handle overdue card styling
+  var overdueCard = document.getElementById('kpiRepairsOverdue');
+  if (overdueCard) {
+    overdueCard.classList.remove('kpi-card--danger', 'kpi-card--neutral');
+    if (kpis.repairs_overdue > 0) {
+      overdueCard.classList.add('kpi-card--danger');
+    } else {
+      overdueCard.classList.add('kpi-card--neutral');
+    }
+  }
+
+  // Optional: Set meta info
+  if (kpis.repairs_today > 0) {
+    setKpiValue('repairs_today_meta', 'تذكرة جديدة');
+  }
+  if (kpis.repairs_ready > 0) {
+    setKpiValue('repairs_ready_meta', 'بانتظار العميل');
+  }
+  if (kpis.repairs_overdue > 0) {
+    setKpiValue('repairs_overdue_meta', 'تحتاج متابعة');
+  } else {
+    setKpiValue('repairs_overdue_meta', 'لا يوجد تأخير');
+  }
+}
+
+async function loadRepairsKpis(forceRefresh) {
+  var cacheKey = 'repairs_kpis';
+
+  // Check cache first
+  if (!forceRefresh && repairsKpiCache) {
+    renderRepairsKpis(repairsKpiCache);
+    return;
+  }
+
+  try {
+    var res = await fetch('elos-db://repairs');
+    if (!res.ok) return;
+
+    var data = await res.json();
+    var repairs = Array.isArray(data) ? data : (data.repairs || data.tickets || []);
+
+    var kpis = computeRepairsKpis(repairs);
+    repairsKpiCache = kpis;
+
+    renderRepairsKpis(kpis);
+  } catch (error) {
+    console.warn('[Home] Error loading repairs KPIs:', error);
+  }
+}
+
+// ═══════════════════════════════════════
+// 📊 KPI Context - Yesterday Comparison
+// ═══════════════════════════════════════
+var kpiContextCache = null;
+
+function getYesterdayRange() {
+  var yesterday = new Date();
+  yesterday.setDate(yesterday.getDate() - 1);
+  var dateStr = yesterday.toISOString().slice(0, 10);
+  return { from: dateStr, to: dateStr };
+}
+
+function getTodayRange() {
+  var today = new Date();
+  var dateStr = today.toISOString().slice(0, 10);
+  return { from: dateStr, to: dateStr };
+}
+
+function calculateDelta(todayValue, yesterdayValue) {
+  todayValue = Number(todayValue) || 0;
+  yesterdayValue = Number(yesterdayValue) || 0;
+
+  if (yesterdayValue === 0 && todayValue === 0) {
+    return { deltaPercent: 0, trend: 'flat', isNewStart: false };
+  }
+  if (yesterdayValue === 0) {
+    return { deltaPercent: 100, trend: 'up', isNewStart: true };
+  }
+
+  var delta = todayValue - yesterdayValue;
+  var deltaPercent = Math.round((delta / yesterdayValue) * 100);
+
+  var trend = 'flat';
+  if (delta > 0) trend = 'up';
+  else if (delta < 0) trend = 'down';
+
+  return { deltaPercent: Math.abs(deltaPercent), trend: trend, isNewStart: false };
+}
+
+function formatContextText(yesterdayValue, delta, formatAsMoney) {
+  var yesterdayDisplay = formatAsMoney ? formatMoney(yesterdayValue) : yesterdayValue;
+
+  if (delta.isNewStart) {
+    return 'بداية جديدة اليوم';
+  }
+
+  if (delta.trend === 'flat') {
+    return 'أمس: ' + yesterdayDisplay + ' — بدون تغيير';
+  }
+
+  var arrow = delta.trend === 'up' ? '↑' : '↓';
+  var sign = delta.trend === 'up' ? '+' : '-';
+
+  return 'أمس: ' + yesterdayDisplay + ' ' + arrow + ' ' + sign + delta.deltaPercent + '%';
+}
+
+function renderKpiContext(elementId, yesterdayValue, todayValue, formatAsMoney) {
+  var el = document.getElementById(elementId);
+  if (!el) return;
+
+  var delta = calculateDelta(todayValue, yesterdayValue);
+  var text = formatContextText(yesterdayValue, delta, formatAsMoney);
+
+  el.textContent = text;
+  el.classList.remove('loading', 'positive', 'negative', 'neutral');
+
+  if (delta.trend === 'up') {
+    el.classList.add('positive');
+  } else if (delta.trend === 'down') {
+    el.classList.add('negative');
+  } else {
+    el.classList.add('neutral');
+  }
+}
+
+async function loadKpiContextData(forceRefresh) {
+  // Don't block if cache exists
+  if (!forceRefresh && kpiContextCache) {
+    renderAllKpiContexts(kpiContextCache);
+    return;
+  }
+
+  try {
+    var yesterday = getYesterdayRange();
+    var today = getTodayRange();
+
+    // Fetch yesterday's data in parallel
+    var [yesterdaySalesRes, yesterdayRepairsRes, safeHistoryRes] = await Promise.all([
+      fetch('elos-db://sales?from=' + yesterday.from + '&to=' + yesterday.to),
+      fetch('elos-db://repairs'),
+      fetch('elos-db://safe-transactions?limit=100')
+    ]);
+
+    var contextData = {
+      yesterdaySales: 0,
+      yesterdayRepairs: 0,
+      yesterdaySafeBalance: null
+    };
+
+    // Parse yesterday sales
+    if (yesterdaySalesRes.ok) {
+      var salesData = await yesterdaySalesRes.json();
+      var sales = Array.isArray(salesData) ? salesData : (salesData.sales || []);
+      contextData.yesterdaySales = sales.reduce(function(sum, s) {
+        return sum + (s.sell_price || 0);
+      }, 0);
+    }
+
+    // Parse yesterday repairs count
+    if (yesterdayRepairsRes.ok) {
+      var repairsData = await yesterdayRepairsRes.json();
+      var repairs = Array.isArray(repairsData) ? repairsData : (repairsData.repairs || repairsData.tickets || []);
+      var yesterdayStr = yesterday.from;
+      contextData.yesterdayRepairs = repairs.filter(function(r) {
+        var createdDate = (r.created_at || r.received_date || '').slice(0, 10);
+        return createdDate === yesterdayStr;
+      }).length;
+    }
+
+    // For safe balance, we estimate yesterday's balance from transactions
+    // Since we can't get historical balance directly, we show today's balance context differently
+    if (safeHistoryRes.ok) {
+      var txData = await safeHistoryRes.json();
+      var transactions = Array.isArray(txData) ? txData : (txData.transactions || []);
+      // Sum today's transactions to estimate yesterday's ending balance
+      var todayStr = today.from;
+      var todayTransactionsSum = transactions.filter(function(tx) {
+        var txDate = (tx.created_at || tx.date || '').slice(0, 10);
+        return txDate === todayStr;
+      }).reduce(function(sum, tx) {
+        return sum + (tx.amount || 0);
+      }, 0);
+      contextData.todaySafeChange = todayTransactionsSum;
+    }
+
+    kpiContextCache = contextData;
+    renderAllKpiContexts(contextData);
+
+  } catch (error) {
+    console.warn('[Home] Error loading KPI context:', error);
+    // Clear loading state on error
+    ['salesContext', 'repairsTodayContext', 'safeContext'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) {
+        el.textContent = '';
+        el.classList.remove('loading');
+      }
+    });
+  }
+}
+
+function renderAllKpiContexts(contextData) {
+  // Get today's values from the DOM or cached data
+  var todaySalesEl = document.getElementById('todaySales');
+  var todaySales = 0;
+  if (todaySalesEl) {
+    var salesText = todaySalesEl.textContent.replace(/[^\d.-]/g, '');
+    todaySales = parseFloat(salesText) || 0;
+  }
+
+  // Render sales context
+  renderKpiContext('salesContext', contextData.yesterdaySales, todaySales, true);
+
+  // Get today's repairs count
+  var repairsTodayEl = document.querySelector('[data-field="repairs_today"]');
+  var todayRepairs = 0;
+  if (repairsTodayEl) {
+    todayRepairs = parseInt(repairsTodayEl.textContent) || 0;
+  }
+
+  // Render repairs context
+  renderKpiContext('repairsTodayContext', contextData.yesterdayRepairs, todayRepairs, false);
+
+  // Render safe context (show today's change instead of comparison)
+  var safeContextEl = document.getElementById('safeContext');
+  if (safeContextEl && contextData.todaySafeChange !== undefined) {
+    var change = contextData.todaySafeChange;
+    safeContextEl.classList.remove('loading', 'positive', 'negative', 'neutral');
+
+    if (change > 0) {
+      safeContextEl.textContent = 'تغيير اليوم: +' + formatMoney(change);
+      safeContextEl.classList.add('positive');
+    } else if (change < 0) {
+      safeContextEl.textContent = 'تغيير اليوم: ' + formatMoney(change);
+      safeContextEl.classList.add('negative');
+    } else {
+      safeContextEl.textContent = 'لا تغيير اليوم';
+      safeContextEl.classList.add('neutral');
+    }
+  }
+}
+
+// ═══════════════════════════════════════
+// 💀 Skeleton Loaders
+// ═══════════════════════════════════════
+function showSkeletonLoaders() {
+  // Skeleton للبطاقات الرئيسية
+  document.querySelectorAll('.stat-value').forEach(el => {
+    if (el.textContent === '--') {
+      el.innerHTML = '<div class="skeleton-loader skeleton-stat"></div>';
+    }
+  });
+  
+  // Skeleton للرسوم البيانية
+  document.querySelectorAll('.chart-container').forEach(container => {
+    if (!container.querySelector('canvas').getContext('2d').canvas.toDataURL().includes('data:image')) {
+      const skeleton = document.createElement('div');
+      skeleton.className = 'skeleton-loader skeleton-chart';
+      container.appendChild(skeleton);
+    }
+  });
+}
+
+function hideSkeletonLoaders() {
+  document.querySelectorAll('.skeleton-loader').forEach(el => el.remove());
+}
+
+function showErrorState() {
+  const containers = document.querySelectorAll('.chart-container, .recent-list, #alertsList');
+  containers.forEach(container => {
+    if (container.children.length === 0 || container.querySelector('.skeleton-loader')) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="icon">⚠️</div>
+          <div>خطأ في تحميل البيانات</div>
+          <button onclick="loadAllData(true, true)" style="margin-top: 8px; padding: 6px 12px; background: var(--accent); color: white; border: none; border-radius: 6px; cursor: pointer;">إعادة المحاولة</button>
+        </div>
+      `;
+    }
+  });
+}
+
+// تحميل الإحصائيات (مع Cache)
+async function loadHomeStats(forceRefresh = false) {
+  try {
+    const { fromDate, toDate, compareFrom, compareTo } = getDateRange(currentPeriod);
+    
+    const cacheKey = `stats_${currentPeriod}_${fromDate}_${toDate}`;
+    
+    // محاولة جلب من Cache
+    if (!forceRefresh) {
+      const cached = DataCache.get(cacheKey);
+      if (cached) {
+        updateStatsUI(cached);
+        return cached;
+      }
+    }
+
+    // تحميل كل البيانات بالتوازي (شامل إكسسوارات + قطع غيار + عمولات)
+    const [devicesRes, accRes, salesRes, safeRes, clientsRes, purchasesRes, accSalesRes, repairPartsSalesRes, extraProfitsRes, repairPartsRes] = await Promise.all([
+      fetch('elos-db://inventory'),
+      fetch('elos-db://accessories'),
+      fetch(`elos-db://sales?from=${fromDate}&to=${toDate}`),
+      fetch('elos-db://main-safe-balance'),
+      fetch('elos-db://clients'),
+      fetch(`elos-db://purchases?from=${fromDate}&to=${toDate}`),
+      fetch(`elos-db://accessory-movements?from=${fromDate}&to=${toDate}&type=sale`),
+      fetch(`elos-db://repair-parts-pos-sales?from=${fromDate}&to=${toDate}`),
+      fetch(`elos-db://dashboard-extra-profits?from=${fromDate}&to=${toDate}`),
+      fetch('elos-db://repair-parts?all=true&stats=true')
+    ]);
+
+    const statsData = {};
+
+    // Helper to safely set element text
+    const setEl = (id, value) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = value;
+    };
+
+    // الأجهزة المتاحة للبيع (in_stock أو بدون حالة محددة، وليست مباعة أو مؤرشفة)
+    if (devicesRes.ok) {
+      const data = await devicesRes.json();
+      const devices = Array.isArray(data) ? data : (data.devices || data.inventory || []);
+      // تصفية الأجهزة المتاحة: in_stock أو بدون حالة (ليست sold أو archived)
+      const availableDevices = devices.filter(d => {
+        const status = d.status || '';
+        return status === 'in_stock' || status === '' || (!status && !d.sold_at);
+      });
+      const available = availableDevices.length;
+      setEl('totalDevices', available);
+      statsData.totalDevices = available;
+    }
+
+    // الإكسسوارات
+    if (accRes.ok) {
+      const data = await accRes.json();
+      const accessories = Array.isArray(data) ? data : (data.accessories || []);
+      const total = accessories.reduce((sum, a) => sum + (a.quantity || 0), 0);
+      const lowStock = accessories.filter(a => (a.quantity || 0) <= (a.min_quantity || 5)).length;
+      setEl('totalAccessories', total);
+      setEl('lowStock', lowStock);
+      statsData.totalAccessories = total;
+      statsData.lowStock = lowStock;
+    }
+
+    // قطع الغيار
+    if (repairPartsRes.ok) {
+      const rpData = await repairPartsRes.json();
+      const rpTotal = rpData.totalQty || 0;
+      setEl('totalRepairParts', rpTotal);
+      statsData.totalRepairParts = rpTotal;
+    }
+
+    // مبيعات الفترة المحددة (أجهزة + إكسسوارات + قطع غيار)
+    if (salesRes.ok) {
+      const data = await salesRes.json();
+      const sales = Array.isArray(data) ? data : (data.sales || []);
+      // ✅ FIX: استبعاد المبيعات المرتجعة من الحسابات
+      const activeSales = sales.filter(s => s.status !== 'returned');
+      const deviceSalesTotal = activeSales.reduce((sum, s) => sum + ((s.sell_price || 0) - (s.discount || 0)), 0);
+      const deviceProfit = activeSales.reduce((sum, s) => sum + ((s.sell_price || 0) - (s.discount || 0) - (s.purchase_cost || s.purchase_price || 0)), 0);
+      const deviceCount = activeSales.length;
+
+      // مبيعات الإكسسوارات
+      let accSalesTotal = 0, accProfit = 0, accCount = 0;
+      try {
+        if (accSalesRes.ok) {
+          const accData = await accSalesRes.json();
+          const accSalesRaw = Array.isArray(accData) ? accData : (accData.movements || accData.sales || []);
+          // ✅ FIX: استبعاد المبيعات المرتجعة من حسابات الإكسسوارات
+          const accSales = accSalesRaw.filter(a => a.status !== 'returned');
+          accSalesTotal = accSales.reduce((sum, a) => sum + (Number(a.total_price) || 0), 0);
+          accProfit = accSales.reduce((sum, a) => {
+            const revenue = Number(a.total_price) || 0;
+            // ✅ FIX: quantity في حركات الإكسسوارات سالبة للمبيعات (-1) فلازم نستخدم Math.abs
+            const cost = (Number(a.purchase_price) || 0) * Math.abs(Number(a.quantity) || 1);
+            return sum + (revenue - cost);
+          }, 0);
+          accCount = accSales.length;
+        }
+      } catch(e) { console.warn('[Home] Accessory sales error:', e); }
+
+      // مبيعات قطع الغيار POS
+      let repairPartsSalesTotal = 0, repairPartsProfit = 0, repairPartsCount = 0;
+      try {
+        if (repairPartsSalesRes.ok) {
+          const rpData = await repairPartsSalesRes.json();
+          const rpSales = rpData.sales || [];
+          const rpTotals = rpData.totals || {};
+          repairPartsSalesTotal = Number(rpTotals.total_sales) || rpSales.reduce((sum, r) => sum + (Number(r.total_price) || 0), 0);
+          repairPartsProfit = Number(rpTotals.total_profit) || 0;
+          repairPartsCount = Number(rpTotals.count) || rpSales.length;
+        }
+      } catch(e) { console.warn('[Home] Repair parts sales error:', e); }
+
+      // عمولات التحويلات + أرباح صافية إضافية
+      let transferCommissions = 0, extraProfits = 0;
+      try {
+        if (extraProfitsRes.ok) {
+          const epData = await extraProfitsRes.json();
+          transferCommissions = Number(epData.transfer_commissions) || 0;
+          extraProfits = Number(epData.extra_profits) || 0;
+        }
+      } catch(e) { console.warn('[Home] Extra profits error:', e); }
+
+      // الإجماليات الشاملة
+      const totalSales = deviceSalesTotal + accSalesTotal + repairPartsSalesTotal;
+      const totalProfit = deviceProfit + accProfit + repairPartsProfit + transferCommissions + extraProfits;
+      const salesCount = deviceCount + accCount + repairPartsCount;
+      const avgSaleValue = salesCount > 0 ? totalSales / salesCount : 0;
+      const profitMargin = totalSales > 0 ? (totalProfit / totalSales) * 100 : 0;
+
+      statsData.totalSales = totalSales;
+      statsData.totalProfit = totalProfit;
+      statsData.salesCount = salesCount;
+      statsData.avgSaleValue = avgSaleValue;
+      statsData.profitMargin = profitMargin;
+      statsData.deviceSales = deviceSalesTotal;
+      statsData.accSales = accSalesTotal;
+      statsData.repairPartsSales = repairPartsSalesTotal;
+      statsData.transferCommissions = transferCommissions;
+      statsData.extraProfits = extraProfits;
+
+      setEl('todaySales', formatMoney(totalSales));
+      setEl('todayProfit', formatMoney(totalProfit));
+
+      // Advanced Analytics
+      setEl('avgSaleValue', formatMoney(avgSaleValue));
+      setEl('salesCount', salesCount);
+      setEl('profitMargin', profitMargin.toFixed(1) + '%');
+      const advEl = document.getElementById('advancedAnalytics');
+      if (advEl) advEl.style.display = 'grid';
+      
+      // حساب معدل التحويل سيتم بعد قراءة purchasesRes
+      
+      // حساب الاتجاه (مقارنة مع الفترة السابقة - شامل كل أنواع المبيعات)
+      try {
+        const [cmpDevRes, cmpAccRes, cmpRpRes] = await Promise.all([
+          fetch(`elos-db://sales?from=${compareFrom}&to=${compareTo}`),
+          fetch(`elos-db://accessory-movements?from=${compareFrom}&to=${compareTo}&type=sale`),
+          fetch(`elos-db://repair-parts-pos-sales?from=${compareFrom}&to=${compareTo}`)
+        ]);
+        let compareTotal = 0;
+        if (cmpDevRes.ok) {
+          const cd = await cmpDevRes.json();
+          // ✅ FIX: استبعاد المرتجعات من حساب المقارنة
+          compareTotal += (Array.isArray(cd) ? cd : (cd.sales || [])).filter(x => x.status !== 'returned').reduce((s, x) => s + (x.sell_price || 0), 0);
+        }
+        try {
+          if (cmpAccRes.ok) {
+            const ca = await cmpAccRes.json();
+            compareTotal += (Array.isArray(ca) ? ca : (ca.movements || ca.sales || [])).filter(x => x.status !== 'returned').reduce((s, x) => s + (Number(x.total_price) || 0), 0);
+          }
+        } catch(e2) {}
+        try {
+          if (cmpRpRes.ok) {
+            const cr = await cmpRpRes.json();
+            compareTotal += Number((cr.totals || {}).total_sales) || 0;
+          }
+        } catch(e2) {}
+        const trend = calculateTrend(totalSales, compareTotal);
+        updateTrend('salesTrend', trend, totalSales, compareTotal);
+      } catch (e) {
+        console.warn('[Home] Could not calculate sales trend:', e);
+      }
+      
+      // تحديث تسمية "مبيعات الشهر" حسب الفترة المحددة
+      const periodLabels = {
+        'today': 'مبيعات اليوم',
+        'week': 'مبيعات الأسبوع',
+        'month': 'مبيعات الشهر'
+      };
+      const monthLabelEl = document.getElementById('monthSalesLabel');
+      if (monthLabelEl) {
+        monthLabelEl.textContent = periodLabels[currentPeriod] || 'مبيعات الشهر';
+      }
+      
+      // تحديث قيمة "مبيعات الشهر" لتكون نفس قيمة الفترة المحددة
+      const monthSalesEl = document.getElementById('monthSales');
+      if (monthSalesEl) {
+        monthSalesEl.textContent = formatMoney(totalSales);
+      }
+    }
+    
+
+    // رصيد الخزينة
+    if (safeRes.ok) {
+      const safe = await safeRes.json();
+      const safeBalance = safe.balance || 0;
+      setEl('safeBalance', formatMoney(safeBalance));
+      statsData.safeBalance = safeBalance;
+    }
+
+    // العملاء
+    if (clientsRes.ok) {
+      const data = await clientsRes.json();
+      const clients = Array.isArray(data) ? data : (data.clients || []);
+      const totalClients = clients.length;
+      const pendingPayments = clients.reduce((sum, c) => sum + (c.balance || 0), 0);
+      setEl('totalClients', totalClients);
+      setEl('pendingPayments', formatMoney(Math.abs(pendingPayments)));
+      statsData.totalClients = totalClients;
+      statsData.pendingPayments = pendingPayments;
+    }
+
+    // مشتريات الفترة
+    let purchases = [];
+    if (purchasesRes.ok) {
+      const data = await purchasesRes.json();
+      purchases = Array.isArray(data) ? data : (data.purchases || []);
+      const totalPurchases = purchases.reduce((sum, p) => sum + (p.total_cost || 0), 0);
+      setEl('todayPurchases', formatMoney(totalPurchases));
+      statsData.totalPurchases = totalPurchases;
+      
+      // حساب معدل التحويل (مقارنة بالمشتريات)
+      if (statsData.salesCount !== undefined) {
+        const devicesPurchased = purchases.length;
+        const conversionRate = devicesPurchased > 0 ? (statsData.salesCount / devicesPurchased) * 100 : 0;
+        const conversionRateEl = document.getElementById('conversionRate');
+        if (conversionRateEl) {
+          conversionRateEl.textContent = conversionRate.toFixed(1) + '%';
+        }
+        statsData.conversionRate = conversionRate;
+      }
+    }
+
+    // حفظ البيانات في Cache
+    DataCache.set(cacheKey, statsData);
+    
+    // تحديث UI
+    updateStatsUI(statsData);
+    
+    return statsData;
+
+    // مبيعات الفترة (للمقارنة)
+    // monthSalesRes يستخدم نفس البيانات مثل salesRes، لكن نستخدمه كحفظ توافق
+
+  } catch (error) {
+    console.error('[Home] Error loading stats:', error);
+    return {};
+  }
+}
+
+// تحديث UI بالإحصائيات
+function updateStatsUI(stats) {
+  if (!stats || Object.keys(stats).length === 0) return;
+
+  // Helper to safely set text content
+  var setEl = function(id, value) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = value;
+  };
+
+  if (stats.totalSales !== undefined) {
+    setEl('todaySales', formatMoney(stats.totalSales));
+  }
+  if (stats.totalProfit !== undefined) {
+    setEl('todayProfit', formatMoney(stats.totalProfit));
+  }
+  if (stats.totalDevices !== undefined) {
+    setEl('totalDevices', stats.totalDevices);
+  }
+  if (stats.totalAccessories !== undefined) {
+    setEl('totalAccessories', stats.totalAccessories);
+  }
+  if (stats.totalRepairParts !== undefined) {
+    setEl('totalRepairParts', stats.totalRepairParts);
+  }
+  if (stats.lowStock !== undefined) {
+    setEl('lowStock', stats.lowStock);
+  }
+  if (stats.safeBalance !== undefined) {
+    setEl('safeBalance', formatMoney(stats.safeBalance));
+  }
+  if (stats.totalClients !== undefined) {
+    setEl('totalClients', stats.totalClients);
+  }
+  if (stats.pendingPayments !== undefined) {
+    setEl('pendingPayments', formatMoney(Math.abs(stats.pendingPayments)));
+  }
+  if (stats.totalPurchases !== undefined) {
+    setEl('todayPurchases', formatMoney(stats.totalPurchases));
+  }
+}
+
+// ═══════════════════════════════════════
+// 📊 الرسوم البيانية (مع Cache)
+// ═══════════════════════════════════════
+var charts = {};
+
+async function loadAllCharts(forceRefresh = false) {
+  await Promise.all([
+    loadSalesChart(forceRefresh),
+    loadPaymentsChart(forceRefresh),
+    loadTopClientsChart(forceRefresh),
+    loadCashflowChart(forceRefresh)
+  ]);
+}
+
+// رسم بياني مبيعات 7 أيام (مع Cache) - Optimized: single query for 7 days
+async function loadSalesChart(forceRefresh = false) {
+  try {
+    if (typeof Chart === 'undefined') {
+      console.warn('[Home] Chart.js not loaded');
+      return;
+    }
+    chartColors = getChartColors();
+
+    const cacheKey = 'chart_sales_7days';
+    if (!forceRefresh) {
+      const cached = DataCache.get(cacheKey);
+      if (cached) {
+        renderSalesChart(cached.dates, cached.data);
+        return;
+      }
+    }
+
+    // Calculate date range
+    const today = new Date();
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(today.getDate() - 6);
+
+    const fromDate = sevenDaysAgo.toISOString().slice(0, 10);
+    const toDate = today.toISOString().slice(0, 10);
+
+    // جلب كل أنواع المبيعات بالتوازي
+    const [res, accRes, rpRes] = await Promise.all([
+      fetch(`elos-db://sales?from=${fromDate}&to=${toDate}`),
+      fetch(`elos-db://accessory-movements?from=${fromDate}&to=${toDate}&type=sale`),
+      fetch(`elos-db://repair-parts-pos-sales?from=${fromDate}&to=${toDate}`)
+    ]);
+
+    // Build dates array
+    const dates = [];
+    const salesByDate = {};
+
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().slice(0, 10);
+      dates.push(dateStr);
+      salesByDate[dateStr] = 0;
+    }
+
+    // مبيعات الأجهزة
+    if (res.ok) {
+      const data = await res.json();
+      const sales = Array.isArray(data) ? data : (data.sales || []);
+      sales.forEach(s => {
+        const saleDate = (s.sale_date || s.created_at || s.sold_at || '').slice(0, 10);
+        if (salesByDate.hasOwnProperty(saleDate)) {
+          salesByDate[saleDate] += (s.sell_price || 0);
+        }
+      });
+    }
+
+    // مبيعات الإكسسوارات
+    try {
+      if (accRes.ok) {
+        const accData = await accRes.json();
+        const accSales = Array.isArray(accData) ? accData : (accData.movements || accData.sales || []);
+        accSales.forEach(a => {
+          const saleDate = (a.created_at || '').slice(0, 10);
+          if (salesByDate.hasOwnProperty(saleDate)) {
+            salesByDate[saleDate] += (Number(a.total_price) || 0);
+          }
+        });
+      }
+    } catch(e) { console.warn('[Home] Chart: acc sales error', e); }
+
+    // مبيعات قطع الغيار
+    try {
+      if (rpRes.ok) {
+        const rpData = await rpRes.json();
+        const rpSales = rpData.sales || [];
+        rpSales.forEach(r => {
+          const saleDate = (r.created_at || '').slice(0, 10);
+          if (salesByDate.hasOwnProperty(saleDate)) {
+            salesByDate[saleDate] += (Number(r.total_price) || 0);
+          }
+        });
+      }
+    } catch(e) { console.warn('[Home] Chart: repair parts sales error', e); }
+
+    const salesData = dates.map(d => salesByDate[d]);
+
+    // حفظ في Cache
+    DataCache.set(cacheKey, { dates, data: salesData });
+
+    renderSalesChart(dates, salesData);
+  } catch (error) {
+    console.error('[Home] Error loading sales chart:', error);
+  }
+}
+
+// Render Sales Chart
+function renderSalesChart(dates, salesData) {
+  try {
+    const ctx = document.getElementById('salesChart');
+    if (!ctx) {
+      // العنصر غير موجود - ربما الصفحة لم تُحمّل بعد أو تم إخفاؤها
+      return;
+    }
+    
+    if (charts.sales) charts.sales.destroy();
+    
+    charts.sales = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: dates.map(d => new Date(d).toLocaleDateString('ar-EG', { weekday: 'short', day: 'numeric' })),
+        datasets: [{
+          label: 'المبيعات',
+          data: salesData,
+          borderColor: chartColors.primary,
+          backgroundColor: chartColors.primary.replace('0.8', '0.1'),
+          tension: 0.4,
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: (context) => formatMoney(context.parsed.y) + ' جنيه'
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { color: chartColors.text },
+            grid: { color: chartColors.grid }
+          },
+          x: {
+            ticks: { color: chartColors.text },
+            grid: { color: chartColors.grid }
+          }
+        }
+      }
+    });
+  } catch (error) {
+    console.error('[Home] Error rendering sales chart:', error);
+  }
+}
+
+// رسم بياني توزيع المدفوعات (مع Cache)
+async function loadPaymentsChart(forceRefresh = false) {
+  try {
+    if (typeof Chart === 'undefined') {
+      console.warn('[Home] Chart.js not loaded');
+      return;
+    }
+    chartColors = getChartColors();
+    const today = new Date().toISOString().slice(0, 10);
+    
+    const cacheKey = `payments_${today}`;
+    if (!forceRefresh) {
+      const cached = DataCache.get(cacheKey);
+      if (cached) {
+        renderPaymentsChart(cached);
+        return;
+      }
+    }
+    
+    // جلب كل أنواع المبيعات لتوزيع المدفوعات
+    const [res, accPayRes, rpPayRes] = await Promise.all([
+      fetch(`elos-db://sales?from=${today}&to=${today}`),
+      fetch(`elos-db://accessory-movements?from=${today}&to=${today}&type=sale`),
+      fetch(`elos-db://repair-parts-pos-sales?from=${today}&to=${today}`)
+    ]);
+
+    let cash = 0, card = 0, transfer = 0;
+
+    // مبيعات الأجهزة
+    if (res.ok) {
+      const data = await res.json();
+      const sales = Array.isArray(data) ? data : (data.sales || []);
+      sales.forEach(s => {
+        const method = s.payment_method || 'cash';
+        const amount = s.sell_price || 0;
+        if (method === 'card') card += amount;
+        else if (method === 'transfer') transfer += amount;
+        else cash += amount;
+      });
+    }
+
+    // مبيعات الإكسسوارات
+    try {
+      if (accPayRes.ok) {
+        const accData = await accPayRes.json();
+        const accSales = Array.isArray(accData) ? accData : (accData.movements || accData.sales || []);
+        accSales.forEach(a => {
+          const method = (a.payment_method || 'cash').toLowerCase();
+          const amount = Number(a.total_price) || 0;
+          if (method === 'card' || method === 'فودافون كاش' || method === 'محفظة') card += amount;
+          else if (method === 'transfer' || method === 'تحويل') transfer += amount;
+          else cash += amount;
+        });
+      }
+    } catch(e) { /* ignore */ }
+
+    // مبيعات قطع الغيار
+    try {
+      if (rpPayRes.ok) {
+        const rpData = await rpPayRes.json();
+        const rpSales = rpData.sales || [];
+        rpSales.forEach(r => {
+          const method = (r.payment_method || 'cash').toLowerCase();
+          const amount = Number(r.total_price) || 0;
+          if (method === 'card') card += amount;
+          else if (method === 'transfer') transfer += amount;
+          else cash += amount;
+        });
+      }
+    } catch(e) { /* ignore */ }
+
+    const chartData = { cash, card, transfer };
+    DataCache.set(cacheKey, chartData);
+    renderPaymentsChart(chartData);
+  } catch (error) {
+    console.error('[Home] Error loading payments chart:', error);
+  }
+}
+
+function renderPaymentsChart(data) {
+  try {
+    const { cash, card, transfer } = data;
+    const ctx = document.getElementById('paymentsChart');
+    if (!ctx) {
+      // العنصر غير موجود - ربما الصفحة لم تُحمّل بعد أو تم إخفاؤها
+      return;
+    }
+    
+    if (charts.payments) charts.payments.destroy();
+    
+    charts.payments = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: ['نقدي', 'كارت', 'تحويل'],
+        datasets: [{
+          data: [cash, card, transfer],
+          backgroundColor: [
+            chartColors.success,
+            chartColors.primary,
+            chartColors.purple
+          ]
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: { color: chartColors.text, padding: 15 }
+          },
+          tooltip: {
+            callbacks: {
+              label: (context) => {
+                const label = context.label || '';
+                const value = formatMoney(context.parsed);
+                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                const percentage = total > 0 ? ((context.parsed / total) * 100).toFixed(1) : 0;
+                return `${label}: ${value} جنيه (${percentage}%)`;
+              }
+            }
+          }
+        }
+      }
+    });
+  } catch (error) {
+    console.error('[Home] Error rendering payments chart:', error);
+  }
+}
+
+// رسم بياني أعلى 5 عملاء (مع Cache) - Optimized: single query, aggregate in JS
+async function loadTopClientsChart(forceRefresh = false) {
+  try {
+    if (typeof Chart === 'undefined') {
+      console.warn('[Home] Chart.js not loaded');
+      return;
+    }
+    chartColors = getChartColors();
+
+    const cacheKey = 'top_clients';
+    if (!forceRefresh) {
+      const cached = DataCache.get(cacheKey);
+      if (cached) {
+        renderTopClientsChart(cached);
+        return;
+      }
+    }
+
+    // Fetch clients and all sales in parallel (only 2 requests)
+    const [clientsRes, salesRes] = await Promise.all([
+      fetch('elos-db://clients'),
+      fetch('elos-db://sales')
+    ]);
+
+    if (!clientsRes.ok || !salesRes.ok) {
+      console.warn('[Home] Failed to load clients or sales for top clients chart');
+      return;
+    }
+
+    const clientsData = await clientsRes.json();
+    const salesData = await salesRes.json();
+
+    const clients = Array.isArray(clientsData) ? clientsData : (clientsData.clients || []);
+    const sales = Array.isArray(salesData) ? salesData : (salesData.sales || []);
+
+    // Build client ID to name map
+    const clientMap = {};
+    clients.forEach(c => {
+      clientMap[c.id] = c.name || 'عميل';
+    });
+
+    // Aggregate sales by client_id
+    const salesByClient = {};
+    sales.forEach(s => {
+      const clientId = s.client_id;
+      if (clientId) {
+        if (!salesByClient[clientId]) {
+          salesByClient[clientId] = 0;
+        }
+        salesByClient[clientId] += (s.sell_price || 0);
+      }
+    });
+
+    // Convert to array and sort
+    const clientsWithSales = Object.entries(salesByClient).map(([clientId, totalSales]) => ({
+      name: clientMap[clientId] || 'عميل',
+      sales: totalSales
+    }));
+
+    clientsWithSales.sort((a, b) => b.sales - a.sales);
+    const top5 = clientsWithSales.slice(0, 5);
+
+    DataCache.set(cacheKey, top5);
+    renderTopClientsChart(top5);
+  } catch (error) {
+    console.error('[Home] Error loading top clients chart:', error);
+  }
+}
+
+function renderTopClientsChart(top5) {
+  try {
+    const ctx = document.getElementById('topClientsChart');
+    if (!ctx) {
+      // العنصر غير موجود - ربما الصفحة لم تُحمّل بعد أو تم إخفاؤها
+      return;
+    }
+    
+    if (charts.topClients) charts.topClients.destroy();
+    
+    charts.topClients = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: top5.map(c => c.name.length > 10 ? c.name.substring(0, 10) + '...' : c.name),
+          datasets: [{
+            label: 'المبيعات',
+            data: top5.map(c => c.sales),
+            backgroundColor: chartColors.primary
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          indexAxis: 'y',
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              callbacks: {
+                label: (context) => formatMoney(context.parsed.x) + ' جنيه'
+              }
+            }
+          },
+          scales: {
+            x: {
+              beginAtZero: true,
+              ticks: { color: chartColors.text },
+              grid: { color: chartColors.grid }
+            },
+            y: {
+              ticks: { color: chartColors.text },
+              grid: { color: chartColors.grid }
+          }
+        }
+      }
+    });
+  } catch (error) {
+    console.error('[Home] Error rendering top clients chart:', error);
+  }
+}
+
+// رسم بياني تدفق الخزينة (مع Cache) - Optimized: 2 batch queries instead of 60
+async function loadCashflowChart(forceRefresh = false) {
+  try {
+    if (typeof Chart === 'undefined') {
+      console.warn('[Home] Chart.js not loaded');
+      return;
+    }
+    chartColors = getChartColors();
+
+    const cacheKey = 'cashflow_30days';
+    if (!forceRefresh) {
+      const cached = DataCache.get(cacheKey);
+      if (cached) {
+        renderCashflowChart(cached.dates, cached.inflowData, cached.outflowData);
+        return;
+      }
+    }
+
+    // Calculate date range
+    const today = new Date();
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(today.getDate() - 29);
+
+    const fromDate = thirtyDaysAgo.toISOString().slice(0, 10);
+    const toDate = today.toISOString().slice(0, 10);
+
+    // Only 2 API calls for entire 30-day range
+    const [salesRes, purchasesRes] = await Promise.all([
+      fetch(`elos-db://sales?from=${fromDate}&to=${toDate}`),
+      fetch(`elos-db://purchases?from=${fromDate}&to=${toDate}`)
+    ]);
+
+    // Build dates array and initialize aggregation objects
+    const dates = [];
+    const salesByDate = {};
+    const purchasesByDate = {};
+
+    for (let i = 29; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().slice(0, 10);
+      dates.push(dateStr);
+      salesByDate[dateStr] = 0;
+      purchasesByDate[dateStr] = 0;
+    }
+
+    // Aggregate sales by date (inflow)
+    if (salesRes.ok) {
+      const data = await salesRes.json();
+      const sales = Array.isArray(data) ? data : (data.sales || []);
+      sales.forEach(s => {
+        const saleDate = (s.sale_date || s.created_at || s.sold_at || '').slice(0, 10);
+        if (salesByDate.hasOwnProperty(saleDate)) {
+          salesByDate[saleDate] += (s.sell_price || 0);
+        }
+      });
+    }
+
+    // Aggregate purchases by date (outflow)
+    if (purchasesRes.ok) {
+      const data = await purchasesRes.json();
+      const purchases = Array.isArray(data) ? data : (data.purchases || []);
+      purchases.forEach(p => {
+        const purchaseDate = (p.purchase_date || p.created_at || '').slice(0, 10);
+        if (purchasesByDate.hasOwnProperty(purchaseDate)) {
+          purchasesByDate[purchaseDate] += (p.total_cost || 0);
+        }
+      });
+    }
+
+    const inflowData = dates.map(d => salesByDate[d]);
+    const outflowData = dates.map(d => purchasesByDate[d]);
+
+    // حفظ في Cache
+    DataCache.set(cacheKey, { dates, inflowData, outflowData });
+
+    renderCashflowChart(dates, inflowData, outflowData);
+  } catch (error) {
+    console.error('[Home] Error loading cashflow chart:', error);
+  }
+}
+
+function renderCashflowChart(dates, inflowData, outflowData) {
+  try {
+    const ctx = document.getElementById('cashflowChart');
+    if (!ctx) {
+      // العنصر غير موجود - ربما الصفحة لم تُحمّل بعد أو تم إخفاؤها
+      return;
+    }
+
+    if (charts.cashflow) charts.cashflow.destroy();
+
+    charts.cashflow = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels: dates.map((d, i) => i % 5 === 0 ? new Date(d).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' }) : ''),
+        datasets: [
+          {
+            label: 'تدفق داخلي',
+            data: inflowData,
+            borderColor: chartColors.success,
+            backgroundColor: chartColors.success.replace('0.8', '0.1'),
+            tension: 0.4,
+            fill: true
+          },
+          {
+            label: 'تدفق خارجي',
+            data: outflowData,
+            borderColor: chartColors.danger,
+            backgroundColor: chartColors.danger.replace('0.8', '0.1'),
+            tension: 0.4,
+            fill: true
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            labels: { color: chartColors.text }
+          },
+          tooltip: {
+            callbacks: {
+              label: (context) => {
+                const label = context.dataset.label || '';
+                return `${label}: ${formatMoney(context.parsed.y)} جنيه`;
+              }
+            }
+          }
+        },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { color: chartColors.text },
+            grid: { color: chartColors.grid }
+          },
+          x: {
+            ticks: { color: chartColors.text },
+            grid: { color: chartColors.grid }
+          }
+        }
+      }
+    });
+  } catch (error) {
+    console.error('[Home] Error loading cashflow chart:', error);
+  }
+}
+
+// ═══════════════════════════════════════
+// 📋 الأنشطة الحديثة
+// ═══════════════════════════════════════
+async function loadRecentActivities(forceRefresh = false) {
+  await Promise.all([
+    loadRecentSales(forceRefresh),
+    loadRecentPurchases(forceRefresh),
+    loadRecentRepairs(forceRefresh),
+    loadRecentTransfers(forceRefresh),
+    loadRecentTransactions(forceRefresh)
+  ]);
+}
+
+async function loadRecentSales(forceRefresh = false) {
+  const cacheKey = 'recent_sales';
+  if (!forceRefresh) {
+    const cached = DataCache.get(cacheKey);
+    if (cached) {
+      updateRecentSalesUI(cached);
+      return;
+    }
+  }
+  
+  try {
+    const res = await fetch('elos-db://sales?limit=5');
+    if (res.ok) {
+      const data = await res.json();
+      const sales = Array.isArray(data) ? data : (data.sales || []);
+
+      // حفظ في Cache
+      DataCache.set(cacheKey, sales);
+      
+      updateRecentSalesUI(sales);
+    }
+  } catch (error) {
+    console.error('[Home] Error loading recent sales:', error);
+  }
+}
+
+function updateRecentSalesUI(sales) {
+      const container = document.getElementById('recentSales');
+  if (!container) return;
+
+      if (sales.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="icon">📋</div>
+            <div>لا توجد مبيعات بعد</div>
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = sales.slice(0, 5).map(sale => `
+        <div class="recent-item">
+          <div class="icon">📱</div>
+          <div class="info">
+            <div class="title">${sale.device_name || sale.model || 'جهاز'}</div>
+            <div class="meta">${sale.client_name || 'عميل نقدي'} • ${formatDate(sale.created_at)}</div>
+          </div>
+          <div class="amount">${formatMoney(sale.sell_price || 0)}</div>
+        </div>
+      `).join('');
+}
+
+// تحميل آخر المشتريات
+async function loadRecentPurchases(forceRefresh = false) {
+  const cacheKey = 'recent_purchases';
+  if (!forceRefresh) {
+    const cached = DataCache.get(cacheKey);
+    if (cached) {
+      updateRecentPurchasesUI(cached);
+      return;
+    }
+  }
+  
+  try {
+    const res = await fetch('elos-db://purchases?limit=5');
+    if (res.ok) {
+      const data = await res.json();
+      const purchases = Array.isArray(data) ? data : (data.purchases || []);
+      
+      DataCache.set(cacheKey, purchases);
+      updateRecentPurchasesUI(purchases);
+    }
+  } catch (error) {
+    console.error('[Home] Error loading recent purchases:', error);
+  }
+}
+
+function updateRecentPurchasesUI(purchases) {
+  const container = document.getElementById('recentPurchases');
+  if (!container) return;
+
+  if (purchases.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">📋</div>
+        <div>لا توجد مشتريات بعد</div>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = purchases.slice(0, 5).map(purchase => `
+    <div class="recent-item">
+      <div class="icon">📥</div>
+      <div class="info">
+        <div class="title">${purchase.party_name || 'مورد'}</div>
+        <div class="meta">${purchase.device_name || purchase.model || 'جهاز'} • ${formatDate(purchase.created_at)}</div>
+      </div>
+      <div class="amount">${formatMoney(purchase.total_cost || 0)}</div>
+    </div>
+  `).join('');
+}
+
+// تحميل آخر تذاكر الإصلاح
+async function loadRecentRepairs(forceRefresh = false) {
+  const cacheKey = 'recent_repairs';
+  if (!forceRefresh) {
+    const cached = DataCache.get(cacheKey);
+    if (cached) {
+      updateRecentRepairsUI(cached);
+      return;
+    }
+  }
+  
+  try {
+    const res = await fetch('elos-db://repairs?limit=5');
+    if (res.ok) {
+      const data = await res.json();
+      const repairs = Array.isArray(data) ? data : (data.repairs || data.tickets || []);
+      
+      DataCache.set(cacheKey, repairs);
+      updateRecentRepairsUI(repairs);
+    }
+  } catch (error) {
+    console.error('[Home] Error loading recent repairs:', error);
+    const container = document.getElementById('recentRepairs');
+    if (container) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="icon">📋</div>
+          <div>خطأ في تحميل البيانات</div>
+        </div>
+      `;
+    }
+  }
+}
+
+function updateRecentRepairsUI(repairs) {
+  const container = document.getElementById('recentRepairs');
+  if (!container) return;
+
+  if (repairs.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">📋</div>
+        <div>لا توجد تذاكر صيانة بعد</div>
+      </div>
+    `;
+    return;
+  }
+
+  const statusLabels = {
+    'received': 'تم الاستلام',
+    'diagnosing': 'قيد التشخيص',
+    'waiting_approval': 'في انتظار الموافقة',
+    'in_repair': 'قيد الإصلاح',
+    'ready': 'جاهز',
+    'delivered': 'تم التسليم',
+    'cancelled': 'ملغي'
+  };
+
+  container.innerHTML = repairs.slice(0, 5).map(repair => `
+    <div class="recent-item">
+      <div class="icon">🔧</div>
+      <div class="info">
+        <div class="title">${repair.ticket_no || repair.id} - ${repair.device_model || 'جهاز'}</div>
+        <div class="meta">${repair.customer_name || 'عميل'} • ${statusLabels[repair.status] || repair.status}</div>
+      </div>
+      <div class="amount">${formatMoney(repair.package_price || 0)}</div>
+    </div>
+  `).join('');
+}
+
+// تحميل آخر تحويلات الأموال
+async function loadRecentTransfers(forceRefresh = false) {
+  const cacheKey = 'recent_transfers';
+  if (!forceRefresh) {
+    const cached = DataCache.get(cacheKey);
+    if (cached) {
+      updateRecentTransfersUI(cached);
+      return;
+    }
+  }
+
+  try {
+    const today = new Date();
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(today.getDate() - 30);
+    const from = thirtyDaysAgo.toISOString().slice(0, 10);
+    const to = today.toISOString().slice(0, 10);
+
+    const res = await fetch(`elos-db://money-transfers?from=${from}&to=${to}&limit=10`);
+    if (res.ok) {
+      const data = await res.json();
+      const transfers = Array.isArray(data) ? data : (data.transfers || []);
+      DataCache.set(cacheKey, transfers);
+      updateRecentTransfersUI(transfers);
+    } else {
+      // fallback: try older endpoint format
+      updateRecentTransfersUI([]);
+    }
+  } catch (error) {
+    console.warn('[Home] Error loading recent transfers:', error);
+    updateRecentTransfersUI([]);
+  }
+}
+
+function updateRecentTransfersUI(transfers) {
+  const container = document.getElementById('recentTransfers');
+  if (!container) return;
+
+  if (!transfers || transfers.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">💱</div>
+        <div>لا توجد تحويلات بعد</div>
+      </div>
+    `;
+    return;
+  }
+
+  const typeNames = {
+    'vodafone_cash': 'فودافون كاش',
+    'etisalat_cash': 'اتصالات كاش',
+    'orange_cash': 'اورنج كاش',
+    'we_pay': 'وي باي',
+    'instapay': 'انستاباي',
+    'other': 'أخرى'
+  };
+
+  container.innerHTML = transfers.slice(0, 5).map(t => `
+    <div class="recent-item">
+      <div class="icon">💱</div>
+      <div class="info">
+        <div class="title">${typeNames[t.transfer_type] || t.transfer_type || '-'} ${t.direction === 'withdraw' ? '(سحب)' : '(إيداع)'}</div>
+        <div class="meta">${t.customer_name || t.client_name || t.customer_phone || 'عميل'} • عمولة ${formatMoney(t.commission || 0)}</div>
+      </div>
+      <div class="amount">${formatMoney(t.transfer_amount || 0)}</div>
+    </div>
+  `).join('');
+}
+
+// تحميل آخر الحركات المالية
+async function loadRecentTransactions(forceRefresh = false) {
+  const cacheKey = 'recent_transactions';
+  if (!forceRefresh) {
+    const cached = DataCache.get(cacheKey);
+    if (cached) {
+      updateRecentTransactionsUI(cached);
+      return;
+    }
+  }
+  
+  try {
+    const res = await fetch('elos-db://safe-transactions?limit=5');
+    if (res.ok) {
+      const data = await res.json();
+      const transactions = Array.isArray(data) ? data : (data.transactions || []);
+      
+      DataCache.set(cacheKey, transactions);
+      updateRecentTransactionsUI(transactions);
+    }
+  } catch (error) {
+    console.error('[Home] Error loading recent transactions:', error);
+    const container = document.getElementById('recentTransactions');
+    if (container) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="icon">📋</div>
+          <div>خطأ في تحميل البيانات</div>
+        </div>
+      `;
+    }
+  }
+}
+
+function updateRecentTransactionsUI(transactions) {
+  const container = document.getElementById('recentTransactions');
+  if (!container) return;
+
+  if (transactions.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">📋</div>
+        <div>لا توجد حركات مالية بعد</div>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = transactions.slice(0, 5).map(trans => {
+    const isIn = trans.type === 'deposit' || trans.type === 'sale';
+    return `
+      <div class="recent-item">
+        <div class="icon">${isIn ? '💰' : '💸'}</div>
+        <div class="info">
+          <div class="title">${trans.description || trans.type || 'حركة'}</div>
+          <div class="meta">${formatDate(trans.created_at)}</div>
+        </div>
+        <div class="amount" style="color: ${isIn ? 'var(--success)' : 'var(--danger)'}">
+          ${isIn ? '+' : '-'}${formatMoney(trans.amount || 0)}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+// ═══════════════════════════════════════
+// 🚨 P0: Priority Alerts Zone - Critical Alerts at Top
+// ═══════════════════════════════════════
+async function loadPriorityAlerts(forceRefresh = false) {
+  const cacheKey = 'priority_alerts';
+  if (!forceRefresh) {
+    const cached = DataCache.get(cacheKey);
+    if (cached) {
+      updatePriorityAlertsUI(cached);
+      return;
+    }
+  }
+
+  const priorityAlerts = [];
+
+  try {
+    // 1. Overdue Repairs (Urgent) - صيانات متأخرة
+    const repairsRes = await fetch('elos-db://repairs');
+    if (repairsRes.ok) {
+      const data = await repairsRes.json();
+      const repairs = Array.isArray(data) ? data : (data.repairs || data.tickets || []);
+      const today = new Date();
+
+      // تصفية الصيانات المتأخرة (expected_date مر عليها وقت ولم يتم التسليم)
+      const overdueRepairs = repairs.filter(r => {
+        if (r.status === 'delivered' || r.status === 'cancelled') return false;
+        if (!r.expected_date) return false;
+        const expectedDate = new Date(r.expected_date);
+        return expectedDate < today;
+      });
+
+      if (overdueRepairs.length > 0) {
+        priorityAlerts.push({
+          severity: 'urgent',
+          icon: '🔧',
+          title: 'صيانات متأخرة',
+          message: `يوجد ${overdueRepairs.length} تذكرة صيانة متأخرة عن موعد التسليم`,
+          cta: 'عرض الصيانات',
+          action: () => router?.navigate('repairs')
+        });
+      }
+    }
+
+    // 2. Low/Out of Stock Accessories (Warning) - إكسسوارات منخفضة أو نفذت
+    const accRes = await fetch('elos-db://accessories');
+    if (accRes.ok) {
+      const data = await accRes.json();
+      const accessories = Array.isArray(data) ? data : (data.accessories || []);
+
+      // نفذ من المخزون (quantity = 0)
+      const outOfStock = accessories.filter(a => (a.quantity || 0) === 0);
+      // منخفض المخزون (quantity <= min_quantity)
+      const lowStock = accessories.filter(a => {
+        const qty = a.quantity || 0;
+        const minQty = a.min_quantity || 5;
+        return qty > 0 && qty <= minQty;
+      });
+
+      if (outOfStock.length > 0) {
+        priorityAlerts.push({
+          severity: 'urgent',
+          icon: '📦',
+          title: 'إكسسوارات نفذت من المخزون',
+          message: `${outOfStock.length} صنف نفذ من المخزون تماماً`,
+          cta: 'عرض المخزون',
+          action: () => router?.navigate('accessories')
+        });
+      } else if (lowStock.length > 0) {
+        priorityAlerts.push({
+          severity: 'warning',
+          icon: '⚠️',
+          title: 'مخزون منخفض',
+          message: `${lowStock.length} صنف منخفض المخزون ويحتاج إعادة طلب`,
+          cta: 'عرض المخزون',
+          action: () => router?.navigate('accessories')
+        });
+      }
+    }
+
+    // 3. High Pending Client Debts (Warning/Urgent) - ديون عملاء عالية
+    const clientsRes = await fetch('elos-db://clients');
+    if (clientsRes.ok) {
+      const data = await clientsRes.json();
+      const clients = Array.isArray(data) ? data : (data.clients || []);
+
+      // ديون عالية جداً (أكثر من 10,000)
+      const veryHighDebt = clients.filter(c => Math.abs(c.balance || 0) > 10000);
+      // ديون عالية (أكثر من 5,000)
+      const highDebt = clients.filter(c => {
+        const balance = Math.abs(c.balance || 0);
+        return balance > 5000 && balance <= 10000;
+      });
+
+      if (veryHighDebt.length > 0) {
+        const totalDebt = veryHighDebt.reduce((sum, c) => sum + Math.abs(c.balance || 0), 0);
+        priorityAlerts.push({
+          severity: 'urgent',
+          icon: '💳',
+          title: 'ديون عملاء عالية جداً',
+          message: `${veryHighDebt.length} عميل لديه ديون تتجاوز 10,000 جنيه (إجمالي: ${formatMoney(totalDebt)})`,
+          cta: 'عرض العملاء',
+          action: () => router?.navigate('clients')
+        });
+      } else if (highDebt.length > 0) {
+        const totalDebt = highDebt.reduce((sum, c) => sum + Math.abs(c.balance || 0), 0);
+        priorityAlerts.push({
+          severity: 'warning',
+          icon: '💰',
+          title: 'ديون عملاء مستحقة',
+          message: `${highDebt.length} عميل لديه ديون عالية (إجمالي: ${formatMoney(totalDebt)})`,
+          cta: 'عرض العملاء',
+          action: () => router?.navigate('clients')
+        });
+      }
+    }
+
+    // 4. VIP Client Waiting (Info) - عميل VIP في انتظار صيانة
+    // Check if any VIP client has a repair in progress
+    if (repairsRes && repairsRes.ok && clientsRes && clientsRes.ok) {
+      try {
+        const repairsData = await fetch('elos-db://repairs').then(r => r.json());
+        const clientsData = await fetch('elos-db://clients').then(r => r.json());
+
+        const repairs = Array.isArray(repairsData) ? repairsData : (repairsData.repairs || repairsData.tickets || []);
+        const clients = Array.isArray(clientsData) ? clientsData : (clientsData.clients || []);
+
+        // Get VIP clients (assuming is_vip flag or special category)
+        const vipClients = clients.filter(c => c.is_vip || c.category === 'VIP' || c.type === 'vip');
+        const vipClientIds = new Set(vipClients.map(c => c.id));
+
+        // Check if any VIP client has a waiting repair
+        const vipWaitingRepairs = repairs.filter(r =>
+          vipClientIds.has(r.client_id) &&
+          ['received', 'diagnosing', 'waiting_approval', 'in_repair'].includes(r.status)
+        );
+
+        if (vipWaitingRepairs.length > 0) {
+          priorityAlerts.push({
+            severity: 'info',
+            icon: '⭐',
+            title: 'عميل VIP في الانتظار',
+            message: `يوجد ${vipWaitingRepairs.length} تذكرة صيانة لعملاء VIP`,
+            cta: 'عرض الصيانات',
+            action: () => router?.navigate('repairs')
+          });
+        }
+      } catch (e) {
+        console.warn('[Home] Could not check VIP clients:', e);
+      }
+    }
+
+    // Sort by severity: urgent first, then warning, then info
+    const severityOrder = { urgent: 0, warning: 1, info: 2 };
+    priorityAlerts.sort((a, b) => severityOrder[a.severity] - severityOrder[b.severity]);
+
+    // حفظ في Cache
+    DataCache.set(cacheKey, priorityAlerts);
+
+    // عرض التنبيهات
+    updatePriorityAlertsUI(priorityAlerts);
+  } catch (error) {
+    console.error('[Home] Error loading priority alerts:', error);
+    updatePriorityAlertsUI([]);
+  }
+}
+
+function updatePriorityAlertsUI(alerts) {
+  const zone = document.getElementById('priorityAlertsZone');
+  const listContainer = document.getElementById('priorityAlertsList');
+  if (!zone || !listContainer) return;
+
+  // If no alerts, hide the zone completely
+  if (!alerts || alerts.length === 0) {
+    zone.hidden = true;
+    listContainer.innerHTML = '';
+    return;
+  }
+
+  // Limit to max 4 alerts to avoid noise
+  const limitedAlerts = alerts.slice(0, 4);
+
+  // Show zone and render alerts with BEM structure
+  zone.hidden = false;
+  listContainer.innerHTML = limitedAlerts.map((alert, index) => `
+    <div class="priority-alert priority-alert--${alert.severity}" onclick="window.priorityAlerts[${index}]?.action?.()">
+      <div class="priority-alert__icon">${alert.icon}</div>
+      <div class="priority-alert__content">
+        <div class="priority-alert__title">${alert.title}</div>
+        <div class="priority-alert__desc">${alert.message}</div>
+      </div>
+      <div class="priority-alert__actions">
+        <button class="btn btn-sm" data-action="navigate" onclick="event.stopPropagation(); window.priorityAlerts[${index}]?.action?.()">${alert.cta}</button>
+      </div>
+    </div>
+  `).join('');
+
+  // Store actions globally for onclick access
+  window.priorityAlerts = limitedAlerts;
+}
+
+// ═══════════════════════════════════════
+// ⚠️ التنبيهات (مع Cache)
+// ═══════════════════════════════════════
+async function loadAlerts(forceRefresh = false) {
+  const cacheKey = 'alerts';
+  if (!forceRefresh) {
+    const cached = DataCache.get(cacheKey);
+    if (cached) {
+      updateAlertsUI(cached);
+      return;
+    }
+  }
+  
+  const alerts = [];
+  
+  try {
+    // تنبيهات المخزون المنخفض
+    const accRes = await fetch('elos-db://accessories');
+    if (accRes.ok) {
+      const data = await accRes.json();
+      const accessories = Array.isArray(data) ? data : (data.accessories || []);
+      const lowStock = accessories.filter(a => (a.quantity || 0) <= (a.min_quantity || 5));
+      if (lowStock.length > 0) {
+        alerts.push({
+          type: 'warning',
+          icon: '⚠️',
+          title: 'مخزون منخفض',
+          message: `يوجد ${lowStock.length} صنف منخفض المخزون`,
+          time: 'الآن'
+        });
+      }
+    }
+    
+    // تنبيهات التذكيرات
+    const remindersRes = await fetch('elos-db://reminders?status=pending');
+    if (remindersRes.ok) {
+      const data = await remindersRes.json();
+      const reminders = Array.isArray(data) ? data : (data.reminders || []);
+      const today = new Date().toISOString().slice(0, 10);
+      const todayReminders = reminders.filter(r => r.reminder_date === today);
+      if (todayReminders.length > 0) {
+        alerts.push({
+          type: 'info',
+          icon: '⏰',
+          title: 'تذكيرات اليوم',
+          message: `يوجد ${todayReminders.length} تذكير مستحق اليوم`,
+          time: 'الآن'
+        });
+      }
+    }
+    
+    // تنبيهات ديون العملاء
+    const clientsRes = await fetch('elos-db://clients');
+    if (clientsRes.ok) {
+      const data = await clientsRes.json();
+      const clients = Array.isArray(data) ? data : (data.clients || []);
+      const highDebt = clients.filter(c => Math.abs(c.balance || 0) > 5000);
+      if (highDebt.length > 0) {
+        alerts.push({
+          type: 'urgent',
+          icon: '💳',
+          title: 'ديون عالية',
+          message: `${highDebt.length} عميل لديه ديون عالية`,
+          time: 'الآن'
+        });
+      }
+    }
+    
+    // حفظ في Cache
+    DataCache.set(cacheKey, alerts);
+    
+    // عرض التنبيهات
+    updateAlertsUI(alerts);
+  } catch (error) {
+    console.error('[Home] Error loading alerts:', error);
+  }
+}
+
+function updateAlertsUI(alerts) {
+  const container = document.getElementById('alertsList');
+  if (!container) return;
+
+  if (alerts.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="icon">🔔</div>
+        <div>لا توجد تنبيهات</div>
+      </div>
+    `;
+  } else {
+    container.innerHTML = alerts.map(alert => `
+      <div class="alert-item ${alert.type}">
+        <div class="alert-icon">${alert.icon}</div>
+        <div class="alert-content">
+          <div class="alert-title">${alert.title}</div>
+          <div class="alert-message">${alert.message}</div>
+          <div class="alert-time">${alert.time}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+}
+
+// ═══════════════════════════════════════
+// 🔔 Toast Helper
+// ═══════════════════════════════════════
+function showToast(message, type = 'info') {
+  if (typeof window.showToast === 'function') {
+    window.showToast(message, type);
+  } else {
+    console.log(`[Toast ${type}]:`, message);
+  }
+}
+
+// ═══════════════════════════════════════
+// 🎯 Tabs Handling
+// ═══════════════════════════════════════
+function initTabs() {
+  const tabButtons = document.querySelectorAll('.tab-btn');
+  const tabContents = document.querySelectorAll('.tab-content');
+  
+  tabButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tabName = btn.dataset.tab;
+      
+      // إزالة active من كل الأزرار والمحتوى
+      tabButtons.forEach(b => b.classList.remove('active'));
+      tabContents.forEach(c => c.classList.remove('active'));
+      
+      // إضافة active للزر والمحتوى المحدد
+      btn.classList.add('active');
+      document.getElementById(`tab-${tabName}`)?.classList.add('active');
+    });
+  });
+}
+
+// الحصول على نطاق التاريخ حسب الفترة المحددة
+function getDateRange(period) {
+  const today = new Date();
+  let fromDate, toDate, compareFrom, compareTo;
+  
+  toDate = today.toISOString().slice(0, 10);
+  
+  switch(period) {
+    case 'today':
+      fromDate = today.toISOString().slice(0, 10);
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      compareFrom = compareTo = yesterday.toISOString().slice(0, 10);
+      break;
+      
+    case 'week':
+      const weekStart = new Date(today);
+      weekStart.setDate(today.getDate() - today.getDay());
+      fromDate = weekStart.toISOString().slice(0, 10);
+      const lastWeekStart = new Date(weekStart);
+      lastWeekStart.setDate(weekStart.getDate() - 7);
+      const lastWeekEnd = new Date(weekStart);
+      lastWeekEnd.setDate(weekStart.getDate() - 1);
+      compareFrom = lastWeekStart.toISOString().slice(0, 10);
+      compareTo = lastWeekEnd.toISOString().slice(0, 10);
+      break;
+      
+    case 'month':
+      const monthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+      fromDate = monthStart.toISOString().slice(0, 10);
+      const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
+      compareFrom = lastMonthStart.toISOString().slice(0, 10);
+      compareTo = lastMonthEnd.toISOString().slice(0, 10);
+      break;
+      
+    default:
+      fromDate = today.toISOString().slice(0, 10);
+      compareFrom = compareTo = fromDate;
+  }
+  
+  return { fromDate, toDate, compareFrom, compareTo };
+}
+
+// حساب الاتجاه
+function calculateTrend(current, previous) {
+  if (previous === 0) return current > 0 ? 'positive' : 'neutral';
+  const change = ((current - previous) / previous) * 100;
+  if (change > 0) return 'positive';
+  if (change < 0) return 'negative';
+  return 'neutral';
+}
+
+// تحديث مؤشر الاتجاه
+function updateTrend(elementId, trend, current, previous) {
+  const element = document.getElementById(elementId);
+  if (!element) return;
+  
+  element.className = `stat-trend ${trend}`;
+  
+  if (previous === 0 || current === previous) {
+    element.textContent = '—';
+    return;
+  }
+  
+  const change = Math.abs(((current - previous) / previous) * 100);
+  const arrow = trend === 'positive' ? '↑' : trend === 'negative' ? '↓' : '—';
+  const percent = change.toFixed(1);
+  
+  element.textContent = `${arrow} ${percent}%`;
+}
+
+// تنسيق المبلغ
+function formatMoney(amount) {
+  if (amount >= 1000000) {
+    return (amount / 1000000).toFixed(1) + 'M';
+  } else if (amount >= 1000) {
+    return (amount / 1000).toFixed(1) + 'K';
+  }
+  return amount.toLocaleString('ar-EG');
+}
+
+// تنسيق التاريخ
+function formatDate(dateStr) {
+  if (!dateStr) return '';
+
+  // SQLite يخزن التاريخ بصيغة 'YYYY-MM-DD HH:MM:SS' بدون timezone
+  // نحتاج نتعامل معه كتوقيت محلي وليس UTC
+  let date;
+  if (typeof dateStr === 'string' && !dateStr.includes('T') && !dateStr.includes('Z')) {
+    // تاريخ SQLite - نضيف 'T' ليتعامل معه كتوقيت محلي
+    const [datePart, timePart] = dateStr.split(' ');
+    if (timePart) {
+      date = new Date(`${datePart}T${timePart}`);
+    } else {
+      date = new Date(datePart + 'T00:00:00');
+    }
+  } else {
+    date = new Date(dateStr);
+  }
+
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 0) return 'الآن'; // في حالة فرق التوقيت
+  if (diffMins < 1) return 'الآن';
+  if (diffMins < 60) return `منذ ${diffMins} دقيقة`;
+  if (diffHours < 24) return `منذ ${diffHours} ساعة`;
+  if (diffDays < 7) return `منذ ${diffDays} يوم`;
+
+  return date.toLocaleDateString('ar-EG');
+}
+</script>

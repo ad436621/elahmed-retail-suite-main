@@ -1,0 +1,3022 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" data-page="license">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self' http://127.0.0.1:* http://*:48572;">
+  <title>تفعيل البرنامج - ELOS</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <!-- 🎨 Design System Tokens (theme colors - MUST BE FIRST) -->
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/tokens-alias.css">
+  <!-- Theme Sync Script -->
+  <script>(function(){var p=new URLSearchParams(location.search),t=p.get('theme')||localStorage.getItem('elos_theme')||localStorage.getItem('elos-theme')||'dark',h=document.documentElement;h.setAttribute('data-theme',t==='light'?'light':'dark');})();</script>
+  <script src="theme-sync.js"></script>
+  <!-- 🔤 Font Scale Manager -->
+  <script src="js/font-scale-manager.js"></script>
+  <!-- Responsive Styles -->
+  <link rel="stylesheet" href="styles/responsive.css">
+  <!-- Theme Governance Layer -->
+  <link rel="stylesheet" href="styles/theme-fixes.css">
+  <!-- Lucide Icons -->
+  <script src="icons/lucide.min.js"></script>
+  <style>
+    /* ═══════════════════════════════════════════════════════════════════
+       Activation UI rebuilt — logic preserved
+       Clean layout, no decorative circles, responsive, integrated titlebar
+       ═══════════════════════════════════════════════════════════════════ */
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      overflow-x: hidden;
+    }
+
+    body {
+      font-family: 'Tajawal', 'Cairo', 'Segoe UI', system-ui, sans-serif;
+      background: var(--ds-bg);
+      color: var(--ds-text);
+      font-size: 16px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: var(--ds-bg);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--ds-border);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--ds-border-hover);
+    }
+    * {
+      scrollbar-width: thin;
+      scrollbar-color: var(--ds-border) var(--ds-bg);
+    }
+
+    /* ═══════════════════════════════════════
+       TITLEBAR (Integrated, draggable)
+       ═══════════════════════════════════════ */
+    .titlebar {
+      height: 44px;
+      background: var(--ds-bg-secondary);
+      border-bottom: 1px solid var(--ds-border);
+      display: flex;
+      align-items: center;
+      padding: 0 12px;
+      -webkit-app-region: drag;
+      flex-shrink: 0;
+      position: relative;
+      z-index: 1000;
+    }
+
+    .titlebar-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      -webkit-app-region: no-drag;
+    }
+
+    .titlebar-btn {
+      width: 32px;
+      height: 28px;
+      border: none;
+      background: transparent;
+      color: var(--ds-text);
+      cursor: pointer;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      font-weight: 500;
+      transition: all 0.2s;
+      -webkit-app-region: no-drag;
+      pointer-events: auto;
+      user-select: none;
+    }
+
+    .titlebar-btn:hover {
+      background: var(--ds-bg-hover);
+    }
+
+    .titlebar-btn.close:hover {
+      background: var(--ds-danger);
+      color: white;
+    }
+
+    .titlebar-center {
+      flex: 1;
+      text-align: center;
+      font-weight: 600;
+      font-size: 14px;
+      color: var(--ds-text);
+      -webkit-app-region: drag;
+    }
+
+    .titlebar-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      -webkit-app-region: drag;
+    }
+
+    .titlebar-brand {
+      font-family: 'Space Grotesk', sans-serif;
+      font-weight: 700;
+      font-size: 16px;
+      letter-spacing: 2px;
+      color: var(--ds-brand);
+    }
+
+    /* ═══════════════════════════════════════
+       MAIN CONTAINER
+       ═══════════════════════════════════════ */
+    .app-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    .content-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      overflow-x: hidden;
+      padding: 24px;
+      min-height: 0;
+    }
+
+    /* ═══════════════════════════════════════
+       HEADER SECTION (Logo + Title + Reassurance)
+       ═══════════════════════════════════════ */
+    .page-header {
+      text-align: center;
+      margin-bottom: 32px;
+      flex-shrink: 0;
+    }
+
+    .page-title {
+      font-size: clamp(24px, 4vw, 32px);
+      font-weight: 700;
+      color: var(--ds-text);
+      margin-bottom: 8px;
+      font-family: 'Space Grotesk', sans-serif;
+    }
+
+    .page-subtitle {
+      font-size: clamp(14px, 2vw, 16px);
+      color: var(--ds-text-muted);
+      margin-bottom: 16px;
+    }
+
+    .reassurance-text {
+      font-size: 14px;
+      color: var(--ds-text-muted);
+      line-height: 1.6;
+      max-width: 500px;
+      margin: 0 auto;
+      padding: 12px 16px;
+      background: var(--ds-bg-secondary);
+      border-radius: var(--ds-radius-md);
+      border: 1px solid var(--ds-border);
+    }
+
+    /* ═══════════════════════════════════════
+       STEPPER (Visual 3-step guide) - ENHANCED
+       ═══════════════════════════════════════ */
+    .stepper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      margin-bottom: 32px;
+      flex-shrink: 0;
+      padding: 0 20px;
+    }
+
+    .step {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 16px 24px;
+      background: var(--ds-bg-card);
+      border: 2px solid var(--ds-border);
+      border-radius: var(--ds-radius-lg);
+      font-size: 13px;
+      color: var(--ds-text-muted);
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      min-width: 140px;
+      cursor: default;
+    }
+
+    .step:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+
+    .step.active {
+      background: linear-gradient(135deg, var(--ds-brand-light) 0%, var(--ds-bg-card) 100%);
+      border-color: var(--ds-brand);
+      color: var(--ds-brand);
+      font-weight: 600;
+      transform: scale(1.05);
+      box-shadow: 0 8px 24px var(--ds-brand-glow, rgba(59, 130, 246, 0.25));
+    }
+
+    .step.completed {
+      background: var(--ds-success-bg, rgba(16, 185, 129, 0.1));
+      border-color: var(--ds-success);
+      color: var(--ds-success);
+    }
+
+    .step.completed .step-icon {
+      background: var(--ds-success);
+      color: white;
+    }
+
+    .step-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--ds-bg-tertiary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+      color: var(--ds-text-muted);
+      flex-shrink: 0;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .step-icon svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .step.active .step-icon {
+      background: var(--ds-brand);
+      color: white;
+      animation: pulse-icon 2s infinite;
+    }
+
+    @keyframes pulse-icon {
+      0%, 100% { box-shadow: 0 0 0 0 var(--ds-brand-glow, rgba(59, 130, 246, 0.4)); }
+      50% { box-shadow: 0 0 0 8px transparent; }
+    }
+
+    .step-text {
+      text-align: center;
+      font-size: 12px;
+      line-height: 1.4;
+      max-width: 100px;
+    }
+
+    .step-connector {
+      width: 40px;
+      height: 3px;
+      background: var(--ds-border);
+      flex-shrink: 0;
+      position: relative;
+      transition: all 0.4s;
+    }
+
+    .step-connector.active {
+      background: linear-gradient(90deg, var(--ds-brand) 0%, var(--ds-border) 100%);
+    }
+
+    .step-connector.completed {
+      background: var(--ds-success);
+    }
+
+    @media (max-width: 700px) {
+      .stepper {
+        flex-direction: column;
+        gap: 0;
+      }
+      .step {
+        flex-direction: row;
+        min-width: 280px;
+        padding: 12px 20px;
+      }
+      .step-connector {
+        width: 3px;
+        height: 24px;
+      }
+      .step-text {
+        text-align: right;
+        max-width: none;
+      }
+    }
+
+    /* ═══════════════════════════════════════
+       MAIN CONTENT (Scrollable)
+       ═══════════════════════════════════════ */
+    .main-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+      max-width: 600px;
+      margin: 0 auto;
+      width: 100%;
+      min-height: 0;
+    }
+
+    /* Machine ID Section */
+    .section {
+      background: var(--ds-bg-card);
+      border: 1px solid var(--ds-border);
+      border-radius: var(--ds-radius-md);
+      padding: 20px;
+    }
+
+    .section-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--ds-text);
+      margin-bottom: 12px;
+    }
+
+    .section-label svg {
+      width: 18px;
+      height: 18px;
+    }
+
+    .machine-id-display {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px;
+      background: var(--ds-bg-tertiary);
+      border-radius: var(--ds-radius-sm);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      word-break: break-all;
+      color: var(--ds-text);
+    }
+
+    .machine-id-value {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .copy-btn {
+      padding: 10px 20px;
+      background: linear-gradient(135deg, var(--ds-brand) 0%, var(--ds-brand-hover, #2563eb) 100%);
+      color: white;
+      border: none;
+      border-radius: var(--ds-radius-md);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      flex-shrink: 0;
+      -webkit-app-region: no-drag;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .copy-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+      transition: left 0.5s;
+    }
+
+    .copy-btn:hover::before {
+      left: 100%;
+    }
+
+    .copy-btn:hover {
+      background: linear-gradient(135deg, var(--ds-brand-hover, #2563eb) 0%, var(--ds-brand) 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px var(--ds-brand-glow, rgba(59, 130, 246, 0.4));
+    }
+
+    .copy-btn:active {
+      transform: translateY(0);
+    }
+
+    .copy-btn.copied {
+      background: linear-gradient(135deg, var(--ds-success) 0%, #059669 100%);
+      animation: copy-success 0.5s ease;
+    }
+
+    @keyframes copy-success {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+      100% { transform: scale(1); }
+    }
+
+    .copy-btn svg, .copy-btn i {
+      width: 18px;
+      height: 18px;
+    }
+
+    .view-details-btn {
+      margin-top: 12px;
+      padding: 8px 16px;
+      background: transparent;
+      color: var(--ds-brand);
+      border: 1px solid var(--ds-brand);
+      border-radius: var(--ds-radius-sm);
+      font-size: 14px;
+      cursor: pointer;
+      width: 100%;
+      transition: all 0.2s;
+      -webkit-app-region: no-drag;
+      display: none;
+    }
+
+    .view-details-btn:hover {
+      background: var(--ds-brand-light);
+    }
+
+    .view-details-btn.show {
+      display: block;
+    }
+
+    /* License Input Section - ENHANCED */
+    .license-input-wrapper {
+      position: relative;
+    }
+
+    .license-input {
+      width: 100%;
+      min-height: 80px;
+      padding: 16px;
+      padding-left: 50px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 15px;
+      letter-spacing: 1px;
+      background: var(--ds-bg);
+      border: 2px solid var(--ds-border);
+      border-radius: var(--ds-radius-md);
+      color: var(--ds-text);
+      resize: none;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .license-input:focus {
+      outline: none;
+      border-color: var(--ds-brand);
+      box-shadow: 0 0 0 4px var(--ds-brand-lighter, rgba(59, 130, 246, 0.15));
+      background: var(--ds-bg-card);
+    }
+
+    .license-input.error {
+      border-color: var(--ds-danger);
+      box-shadow: 0 0 0 4px var(--ds-danger-light, rgba(239, 68, 68, 0.15));
+      animation: shake 0.5s ease;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-5px); }
+      40%, 80% { transform: translateX(5px); }
+    }
+
+    .license-input.valid {
+      border-color: var(--ds-success);
+      box-shadow: 0 0 0 4px var(--ds-success-light, rgba(16, 185, 129, 0.15));
+    }
+
+    .license-input::placeholder {
+      color: var(--ds-text-muted);
+      font-size: 13px;
+      letter-spacing: 0;
+    }
+
+    .license-input-icon {
+      position: absolute;
+      left: 16px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 24px;
+      height: 24px;
+      color: var(--ds-text-muted);
+      pointer-events: none;
+      transition: color 0.3s;
+    }
+
+    .license-input:focus + .license-input-icon,
+    .license-input:focus ~ .license-input-icon {
+      color: var(--ds-brand);
+    }
+
+    .license-char-count {
+      position: absolute;
+      left: 16px;
+      bottom: 8px;
+      font-size: 11px;
+      color: var(--ds-text-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .paste-btn {
+      position: absolute;
+      right: 12px;
+      top: 12px;
+      padding: 6px 12px;
+      background: var(--ds-bg-tertiary);
+      border: 1px solid var(--ds-border);
+      border-radius: var(--ds-radius-sm);
+      color: var(--ds-text-muted);
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s;
+      -webkit-app-region: no-drag;
+    }
+
+    .paste-btn:hover {
+      background: var(--ds-brand-light);
+      border-color: var(--ds-brand);
+      color: var(--ds-brand);
+    }
+
+    .paste-btn i {
+      width: 14px;
+      height: 14px;
+    }
+
+    .input-error {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      margin-top: 12px;
+      padding: 12px 16px;
+      background: var(--ds-danger-bg, rgba(239, 68, 68, 0.1));
+      border: 1px solid var(--ds-danger);
+      border-radius: var(--ds-radius-md);
+      color: var(--ds-danger);
+      font-size: 14px;
+      animation: slideDown 0.3s ease;
+    }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .input-error.show {
+      display: flex;
+    }
+
+    .input-error svg, .input-error i {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+
+    .input-success {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      margin-top: 12px;
+      padding: 12px 16px;
+      background: var(--ds-success-bg, rgba(16, 185, 129, 0.1));
+      border: 1px solid var(--ds-success);
+      border-radius: var(--ds-radius-md);
+      color: var(--ds-success);
+      font-size: 14px;
+      animation: slideDown 0.3s ease;
+    }
+
+    .input-success.show {
+      display: flex;
+    }
+
+    .input-success i {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+    }
+
+    /* ═══════════════════════════════════════
+       HELP SECTION
+       ═══════════════════════════════════════ */
+    .help-section {
+      margin-top: 8px;
+    }
+
+    .help-card {
+      background: var(--ds-bg-card);
+      border: 1px solid var(--ds-border);
+      border-radius: var(--ds-radius-md);
+      overflow: hidden;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .help-card:hover {
+      border-color: var(--ds-brand);
+    }
+
+    .help-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 16px;
+      color: var(--ds-text-muted);
+      font-size: 14px;
+      transition: all 0.3s;
+    }
+
+    .help-header i:first-child {
+      width: 20px;
+      height: 20px;
+      color: var(--ds-brand);
+    }
+
+    .help-header span {
+      flex: 1;
+    }
+
+    .help-chevron {
+      width: 18px;
+      height: 18px;
+      transition: transform 0.3s;
+    }
+
+    .help-card.open .help-chevron {
+      transform: rotate(180deg);
+    }
+
+    .help-content {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.3s ease, padding 0.3s ease;
+      background: var(--ds-bg-secondary);
+    }
+
+    .help-card.open .help-content {
+      max-height: 300px;
+      padding: 16px;
+      border-top: 1px solid var(--ds-border);
+    }
+
+    .help-steps {
+      margin: 0;
+      padding: 0 20px;
+      font-size: 13px;
+      color: var(--ds-text);
+      line-height: 2;
+    }
+
+    .help-steps li {
+      margin-bottom: 4px;
+    }
+
+    .help-steps strong {
+      color: var(--ds-brand);
+    }
+
+    .help-hours {
+      margin: 10px 20px 0;
+      font-size: 12px;
+      color: var(--ds-text-muted);
+      line-height: 1.5;
+    }
+
+    .help-contact {
+      margin-top: 16px;
+      padding-top: 12px;
+      border-top: 1px dashed var(--ds-border);
+    }
+
+    .help-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: #25D366;
+      color: white;
+      border-radius: var(--ds-radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .help-link:hover {
+      background: #128C7E;
+      transform: translateY(-1px);
+    }
+
+    .help-link i {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* ═══════════════════════════════════════
+       ACTION BAR (Sticky bottom) - ENHANCED
+       ═══════════════════════════════════════ */
+    .action-bar {
+      position: sticky;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 16px 24px;
+      background: var(--ds-bg-card);
+      border-top: 1px solid var(--ds-border);
+      box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
+      z-index: 100;
+      display: flex;
+      gap: 12px;
+      flex-shrink: 0;
+    }
+
+    .action-btn {
+      flex: 1;
+      padding: 16px 24px;
+      border: none;
+      border-radius: var(--ds-radius-lg);
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      -webkit-app-region: no-drag;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .action-btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+      transition: left 0.5s;
+    }
+
+    .action-btn:hover::before {
+      left: 100%;
+    }
+
+    .action-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    .activate-btn {
+      background: linear-gradient(135deg, var(--ds-brand) 0%, #1d4ed8 100%);
+      color: white;
+      box-shadow: 0 4px 14px var(--ds-brand-glow, rgba(59, 130, 246, 0.3));
+    }
+
+    .activate-btn:hover:not(:disabled) {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px var(--ds-brand-glow, rgba(59, 130, 246, 0.45));
+    }
+
+    .activate-btn:active:not(:disabled) {
+      transform: translateY(-1px);
+    }
+
+    .whatsapp-btn {
+      background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+      color: white;
+      box-shadow: 0 4px 14px rgba(37, 211, 102, 0.3);
+    }
+
+    .whatsapp-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(37, 211, 102, 0.45);
+    }
+
+    .whatsapp-btn:active {
+      transform: translateY(-1px);
+    }
+
+    .action-btn svg, .action-btn i {
+      width: 22px;
+      height: 22px;
+    }
+
+    .spinner {
+      display: none;
+      width: 22px;
+      height: 22px;
+      border: 3px solid rgba(255, 255, 255, 0.3);
+      border-top-color: white;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    .action-btn.loading .spinner {
+      display: block;
+    }
+
+    .action-btn.loading .btn-content {
+      display: none;
+    }
+
+    .action-btn.success {
+      background: linear-gradient(135deg, var(--ds-success) 0%, #059669 100%);
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ═══════════════════════════════════════
+       MODALS
+       ═══════════════════════════════════════ */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: var(--ds-overlay);
+      z-index: 10000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-overlay.show {
+      display: flex;
+    }
+
+    .modal {
+      background: var(--ds-bg-card);
+      border-radius: var(--ds-radius-lg);
+      max-width: 500px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: var(--ds-shadow-xl);
+      -webkit-app-region: no-drag;
+    }
+
+    .modal-header {
+      padding: 24px;
+      border-bottom: 1px solid var(--ds-border);
+    }
+
+    .modal-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--ds-text);
+      margin-bottom: 8px;
+    }
+
+    .modal-subtitle {
+      font-size: 14px;
+      color: var(--ds-text-muted);
+    }
+
+    .modal-body {
+      padding: 24px;
+    }
+
+    .detail-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--ds-border);
+    }
+
+    .detail-row:last-child {
+      border-bottom: none;
+    }
+
+    .detail-icon {
+      width: 20px;
+      height: 20px;
+      color: var(--ds-text-muted);
+      flex-shrink: 0;
+    }
+
+    .detail-content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .detail-label {
+      font-size: 12px;
+      color: var(--ds-text-muted);
+    }
+
+    .detail-value {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--ds-text);
+    }
+
+    .detail-value.status-active {
+      color: var(--ds-success);
+    }
+
+    .detail-value.status-inactive {
+      color: var(--ds-text-muted);
+    }
+
+    .detail-value.lifetime {
+      color: var(--ds-success);
+      font-weight: 700;
+    }
+
+    .detail-value.expiring-soon {
+      color: var(--ds-warning, #f59e0b);
+    }
+
+    .detail-value.expiring-critical {
+      color: var(--ds-danger);
+      font-weight: 700;
+    }
+
+    /* License info highlight */
+    #detailsExpiryRow .detail-value,
+    #detailsDaysRow .detail-value,
+    #detailsLicenseTypeRow .detail-value {
+      font-size: 15px;
+    }
+
+    #detailsExpiryRow,
+    #detailsDaysRow {
+      background: var(--ds-bg-secondary);
+      margin: 4px -24px;
+      padding: 12px 24px;
+    }
+
+    .modal-footer {
+      padding: 24px;
+      border-top: 1px solid var(--ds-border);
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+    }
+
+    .modal-btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: var(--ds-radius-md);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      -webkit-app-region: no-drag;
+    }
+
+    .modal-btn-primary {
+      background: var(--ds-brand);
+      color: white;
+    }
+
+    .modal-btn-primary:hover {
+      background: var(--ds-brand-hover);
+    }
+
+    .modal-btn-secondary {
+      background: var(--ds-bg-tertiary);
+      color: var(--ds-text);
+    }
+
+    .modal-btn-secondary:hover {
+      background: var(--ds-bg-hover);
+    }
+
+    .modal.success-state .modal-header {
+      background: var(--ds-success-light);
+      border-bottom-color: var(--ds-success);
+    }
+
+    .modal.success-state .modal-title {
+      color: var(--ds-success);
+    }
+
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: var(--ds-bg-card);
+      border: 1px solid var(--ds-border);
+      border-radius: var(--ds-radius-md);
+      padding: 12px 20px;
+      box-shadow: var(--ds-shadow-lg);
+      z-index: 10001;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      opacity: 0;
+      transition: all 0.3s;
+      max-width: 400px;
+      -webkit-app-region: no-drag;
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    .toast.success {
+      border-color: var(--ds-success);
+      background: var(--ds-success-bg);
+      color: var(--ds-success);
+    }
+
+    .toast.error {
+      border-color: var(--ds-danger);
+      background: var(--ds-danger-bg);
+      color: var(--ds-danger);
+    }
+
+    .toast svg {
+      width: 20px;
+      height: 20px;
+      flex-shrink: 0;
+    }
+
+    .toast-action {
+      margin-right: 8px;
+      padding: 4px 12px;
+      background: var(--ds-brand);
+      color: white;
+      border: none;
+      border-radius: var(--ds-radius-sm);
+      font-size: 12px;
+      cursor: pointer;
+      -webkit-app-region: no-drag;
+    }
+
+    /* ═══════════════════════════════════════
+       RESPONSIVE
+       ═══════════════════════════════════════ */
+    @media (max-height: 700px) {
+      .page-header {
+        margin-bottom: 20px;
+      }
+      .stepper {
+        margin-bottom: 20px;
+      }
+      .content-wrapper {
+        padding: 16px;
+      }
+    }
+
+    @media (max-height: 600px) {
+      .reassurance-text {
+        display: none;
+      }
+      .page-header {
+        margin-bottom: 16px;
+      }
+      .stepper {
+        margin-bottom: 16px;
+      }
+      .section {
+        padding: 16px;
+      }
+    }
+
+    @media (max-height: 550px) {
+      .stepper {
+        display: none;
+      }
+      .page-subtitle {
+        display: none;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .content-wrapper {
+        padding: 16px;
+      }
+      .action-bar {
+        padding: 12px 16px;
+        flex-direction: column;
+      }
+      .action-btn {
+        width: 100%;
+      }
+    }
+
+    /* ═══════════════════════════════════════
+       DEFENSIVE: Remove any red circle artifacts
+       ═══════════════════════════════════════ */
+    html[data-page="license"] svg[viewBox*="80"],
+    html[data-page="license"] svg[width="80"],
+    html[data-page="license"] .logo-icon,
+    html[data-page="license"] [class*="ring"],
+    html[data-page="license"] [class*="circle-decoration"] {
+      display: none !important;
+    }
+
+    html[data-page="license"] *::before,
+    html[data-page="license"] *::after {
+      /* Only allow necessary pseudo-elements */
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       🔀 MODE SELECTION STYLES
+       ═══════════════════════════════════════════════════════════════════ */
+    .mode-selection {
+      margin-bottom: 24px;
+    }
+
+    .mode-cards {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .mode-card {
+      background: var(--ds-bg-card);
+      border: 2px solid var(--ds-border);
+      border-radius: var(--ds-radius-lg);
+      padding: 24px;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      text-align: center;
+    }
+
+    .mode-card:hover {
+      border-color: var(--ds-brand);
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+    }
+
+    .mode-card.selected {
+      border-color: var(--ds-success);
+      background: rgba(16, 185, 129, 0.08);
+    }
+
+    .mode-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+
+    .mode-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--ds-text);
+      margin-bottom: 8px;
+    }
+
+    .mode-desc {
+      font-size: 13px;
+      color: var(--ds-text-muted);
+      margin-bottom: 16px;
+    }
+
+    .mode-features {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      text-align: right;
+      font-size: 12px;
+      color: var(--ds-text);
+    }
+
+    .mode-features li {
+      margin-bottom: 6px;
+    }
+
+    @media (max-width: 500px) {
+      .mode-cards {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ═══════════════════════════════════════════════════════════════════
+       🔍 CLIENT MODE STYLES
+       ═══════════════════════════════════════════════════════════════════ */
+    .client-mode-section,
+    .server-mode-section {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    .search-buttons {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .search-btn {
+      flex: 1;
+      padding: 14px 20px;
+      background: linear-gradient(135deg, var(--ds-brand) 0%, #1d4ed8 100%);
+      color: white;
+      border: none;
+      border-radius: var(--ds-radius-md);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.3s;
+    }
+
+    .search-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+    }
+
+    .search-btn.secondary {
+      background: var(--ds-bg-tertiary);
+      color: var(--ds-text);
+      border: 1px solid var(--ds-border);
+    }
+
+    .search-btn.secondary:hover {
+      background: var(--ds-bg-hover);
+      box-shadow: none;
+    }
+
+    .search-btn.loading {
+      opacity: 0.7;
+      cursor: wait;
+    }
+
+    .search-btn i {
+      width: 18px;
+      height: 18px;
+    }
+
+    /* قائمة السيرفرات */
+    .servers-list {
+      margin-top: 16px;
+      background: var(--ds-bg-secondary);
+      border-radius: var(--ds-radius-md);
+      padding: 16px;
+    }
+
+    .servers-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+      font-size: 13px;
+      color: var(--ds-text-muted);
+    }
+
+    .refresh-btn {
+      width: 32px;
+      height: 32px;
+      background: transparent;
+      border: 1px solid var(--ds-border);
+      border-radius: var(--ds-radius-sm);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--ds-text-muted);
+      transition: all 0.2s;
+    }
+
+    .refresh-btn:hover {
+      background: var(--ds-bg-hover);
+      color: var(--ds-brand);
+    }
+
+    .refresh-btn.spinning i {
+      animation: spin 1s linear infinite;
+    }
+
+    .servers-container {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .server-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      background: var(--ds-bg-card);
+      border: 2px solid var(--ds-border);
+      border-radius: var(--ds-radius-md);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .server-item:hover {
+      border-color: var(--ds-brand);
+    }
+
+    .server-item.selected {
+      border-color: var(--ds-success);
+      background: rgba(16, 185, 129, 0.08);
+    }
+
+    .server-item-icon {
+      width: 40px;
+      height: 40px;
+      background: var(--ds-bg-tertiary);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+    }
+
+    .server-item-info {
+      flex: 1;
+    }
+
+    .server-item-name {
+      font-weight: 600;
+      color: var(--ds-text);
+      font-size: 14px;
+    }
+
+    .server-item-ip {
+      font-size: 12px;
+      color: var(--ds-text-muted);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .no-servers {
+      text-align: center;
+      padding: 24px;
+      color: var(--ds-text-muted);
+    }
+
+    .no-servers i {
+      width: 48px;
+      height: 48px;
+      margin-bottom: 12px;
+      opacity: 0.5;
+    }
+
+    /* إدخال يدوي */
+    .manual-input {
+      margin-top: 16px;
+      padding: 16px;
+      background: var(--ds-bg-secondary);
+      border-radius: var(--ds-radius-md);
+    }
+
+    .input-row {
+      display: flex;
+      gap: 12px;
+      align-items: flex-end;
+    }
+
+    .input-group {
+      flex: 1;
+    }
+
+    .input-group.small {
+      flex: 0 0 100px;
+    }
+
+    .input-group label {
+      display: block;
+      font-size: 12px;
+      color: var(--ds-text-muted);
+      margin-bottom: 6px;
+    }
+
+    .input-group input {
+      width: 100%;
+      padding: 10px 14px;
+      background: var(--ds-bg);
+      border: 1px solid var(--ds-border);
+      border-radius: var(--ds-radius-sm);
+      color: var(--ds-text);
+      font-size: 14px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .input-group input:focus {
+      outline: none;
+      border-color: var(--ds-brand);
+    }
+
+    .test-btn {
+      padding: 10px 16px;
+      background: var(--ds-brand);
+      color: white;
+      border: none;
+      border-radius: var(--ds-radius-sm);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+
+    .test-btn:hover {
+      background: var(--ds-brand-hover);
+    }
+
+    .test-btn i {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* نتيجة الاتصال */
+    .connection-result {
+      margin-top: 20px;
+    }
+
+    .connection-success {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid var(--ds-success);
+      border-radius: var(--ds-radius-md);
+      margin-bottom: 16px;
+    }
+
+    .success-icon {
+      font-size: 32px;
+    }
+
+    .success-info h4 {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--ds-success);
+      margin: 0 0 4px 0;
+    }
+
+    .success-info p {
+      font-size: 13px;
+      color: var(--ds-text-muted);
+      margin: 0;
+    }
+
+    .license-info-card {
+      background: var(--ds-bg-card);
+      border: 1px solid var(--ds-border);
+      border-radius: var(--ds-radius-md);
+      padding: 16px;
+    }
+
+    .license-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--ds-border);
+    }
+
+    .license-row:last-child {
+      border-bottom: none;
+    }
+
+    .license-label {
+      font-size: 13px;
+      color: var(--ds-text-muted);
+    }
+
+    .license-value {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ds-text);
+    }
+
+    .license-value.lifetime {
+      color: var(--ds-success);
+    }
+
+    /* زر الرجوع */
+    .back-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 20px;
+      padding: 10px 16px;
+      background: transparent;
+      border: 1px solid var(--ds-border);
+      border-radius: var(--ds-radius-md);
+      color: var(--ds-text-muted);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .back-btn:hover {
+      background: var(--ds-bg-hover);
+      color: var(--ds-text);
+    }
+
+    .back-btn i {
+      width: 16px;
+      height: 16px;
+    }
+
+    /* زر الاتصال */
+    .connect-btn {
+      background: linear-gradient(135deg, var(--ds-success) 0%, #059669 100%);
+      color: white;
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.3);
+    }
+
+    .connect-btn:hover:not(:disabled) {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(16, 185, 129, 0.45);
+    }
+
+    .connect-btn:disabled {
+      background: var(--ds-bg-tertiary);
+      color: var(--ds-text-muted);
+      box-shadow: none;
+      cursor: not-allowed;
+    }
+
+    /* Hide action bars by default on mode selection */
+    .mode-selection ~ .action-bar {
+      display: none;
+    }
+
+    /* تلميح الأسكرول — سهم كبير يختفي فور التمرير */
+    .scroll-hint {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 900;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      color: var(--ds-brand);
+      opacity: 1;
+      transition: opacity 0.25s ease;
+      pointer-events: none;
+    }
+
+    .scroll-hint.hidden {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .scroll-hint svg {
+      width: 48px;
+      height: 48px;
+      animation: scroll-hint-bounce 1.5s ease-in-out infinite;
+    }
+
+    .scroll-hint span {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--ds-text-muted);
+    }
+
+    @keyframes scroll-hint-bounce {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(8px); }
+    }
+  </style>
+</head>
+<body>
+  <!-- تلميح: اسكرول للأسفل (يختفي عند أول تمرير) -->
+  <div class="scroll-hint" id="scrollHint">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 5v14M19 12l-7 7-7-7"/>
+    </svg>
+    <span>اسكرول للأسفل</span>
+  </div>
+
+  <!-- Titlebar -->
+  <div class="titlebar">
+    <div class="titlebar-left">
+      <button class="titlebar-btn minimize" onclick="minimizeWindow()" title="تصغير">−</button>
+      <button class="titlebar-btn close" onclick="closeWindow()" title="إغلاق">×</button>
+    </div>
+    <div class="titlebar-center">تفعيل الترخيص</div>
+    <div class="titlebar-right">
+      <span class="titlebar-brand">ELOS</span>
+    </div>
+  </div>
+
+  <!-- Main Container -->
+  <div class="app-container">
+    <div class="content-wrapper">
+      <!-- Header -->
+      <div class="page-header">
+        <h1 class="page-title" id="pageTitle">تفعيل البرنامج</h1>
+        <p class="page-subtitle">ELOS Accounting System</p>
+        <div class="reassurance-text" id="reassuranceText">
+          لا يتم حفظ بيانات شخصية. يتم استخدام معرّف الجهاز للتحقق من الترخيص فقط.
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════════════════════
+           🔀 MODE SELECTION - اختيار وضع التشغيل
+           ═══════════════════════════════════════════════════════════════════ -->
+      <div class="mode-selection" id="modeSelection">
+        <div class="mode-cards">
+          <!-- جهاز رئيسي (Server) -->
+          <div class="mode-card" id="serverModeCard" onclick="selectMode('server')">
+            <div class="mode-icon">🖥️</div>
+            <h3 class="mode-title">جهاز رئيسي</h3>
+            <p class="mode-desc">أول تثبيت أو جهاز مستقل</p>
+            <ul class="mode-features">
+              <li>✅ يحتاج مفتاح ترخيص جديد</li>
+              <li>✅ قاعدة البيانات محلياً</li>
+              <li>✅ يمكن ربط أجهزة أخرى به</li>
+            </ul>
+          </div>
+
+          <!-- جهاز فرعي (Client) -->
+          <div class="mode-card" id="clientModeCard" onclick="selectMode('client')">
+            <div class="mode-icon">💻</div>
+            <h3 class="mode-title">جهاز فرعي</h3>
+            <p class="mode-desc">الاتصال بجهاز رئيسي موجود</p>
+            <ul class="mode-features">
+              <li>✅ لا يحتاج مفتاح منفصل</li>
+              <li>✅ يستخدم نفس قاعدة البيانات</li>
+              <li>✅ يرث الترخيص من السيرفر</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════════════════════
+           🔍 CLIENT MODE - البحث عن السيرفر
+           ═══════════════════════════════════════════════════════════════════ -->
+      <div class="client-mode-section" id="clientModeSection" style="display: none;">
+        <div class="section">
+          <div class="section-label">
+            <i data-lucide="search"></i>
+            البحث عن الجهاز الرئيسي
+          </div>
+
+          <div class="search-buttons">
+            <button class="search-btn" onclick="discoverServers()" id="discoverBtn">
+              <i data-lucide="radar"></i>
+              <span>بحث تلقائي</span>
+            </button>
+            <button class="search-btn secondary" onclick="showManualInput()" id="manualBtn">
+              <i data-lucide="edit-3"></i>
+              <span>إدخال يدوي</span>
+            </button>
+          </div>
+
+          <!-- قائمة السيرفرات المكتشفة -->
+          <div class="servers-list" id="serversList" style="display: none;">
+            <div class="servers-header">
+              <span>الأجهزة المتاحة على الشبكة:</span>
+              <button class="refresh-btn" onclick="discoverServers()" title="تحديث">
+                <i data-lucide="refresh-cw"></i>
+              </button>
+            </div>
+            <div class="servers-container" id="serversContainer">
+              <!-- سيتم ملؤها بـ JavaScript -->
+            </div>
+          </div>
+
+          <!-- إدخال يدوي -->
+          <div class="manual-input" id="manualInput" style="display: none;">
+            <div class="input-row">
+              <div class="input-group">
+                <label>عنوان IP السيرفر:</label>
+                <input type="text" id="serverIP" placeholder="192.168.1.100" />
+              </div>
+              <div class="input-group small">
+                <label>المنفذ:</label>
+                <input type="number" id="serverPort" value="48572" />
+              </div>
+              <button class="test-btn" onclick="testConnection()">
+                <i data-lucide="plug"></i>
+                اختبار
+              </button>
+            </div>
+          </div>
+
+          <!-- نتيجة الاتصال -->
+          <div class="connection-result" id="connectionResult" style="display: none;">
+            <div class="connection-success" id="connectionSuccess" style="display: none;">
+              <div class="success-icon">✅</div>
+              <div class="success-info">
+                <h4 id="connectedServerName">تم الاتصال بنجاح!</h4>
+                <p id="connectedCompanyName">-</p>
+              </div>
+            </div>
+            <div class="license-info-card" id="serverLicenseInfo" style="display: none;">
+              <div class="license-row">
+                <span class="license-label">نوع الترخيص:</span>
+                <span class="license-value" id="serverLicenseType">-</span>
+              </div>
+              <div class="license-row">
+                <span class="license-label">الصلاحية:</span>
+                <span class="license-value" id="serverLicenseExpiry">-</span>
+              </div>
+              <div class="license-row">
+                <span class="license-label">المستخدمين:</span>
+                <span class="license-value" id="serverLicenseUsers">-</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- زر الرجوع -->
+        <button class="back-btn" onclick="goBackToModeSelection()">
+          <i data-lucide="arrow-right"></i>
+          رجوع لاختيار الوضع
+        </button>
+      </div>
+
+      <!-- ═══════════════════════════════════════════════════════════════════
+           🖥️ SERVER MODE - التفعيل العادي (الموجود)
+           ═══════════════════════════════════════════════════════════════════ -->
+      <div class="server-mode-section" id="serverModeSection" style="display: none;">
+        <!-- Stepper -->
+        <div class="stepper">
+        <div class="step active" id="step1">
+          <div class="step-icon">
+            <i data-lucide="copy"></i>
+          </div>
+          <span class="step-text">انسخ معرف الجهاز</span>
+        </div>
+        <div class="step-connector" id="connector1"></div>
+        <div class="step" id="step2">
+          <div class="step-icon">
+            <i data-lucide="message-circle"></i>
+          </div>
+          <span class="step-text">اطلب المفتاح عبر واتساب</span>
+        </div>
+        <div class="step-connector" id="connector2"></div>
+        <div class="step" id="step3">
+          <div class="step-icon">
+            <i data-lucide="shield-check"></i>
+          </div>
+          <span class="step-text">أدخل المفتاح وفعّل</span>
+        </div>
+      </div>
+
+      <!-- Main Content -->
+      <div class="main-content">
+        <!-- Machine ID Section -->
+        <div class="section">
+          <div class="section-label">
+            <i data-lucide="monitor"></i>
+            معرف الجهاز (Machine ID)
+          </div>
+          <div class="machine-id-display">
+            <span class="machine-id-value" id="machineId">جاري التحميل...</span>
+            <button class="copy-btn" onclick="copyMachineId()" id="copyBtn">
+              <i data-lucide="copy"></i>
+              <span id="copyText">نسخ المعرف</span>
+            </button>
+          </div>
+          <button class="view-details-btn" onclick="openActivationDetails(false)" id="viewDetailsBtn">عرض التفاصيل</button>
+        </div>
+
+        <!-- License Input Section -->
+        <div class="section">
+          <div class="section-label">
+            <i data-lucide="key-round"></i>
+            مفتاح الترخيص
+          </div>
+          <div class="license-input-wrapper">
+            <textarea class="license-input" id="licenseKey" placeholder="الصق مفتاح الترخيص هنا..." rows="3"></textarea>
+            <i data-lucide="key" class="license-input-icon"></i>
+            <button class="paste-btn" onclick="pasteFromClipboard()" title="لصق من الحافظة">
+              <i data-lucide="clipboard-paste"></i>
+              <span>لصق</span>
+            </button>
+          </div>
+          <div class="input-error" id="licenseError">
+            <i data-lucide="alert-circle"></i>
+            <span id="licenseErrorText"></span>
+          </div>
+          <div class="input-success" id="licenseSuccess">
+            <i data-lucide="check-circle-2"></i>
+            <span>مفتاح الترخيص يبدو صحيحاً</span>
+          </div>
+        </div>
+
+        <!-- Help Section -->
+        <div class="help-section">
+          <div class="help-card" onclick="toggleHelp()">
+            <div class="help-header">
+              <i data-lucide="help-circle"></i>
+              <span>كيفية الحصول على مفتاح التفعيل؟</span>
+              <i data-lucide="chevron-down" class="help-chevron"></i>
+            </div>
+            <div class="help-content" id="helpContent">
+              <ol class="help-steps">
+                <li><strong>انسخ معرف الجهاز</strong> من الأعلى</li>
+                <li><strong>تواصل معنا</strong> عبر واتساب فقط</li>
+                <li><strong>استلم المفتاح</strong> والصقه في الحقل أعلاه</li>
+                <li><strong>اضغط تفعيل</strong> وانتظر التأكيد</li>
+              </ol>
+              <p class="help-hours">مواعيد الدعم: كل يوم من 12 مساءً إلى 12 صباحاً عدا الجمعة والإجازات الرسمية.</p>
+              <div class="help-contact">
+                <a href="#" onclick="requestActivationViaWhatsApp(event)" class="help-link whatsapp">
+                  <i data-lucide="message-circle"></i>
+                  واتساب: +20 155 032 0914
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- زر الرجوع -->
+        <button class="back-btn" onclick="goBackToModeSelection()">
+          <i data-lucide="arrow-right"></i>
+          رجوع لاختيار الوضع
+        </button>
+      </div>
+      <!-- نهاية server-mode-section -->
+    </div>
+
+    <!-- Action Bar (Sticky) - Server Mode -->
+    <div class="action-bar" id="serverActionBar">
+      <button class="action-btn activate-btn" id="activateBtn" onclick="activateLicense()">
+        <div class="spinner"></div>
+        <div class="btn-content">
+          <i data-lucide="shield-check"></i>
+          <span>تفعيل الترخيص</span>
+        </div>
+      </button>
+      <button class="action-btn whatsapp-btn" onclick="requestActivationViaWhatsApp(event)">
+        <i data-lucide="message-circle"></i>
+        <span>طلب عبر واتساب</span>
+      </button>
+    </div>
+
+    <!-- Action Bar (Sticky) - Client Mode -->
+    <div class="action-bar" id="clientActionBar" style="display: none;">
+      <button class="action-btn connect-btn" id="connectBtn" onclick="connectToServer()" disabled>
+        <div class="spinner"></div>
+        <div class="btn-content">
+          <i data-lucide="link"></i>
+          <span>الاتصال والبدء</span>
+        </div>
+      </button>
+    </div>
+  </div>
+
+  <!-- Details Modal -->
+  <div class="modal-overlay" id="detailsModal" onclick="closeDetailsModal(event)">
+    <div class="modal" onclick="event.stopPropagation()">
+      <div class="modal-header" id="detailsModalHeader">
+        <div class="modal-title" id="detailsModalTitle">تفاصيل التفعيل</div>
+        <div class="modal-subtitle" id="detailsModalSubtitle">معلومات تفعيل البرنامج</div>
+      </div>
+      <div class="modal-body" id="detailsModalContent">
+        <div class="detail-row">
+          <svg class="detail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          <div class="detail-content">
+            <span class="detail-label">اسم البرنامج</span>
+            <span class="detail-value">ELOS Accounting System</span>
+          </div>
+        </div>
+        <div class="detail-row">
+          <svg class="detail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 12l2 2 4-4"/>
+            <path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9 9 4.03 9 9z"/>
+          </svg>
+          <div class="detail-content">
+            <span class="detail-label">حالة الترخيص</span>
+            <span class="detail-value" id="detailsStatus">غير مفعل</span>
+          </div>
+        </div>
+        <!-- License Type Row -->
+        <div class="detail-row" id="detailsLicenseTypeRow" style="display: none;">
+          <svg class="detail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+            <path d="M2 17l10 5 10-5"/>
+            <path d="M2 12l10 5 10-5"/>
+          </svg>
+          <div class="detail-content">
+            <span class="detail-label">نوع الترخيص</span>
+            <span class="detail-value" id="detailsLicenseType">-</span>
+          </div>
+        </div>
+        <!-- Expiry Date Row - IMPORTANT -->
+        <div class="detail-row" id="detailsExpiryRow" style="display: none;">
+          <svg class="detail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
+          </svg>
+          <div class="detail-content">
+            <span class="detail-label">صلاحية الترخيص</span>
+            <span class="detail-value" id="detailsExpiry">-</span>
+          </div>
+        </div>
+        <!-- Days Remaining Row -->
+        <div class="detail-row" id="detailsDaysRow" style="display: none;">
+          <svg class="detail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+          <div class="detail-content">
+            <span class="detail-label">الأيام المتبقية</span>
+            <span class="detail-value" id="detailsDaysRemaining">-</span>
+          </div>
+        </div>
+        <div class="detail-row">
+          <svg class="detail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+            <line x1="8" y1="21" x2="16" y2="21"/>
+            <line x1="12" y1="17" x2="12" y2="21"/>
+          </svg>
+          <div class="detail-content">
+            <span class="detail-label">معرّف الجهاز</span>
+            <span class="detail-value" id="detailsMachineId">-</span>
+          </div>
+        </div>
+        <div class="detail-row">
+          <svg class="detail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <polyline points="12 6 12 12 16 14"/>
+          </svg>
+          <div class="detail-content">
+            <span class="detail-label">تاريخ التفعيل</span>
+            <span class="detail-value" id="detailsDateTime">-</span>
+          </div>
+        </div>
+        <div class="detail-row" id="detailsVersionRow" style="display: none;">
+          <svg class="detail-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3"/>
+            <path d="M12 1v6m0 6v6"/>
+            <path d="M1 12h6m6 0h6"/>
+          </svg>
+          <div class="detail-content">
+            <span class="detail-label">النسخة</span>
+            <span class="detail-value" id="detailsVersion">-</span>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="modal-btn modal-btn-secondary" onclick="closeDetailsModal()">إغلاق</button>
+        <button class="modal-btn modal-btn-primary" id="detailsModalCloseBtn" onclick="closeDetailsModal()">إغلاق</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast">
+    <svg id="toastIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="10"/>
+      <polyline points="9 12 12 15 22 5"/>
+    </svg>
+    <span id="toastText"></span>
+  </div>
+
+  <script>
+    /* ═══════════════════════════════════════════════════════════════════
+       Activation UI rebuilt — logic preserved
+       All API endpoints, IPC bridge usage, and data flow maintained
+       ═══════════════════════════════════════════════════════════════════ */
+
+    const API_BASE = 'http://127.0.0.1:48572';
+    const WHATSAPP_NUMBER = '201550320914'; // رقم الدعم والواتساب E.164
+    let appVersion = '';
+    let machineIdValue = '';
+    let whatsappClickGuard = false;
+    let lastLicenseData = null; // Store license data for display
+
+    // ═══════════════════════════════════════
+    // DEFENSIVE: Remove any red circle artifacts on load
+    // ═══════════════════════════════════════
+    function removeRedCircleArtifacts() {
+      const allElements = document.querySelectorAll('*');
+      allElements.forEach(el => {
+        const style = window.getComputedStyle(el);
+        const width = parseFloat(style.width);
+        const height = parseFloat(style.height);
+        const bgColor = style.backgroundColor;
+        
+        // Check for large red circles
+        if ((width > 200 || height > 200) && 
+            (bgColor.includes('rgb(220, 38, 38)') || 
+             bgColor.includes('rgb(239, 68, 68)') ||
+             bgColor.includes('rgb(248, 113, 113)'))) {
+          console.warn('[LICENSE] Removed red circle artifact:', el);
+          el.style.display = 'none';
+        }
+      });
+
+      // Remove large SVG circles
+      document.querySelectorAll('svg circle').forEach(circle => {
+        const r = parseFloat(circle.getAttribute('r') || '0');
+        if (r > 100) {
+          const svg = circle.closest('svg');
+          if (svg && svg.getAttribute('viewBox')?.includes('80')) {
+            console.warn('[LICENSE] Removed large SVG circle:', svg);
+            svg.style.display = 'none';
+          }
+        }
+      });
+    }
+
+    // ═══════════════════════════════════════
+    // PREFLIGHT: Check if already activated
+    // ═══════════════════════════════════════
+    (function() {
+      try {
+        const activated = localStorage.getItem('elos_activated') === '1';
+        fetch(`${API_BASE}/license/status`)
+          .then(res => res.json())
+          .then(data => {
+            if (data.valid || activated) {
+              console.log('[LICENSE] Already activated, redirecting to login...');
+              if (window.authBridge && window.authBridge.navigateToLogin) {
+                window.authBridge.navigateToLogin();
+              } else if (window.authBridge && window.authBridge.closeWindow) {
+                window.authBridge.closeWindow();
+              }
+            }
+          })
+          .catch(() => {});
+      } catch (e) {}
+    })();
+
+    // ═══════════════════════════════════════
+    // LOAD DATA: Machine ID and App Version
+    // ═══════════════════════════════════════
+    window.addEventListener('DOMContentLoaded', async () => {
+      removeRedCircleArtifacts();
+
+      // إخفاء تلميح الأسكرول فور أول تمرير
+      const scrollHint = document.getElementById('scrollHint');
+      const contentWrapper = document.querySelector('.content-wrapper');
+      if (scrollHint && contentWrapper) {
+        const hideScrollHint = () => {
+          scrollHint.classList.add('hidden');
+          contentWrapper.removeEventListener('scroll', hideScrollHint);
+        };
+        contentWrapper.addEventListener('scroll', hideScrollHint);
+      }
+
+      // Initialize Lucide icons
+      if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+      }
+
+      try {
+        const response = await fetch(`${API_BASE}/license/machine-id`);
+        const data = await response.json();
+        machineIdValue = data.machineId || 'غير متاح';
+        document.getElementById('machineId').textContent = machineIdValue;
+        const detailsId = document.getElementById('detailsMachineId');
+        if (detailsId) detailsId.textContent = machineIdValue;
+      } catch (error) {
+        machineIdValue = 'خطأ في التحميل';
+        document.getElementById('machineId').textContent = machineIdValue;
+      }
+
+      // Try to get app version via IPC
+      try {
+        if (window.authBridge && window.authBridge.getAppVersion) {
+          appVersion = await window.authBridge.getAppVersion();
+          const versionEl = document.getElementById('detailsVersion');
+          const versionRow = document.getElementById('detailsVersionRow');
+          if (appVersion && versionEl && versionRow) {
+            versionEl.textContent = appVersion;
+            versionRow.style.display = 'flex';
+          }
+        }
+      } catch (e) {
+        const versionRow = document.getElementById('detailsVersionRow');
+        if (versionRow) versionRow.style.display = 'none';
+      }
+
+      // Setup license input listener for validation feedback
+      const licenseInput = document.getElementById('licenseKey');
+      if (licenseInput) {
+        licenseInput.addEventListener('input', validateLicenseInput);
+        licenseInput.addEventListener('paste', (e) => {
+          setTimeout(validateLicenseInput, 100);
+        });
+      }
+    });
+
+    // ═══════════════════════════════════════
+    // COPY MACHINE ID
+    // ═══════════════════════════════════════
+    function copyMachineId() {
+      const machineId = machineIdValue || document.getElementById('machineId').textContent;
+      const copyBtn = document.getElementById('copyBtn');
+      const copyText = document.getElementById('copyText');
+      const viewDetailsBtn = document.getElementById('viewDetailsBtn');
+
+      navigator.clipboard.writeText(machineId).then(() => {
+        copyBtn.classList.add('copied');
+        if (copyText) copyText.textContent = 'تم النسخ!';
+
+        // Update stepper to step 2
+        updateStepper(2);
+
+        showToastWithAction('تم نسخ معرف الجهاز بنجاح', 'success', 'طلب عبر واتساب', () => {
+          requestActivationViaWhatsApp();
+        });
+
+        if (viewDetailsBtn) viewDetailsBtn.classList.add('show');
+
+        setTimeout(() => {
+          copyBtn.classList.remove('copied');
+          if (copyText) copyText.textContent = 'نسخ المعرف';
+          // Re-render icons
+          if (typeof lucide !== 'undefined') lucide.createIcons();
+        }, 2500);
+      }).catch(() => {
+        showToast('فشل في النسخ', 'error');
+      });
+    }
+
+    // ═══════════════════════════════════════
+    // ACTIVATE LICENSE
+    // ═══════════════════════════════════════
+    async function activateLicense() {
+      const licenseKey = document.getElementById('licenseKey').value.trim();
+      const btn = document.getElementById('activateBtn');
+      const input = document.getElementById('licenseKey');
+      const errorEl = document.getElementById('licenseError');
+      const errorText = document.getElementById('licenseErrorText');
+
+      input.classList.remove('error');
+      errorEl.classList.remove('show');
+
+      if (!licenseKey) {
+        showToast('يرجى إدخال مفتاح الترخيص', 'error');
+        input.classList.add('error');
+        if (errorText) errorText.textContent = 'يرجى إدخال مفتاح الترخيص';
+        errorEl.classList.add('show');
+        return;
+      }
+
+      btn.classList.add('loading');
+      btn.disabled = true;
+
+      try {
+        const response = await fetch(`${API_BASE}/license/activate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ licenseKey })
+        });
+
+        const data = await response.json();
+
+        if (data.success && data.valid) {
+          localStorage.setItem('elos_activated', '1');
+
+          // Store license data for display
+          lastLicenseData = data;
+
+          document.getElementById('step1').classList.remove('active');
+          document.getElementById('step2').classList.remove('active');
+          document.getElementById('step3').classList.add('active');
+
+          openActivationDetails(true, data);
+        } else {
+          const errorMsg = data.error || 'فشل في تفعيل الترخيص';
+          showToast(errorMsg, 'error');
+          input.classList.add('error');
+          if (errorText) errorText.textContent = errorMsg;
+          errorEl.classList.add('show');
+        }
+      } catch (error) {
+        const errorMsg = 'خطأ في الاتصال بالخادم';
+        showToast(errorMsg, 'error');
+        input.classList.add('error');
+        if (errorText) errorText.textContent = errorMsg;
+        errorEl.classList.add('show');
+      }
+
+      btn.classList.remove('loading');
+      btn.disabled = false;
+    }
+
+    // ═══════════════════════════════════════
+    // REQUEST ACTIVATION VIA WHATSAPP
+    // ═══════════════════════════════════════
+    async function requestActivationViaWhatsApp(event) {
+      if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+
+      if (whatsappClickGuard) {
+        console.log('[LICENSE] WhatsApp click debounced');
+        return;
+      }
+      whatsappClickGuard = true;
+      setTimeout(() => {
+        whatsappClickGuard = false;
+      }, 1000);
+
+      try {
+        const machineId = machineIdValue || document.getElementById('machineId').textContent;
+        
+        document.getElementById('step1').classList.remove('active');
+        document.getElementById('step2').classList.add('active');
+        document.getElementById('step3').classList.remove('active');
+
+        const message = 'طلب تفعيل ELOS Accounting System\nمعرف الجهاز: ' + machineId;
+        const encodedMessage = encodeURIComponent(message);
+        const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodedMessage}`;
+
+        console.log('[LICENSE] Opening WhatsApp via IPC');
+
+        if (window.authBridge && typeof window.authBridge.openExternal === 'function') {
+          window.authBridge.openExternal(whatsappUrl);
+          showToast('✅ تم فتح واتساب', 'success');
+        } else {
+          console.error('[LICENSE] authBridge.openExternal not available');
+          showToast('تعذر فتح واتساب. تم نسخ معرف الجهاز للحافظة.', 'error');
+          try {
+            await navigator.clipboard.writeText(machineId);
+          } catch (e) {
+            console.error('[LICENSE] Clipboard write failed:', e);
+          }
+          whatsappClickGuard = false;
+          return;
+        }
+      } catch (error) {
+        console.error('[LICENSE] Error in requestActivationViaWhatsApp:', error);
+        showToast('خطأ في فتح واتساب', 'error');
+        whatsappClickGuard = false;
+      }
+    }
+
+    // ═══════════════════════════════════════
+    // ACTIVATION DETAILS MODAL
+    // ═══════════════════════════════════════
+    function updateDetailsDateTime() {
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('ar-EG', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      });
+      const timeStr = now.toLocaleTimeString('ar-EG', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      });
+      const dateTimeEl = document.getElementById('detailsDateTime');
+      if (dateTimeEl) dateTimeEl.textContent = `${dateStr} - ${timeStr}`;
+    }
+
+    function openActivationDetails(isSuccess = false, licenseData = null) {
+      const modal = document.getElementById('detailsModal');
+      const modalContent = document.getElementById('detailsModalContent');
+      const title = document.getElementById('detailsModalTitle');
+      const subtitle = document.getElementById('detailsModalSubtitle');
+      const status = document.getElementById('detailsStatus');
+      const closeBtn = document.getElementById('detailsModalCloseBtn');
+
+      // License details elements
+      const licenseTypeRow = document.getElementById('detailsLicenseTypeRow');
+      const licenseTypeEl = document.getElementById('detailsLicenseType');
+      const expiryRow = document.getElementById('detailsExpiryRow');
+      const expiryEl = document.getElementById('detailsExpiry');
+      const daysRow = document.getElementById('detailsDaysRow');
+      const daysEl = document.getElementById('detailsDaysRemaining');
+
+      if (isSuccess) {
+        modalContent.classList.add('success-state');
+        if (title) title.textContent = 'تم التفعيل بنجاح! 🎉';
+        if (subtitle) subtitle.textContent = 'تم التفعيل بنجاح وسيتم إعادة تشغيل البرنامج الآن.';
+        if (status) {
+          status.textContent = '✅ مفعل';
+          status.className = 'detail-value status-active';
+        }
+        if (closeBtn) {
+          closeBtn.textContent = 'إعادة تشغيل الآن';
+          closeBtn.onclick = () => {
+            localStorage.setItem('elos_activated', '1');
+            restartApp();
+          };
+        }
+
+        // Display license details if available
+        if (licenseData) {
+          // License Type
+          if (licenseTypeRow && licenseTypeEl && licenseData.typeName) {
+            licenseTypeEl.textContent = licenseData.typeName;
+            if (licenseData.maxUsers) {
+              licenseTypeEl.textContent += ` (${licenseData.maxUsers} مستخدم)`;
+            }
+            licenseTypeRow.style.display = 'flex';
+          }
+
+          // Expiry Date / Duration
+          if (expiryRow && expiryEl) {
+            if (licenseData.isLifetime) {
+              expiryEl.textContent = '♾️ مدى الحياة (غير محدود)';
+              expiryEl.style.color = 'var(--ds-success)';
+            } else if (licenseData.expiryDate) {
+              const expDate = new Date(licenseData.expiryDate);
+              const formattedDate = expDate.toLocaleDateString('ar-EG', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              });
+              // Show expiry date clearly
+              expiryEl.textContent = `ينتهي في: ${formattedDate}`;
+            } else {
+              expiryEl.textContent = '-';
+            }
+            expiryRow.style.display = 'flex';
+          }
+
+          // Days Remaining
+          if (daysRow && daysEl) {
+            if (licenseData.isLifetime) {
+              daysEl.textContent = '♾️ غير محدود';
+              daysEl.style.color = 'var(--ds-success)';
+            } else if (licenseData.daysRemaining !== undefined) {
+              if (licenseData.daysRemaining > 30) {
+                daysEl.textContent = `${licenseData.daysRemaining} يوم`;
+                daysEl.style.color = 'var(--ds-success)';
+              } else if (licenseData.daysRemaining > 7) {
+                daysEl.textContent = `${licenseData.daysRemaining} يوم`;
+                daysEl.style.color = 'var(--ds-warning, #f59e0b)';
+              } else {
+                daysEl.textContent = `${licenseData.daysRemaining} يوم ⚠️`;
+                daysEl.style.color = 'var(--ds-danger)';
+              }
+            }
+            daysRow.style.display = 'flex';
+          }
+        }
+      } else {
+        modalContent.classList.remove('success-state');
+        if (title) title.textContent = 'تفاصيل التفعيل';
+        if (subtitle) subtitle.textContent = 'معلومات تفعيل البرنامج';
+        if (status) {
+          status.textContent = 'غير مفعل';
+          status.className = 'detail-value status-inactive';
+        }
+        if (closeBtn) {
+          closeBtn.textContent = 'إغلاق';
+          closeBtn.onclick = closeDetailsModal;
+        }
+
+        // Hide license-specific rows when not activated
+        if (licenseTypeRow) licenseTypeRow.style.display = 'none';
+        if (expiryRow) expiryRow.style.display = 'none';
+        if (daysRow) daysRow.style.display = 'none';
+      }
+
+      updateDetailsDateTime();
+      if (modal) modal.classList.add('show');
+    }
+
+    function closeDetailsModal(e) {
+      if (!e || e.target === e.currentTarget || e.target.classList.contains('modal-overlay')) {
+        const modal = document.getElementById('detailsModal');
+        if (modal) modal.classList.remove('show');
+      }
+    }
+
+    // ═══════════════════════════════════════
+    // RESTART APP
+    // ═══════════════════════════════════════
+    function restartApp() {
+      localStorage.setItem('elos_activated', '1');
+      closeDetailsModal();
+      
+      if (window.authBridge && window.authBridge.restartApp) {
+        window.authBridge.restartApp();
+      } else if (window.electron && window.electron.ipcRenderer) {
+        window.electron.ipcRenderer.send('app:restart');
+      } else {
+        console.log('restart-after-activation');
+      }
+    }
+
+    // ═══════════════════════════════════════
+    // WINDOW CONTROLS
+    // ═══════════════════════════════════════
+    function minimizeWindow() {
+      if (window.authBridge && typeof window.authBridge.minimizeWindow === 'function') {
+        window.authBridge.minimizeWindow();
+      }
+    }
+
+    function closeWindow() {
+      if (window.authBridge && typeof window.authBridge.closeWindow === 'function') {
+        window.authBridge.closeWindow();
+      } else if (window.authBridge && window.authBridge.quitApp) {
+        window.authBridge.quitApp();
+      }
+    }
+
+    // ═══════════════════════════════════════
+    // TOAST NOTIFICATIONS
+    // ═══════════════════════════════════════
+    function showToast(text, type) {
+      const toast = document.getElementById('toast');
+      const icon = document.getElementById('toastIcon');
+      const textEl = document.getElementById('toastText');
+      
+      const existingAction = toast.querySelector('.toast-action');
+      if (existingAction) existingAction.remove();
+      
+      if (textEl) textEl.textContent = text;
+      toast.className = `toast ${type}`;
+      
+      if (icon) {
+        icon.innerHTML = type === 'success' 
+          ? '<circle cx="12" cy="12" r="10"/><polyline points="9 12 12 15 22 5"/>'
+          : '<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>';
+      }
+      
+      setTimeout(() => toast.classList.add('show'), 10);
+      setTimeout(() => toast.classList.remove('show'), 3500);
+    }
+
+    function showToastWithAction(text, type, actionText, actionCallback) {
+      const toast = document.getElementById('toast');
+      const icon = document.getElementById('toastIcon');
+      const textEl = document.getElementById('toastText');
+      
+      const existingAction = toast.querySelector('.toast-action');
+      if (existingAction) existingAction.remove();
+      
+      if (textEl) textEl.textContent = text;
+      toast.className = `toast ${type}`;
+      
+      if (icon) {
+        icon.innerHTML = type === 'success' 
+          ? '<circle cx="12" cy="12" r="10"/><polyline points="9 12 12 15 22 5"/>'
+          : '<circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/>';
+      }
+      
+      if (actionText && actionCallback) {
+        const actionBtn = document.createElement('button');
+        actionBtn.className = 'toast-action';
+        actionBtn.textContent = actionText;
+        actionBtn.onclick = (e) => {
+          e.stopPropagation();
+          actionCallback();
+        };
+        toast.insertBefore(actionBtn, textEl);
+      }
+      
+      setTimeout(() => toast.classList.add('show'), 10);
+      setTimeout(() => toast.classList.remove('show'), 3500);
+    }
+
+    // Enter key to activate
+    document.addEventListener('keydown', (e) => {
+      const input = document.getElementById('licenseKey');
+      if (e.target === input && (e.key === 'Enter' && e.ctrlKey) || (e.key === 'Enter' && input.value.trim())) {
+        if (input.value.trim()) {
+          activateLicense();
+        }
+      }
+    });
+
+    // ═══════════════════════════════════════
+    // PASTE FROM CLIPBOARD
+    // ═══════════════════════════════════════
+    async function pasteFromClipboard() {
+      try {
+        const text = await navigator.clipboard.readText();
+        const input = document.getElementById('licenseKey');
+        if (input && text) {
+          input.value = text.trim();
+          input.focus();
+          validateLicenseInput();
+          showToast('تم لصق المفتاح', 'success');
+        }
+      } catch (error) {
+        showToast('فشل في اللصق من الحافظة', 'error');
+      }
+    }
+
+    // ═══════════════════════════════════════
+    // TOGGLE HELP SECTION
+    // ═══════════════════════════════════════
+    function toggleHelp() {
+      const helpCard = document.querySelector('.help-card');
+      if (helpCard) {
+        helpCard.classList.toggle('open');
+      }
+    }
+
+    // ═══════════════════════════════════════
+    // VALIDATE LICENSE INPUT (visual feedback)
+    // ═══════════════════════════════════════
+    function validateLicenseInput() {
+      const input = document.getElementById('licenseKey');
+      const errorEl = document.getElementById('licenseError');
+      const successEl = document.getElementById('licenseSuccess');
+      const value = input.value.trim();
+
+      // Reset states
+      input.classList.remove('error', 'valid');
+      if (errorEl) errorEl.classList.remove('show');
+      if (successEl) successEl.classList.remove('show');
+
+      if (value.length === 0) return;
+
+      // Basic validation: check if it looks like a license key (has some content)
+      if (value.length >= 20) {
+        input.classList.add('valid');
+        if (successEl) successEl.classList.add('show');
+        updateStepper(3);
+      } else if (value.length > 0 && value.length < 10) {
+        // Too short
+        input.classList.remove('valid');
+      }
+    }
+
+    // ═══════════════════════════════════════
+    // UPDATE STEPPER STATE
+    // ═══════════════════════════════════════
+    function updateStepper(activeStep) {
+      const steps = [
+        document.getElementById('step1'),
+        document.getElementById('step2'),
+        document.getElementById('step3')
+      ];
+      const connectors = [
+        document.getElementById('connector1'),
+        document.getElementById('connector2')
+      ];
+
+      steps.forEach((step, index) => {
+        if (!step) return;
+        step.classList.remove('active', 'completed');
+
+        if (index + 1 < activeStep) {
+          step.classList.add('completed');
+        } else if (index + 1 === activeStep) {
+          step.classList.add('active');
+        }
+      });
+
+      connectors.forEach((conn, index) => {
+        if (!conn) return;
+        conn.classList.remove('active', 'completed');
+
+        if (index + 1 < activeStep) {
+          conn.classList.add('completed');
+        } else if (index + 1 === activeStep) {
+          conn.classList.add('active');
+        }
+      });
+
+      // Re-render icons after state change
+      if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+      }
+    }
+
+    // ═══════════════════════════════════════
+    // SUCCESS ANIMATION
+    // ═══════════════════════════════════════
+    function showSuccessAnimation() {
+      const btn = document.getElementById('activateBtn');
+      if (btn) {
+        btn.classList.add('success');
+        setTimeout(() => {
+          btn.classList.remove('success');
+        }, 2000);
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // 🔀 MODE SELECTION FUNCTIONS
+    // ═══════════════════════════════════════════════════════════════════
+    let currentMode = null; // 'server' or 'client'
+    let selectedServer = null; // { ip, port, name, license }
+
+    function selectMode(mode) {
+      currentMode = mode;
+
+      // تحديث الكروت المختارة
+      document.getElementById('serverModeCard').classList.remove('selected');
+      document.getElementById('clientModeCard').classList.remove('selected');
+      document.getElementById(`${mode}ModeCard`).classList.add('selected');
+
+      // إخفاء قسم اختيار الوضع
+      document.getElementById('modeSelection').style.display = 'none';
+
+      if (mode === 'server') {
+        // عرض واجهة التفعيل العادية
+        document.getElementById('serverModeSection').style.display = 'block';
+        document.getElementById('clientModeSection').style.display = 'none';
+        document.getElementById('serverActionBar').style.display = 'flex';
+        document.getElementById('clientActionBar').style.display = 'none';
+
+        // تحديث العنوان
+        document.getElementById('pageTitle').textContent = 'تفعيل الجهاز الرئيسي';
+        document.getElementById('reassuranceText').textContent =
+          'لا يتم حفظ بيانات شخصية. يتم استخدام معرّف الجهاز للتحقق من الترخيص فقط.';
+      } else {
+        // عرض واجهة البحث عن السيرفر
+        document.getElementById('serverModeSection').style.display = 'none';
+        document.getElementById('clientModeSection').style.display = 'block';
+        document.getElementById('serverActionBar').style.display = 'none';
+        document.getElementById('clientActionBar').style.display = 'flex';
+
+        // تحديث العنوان
+        document.getElementById('pageTitle').textContent = 'الاتصال بالجهاز الرئيسي';
+        document.getElementById('reassuranceText').textContent =
+          'سيتم الاتصال بالجهاز الرئيسي واستخدام نفس قاعدة البيانات والترخيص.';
+
+        // بدء البحث تلقائياً
+        setTimeout(() => discoverServers(), 500);
+      }
+
+      // Re-render icons
+      if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+      }
+    }
+
+    function goBackToModeSelection() {
+      currentMode = null;
+      selectedServer = null;
+
+      // إعادة إظهار قسم اختيار الوضع
+      document.getElementById('modeSelection').style.display = 'block';
+      document.getElementById('serverModeSection').style.display = 'none';
+      document.getElementById('clientModeSection').style.display = 'none';
+      document.getElementById('serverActionBar').style.display = 'none';
+      document.getElementById('clientActionBar').style.display = 'none';
+
+      // إعادة تعيين الكروت
+      document.getElementById('serverModeCard').classList.remove('selected');
+      document.getElementById('clientModeCard').classList.remove('selected');
+
+      // إعادة العنوان
+      document.getElementById('pageTitle').textContent = 'تفعيل البرنامج';
+      document.getElementById('reassuranceText').textContent =
+        'لا يتم حفظ بيانات شخصية. يتم استخدام معرّف الجهاز للتحقق من الترخيص فقط.';
+
+      // إخفاء نتائج البحث
+      document.getElementById('serversList').style.display = 'none';
+      document.getElementById('manualInput').style.display = 'none';
+      document.getElementById('connectionResult').style.display = 'none';
+
+      // تعطيل زر الاتصال
+      document.getElementById('connectBtn').disabled = true;
+
+      // Re-render icons
+      if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // 🔍 SERVER DISCOVERY FUNCTIONS
+    // ═══════════════════════════════════════════════════════════════════
+    async function discoverServers() {
+      const discoverBtn = document.getElementById('discoverBtn');
+      const serversList = document.getElementById('serversList');
+      const serversContainer = document.getElementById('serversContainer');
+      const refreshBtn = document.querySelector('.refresh-btn');
+
+      // إظهار حالة التحميل
+      discoverBtn.classList.add('loading');
+      if (refreshBtn) refreshBtn.classList.add('spinning');
+      discoverBtn.innerHTML = '<i data-lucide="loader"></i><span>جاري البحث...</span>';
+
+      try {
+        // استدعاء API للبحث عن السيرفرات
+        const response = await fetch(`${API_BASE}/api/network/discover`);
+        const data = await response.json();
+
+        serversList.style.display = 'block';
+
+        if (data.servers && data.servers.length > 0) {
+          // عرض السيرفرات المكتشفة
+          serversContainer.innerHTML = data.servers.map(server => `
+            <div class="server-item" onclick="selectServer('${server.ip}', ${server.port}, '${server.name}')">
+              <div class="server-item-icon">🖥️</div>
+              <div class="server-item-info">
+                <div class="server-item-name">${server.name}</div>
+                <div class="server-item-ip">${server.ip}:${server.port}</div>
+              </div>
+            </div>
+          `).join('');
+        } else {
+          // لا يوجد سيرفرات
+          serversContainer.innerHTML = `
+            <div class="no-servers">
+              <i data-lucide="server-off"></i>
+              <p>لم يتم العثور على أجهزة</p>
+              <p style="font-size: 12px;">تأكد من أن الجهاز الرئيسي يعمل</p>
+            </div>
+          `;
+        }
+      } catch (error) {
+        console.error('[CLIENT] Discovery error:', error);
+        serversContainer.innerHTML = `
+          <div class="no-servers">
+            <i data-lucide="wifi-off"></i>
+            <p>خطأ في البحث</p>
+            <p style="font-size: 12px;">${error.message}</p>
+          </div>
+        `;
+        serversList.style.display = 'block';
+      }
+
+      // إعادة الزر لحالته الأصلية
+      discoverBtn.classList.remove('loading');
+      if (refreshBtn) refreshBtn.classList.remove('spinning');
+      discoverBtn.innerHTML = '<i data-lucide="radar"></i><span>بحث تلقائي</span>';
+
+      // Re-render icons
+      if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+      }
+    }
+
+    function showManualInput() {
+      const manualInput = document.getElementById('manualInput');
+      manualInput.style.display = manualInput.style.display === 'none' ? 'block' : 'none';
+
+      // Re-render icons
+      if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+      }
+    }
+
+    async function selectServer(ip, port, name) {
+      // تحديد السيرفر المختار
+      document.querySelectorAll('.server-item').forEach(item => {
+        item.classList.remove('selected');
+      });
+      event.currentTarget.classList.add('selected');
+
+      // محاولة الحصول على معلومات السيرفر
+      await fetchServerInfo(ip, port, name);
+    }
+
+    async function testConnection() {
+      const ip = document.getElementById('serverIP').value.trim();
+      const port = document.getElementById('serverPort').value.trim() || '48572';
+
+      if (!ip) {
+        showToast('يرجى إدخال عنوان IP', 'error');
+        return;
+      }
+
+      await fetchServerInfo(ip, parseInt(port), 'سيرفر');
+    }
+
+    async function fetchServerInfo(ip, port, name) {
+      const connectionResult = document.getElementById('connectionResult');
+      const connectionSuccess = document.getElementById('connectionSuccess');
+      const serverLicenseInfo = document.getElementById('serverLicenseInfo');
+      const connectBtn = document.getElementById('connectBtn');
+
+      showToast('جاري الاتصال...', 'success');
+      console.log(`[CLIENT] Attempting to connect to http://${ip}:${port}`);
+
+      try {
+        // أولاً: اختبار ping للتأكد من أن السيرفر يستجيب
+        console.log('[CLIENT] Step 1: Testing ping...');
+        const pingController = new AbortController();
+        const pingTimeout = setTimeout(() => pingController.abort(), 10000);
+
+        try {
+          const pingResponse = await fetch(`http://${ip}:${port}/api/network/ping`, {
+            signal: pingController.signal
+          });
+          clearTimeout(pingTimeout);
+          const pingData = await pingResponse.json();
+          console.log('[CLIENT] Ping response:', pingData);
+
+          if (!pingData.success) {
+            throw new Error('السيرفر لا يستجيب');
+          }
+        } catch (pingError) {
+          clearTimeout(pingTimeout);
+          console.error('[CLIENT] Ping failed:', pingError);
+          throw new Error(`فشل الاتصال بالسيرفر: ${pingError.name === 'AbortError' ? 'انتهت مهلة الاتصال' : pingError.message}`);
+        }
+
+        // ثانياً: جلب معلومات السيرفر
+        console.log('[CLIENT] Step 2: Fetching client-info...');
+        const infoController = new AbortController();
+        const infoTimeout = setTimeout(() => infoController.abort(), 15000);
+
+        const response = await fetch(`http://${ip}:${port}/api/network/client-info`, {
+          signal: infoController.signal
+        });
+        clearTimeout(infoTimeout);
+
+        console.log('[CLIENT] Response status:', response.status);
+        const responseText = await response.text();
+        console.log('[CLIENT] Response text:', responseText);
+
+        let data;
+        try {
+          data = JSON.parse(responseText);
+        } catch (parseError) {
+          console.error('[CLIENT] JSON parse error:', parseError);
+          throw new Error('استجابة غير صالحة من السيرفر');
+        }
+
+        connectionResult.style.display = 'block';
+
+        if (data.success && data.serverActivated) {
+          // تم الاتصال بنجاح
+          selectedServer = {
+            ip: ip,
+            port: port,
+            name: data.serverName || name,
+            companyName: data.companyName,
+            license: data.license
+          };
+
+          connectionSuccess.style.display = 'flex';
+          document.getElementById('connectedServerName').textContent =
+            `تم الاتصال بـ ${selectedServer.name}`;
+          document.getElementById('connectedCompanyName').textContent =
+            selectedServer.companyName || 'ELOS';
+
+          // عرض معلومات الترخيص
+          serverLicenseInfo.style.display = 'block';
+          document.getElementById('serverLicenseType').textContent =
+            data.license.type || 'تجاري';
+
+          // الصلاحية
+          const expiryEl = document.getElementById('serverLicenseExpiry');
+          if (data.license.isLifetime) {
+            expiryEl.textContent = '♾️ مدى الحياة';
+            expiryEl.classList.add('lifetime');
+          } else if (data.license.expiryDate) {
+            const expDate = new Date(data.license.expiryDate);
+            expiryEl.textContent = expDate.toLocaleDateString('ar-EG');
+            expiryEl.classList.remove('lifetime');
+          } else {
+            expiryEl.textContent = '-';
+          }
+
+          // المستخدمين
+          document.getElementById('serverLicenseUsers').textContent =
+            `${data.license.currentUsers} / ${data.license.maxUsers}`;
+
+          // تفعيل زر الاتصال
+          connectBtn.disabled = false;
+
+          showToast('تم الاتصال بنجاح!', 'success');
+        } else {
+          // السيرفر غير مفعل أو خطأ
+          connectionSuccess.style.display = 'none';
+          serverLicenseInfo.style.display = 'none';
+          connectBtn.disabled = true;
+          selectedServer = null;
+
+          const errorMsg = data.error || 'السيرفر غير مفعل';
+          console.warn('[CLIENT] Server not activated:', errorMsg);
+          showToast(errorMsg, 'error');
+        }
+      } catch (error) {
+        console.error('[CLIENT] Connection error:', error);
+        connectionResult.style.display = 'block';
+        connectionSuccess.style.display = 'none';
+        serverLicenseInfo.style.display = 'none';
+        connectBtn.disabled = true;
+        selectedServer = null;
+
+        // عرض رسالة خطأ تفصيلية
+        let errorMessage = 'فشل الاتصال بالسيرفر';
+        if (error.name === 'AbortError') {
+          errorMessage = 'انتهت مهلة الاتصال - تأكد من أن السيرفر يعمل';
+        } else if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+          errorMessage = 'خطأ في الشبكة - تأكد من:\n• السيرفر يعمل\n• Firewall يسمح بالاتصال\n• الجهازين على نفس الشبكة';
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+
+        console.error('[CLIENT] Final error message:', errorMessage);
+        showToast(errorMessage, 'error');
+      }
+
+      // Re-render icons
+      if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // 🔗 CONNECT TO SERVER (للعميل)
+    // ═══════════════════════════════════════════════════════════════════
+    async function connectToServer() {
+      if (!selectedServer) {
+        showToast('يرجى اختيار سيرفر أولاً', 'error');
+        return;
+      }
+
+      const connectBtn = document.getElementById('connectBtn');
+      connectBtn.classList.add('loading');
+      connectBtn.disabled = true;
+
+      try {
+        // تسجيل الجهاز كعميل
+        const registerResponse = await fetch(`http://${selectedServer.ip}:${selectedServer.port}/api/network/register-client`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            machineId: machineIdValue,
+            clientName: 'جهاز فرعي'
+          })
+        });
+
+        const registerData = await registerResponse.json();
+
+        if (registerData.success) {
+          // حفظ إعدادات العميل في localStorage
+          localStorage.setItem('elos_mode', 'client');
+          localStorage.setItem('elos_server_ip', selectedServer.ip);
+          localStorage.setItem('elos_server_port', selectedServer.port.toString());
+          localStorage.setItem('elos_activated', '1');
+          localStorage.setItem('elos_client_connected', '1');
+
+          // ✅ حفظ إعدادات العميل في ملف (لـ main.js)
+          if (window.authBridge && window.authBridge.saveClientConfig) {
+            try {
+              const configResult = await window.authBridge.saveClientConfig({
+                mode: 'client',
+                serverIP: selectedServer.ip,
+                serverPort: selectedServer.port,
+                serverName: selectedServer.name,
+                connectedAt: new Date().toISOString()
+              });
+              console.log('[CLIENT] ✅ Client config saved to file:', configResult);
+            } catch (configError) {
+              console.warn('[CLIENT] Could not save config to file:', configError);
+            }
+          }
+
+          showToast('تم الاتصال بنجاح! جاري إعادة التشغيل...', 'success');
+
+          // إعادة تشغيل التطبيق
+          setTimeout(() => {
+            restartApp();
+          }, 1500);
+        } else {
+          showToast(registerData.error || 'فشل تسجيل الجهاز', 'error');
+          connectBtn.classList.remove('loading');
+          connectBtn.disabled = false;
+        }
+      } catch (error) {
+        console.error('[CLIENT] Registration error:', error);
+        showToast('خطأ في الاتصال بالسيرفر', 'error');
+        connectBtn.classList.remove('loading');
+        connectBtn.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>

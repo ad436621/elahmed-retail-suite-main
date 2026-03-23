@@ -1,0 +1,50 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   ELOS Accounting System - Main CSS Bundle
+   Version: 2.0
+   Description: Imports all CSS modules in the correct order
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/*
+ * HOW TO USE:
+ * -----------
+ * Option 1: Import this single file (recommended)
+ *   <link rel="stylesheet" href="styles/main.css">
+ *
+ * Option 2: Import individual files
+ *   <link rel="stylesheet" href="styles/variables.css">
+ *   <link rel="stylesheet" href="styles/themes/dark.css">
+ *   <link rel="stylesheet" href="styles/themes/light.css">
+ *   <link rel="stylesheet" href="styles/base.css">
+ *   <link rel="stylesheet" href="styles/components.css">
+ *   <link rel="stylesheet" href="styles/layout.css">
+ *   <link rel="stylesheet" href="styles/utilities.css">
+ *   <link rel="stylesheet" href="styles/animations.css">
+ */
+
+/* 1. Design Tokens - Central theme system (MUST BE FIRST) */
+@import url('./tokens.css');
+
+/* 2. Legacy Variables Alias Bridge - Maps old vars to DS tokens */
+@import url('./tokens-alias.css');
+
+/* 3. Variables - CSS Custom Properties (Sizing, spacing, etc.) */
+@import url('./variables.css');
+
+/* 4. Theme Colors - Legacy theme files (kept for backward compatibility, but tokens.css is source of truth) */
+@import url('./themes/dark.css');
+@import url('./themes/light.css');
+
+/* 3. Base - Reset & Typography */
+@import url('./base.css');
+
+/* 4. Components - Buttons, Cards, Forms, etc. */
+@import url('./components.css');
+
+/* 5. Layout - Grid, Flexbox, Page Structure */
+@import url('./layout.css');
+
+/* 6. Utilities - Helper Classes */
+@import url('./utilities.css');
+
+/* 7. Animations - Transitions & Effects */
+@import url('./animations.css');

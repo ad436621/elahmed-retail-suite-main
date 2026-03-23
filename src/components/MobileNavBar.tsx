@@ -101,7 +101,8 @@ export default function MobileNavBar() {
                             {/* الخدمات والحسابات */}
                             <div className="border-t border-border/30 mt-3 pt-1" />
                             <SectionTitle>الخدمات والحسابات</SectionTitle>
-                            {hasPermission('maintenance') && <DrawerLink to="/maintenance" icon={Wrench} label="الصيانة" onClick={() => setMenuOpen(false)} />}
+                            {hasPermission('maintenance') && <DrawerLink to="/maintenance" icon={Wrench} label="تذاكر الصيانة" onClick={() => setMenuOpen(false)} />}
+                            {hasPermission('maintenance') && <DrawerLink to="/maintenance/parts" icon={Wrench} label="قطع الصيانة" onClick={() => setMenuOpen(false)} />}
                             {hasPermission('installments') && <DrawerLink to="/installments" icon={FileText} label="التقسيط" onClick={() => setMenuOpen(false)} />}
                             {hasPermission('returns') && <DrawerLink to="/returns" icon={RotateCcw} label="المرتجعات" onClick={() => setMenuOpen(false)} />}
                             {hasPermission('expenses') && <DrawerLink to="/expenses" icon={TrendingDown} label="المصروفات" onClick={() => setMenuOpen(false)} />}

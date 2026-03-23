@@ -1,0 +1,3603 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   ELOS POS Page - Overrides & Fixes
+   Version: 2.1
+   Description: Override conflicting styles for POS page modals and components
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════
+   MODAL FIXES - Full screen centered, NO blur
+   Fixed: Modal positioning and centering for RTL
+   ═══════════════════════════════════════ */
+
+/*
+ * ROOT CAUSE FIX:
+ * components.css defines .modal with position:relative and transform
+ * which breaks fixed positioning. We override ALL properties here.
+ */
+.modal {
+  /* Reset & Override */
+  display: none;
+  position: fixed !important;
+  inset: 0 !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: none !important;
+  max-height: none !important;
+  margin: 0 !important;
+  padding: 20px !important;
+
+  /* Overlay Background */
+  background: rgba(0, 0, 0, 0.7) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+
+  /* Flexbox Centering - works with RTL */
+  align-items: center !important;
+  justify-content: center !important;
+
+  /* CRITICAL: Remove any transform that breaks fixed positioning */
+  transform: none !important;
+
+  /* High z-index */
+  z-index: 2000 !important;
+  box-sizing: border-box !important;
+
+  /* No border/radius on overlay itself */
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+
+  /* Smooth transition */
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+/* Show modal when active or display:flex is set */
+.modal.active,
+.modal.show,
+.modal[style*="display: flex"] {
+  display: flex !important;
+  opacity: 1;
+  visibility: visible;
+}
+
+/*
+ * MODAL CONTENT - The actual dialog box
+ * Centered via parent flexbox, no transforms needed
+ */
+.modal .modal-content,
+.modal > .modal-content {
+  /* Positioning - relative to flex parent, auto-centered */
+  position: relative !important;
+  margin: auto !important;
+
+  /* Reset any positioning offsets */
+  left: auto !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: auto !important;
+  inset: auto !important;
+
+  /* CRITICAL: No transform to avoid breaking stacking */
+  transform: none !important;
+
+  /* Size constraints */
+  width: 95% !important;
+  max-width: 700px !important;
+  max-height: calc(100vh - 40px) !important;
+
+  /* Appearance */
+  background: linear-gradient(180deg, #252b38 0%, #1a1f29 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 20px !important;
+  box-shadow:
+    0 25px 80px rgba(0, 0, 0, 0.7),
+    0 0 0 1px rgba(255, 255, 255, 0.05) inset,
+    0 1px 0 rgba(255, 255, 255, 0.1) inset !important;
+
+  /* Content handling */
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+
+  /* Ensure visibility */
+  opacity: 1 !important;
+  visibility: visible !important;
+  filter: none !important;
+
+  /* Animation */
+  animation: modalContentSlideIn 0.25s ease-out;
+}
+
+@keyframes modalContentSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.modal .modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 24px;
+  border-bottom: 1px solid rgba(59, 130, 246, 0.3);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.2) 0%, rgba(168, 85, 247, 0.15) 100%);
+}
+
+.modal .modal-body {
+  padding: 24px;
+  max-height: calc(90vh - 140px);
+  overflow-y: auto;
+  background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.1) 100%);
+}
+
+.modal .modal-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 24px;
+  border-top: 1px solid rgba(148, 163, 184, 0.15);
+  background: rgba(15, 23, 42, 0.5);
+}
+
+/* ═══════════════════════════════════════
+   UNIFIED CHECKOUT MODAL FIX
+   ═══════════════════════════════════════ */
+
+.unified-checkout-modal {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(12px);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+
+.unified-checkout-modal.active {
+  display: flex !important;
+}
+
+.unified-checkout-container {
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform: none !important;
+}
+
+/* ═══════════════════════════════════════
+   CASH DRAWER MODAL FIX
+   ═══════════════════════════════════════ */
+
+.cash-drawer-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(12px);
+  z-index: 1000;
+  align-items: center;
+  justify-content: center;
+}
+
+.cash-drawer-overlay.active {
+  display: flex !important;
+}
+
+/* ═══════════════════════════════════════
+   FONT SIZE INCREASES
+   ═══════════════════════════════════════ */
+
+body {
+  font-size: 17px !important;
+}
+
+.kpi strong,
+.kpi-value {
+  font-size: 38px !important;
+  font-weight: 900 !important;
+}
+
+.kpi-label,
+.kpi span {
+  font-size: 15px !important;
+}
+
+.inventory-tab span,
+.tab-text {
+  font-size: 16px !important;
+}
+
+#q,
+.search input {
+  font-size: 17px !important;
+  height: 52px !important;
+}
+
+.nav-btn,
+.quick-btn,
+.filter-btn {
+  font-size: 15px !important;
+}
+
+.cart-title span {
+  font-size: 20px !important;
+}
+
+.summary-label {
+  font-size: 16px !important;
+}
+
+.summary-value {
+  font-size: 18px !important;
+}
+
+.summary-row.total .summary-value {
+  font-size: 26px !important;
+  font-weight: 900 !important;
+}
+
+.btn-checkout-text {
+  font-size: 20px !important;
+}
+
+.btn-checkout-amount {
+  font-size: 22px !important;
+}
+
+.card-title,
+.device-model {
+  font-size: 17px !important;
+}
+
+.card-price,
+.device-price {
+  font-size: 20px !important;
+}
+
+.quick-btn-text {
+  font-size: 14px !important;
+}
+
+.recent-sales-title {
+  font-size: 16px !important;
+}
+
+.modal .modal-title {
+  font-size: 20px !important;
+  color: #f1f5f9 !important;
+}
+
+.modal label {
+  font-size: 15px !important;
+  color: #93c5fd !important;
+  font-weight: 700 !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+}
+
+.modal input,
+.modal select,
+.modal textarea {
+  font-size: 16px !important;
+  background: #1e293b !important;
+  border: 2px solid #475569 !important;
+  border-radius: 10px !important;
+  color: #f1f5f9 !important;
+  padding: 12px 14px !important;
+}
+
+.modal input:hover,
+.modal select:hover,
+.modal textarea:hover {
+  border-color: #64748b !important;
+  background: #334155 !important;
+}
+
+.modal input:focus,
+.modal select:focus,
+.modal textarea:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3) !important;
+  background: #334155 !important;
+}
+
+.modal input::placeholder {
+  color: #94a3b8 !important;
+}
+
+.modal .btn,
+.modal button {
+  font-size: 16px !important;
+}
+
+/* ═══════════════════════════════════════
+   THEME TOGGLE BUTTON STYLING
+   ═══════════════════════════════════════ */
+
+.theme-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  color: var(--text-primary, var(--ink));
+}
+
+.theme-toggle-btn:hover {
+  background: var(--warning, #f59e0b);
+  border-color: var(--warning, #f59e0b);
+  transform: scale(1.1);
+  color: white;
+}
+
+.theme-toggle-btn svg,
+.theme-toggle-btn [data-lucide] {
+  width: 22px;
+  height: 22px;
+}
+
+/* ═══════════════════════════════════════
+   FORM INPUTS LARGER
+   ═══════════════════════════════════════ */
+
+.form-input,
+.form-select {
+  font-size: 16px !important;
+  padding: 12px 16px !important;
+  min-height: 48px !important;
+}
+
+/* ═══════════════════════════════════════
+   TABLE TEXT LARGER
+   ═══════════════════════════════════════ */
+
+table th {
+  font-size: 14px !important;
+}
+
+table td {
+  font-size: 15px !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   🌞 LIGHT THEME - UNIFIED PROFESSIONAL DESIGN
+   Color Palette: White (#fff), Light Gray (#f1f5f9), Blue (#3b82f6), Green (#10b981)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════
+   BASE COLORS
+   ═══════════════════════════════════════ */
+
+[data-theme="light"],
+html.light-mode,
+body.light-theme {
+  --bg: #f1f5f9 !important;
+  --bg-glass: rgba(255, 255, 255, 0.95) !important;
+  --ink: #0f172a !important;
+  --muted: #64748b !important;
+  --card: #ffffff !important;
+  --card-hover: #f8fafc !important;
+  --line: #e2e8f0 !important;
+  --brand: #3b82f6 !important;
+  --success: #10b981 !important;
+  --danger: #ef4444 !important;
+  --warning: #f59e0b !important;
+}
+
+[data-theme="light"] body,
+html.light-mode body,
+body.light-theme {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+/* Header */
+[data-theme="light"] .pos-header,
+[data-theme="light"] header,
+[data-theme="light"] .header,
+html.light-mode .pos-header,
+html.light-mode header,
+html.light-mode .header {
+  background: #ffffff !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+}
+
+[data-theme="light"] .pos-header .page-title,
+[data-theme="light"] .header .page-title,
+html.light-mode .pos-header .page-title,
+html.light-mode .header .page-title {
+  color: #0f172a !important;
+}
+
+/* Footer */
+[data-theme="light"] .pos-footer,
+[data-theme="light"] footer,
+[data-theme="light"] .footer,
+html.light-mode .pos-footer,
+html.light-mode footer,
+html.light-mode .footer {
+  background: #ffffff !important;
+  border-top: 1px solid #e2e8f0 !important;
+  color: #64748b !important;
+}
+
+[data-theme="light"] footer *,
+html.light-mode footer * {
+  color: #64748b !important;
+}
+
+/* ═══════════════════════════════════════
+   CART SECTION - LIGHT THEME (UNIFIED)
+   ═══════════════════════════════════════ */
+
+/* Target the actual class names in pos.html */
+[data-theme="light"] .unified-cart-section,
+[data-theme="light"] .cart-section,
+[data-theme="light"] .sidebar-cart,
+html.light-mode .unified-cart-section,
+html.light-mode .cart-section,
+html.light-mode .sidebar-cart,
+html.light-theme .unified-cart-section,
+html.light-theme .cart-section,
+html.light-theme .sidebar-cart {
+  background: #ffffff !important;
+  border-left: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .unified-section-header,
+[data-theme="light"] .cart-header,
+html.light-mode .unified-section-header,
+html.light-mode .cart-header,
+html.light-theme .unified-section-header,
+html.light-theme .cart-header {
+  background: #f8fafc !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .section-title,
+[data-theme="light"] .cart-title,
+[data-theme="light"] .cart-title *,
+html.light-mode .section-title,
+html.light-mode .cart-title,
+html.light-mode .cart-title * {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .section-count,
+[data-theme="light"] .cart-count,
+html.light-mode .section-count,
+html.light-mode .cart-count {
+  background: #3b82f6 !important;
+  color: #ffffff !important;
+}
+
+/* Cart Items */
+[data-theme="light"] .unified-cart-item,
+[data-theme="light"] .cart-item,
+html.light-mode .unified-cart-item,
+html.light-mode .cart-item,
+html.light-theme .unified-cart-item,
+html.light-theme .cart-item {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .unified-cart-item:hover,
+[data-theme="light"] .cart-item:hover,
+html.light-mode .unified-cart-item:hover,
+html.light-mode .cart-item:hover,
+html.light-theme .unified-cart-item:hover,
+html.light-theme .cart-item:hover {
+  background: #f1f5f9 !important;
+  border-color: #3b82f6 !important;
+}
+
+[data-theme="light"] .cart-item-icon,
+html.light-mode .cart-item-icon {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.08) 100%) !important;
+}
+
+[data-theme="light"] .cart-item-name,
+html.light-mode .cart-item-name {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .cart-item-details,
+[data-theme="light"] .cart-item-qty,
+html.light-mode .cart-item-details,
+html.light-mode .cart-item-qty {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .cart-item-price,
+html.light-mode .cart-item-price {
+  color: #10b981 !important;
+}
+
+/* Summary Section */
+[data-theme="light"] .unified-summary,
+[data-theme="light"] .cart-summary,
+html.light-mode .unified-summary,
+html.light-mode .cart-summary {
+  background: #f8fafc !important;
+  border-top: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .summary-row,
+html.light-mode .summary-row {
+  border-bottom-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .summary-label,
+html.light-mode .summary-label {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .summary-value,
+html.light-mode .summary-value {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .summary-row.total,
+html.light-mode .summary-row.total {
+  background: #f1f5f9 !important;
+}
+
+[data-theme="light"] .summary-row.total .summary-label,
+html.light-mode .summary-row.total .summary-label {
+  color: #334155 !important;
+}
+
+[data-theme="light"] .summary-row.total .summary-value,
+html.light-mode .summary-row.total .summary-value {
+  color: #10b981 !important;
+}
+
+/* Checkout & Action Buttons */
+[data-theme="light"] .unified-checkout-btn,
+[data-theme="light"] .btn-checkout,
+html.light-mode .unified-checkout-btn,
+html.light-mode .btn-checkout {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+[data-theme="light"] .unified-checkout-btn:hover,
+[data-theme="light"] .btn-checkout:hover,
+html.light-mode .unified-checkout-btn:hover,
+html.light-mode .btn-checkout:hover {
+  background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+}
+
+[data-theme="light"] .unified-clear-btn,
+[data-theme="light"] .btn-clear,
+[data-theme="light"] .clear-cart-btn,
+html.light-mode .unified-clear-btn,
+html.light-mode .btn-clear,
+html.light-mode .clear-cart-btn {
+  background: #fef2f2 !important;
+  border: 1px solid #fecaca !important;
+  color: #dc2626 !important;
+}
+
+[data-theme="light"] .unified-clear-btn:hover,
+[data-theme="light"] .btn-clear:hover,
+html.light-mode .unified-clear-btn:hover,
+html.light-mode .btn-clear:hover {
+  background: #fee2e2 !important;
+  border-color: #f87171 !important;
+}
+
+/* Quick Action Buttons */
+[data-theme="light"] .unified-quick-actions .quick-btn,
+[data-theme="light"] .quick-actions .quick-btn,
+html.light-mode .unified-quick-actions .quick-btn,
+html.light-mode .quick-actions .quick-btn {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #475569 !important;
+}
+
+[data-theme="light"] .unified-quick-actions .quick-btn:hover,
+[data-theme="light"] .quick-actions .quick-btn:hover,
+html.light-mode .unified-quick-actions .quick-btn:hover,
+html.light-mode .quick-actions .quick-btn:hover {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+/* Cash Drawer */
+[data-theme="light"] .unified-cash-drawer,
+[data-theme="light"] .cash-drawer-btn,
+[data-theme="light"] .cash-drawer-section,
+html.light-mode .unified-cash-drawer,
+html.light-mode .cash-drawer-btn,
+html.light-mode .cash-drawer-section {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  border: none !important;
+  color: #ffffff !important;
+}
+
+/* Empty Cart */
+[data-theme="light"] .unified-empty-cart,
+[data-theme="light"] .empty-cart,
+html.light-mode .unified-empty-cart,
+html.light-mode .empty-cart {
+  color: #94a3b8 !important;
+}
+
+[data-theme="light"] .unified-empty-cart svg,
+[data-theme="light"] .empty-cart svg,
+html.light-mode .unified-empty-cart svg,
+html.light-mode .empty-cart svg {
+  color: #cbd5e1 !important;
+}
+
+/* Recent Sales in Cart */
+[data-theme="light"] .unified-recent-sales,
+[data-theme="light"] .recent-sales,
+html.light-mode .unified-recent-sales,
+html.light-mode .recent-sales {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .unified-recent-sales .recent-sales-title,
+[data-theme="light"] .recent-sales .recent-sales-title,
+html.light-mode .unified-recent-sales .recent-sales-title,
+html.light-mode .recent-sales .recent-sales-title {
+  color: #0f172a !important;
+}
+
+/* ═══════════════════════════════════════
+   MAIN CONTENT AREA
+   ═══════════════════════════════════════ */
+
+[data-theme="light"] .unified-products-section,
+[data-theme="light"] .main-area,
+[data-theme="light"] .products-section,
+[data-theme="light"] main,
+[data-theme="light"] .content-area,
+html.light-mode .unified-products-section,
+html.light-mode .main-area,
+html.light-mode .products-section,
+html.light-mode main,
+html.light-mode .content-area {
+  background: #f1f5f9 !important;
+}
+
+/* Products Grid */
+[data-theme="light"] .unified-products-grid,
+[data-theme="light"] .products-grid,
+html.light-mode .unified-products-grid,
+html.light-mode .products-grid {
+  background: #f1f5f9 !important;
+}
+
+/* ═══════════════════════════════════════
+   KPI CARDS - VIBRANT COLORS
+   ═══════════════════════════════════════ */
+
+[data-theme="light"] .kpi,
+[data-theme="light"] .stat-card,
+html.light-mode .kpi,
+html.light-mode .stat-card {
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12) !important;
+  border: none !important;
+}
+
+[data-theme="light"] .kpi .kpi-label,
+[data-theme="light"] .kpi span:not(strong),
+[data-theme="light"] .stat-card .stat-label,
+html.light-mode .kpi .kpi-label,
+html.light-mode .kpi span:not(strong),
+html.light-mode .stat-card .stat-label {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+[data-theme="light"] .kpi strong,
+[data-theme="light"] .kpi .kpi-value,
+[data-theme="light"] .stat-card .stat-value,
+html.light-mode .kpi strong,
+html.light-mode .kpi .kpi-value,
+html.light-mode .stat-card .stat-value {
+  color: #ffffff !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.15) !important;
+}
+
+[data-theme="light"] .kpi svg,
+[data-theme="light"] .kpi [data-lucide],
+html.light-mode .kpi svg,
+html.light-mode .kpi [data-lucide] {
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* ═══════════════════════════════════════
+   TABS
+   ═══════════════════════════════════════ */
+
+[data-theme="light"] .inventory-tabs,
+[data-theme="light"] .tabs-container,
+[data-theme="light"] .tab-list,
+html.light-mode .inventory-tabs,
+html.light-mode .tabs-container,
+html.light-mode .tab-list {
+  background: #e2e8f0 !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 12px !important;
+}
+
+[data-theme="light"] .inventory-tab,
+[data-theme="light"] .tab-item,
+html.light-mode .inventory-tab,
+html.light-mode .tab-item {
+  background: transparent !important;
+  color: #64748b !important;
+  border: none !important;
+}
+
+[data-theme="light"] .inventory-tab:hover,
+[data-theme="light"] .tab-item:hover,
+html.light-mode .inventory-tab:hover,
+html.light-mode .tab-item:hover {
+  color: #334155 !important;
+  background: rgba(255, 255, 255, 0.5) !important;
+}
+
+[data-theme="light"] .inventory-tab.active,
+[data-theme="light"] .tab-item.active,
+html.light-mode .inventory-tab.active,
+html.light-mode .tab-item.active {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="light"] .inventory-tab .tab-count,
+[data-theme="light"] .tab-badge,
+html.light-mode .inventory-tab .tab-count,
+html.light-mode .tab-badge {
+  background: #3b82f6 !important;
+  color: #ffffff !important;
+}
+
+/* ═══════════════════════════════════════
+   SEARCH & FILTERS
+   ═══════════════════════════════════════ */
+
+[data-theme="light"] .search-section,
+[data-theme="light"] .filters-section,
+[data-theme="light"] .search-container,
+html.light-mode .search-section,
+html.light-mode .filters-section,
+html.light-mode .search-container {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+}
+
+[data-theme="light"] .search input,
+[data-theme="light"] #q,
+[data-theme="light"] input[type="text"],
+[data-theme="light"] input[type="search"],
+html.light-mode .search input,
+html.light-mode #q,
+html.light-mode input[type="text"],
+html.light-mode input[type="search"] {
+  background: #f8fafc !important;
+  border: 2px solid #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .search input:focus,
+[data-theme="light"] #q:focus,
+html.light-mode .search input:focus,
+html.light-mode #q:focus {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
+  background: #ffffff !important;
+}
+
+[data-theme="light"] .search input::placeholder,
+[data-theme="light"] #q::placeholder,
+html.light-mode .search input::placeholder,
+html.light-mode #q::placeholder {
+  color: #94a3b8 !important;
+}
+
+[data-theme="light"] .search-icon,
+[data-theme="light"] .search svg,
+html.light-mode .search-icon,
+html.light-mode .search svg {
+  color: #64748b !important;
+}
+
+/* Filter/Brand buttons */
+[data-theme="light"] .filter-btn,
+[data-theme="light"] .brand-btn,
+[data-theme="light"] .brand-filter,
+html.light-mode .filter-btn,
+html.light-mode .brand-btn,
+html.light-mode .brand-filter {
+  background: #ffffff !important;
+  border: 2px solid #e2e8f0 !important;
+  color: #475569 !important;
+  font-weight: 500 !important;
+}
+
+[data-theme="light"] .filter-btn:hover,
+[data-theme="light"] .brand-btn:hover,
+html.light-mode .filter-btn:hover,
+html.light-mode .brand-btn:hover {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+  color: #1e293b !important;
+}
+
+[data-theme="light"] .filter-btn.active,
+[data-theme="light"] .brand-btn.active,
+html.light-mode .filter-btn.active,
+html.light-mode .brand-btn.active {
+  background: #3b82f6 !important;
+  border-color: #3b82f6 !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+
+/* Dropdown select */
+[data-theme="light"] select,
+[data-theme="light"] .form-select,
+html.light-mode select,
+html.light-mode .form-select {
+  background: #ffffff !important;
+  border: 2px solid #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] select:focus,
+html.light-mode select:focus {
+  border-color: #3b82f6 !important;
+}
+
+/* ═══════════════════════════════════════
+   PRODUCT/DEVICE CARDS
+   ═══════════════════════════════════════ */
+
+[data-theme="light"] .device-card,
+[data-theme="light"] .accessory-card,
+[data-theme="light"] .product-card,
+html.light-mode .device-card,
+html.light-mode .accessory-card,
+html.light-mode .product-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06) !important;
+  transition: all 0.2s ease !important;
+}
+
+[data-theme="light"] .device-card:hover,
+[data-theme="light"] .accessory-card:hover,
+[data-theme="light"] .product-card:hover,
+html.light-mode .device-card:hover,
+html.light-mode .accessory-card:hover,
+html.light-mode .product-card:hover {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15) !important;
+  transform: translateY(-2px) !important;
+}
+
+[data-theme="light"] .device-model,
+[data-theme="light"] .card-title,
+[data-theme="light"] .accessory-name,
+[data-theme="light"] .product-name,
+html.light-mode .device-model,
+html.light-mode .card-title,
+html.light-mode .accessory-name,
+html.light-mode .product-name {
+  color: #0f172a !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="light"] .device-price,
+[data-theme="light"] .card-price,
+[data-theme="light"] .accessory-price,
+[data-theme="light"] .product-price,
+html.light-mode .device-price,
+html.light-mode .card-price,
+html.light-mode .accessory-price,
+html.light-mode .product-price {
+  color: #059669 !important;
+  font-weight: 800 !important;
+}
+
+[data-theme="light"] .device-info,
+[data-theme="light"] .card-info,
+[data-theme="light"] .accessory-info,
+[data-theme="light"] .product-info,
+[data-theme="light"] .device-specs,
+html.light-mode .device-info,
+html.light-mode .card-info,
+html.light-mode .accessory-info,
+html.light-mode .product-info,
+html.light-mode .device-specs {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .device-imei,
+[data-theme="light"] .barcode,
+html.light-mode .device-imei,
+html.light-mode .barcode {
+  color: #94a3b8 !important;
+  font-family: monospace !important;
+}
+
+/* Card badges */
+[data-theme="light"] .badge,
+[data-theme="light"] .device-badge,
+[data-theme="light"] .status-badge,
+html.light-mode .badge,
+html.light-mode .device-badge,
+html.light-mode .status-badge {
+  font-weight: 600 !important;
+}
+
+[data-theme="light"] .badge-new,
+[data-theme="light"] .badge-جديد,
+html.light-mode .badge-new,
+html.light-mode .badge-جديد {
+  background: #dbeafe !important;
+  color: #1d4ed8 !important;
+}
+
+[data-theme="light"] .badge-used,
+[data-theme="light"] .badge-مستعمل,
+html.light-mode .badge-used,
+html.light-mode .badge-مستعمل {
+  background: #fef3c7 !important;
+  color: #b45309 !important;
+}
+
+[data-theme="light"] .badge-شواحن,
+html.light-mode .badge-شواحن {
+  background: #dcfce7 !important;
+  color: #166534 !important;
+}
+
+/* Quantity controls */
+[data-theme="light"] .qty-btn,
+[data-theme="light"] .quantity-btn,
+html.light-mode .qty-btn,
+html.light-mode .quantity-btn {
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #475569 !important;
+}
+
+[data-theme="light"] .qty-btn:hover,
+[data-theme="light"] .quantity-btn:hover,
+html.light-mode .qty-btn:hover,
+html.light-mode .quantity-btn:hover {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .qty-input,
+[data-theme="light"] .quantity-input,
+html.light-mode .qty-input,
+html.light-mode .quantity-input {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+/* ═══════════════════════════════════════
+   NAV BUTTONS (Header Actions)
+   ═══════════════════════════════════════ */
+
+[data-theme="light"] .nav-btn,
+[data-theme="light"] .action-btn,
+[data-theme="light"] .header-btn,
+html.light-mode .nav-btn,
+html.light-mode .action-btn,
+html.light-mode .header-btn {
+  background: #f1f5f9 !important;
+  border: 2px solid #e2e8f0 !important;
+  color: #475569 !important;
+}
+
+[data-theme="light"] .nav-btn:hover,
+[data-theme="light"] .action-btn:hover,
+[data-theme="light"] .header-btn:hover,
+html.light-mode .nav-btn:hover,
+html.light-mode .action-btn:hover,
+html.light-mode .header-btn:hover {
+  background: #e2e8f0 !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .nav-btn.active,
+html.light-mode .nav-btn.active {
+  background: #3b82f6 !important;
+  border-color: #3b82f6 !important;
+  color: #ffffff !important;
+}
+
+/* Colored action buttons */
+[data-theme="light"] .nav-btn.success,
+[data-theme="light"] .btn-success,
+html.light-mode .nav-btn.success,
+html.light-mode .btn-success {
+  background: #10b981 !important;
+  border-color: #10b981 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .nav-btn.danger,
+[data-theme="light"] .btn-danger,
+html.light-mode .nav-btn.danger,
+html.light-mode .btn-danger {
+  background: #fef2f2 !important;
+  border-color: #fecaca !important;
+  color: #dc2626 !important;
+}
+
+[data-theme="light"] .nav-btn.danger:hover,
+[data-theme="light"] .btn-danger:hover,
+html.light-mode .nav-btn.danger:hover,
+html.light-mode .btn-danger:hover {
+  background: #fee2e2 !important;
+  border-color: #f87171 !important;
+}
+
+[data-theme="light"] .nav-btn.warning,
+[data-theme="light"] .btn-warning,
+html.light-mode .nav-btn.warning,
+html.light-mode .btn-warning {
+  background: #fef3c7 !important;
+  border-color: #fcd34d !important;
+  color: #b45309 !important;
+}
+
+[data-theme="light"] .nav-btn.primary,
+[data-theme="light"] .btn-primary,
+html.light-mode .nav-btn.primary,
+html.light-mode .btn-primary {
+  background: #3b82f6 !important;
+  border-color: #3b82f6 !important;
+  color: #ffffff !important;
+}
+
+/* ═══════════════════════════════════════
+   RECENT SALES SECTION (Outside cart)
+   ═══════════════════════════════════════ */
+
+[data-theme="light"] .recent-sales:not(.cart-section .recent-sales),
+html.light-mode .recent-sales:not(.cart-section .recent-sales) {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05) !important;
+}
+
+[data-theme="light"] .recent-sales:not(.cart-section .recent-sales) .recent-sales-title,
+html.light-mode .recent-sales:not(.cart-section .recent-sales) .recent-sales-title {
+  color: #0f172a !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="light"] .recent-sale-item,
+html.light-mode .recent-sale-item {
+  border-bottom-color: #f1f5f9 !important;
+}
+
+[data-theme="light"] .recent-sale-item:hover,
+html.light-mode .recent-sale-item:hover {
+  background: #f8fafc !important;
+}
+
+/* ═══════════════════════════════════════
+   MODALS
+   ═══════════════════════════════════════ */
+
+[data-theme="light"] .modal,
+html.light-mode .modal {
+  background: rgba(15, 23, 42, 0.6) !important;
+}
+
+[data-theme="light"] .modal .modal-content,
+html.light-mode .modal .modal-content {
+  background: var(--ds-bg-card, #ffffff) !important;
+  border: 1px solid var(--ds-border, #d1d5db) !important;
+  box-shadow: var(--ds-shadow-xl, 0 20px 40px rgba(0, 0, 0, 0.18)) !important;
+}
+
+[data-theme="light"] .modal .modal-header,
+html.light-mode .modal .modal-header {
+  background: var(--ds-bg-tertiary, #e8ecf1) !important;
+  border-bottom: 1px solid var(--ds-border, #d1d5db) !important;
+}
+
+[data-theme="light"] .modal .modal-title,
+html.light-mode .modal .modal-title {
+  color: var(--ds-text, #111827) !important;
+}
+
+[data-theme="light"] .modal .close-btn,
+[data-theme="light"] .modal .modal-close,
+html.light-mode .modal .close-btn,
+html.light-mode .modal .modal-close {
+  color: var(--ds-text-muted, #6b7280) !important;
+}
+
+[data-theme="light"] .modal .close-btn:hover,
+[data-theme="light"] .modal .modal-close:hover,
+html.light-mode .modal .close-btn:hover,
+html.light-mode .modal .modal-close:hover {
+  color: var(--ds-danger, #dc2626) !important;
+  background: rgba(220, 38, 38, 0.1) !important;
+}
+
+[data-theme="light"] .modal .modal-body,
+html.light-mode .modal .modal-body {
+  background: var(--ds-bg-card, #ffffff) !important;
+  color: var(--ds-text, #111827) !important;
+}
+
+[data-theme="light"] .modal .modal-footer,
+html.light-mode .modal .modal-footer {
+  background: var(--ds-bg-tertiary, #e8ecf1) !important;
+  border-top: 1px solid var(--ds-border, #d1d5db) !important;
+}
+
+[data-theme="light"] .modal label,
+html.light-mode .modal label {
+  color: var(--ds-text-secondary, #374151) !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="light"] .modal input,
+[data-theme="light"] .modal select,
+[data-theme="light"] .modal textarea,
+html.light-mode .modal input,
+html.light-mode .modal select,
+html.light-mode .modal textarea {
+  background: var(--ds-bg-secondary, #eef1f5) !important;
+  border: 1px solid var(--ds-border, #d1d5db) !important;
+  color: var(--ds-text, #111827) !important;
+}
+
+[data-theme="light"] .modal input:focus,
+[data-theme="light"] .modal select:focus,
+[data-theme="light"] .modal textarea:focus,
+html.light-mode .modal input:focus,
+html.light-mode .modal select:focus,
+html.light-mode .modal textarea:focus {
+  border-color: var(--ds-brand, #2563eb) !important;
+  box-shadow: 0 0 0 3px var(--ds-brand-light, rgba(37, 99, 235, 0.12)) !important;
+  background: var(--ds-bg-card, #ffffff) !important;
+}
+
+/* ═══════════════════════════════════════
+   TABLES
+   ═══════════════════════════════════════ */
+
+[data-theme="light"] table,
+html.light-mode table {
+  background: #ffffff !important;
+}
+
+[data-theme="light"] table th,
+html.light-mode table th {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="light"] table td,
+html.light-mode table td {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #334155 !important;
+}
+
+[data-theme="light"] table tr:hover td,
+html.light-mode table tr:hover td {
+  background: #f8fafc !important;
+}
+
+[data-theme="light"] table tr:nth-child(even) td,
+html.light-mode table tr:nth-child(even) td {
+  background: #fafafa !important;
+}
+
+/* ═══════════════════════════════════════
+   SCROLLBAR
+   ═══════════════════════════════════════ */
+
+[data-theme="light"] ::-webkit-scrollbar-track,
+html.light-mode ::-webkit-scrollbar-track {
+  background: #f1f5f9 !important;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb,
+html.light-mode ::-webkit-scrollbar-thumb {
+  background: #cbd5e1 !important;
+  border-radius: 4px !important;
+}
+
+[data-theme="light"] ::-webkit-scrollbar-thumb:hover,
+html.light-mode ::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8 !important;
+}
+
+/* ═══════════════════════════════════════
+   TOAST NOTIFICATIONS
+   ═══════════════════════════════════════ */
+
+[data-theme="light"] .toast,
+html.light-mode .toast {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12) !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .toast.success,
+html.light-mode .toast.success {
+  border-right: 4px solid #10b981 !important;
+}
+
+[data-theme="light"] .toast.error,
+html.light-mode .toast.error {
+  border-right: 4px solid #ef4444 !important;
+}
+
+[data-theme="light"] .toast.warning,
+html.light-mode .toast.warning {
+  border-right: 4px solid #f59e0b !important;
+}
+
+/* ═══════════════════════════════════════
+   LOADING / SKELETON
+   ═══════════════════════════════════════ */
+
+[data-theme="light"] .skeleton,
+[data-theme="light"] .loading-skeleton,
+html.light-mode .skeleton,
+html.light-mode .loading-skeleton {
+  background: linear-gradient(90deg, #e2e8f0 25%, #f1f5f9 50%, #e2e8f0 75%) !important;
+}
+
+/* ═══════════════════════════════════════
+   LOGO & BRAND
+   ═══════════════════════════════════════ */
+
+[data-theme="light"] .logo-text,
+[data-theme="light"] .brand-name,
+html.light-mode .logo-text,
+html.light-mode .brand-name {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .logo-subtitle,
+html.light-mode .logo-subtitle {
+  color: #64748b !important;
+}
+
+/* ═══════════════════════════════════════
+   UNIFIED POS COMPONENTS (pos.html specific)
+   ═══════════════════════════════════════ */
+
+/* Unified Layout */
+[data-theme="light"] .unified-pos-layout,
+html.light-mode .unified-pos-layout {
+  background: #f1f5f9 !important;
+}
+
+/* Unified Header */
+[data-theme="light"] .unified-pos-header,
+html.light-mode .unified-pos-header {
+  background: #ffffff !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .unified-header-info h2,
+html.light-mode .unified-header-info h2 {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .unified-header-info span,
+html.light-mode .unified-header-info span {
+  color: #64748b !important;
+}
+
+/* Unified Content Grid */
+[data-theme="light"] .unified-content-grid,
+[data-theme="light"] .unified-checkout-body,
+html.light-mode .unified-content-grid,
+html.light-mode .unified-checkout-body {
+  background: #f1f5f9 !important;
+}
+
+/* Unified KPI Stats */
+[data-theme="light"] .unified-kpi-container,
+[data-theme="light"] .unified-stats,
+html.light-mode .unified-kpi-container,
+html.light-mode .unified-stats {
+  background: transparent !important;
+}
+
+/* Unified Tabs */
+[data-theme="light"] .unified-tabs,
+html.light-mode .unified-tabs {
+  background: #e2e8f0 !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+[data-theme="light"] .unified-tab,
+html.light-mode .unified-tab {
+  background: transparent !important;
+  color: #64748b !important;
+}
+
+[data-theme="light"] .unified-tab:hover,
+html.light-mode .unified-tab:hover {
+  background: rgba(255, 255, 255, 0.5) !important;
+  color: #334155 !important;
+}
+
+[data-theme="light"] .unified-tab.active,
+html.light-mode .unified-tab.active {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Unified Search */
+[data-theme="light"] .unified-search,
+[data-theme="light"] .unified-search-section,
+html.light-mode .unified-search,
+html.light-mode .unified-search-section {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .unified-search input,
+html.light-mode .unified-search input {
+  background: #f8fafc !important;
+  border: 2px solid #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .unified-search input:focus,
+html.light-mode .unified-search input:focus {
+  border-color: #3b82f6 !important;
+  background: #ffffff !important;
+}
+
+/* Unified Brand Filters */
+[data-theme="light"] .unified-brands,
+[data-theme="light"] .unified-brand-filters,
+html.light-mode .unified-brands,
+html.light-mode .unified-brand-filters {
+  background: transparent !important;
+}
+
+[data-theme="light"] .unified-brand-btn,
+html.light-mode .unified-brand-btn {
+  background: #ffffff !important;
+  border: 2px solid #e2e8f0 !important;
+  color: #475569 !important;
+}
+
+[data-theme="light"] .unified-brand-btn:hover,
+html.light-mode .unified-brand-btn:hover {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+}
+
+[data-theme="light"] .unified-brand-btn.active,
+html.light-mode .unified-brand-btn.active {
+  background: #3b82f6 !important;
+  border-color: #3b82f6 !important;
+  color: #ffffff !important;
+}
+
+/* Unified Device Cards */
+[data-theme="light"] .unified-device-card,
+html.light-mode .unified-device-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06) !important;
+}
+
+[data-theme="light"] .unified-device-card:hover,
+html.light-mode .unified-device-card:hover {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15) !important;
+}
+
+[data-theme="light"] .unified-device-name,
+html.light-mode .unified-device-name {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .unified-device-price,
+html.light-mode .unified-device-price {
+  color: #10b981 !important;
+}
+
+[data-theme="light"] .unified-device-info,
+html.light-mode .unified-device-info {
+  color: #64748b !important;
+}
+
+/* Unified Accessory Cards */
+[data-theme="light"] .unified-accessory-card,
+html.light-mode .unified-accessory-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .unified-accessory-card:hover,
+html.light-mode .unified-accessory-card:hover {
+  border-color: #3b82f6 !important;
+}
+
+/* Unified Footer */
+[data-theme="light"] .unified-pos-footer,
+html.light-mode .unified-pos-footer {
+  background: #ffffff !important;
+  border-top: 1px solid #e2e8f0 !important;
+  color: #64748b !important;
+}
+
+/* Unified Sidebar */
+[data-theme="light"] .unified-sidebar,
+html.light-mode .unified-sidebar {
+  background: #ffffff !important;
+  border-left: 1px solid #e2e8f0 !important;
+}
+
+/* Ensure all text is visible */
+[data-theme="light"] *,
+html.light-mode * {
+  --ink: #0f172a;
+  --muted: #64748b;
+}
+
+/* Scrollbar in unified components */
+[data-theme="light"] .unified-cart-items::-webkit-scrollbar-track,
+[data-theme="light"] .unified-products-grid::-webkit-scrollbar-track,
+html.light-mode .unified-cart-items::-webkit-scrollbar-track,
+html.light-mode .unified-products-grid::-webkit-scrollbar-track {
+  background: #f1f5f9 !important;
+}
+
+[data-theme="light"] .unified-cart-items::-webkit-scrollbar-thumb,
+[data-theme="light"] .unified-products-grid::-webkit-scrollbar-thumb,
+html.light-mode .unified-cart-items::-webkit-scrollbar-thumb,
+html.light-mode .unified-products-grid::-webkit-scrollbar-thumb {
+  background: #cbd5e1 !important;
+}
+
+/* ═══════════════════════════════════════
+   FORCE OVERRIDE FOR INLINE STYLES
+   ═══════════════════════════════════════ */
+
+/* These have higher specificity to override inline rgba styles */
+html.light-mode .unified-cart-section,
+html.light-theme .unified-cart-section,
+[data-theme="light"] .unified-cart-section {
+  background: #ffffff !important;
+}
+
+html.light-mode .unified-section-header,
+html.light-theme .unified-section-header,
+[data-theme="light"] .unified-section-header {
+  background: #f8fafc !important;
+  border-bottom-color: #e2e8f0 !important;
+}
+
+html.light-mode .unified-cart-item,
+html.light-theme .unified-cart-item,
+[data-theme="light"] .unified-cart-item {
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+html.light-mode .unified-cart-item:hover,
+html.light-theme .unified-cart-item:hover,
+[data-theme="light"] .unified-cart-item:hover {
+  background: #f1f5f9 !important;
+  border-color: #3b82f6 !important;
+}
+
+html.light-mode .cart-item-icon,
+html.light-theme .cart-item-icon,
+[data-theme="light"] .cart-item-icon {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.15) 0%, rgba(59, 130, 246, 0.08) 100%) !important;
+}
+
+/* ═══════════════════════════════════════
+   CASH TRANSACTION MODALS - LIGHT THEME
+   ═══════════════════════════════════════ */
+
+[data-theme="light"] .cash-tx-modal,
+html.light-mode .cash-tx-modal {
+  background: rgba(15, 23, 42, 0.5) !important;
+}
+
+[data-theme="light"] .cash-tx-content,
+html.light-mode .cash-tx-content {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.15) !important;
+}
+
+[data-theme="light"] .cash-tx-header,
+html.light-mode .cash-tx-header {
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .cash-tx-header.deposit,
+html.light-mode .cash-tx-header.deposit {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0.05) 100%) !important;
+}
+
+[data-theme="light"] .cash-tx-header.withdraw,
+html.light-mode .cash-tx-header.withdraw {
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.15) 0%, rgba(239, 68, 68, 0.05) 100%) !important;
+}
+
+[data-theme="light"] .cash-tx-title,
+[data-theme="light"] .cash-tx-title span,
+html.light-mode .cash-tx-title,
+html.light-mode .cash-tx-title span {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .cash-tx-close,
+html.light-mode .cash-tx-close {
+  color: #64748b !important;
+  background: #f1f5f9 !important;
+}
+
+[data-theme="light"] .cash-tx-close:hover,
+html.light-mode .cash-tx-close:hover {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .cash-tx-body,
+html.light-mode .cash-tx-body {
+  background: #ffffff !important;
+}
+
+[data-theme="light"] .cash-tx-label,
+html.light-mode .cash-tx-label {
+  color: #374151 !important;
+}
+
+[data-theme="light"] .cash-tx-input,
+html.light-mode .cash-tx-input {
+  background: #f8fafc !important;
+  border: 2px solid #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .cash-tx-input:focus,
+html.light-mode .cash-tx-input:focus {
+  border-color: #3b82f6 !important;
+  background: #ffffff !important;
+}
+
+[data-theme="light"] .cash-tx-input::placeholder,
+html.light-mode .cash-tx-input::placeholder {
+  color: #94a3b8 !important;
+}
+
+[data-theme="light"] .cash-tx-footer,
+html.light-mode .cash-tx-footer {
+  background: #f8fafc !important;
+  border-top: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .cash-tx-btn.cancel,
+html.light-mode .cash-tx-btn.cancel {
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #64748b !important;
+}
+
+[data-theme="light"] .cash-tx-btn.cancel:hover,
+html.light-mode .cash-tx-btn.cancel:hover {
+  background: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .cash-tx-info-banner,
+html.light-mode .cash-tx-info-banner {
+  background: #f8fafc !important;
+}
+
+[data-theme="light"] .cash-tx-info-banner.success,
+html.light-mode .cash-tx-info-banner.success {
+  background: rgba(16, 185, 129, 0.1) !important;
+  border-bottom: 1px solid rgba(16, 185, 129, 0.2) !important;
+}
+
+[data-theme="light"] .cash-tx-info-banner.warning,
+html.light-mode .cash-tx-info-banner.warning {
+  background: rgba(245, 158, 11, 0.1) !important;
+  border-bottom: 1px solid rgba(245, 158, 11, 0.2) !important;
+}
+
+/* ═══════════════════════════════════════
+   DRAWER MODAL - LIGHT THEME
+   ═══════════════════════════════════════ */
+
+[data-theme="light"] .drawer-modal-overlay,
+html.light-mode .drawer-modal-overlay {
+  background: rgba(15, 23, 42, 0.5) !important;
+}
+
+[data-theme="light"] .drawer-modal-container,
+html.light-mode .drawer-modal-container {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .drawer-modal-header,
+html.light-mode .drawer-modal-header {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+}
+
+[data-theme="light"] .drawer-modal-body,
+html.light-mode .drawer-modal-body {
+  background: #f8fafc !important;
+}
+
+[data-theme="light"] .drawer-modal-footer,
+html.light-mode .drawer-modal-footer {
+  background: #ffffff !important;
+  border-top: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .wallet-card,
+html.light-mode .wallet-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .wallet-card:hover,
+html.light-mode .wallet-card:hover {
+  border-color: #3b82f6 !important;
+}
+
+[data-theme="light"] .wallet-name,
+html.light-mode .wallet-name {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .wallet-balance,
+html.light-mode .wallet-balance {
+  color: #10b981 !important;
+}
+
+[data-theme="light"] .wallet-action-btn,
+html.light-mode .wallet-action-btn {
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #475569 !important;
+}
+
+[data-theme="light"] .wallet-action-btn:hover,
+html.light-mode .wallet-action-btn:hover {
+  background: #e2e8f0 !important;
+}
+
+[data-theme="light"] .wallet-action-btn.deposit,
+html.light-mode .wallet-action-btn.deposit {
+  color: #10b981 !important;
+}
+
+[data-theme="light"] .wallet-action-btn.withdraw,
+html.light-mode .wallet-action-btn.withdraw {
+  color: #ef4444 !important;
+}
+
+[data-theme="light"] .drawer-quick-btn,
+html.light-mode .drawer-quick-btn {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #475569 !important;
+}
+
+[data-theme="light"] .drawer-quick-btn:hover,
+html.light-mode .drawer-quick-btn:hover {
+  background: #f1f5f9 !important;
+  border-color: #3b82f6 !important;
+  color: #3b82f6 !important;
+}
+
+/* ═══════════════════════════════════════
+   BARCODE PRINT MODAL - LIGHT THEME
+   ═══════════════════════════════════════ */
+
+[data-theme="light"] .barcode-print-modal,
+html.light-mode .barcode-print-modal {
+  background: rgba(15, 23, 42, 0.5) !important;
+}
+
+[data-theme="light"] .bprint-container,
+html.light-mode .bprint-container {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .bprint-header,
+html.light-mode .bprint-header {
+  background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 100%) !important;
+}
+
+[data-theme="light"] .bprint-body,
+html.light-mode .bprint-body {
+  background: #ffffff !important;
+}
+
+[data-theme="light"] .bprint-search input,
+html.light-mode .bprint-search input {
+  background: #f8fafc !important;
+  border: 2px solid #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .bprint-search input:focus,
+html.light-mode .bprint-search input:focus {
+  border-color: #8b5cf6 !important;
+}
+
+[data-theme="light"] .bprint-result-item,
+html.light-mode .bprint-result-item {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .bprint-result-item:hover,
+html.light-mode .bprint-result-item:hover {
+  background: #f1f5f9 !important;
+  border-color: #8b5cf6 !important;
+}
+
+[data-theme="light"] .bprint-item-name,
+html.light-mode .bprint-item-name {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .bprint-item-info,
+html.light-mode .bprint-item-info {
+  color: #64748b !important;
+}
+
+/* ═══════════════════════════════════════
+   MODAL OVERLAY GENERAL - LIGHT THEME
+   ═══════════════════════════════════════ */
+
+[data-theme="light"] .modal-overlay,
+html.light-mode .modal-overlay {
+  background: var(--ds-overlay, rgba(15, 23, 42, 0.5)) !important;
+}
+
+[data-theme="light"] .modal-container,
+html.light-mode .modal-container {
+  background: var(--ds-bg-card, #ffffff) !important;
+  border: 1px solid var(--ds-border, #d1d5db) !important;
+  box-shadow: var(--ds-shadow-xl, 0 20px 40px rgba(0, 0, 0, 0.18)) !important;
+}
+
+/* ═══════════════════════════════════════
+   SALE CONFIRM OVERLAY - LIGHT THEME
+   ═══════════════════════════════════════ */
+
+[data-theme="light"] .sale-confirm-overlay,
+html.light-mode .sale-confirm-overlay {
+  background: rgba(15, 23, 42, 0.5) !important;
+}
+
+[data-theme="light"] .sale-confirm-dialog,
+html.light-mode .sale-confirm-dialog {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+/* ═══════════════════════════════════════
+   HEADER & PANELS - LIGHT THEME
+   ═══════════════════════════════════════ */
+
+[data-theme="light"] .hdr,
+html.light-mode .hdr {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%) !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .brand,
+html.light-mode .brand {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .welcome-msg,
+html.light-mode .welcome-msg {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .time-card,
+html.light-mode .time-card {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%) !important;
+  border: 1px solid rgba(59, 130, 246, 0.2) !important;
+}
+
+[data-theme="light"] .time-value,
+html.light-mode .time-value {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .user-card,
+html.light-mode .user-card {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%) !important;
+  border: 1px solid rgba(59, 130, 246, 0.2) !important;
+}
+
+[data-theme="light"] .user-name,
+html.light-mode .user-name {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .user-role,
+html.light-mode .user-role {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .panel,
+html.light-mode .panel {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%) !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .header-shortcuts,
+html.light-mode .header-shortcuts {
+  background: rgba(0, 0, 0, 0.03) !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .shortcut-item,
+html.light-mode .shortcut-item {
+  background: #f1f5f9 !important;
+  color: #64748b !important;
+}
+
+[data-theme="light"] .shortcut-item:hover,
+html.light-mode .shortcut-item:hover {
+  background: #3b82f6 !important;
+  color: #ffffff !important;
+}
+
+/* ═══════════════════════════════════════
+   SEARCH & FILTERS - LIGHT THEME (ENHANCED)
+   ═══════════════════════════════════════ */
+
+[data-theme="light"] .search,
+html.light-mode .search {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04) !important;
+}
+
+[data-theme="light"] .search input,
+[data-theme="light"] .search select,
+[data-theme="light"] #q,
+html.light-mode .search input,
+html.light-mode .search select,
+html.light-mode #q {
+  background: #f8fafc !important;
+  border: 2px solid #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .search input:focus,
+[data-theme="light"] .search select:focus,
+[data-theme="light"] #q:focus,
+html.light-mode .search input:focus,
+html.light-mode .search select:focus,
+html.light-mode #q:focus {
+  background: #ffffff !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15) !important;
+}
+
+[data-theme="light"] .search input::placeholder,
+[data-theme="light"] #q::placeholder,
+html.light-mode .search input::placeholder,
+html.light-mode #q::placeholder {
+  color: #94a3b8 !important;
+}
+
+[data-theme="light"] .quick-filters,
+html.light-mode .quick-filters {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .filter-btn,
+html.light-mode .filter-btn {
+  background: #ffffff !important;
+  border: 2px solid #e2e8f0 !important;
+  color: #64748b !important;
+}
+
+[data-theme="light"] .filter-btn:hover,
+html.light-mode .filter-btn:hover {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #334155 !important;
+}
+
+[data-theme="light"] .filter-btn.active,
+html.light-mode .filter-btn.active {
+  background: #3b82f6 !important;
+  border-color: #3b82f6 !important;
+  color: #ffffff !important;
+}
+
+/* Search Container */
+[data-theme="light"] .search-container,
+html.light-mode .search-container {
+  background: transparent !important;
+}
+
+/* ═══════════════════════════════════════
+   PRODUCT/DEVICE CARDS - LIGHT THEME (ENHANCED)
+   ═══════════════════════════════════════ */
+
+[data-theme="light"] .card,
+html.light-mode .card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+}
+
+[data-theme="light"] .card:hover,
+html.light-mode .card:hover {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.12) !important;
+  transform: translateY(-2px) !important;
+}
+
+[data-theme="light"] .card::before,
+html.light-mode .card::before {
+  background: linear-gradient(180deg, rgba(59, 130, 246, 0.08), transparent) !important;
+}
+
+[data-theme="light"] .card-title,
+[data-theme="light"] .device-model,
+html.light-mode .card-title,
+html.light-mode .device-model {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .card-price,
+[data-theme="light"] .device-price,
+html.light-mode .card-price,
+html.light-mode .device-price {
+  color: #059669 !important;
+}
+
+[data-theme="light"] .card-info,
+[data-theme="light"] .device-specs,
+[data-theme="light"] .device-info,
+html.light-mode .card-info,
+html.light-mode .device-specs,
+html.light-mode .device-info {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .card-imei,
+[data-theme="light"] .device-imei,
+html.light-mode .card-imei,
+html.light-mode .device-imei {
+  color: #94a3b8 !important;
+}
+
+/* Card Details - تفاصيل البطاقة (المستطيل الداخلي) */
+[data-theme="light"] .card-detail,
+html.light-mode .card-detail {
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .card-details,
+html.light-mode .card-details {
+  background: transparent !important;
+  border-top-color: #e2e8f0 !important;
+}
+
+/* Override inline style for second card-details row */
+[data-theme="light"] .card-details[style*="border-top"],
+html.light-mode .card-details[style*="border-top"] {
+  border-top: 1px solid #e2e8f0 !important;
+}
+
+/* Card Content */
+[data-theme="light"] .card-content,
+html.light-mode .card-content {
+  background: transparent !important;
+}
+
+/* Card Price Section */
+[data-theme="light"] .card-price,
+html.light-mode .card-price {
+  border-top-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .price-label,
+html.light-mode .price-label {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .price-value,
+html.light-mode .price-value {
+  color: #059669 !important;
+}
+
+/* Card Header */
+[data-theme="light"] .card-header,
+html.light-mode .card-header {
+  background: transparent !important;
+}
+
+/* Card Tax */
+[data-theme="light"] .card-tax,
+html.light-mode .card-tax {
+  background: rgba(245, 158, 11, 0.08) !important;
+  border-color: rgba(245, 158, 11, 0.2) !important;
+}
+
+[data-theme="light"] .tax-label,
+[data-theme="light"] .tax-value,
+html.light-mode .tax-label,
+html.light-mode .tax-value {
+  color: #b45309 !important;
+}
+
+/* Cards Grid Background */
+[data-theme="light"] .cards-grid,
+html.light-mode .cards-grid {
+  background: transparent !important;
+}
+
+/* ═══════════════════════════════════════
+   DEVICE CARDS - DARK MODE IMPROVEMENTS
+   تحسين بطاقات الأجهزة في الوضع الغامق
+   ═══════════════════════════════════════ */
+
+/* Card Details - تفاصيل البطاقة - شفافة تماماً */
+[data-theme="dark"] .card-detail,
+html.dark-mode .card-detail,
+html:not([data-theme="light"]) .card-detail {
+  background: transparent !important;
+  color: #94a3b8 !important;
+  border: none !important;
+  padding: 4px 8px !important;
+}
+
+[data-theme="dark"] .card-details,
+html.dark-mode .card-details,
+html:not([data-theme="light"]) .card-details {
+  background: transparent !important;
+}
+
+[data-theme="dark"] .card-details[style*="border-top"],
+html.dark-mode .card-details[style*="border-top"],
+html:not([data-theme="light"]) .card-details[style*="border-top"] {
+  border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+/* Card - البطاقة نفسها - لون موحد */
+[data-theme="dark"] .card,
+html.dark-mode .card,
+html:not([data-theme="light"]) .card {
+  background: rgba(15, 23, 42, 0.95) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+}
+
+[data-theme="dark"] .card:hover,
+html.dark-mode .card:hover,
+html:not([data-theme="light"]) .card:hover {
+  background: rgba(30, 41, 59, 0.95) !important;
+  border-color: #3b82f6 !important;
+  box-shadow: 0 8px 32px rgba(59, 130, 246, 0.2) !important;
+}
+
+/* Card Content - شفاف */
+[data-theme="dark"] .card-content,
+html.dark-mode .card-content,
+html:not([data-theme="light"]) .card-content {
+  background: transparent !important;
+}
+
+/* Card Header - شفاف */
+[data-theme="dark"] .card-header,
+html.dark-mode .card-header,
+html:not([data-theme="light"]) .card-header {
+  background: transparent !important;
+}
+
+/* Card Price Section */
+[data-theme="dark"] .card-price,
+html.dark-mode .card-price,
+html:not([data-theme="light"]) .card-price {
+  background: transparent !important;
+  border-top-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+/* ═══════════════════════════════════════
+   TABS - LIGHT THEME (ENHANCED)
+   ═══════════════════════════════════════ */
+
+[data-theme="light"] .tabs,
+[data-theme="light"] .inventory-tabs,
+html.light-mode .tabs,
+html.light-mode .inventory-tabs {
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .tab,
+[data-theme="light"] .inventory-tab,
+html.light-mode .tab,
+html.light-mode .inventory-tab {
+  background: transparent !important;
+  color: #64748b !important;
+  border: none !important;
+}
+
+[data-theme="light"] .tab:hover,
+[data-theme="light"] .inventory-tab:hover,
+html.light-mode .tab:hover,
+html.light-mode .inventory-tab:hover {
+  background: rgba(255, 255, 255, 0.6) !important;
+  color: #334155 !important;
+}
+
+[data-theme="light"] .tab.active,
+[data-theme="light"] .inventory-tab.active,
+html.light-mode .tab.active,
+html.light-mode .inventory-tab.active {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme="light"] .tab-count,
+html.light-mode .tab-count {
+  background: #3b82f6 !important;
+  color: #ffffff !important;
+}
+
+/* ═══════════════════════════════════════
+   KPI STATS - LIGHT THEME (ENHANCED)
+   ═══════════════════════════════════════ */
+
+[data-theme="light"] .kpis,
+html.light-mode .kpis {
+  background: transparent !important;
+}
+
+/* Override KPI dark backgrounds for light mode */
+[data-theme="light"] .kpi,
+html.light-mode .kpi {
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%) !important;
+  border: none !important;
+}
+
+[data-theme="light"] .kpi:nth-child(2),
+html.light-mode .kpi:nth-child(2) {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+}
+
+[data-theme="light"] .kpi:nth-child(3),
+html.light-mode .kpi:nth-child(3) {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%) !important;
+}
+
+[data-theme="light"] .kpi:nth-child(4),
+html.light-mode .kpi:nth-child(4) {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+}
+
+/* ═══════════════════════════════════════
+   MAIN PANEL - LIGHT THEME (ENHANCED)
+   ═══════════════════════════════════════ */
+
+[data-theme="light"] .products-panel,
+[data-theme="light"] .panel:not(.cart-panel),
+html.light-mode .products-panel,
+html.light-mode .panel:not(.cart-panel) {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+}
+
+[data-theme="light"] .panel::before,
+html.light-mode .panel::before {
+  background: linear-gradient(90deg, #3b82f6, #8b5cf6, #06b6d4) !important;
+}
+
+/* ═══════════════════════════════════════
+   BADGE COLORS - LIGHT THEME
+   ═══════════════════════════════════════ */
+
+[data-theme="light"] .badge-new,
+[data-theme="light"] .badge[data-condition="جديد"],
+html.light-mode .badge-new,
+html.light-mode .badge[data-condition="جديد"] {
+  background: #dbeafe !important;
+  color: #1d4ed8 !important;
+  border: 1px solid #93c5fd !important;
+}
+
+[data-theme="light"] .badge-used,
+[data-theme="light"] .badge[data-condition="مستعمل"],
+html.light-mode .badge-used,
+html.light-mode .badge[data-condition="مستعمل"] {
+  background: #fef3c7 !important;
+  color: #b45309 !important;
+  border: 1px solid #fcd34d !important;
+}
+
+[data-theme="light"] .badge-accessory,
+html.light-mode .badge-accessory {
+  background: #f3e8ff !important;
+  color: #7c3aed !important;
+  border: 1px solid #c4b5fd !important;
+}
+
+/* ═══════════════════════════════════════
+   QUANTITY CONTROLS - LIGHT THEME
+   ═══════════════════════════════════════ */
+
+[data-theme="light"] .qty-controls,
+html.light-mode .qty-controls {
+  border-top-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .qty-btn,
+html.light-mode .qty-btn {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #475569 !important;
+}
+
+[data-theme="light"] .qty-btn:hover,
+html.light-mode .qty-btn:hover {
+  background: #3b82f6 !important;
+  border-color: #3b82f6 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .qty-input,
+html.light-mode .qty-input {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .stock-info,
+html.light-mode .stock-info {
+  color: #64748b !important;
+}
+
+/* ═══════════════════════════════════════
+   BODY BACKGROUND - LIGHT THEME
+   ═══════════════════════════════════════ */
+
+[data-theme="light"] body,
+html.light-mode body {
+  background: #f1f5f9 !important;
+}
+
+[data-theme="light"] .wrap,
+html.light-mode .wrap {
+  background: transparent !important;
+}
+
+/* ═══════════════════════════════════════
+   🛒 CART PANEL - LIGHT THEME (COMPLETE FIX)
+   ═══════════════════════════════════════ */
+
+[data-theme="light"] .cart-panel,
+[data-theme="light"] .panel.cart-panel,
+html.light-mode .cart-panel,
+html.light-mode .panel.cart-panel {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Cart Header */
+[data-theme="light"] .cart-header,
+html.light-mode .cart-header {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(139, 92, 246, 0.06) 100%) !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .cart-title,
+[data-theme="light"] .cart-title span,
+html.light-mode .cart-title,
+html.light-mode .cart-title span {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .cart-title-icon,
+html.light-mode .cart-title-icon {
+  color: #3b82f6 !important;
+}
+
+[data-theme="light"] .cart-count,
+html.light-mode .cart-count {
+  background: linear-gradient(135deg, #3b82f6 0%, #6366f1 100%) !important;
+  color: #ffffff !important;
+}
+
+/* Quick Actions */
+[data-theme="light"] .quick-actions,
+html.light-mode .quick-actions {
+  background: #f8fafc !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .quick-btn,
+html.light-mode .quick-btn {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #475569 !important;
+}
+
+[data-theme="light"] .quick-btn:hover,
+html.light-mode .quick-btn:hover {
+  background: #f1f5f9 !important;
+  border-color: #3b82f6 !important;
+  color: #3b82f6 !important;
+}
+
+[data-theme="light"] .quick-btn-text,
+html.light-mode .quick-btn-text {
+  color: inherit !important;
+}
+
+/* Cart Items Container */
+[data-theme="light"] .cart-items,
+html.light-mode .cart-items {
+  background: #ffffff !important;
+}
+
+/* Individual Cart Item */
+[data-theme="light"] .cart-item,
+html.light-mode .cart-item {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .cart-item:hover,
+html.light-mode .cart-item:hover {
+  background: #f1f5f9 !important;
+  border-color: #3b82f6 !important;
+}
+
+[data-theme="light"] .item-name,
+[data-theme="light"] .cart-item-name,
+html.light-mode .item-name,
+html.light-mode .cart-item-name {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .item-details,
+[data-theme="light"] .cart-item-details,
+[data-theme="light"] .item-condition,
+[data-theme="light"] .item-imei,
+html.light-mode .item-details,
+html.light-mode .cart-item-details,
+html.light-mode .item-condition,
+html.light-mode .item-imei {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .item-price,
+[data-theme="light"] .cart-item-price,
+[data-theme="light"] .price-current,
+html.light-mode .item-price,
+html.light-mode .cart-item-price,
+html.light-mode .price-current {
+  color: #10b981 !important;
+}
+
+/* Price Adjuster */
+[data-theme="light"] .price-adjuster,
+html.light-mode .price-adjuster {
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .price-adjuster input,
+html.light-mode .price-adjuster input {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+/* Remove Button */
+[data-theme="light"] .remove-btn,
+[data-theme="light"] .btn-remove,
+html.light-mode .remove-btn,
+html.light-mode .btn-remove {
+  background: rgba(239, 68, 68, 0.1) !important;
+  color: #ef4444 !important;
+}
+
+[data-theme="light"] .remove-btn:hover,
+[data-theme="light"] .btn-remove:hover,
+html.light-mode .remove-btn:hover,
+html.light-mode .btn-remove:hover {
+  background: rgba(239, 68, 68, 0.2) !important;
+}
+
+/* Cart Footer & Summary */
+[data-theme="light"] .cart-footer,
+html.light-mode .cart-footer {
+  background: #f8fafc !important;
+  border-top: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .total-row,
+[data-theme="light"] .summary-row,
+html.light-mode .total-row,
+html.light-mode .summary-row {
+  border-bottom-color: #e2e8f0 !important;
+}
+
+[data-theme="light"] .total-label,
+[data-theme="light"] .summary-label,
+html.light-mode .total-label,
+html.light-mode .summary-label {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .total-amount,
+[data-theme="light"] .summary-value,
+html.light-mode .total-amount,
+html.light-mode .summary-value {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .total-row.grand-total,
+[data-theme="light"] .summary-row.total,
+html.light-mode .total-row.grand-total,
+html.light-mode .summary-row.total {
+  background: #f1f5f9 !important;
+  border-radius: 8px;
+}
+
+[data-theme="light"] .total-row.grand-total .total-amount,
+[data-theme="light"] .summary-row.total .summary-value,
+html.light-mode .total-row.grand-total .total-amount,
+html.light-mode .summary-row.total .summary-value {
+  color: #10b981 !important;
+}
+
+/* Checkout Button */
+[data-theme="light"] .btn-checkout,
+[data-theme="light"] .btn-checkout-main,
+[data-theme="light"] .checkout-btn,
+html.light-mode .btn-checkout,
+html.light-mode .btn-checkout-main,
+html.light-mode .checkout-btn {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  color: #ffffff !important;
+  border: none !important;
+}
+
+/* Clear Cart Button */
+[data-theme="light"] .btn-clear-cart,
+[data-theme="light"] .clear-btn,
+html.light-mode .btn-clear-cart,
+html.light-mode .clear-btn {
+  background: #fef2f2 !important;
+  border: 1px solid #fecaca !important;
+  color: #dc2626 !important;
+}
+
+/* Empty Cart State */
+[data-theme="light"] .empty-cart,
+html.light-mode .empty-cart {
+  color: #94a3b8 !important;
+}
+
+[data-theme="light"] .empty-cart-icon,
+[data-theme="light"] .empty-cart svg,
+html.light-mode .empty-cart-icon,
+html.light-mode .empty-cart svg {
+  color: #cbd5e1 !important;
+}
+
+/* Cash Drawer Section */
+[data-theme="light"] .cash-drawer-section,
+[data-theme="light"] .drawer-section,
+html.light-mode .cash-drawer-section,
+html.light-mode .drawer-section {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  border: none !important;
+}
+
+[data-theme="light"] .cash-drawer-section *,
+[data-theme="light"] .drawer-section *,
+html.light-mode .cash-drawer-section *,
+html.light-mode .drawer-section * {
+  color: #ffffff !important;
+}
+
+/* Recent Sales Section */
+[data-theme="light"] .recent-sales-section,
+[data-theme="light"] .recent-sales,
+html.light-mode .recent-sales-section,
+html.light-mode .recent-sales {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .recent-sales-title,
+html.light-mode .recent-sales-title {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .recent-sale-item,
+html.light-mode .recent-sale-item {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .recent-sale-item:hover,
+html.light-mode .recent-sale-item:hover {
+  background: #f1f5f9 !important;
+  border-color: #3b82f6 !important;
+}
+
+/* ═══════════════════════════════════════
+   💳 CHECKOUT MODAL - LIGHT THEME (COMPLETE FIX)
+   ═══════════════════════════════════════ */
+
+[data-theme="light"] .unified-checkout-modal,
+[data-theme="light"] .checkout-modal,
+html.light-mode .unified-checkout-modal,
+html.light-mode .checkout-modal {
+  background: rgba(15, 23, 42, 0.4) !important;
+}
+
+[data-theme="light"] .unified-checkout-container,
+[data-theme="light"] .checkout-container,
+html.light-mode .unified-checkout-container,
+html.light-mode .checkout-container {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* Checkout Header */
+[data-theme="light"] .unified-checkout-header,
+[data-theme="light"] .checkout-header,
+html.light-mode .unified-checkout-header,
+html.light-mode .checkout-header {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+}
+
+[data-theme="light"] .unified-checkout-header *,
+[data-theme="light"] .checkout-header *,
+html.light-mode .unified-checkout-header *,
+html.light-mode .checkout-header * {
+  color: #ffffff !important;
+}
+
+/* Checkout Body */
+[data-theme="light"] .unified-checkout-body,
+[data-theme="light"] .checkout-body,
+html.light-mode .unified-checkout-body,
+html.light-mode .checkout-body {
+  background: #f8fafc !important;
+}
+
+/* Checkout Sections */
+[data-theme="light"] .checkout-section,
+[data-theme="light"] .unified-checkout-section,
+html.light-mode .checkout-section,
+html.light-mode .unified-checkout-section {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .checkout-section-title,
+[data-theme="light"] .section-title,
+html.light-mode .checkout-section-title,
+html.light-mode .section-title {
+  color: #0f172a !important;
+}
+
+/* Client Search */
+[data-theme="light"] .client-search-input,
+[data-theme="light"] .customer-search input,
+html.light-mode .client-search-input,
+html.light-mode .customer-search input {
+  background: #f8fafc !important;
+  border: 2px solid #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .client-search-input:focus,
+[data-theme="light"] .customer-search input:focus,
+html.light-mode .client-search-input:focus,
+html.light-mode .customer-search input:focus {
+  border-color: #3b82f6 !important;
+  background: #ffffff !important;
+}
+
+/* Client List */
+[data-theme="light"] .client-list,
+[data-theme="light"] .customer-list,
+html.light-mode .client-list,
+html.light-mode .customer-list {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .client-item,
+[data-theme="light"] .customer-item,
+html.light-mode .client-item,
+html.light-mode .customer-item {
+  background: #f8fafc !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .client-item:hover,
+[data-theme="light"] .customer-item:hover,
+html.light-mode .client-item:hover,
+html.light-mode .customer-item:hover {
+  background: #f1f5f9 !important;
+}
+
+/* Payment Methods */
+[data-theme="light"] .payment-method,
+[data-theme="light"] .payment-option,
+html.light-mode .payment-method,
+html.light-mode .payment-option {
+  background: #f8fafc !important;
+  border: 2px solid #e2e8f0 !important;
+  color: #475569 !important;
+}
+
+[data-theme="light"] .payment-method:hover,
+[data-theme="light"] .payment-option:hover,
+html.light-mode .payment-method:hover,
+html.light-mode .payment-option:hover {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+}
+
+[data-theme="light"] .payment-method.active,
+[data-theme="light"] .payment-method.selected,
+[data-theme="light"] .payment-option.active,
+[data-theme="light"] .payment-option.selected,
+html.light-mode .payment-method.active,
+html.light-mode .payment-method.selected,
+html.light-mode .payment-option.active,
+html.light-mode .payment-option.selected {
+  background: #3b82f6 !important;
+  border-color: #3b82f6 !important;
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .payment-method.active *,
+[data-theme="light"] .payment-option.active *,
+html.light-mode .payment-method.active *,
+html.light-mode .payment-option.active * {
+  color: #ffffff !important;
+}
+
+/* Amount Input */
+[data-theme="light"] .amount-input,
+[data-theme="light"] .received-amount,
+html.light-mode .amount-input,
+html.light-mode .received-amount {
+  background: #f8fafc !important;
+  border: 2px solid #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .amount-input:focus,
+[data-theme="light"] .received-amount:focus,
+html.light-mode .amount-input:focus,
+html.light-mode .received-amount:focus {
+  border-color: #3b82f6 !important;
+  background: #ffffff !important;
+}
+
+/* Checkout Footer */
+[data-theme="light"] .unified-checkout-footer,
+[data-theme="light"] .checkout-footer,
+html.light-mode .unified-checkout-footer,
+html.light-mode .checkout-footer {
+  background: #ffffff !important;
+  border-top: 1px solid #e2e8f0 !important;
+}
+
+/* Checkout Summary */
+[data-theme="light"] .checkout-summary,
+html.light-mode .checkout-summary {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .checkout-total,
+html.light-mode .checkout-total {
+  color: #10b981 !important;
+}
+
+/* Checkout Buttons */
+[data-theme="light"] .unified-btn-primary,
+[data-theme="light"] .confirm-btn,
+html.light-mode .unified-btn-primary,
+html.light-mode .confirm-btn {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .unified-btn-secondary,
+[data-theme="light"] .cancel-btn,
+html.light-mode .unified-btn-secondary,
+html.light-mode .cancel-btn {
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #64748b !important;
+}
+
+/* Cart Items in Checkout */
+[data-theme="light"] .checkout-cart-item,
+[data-theme="light"] .order-item,
+html.light-mode .checkout-cart-item,
+html.light-mode .order-item {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .checkout-cart-item:hover,
+[data-theme="light"] .order-item:hover,
+html.light-mode .checkout-cart-item:hover,
+html.light-mode .order-item:hover {
+  background: #f1f5f9 !important;
+}
+
+/* ═══════════════════════════════════════
+   💰 CASH DRAWER MODAL - LIGHT THEME (COMPLETE FIX)
+   ═══════════════════════════════════════ */
+
+[data-theme="light"] #cashDrawerModal,
+[data-theme="light"] .drawer-modal-overlay,
+html.light-mode #cashDrawerModal,
+html.light-mode .drawer-modal-overlay {
+  background: rgba(15, 23, 42, 0.4) !important;
+}
+
+[data-theme="light"] .drawer-modal-container,
+html.light-mode .drawer-modal-container {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15) !important;
+}
+
+[data-theme="light"] .drawer-modal-header,
+html.light-mode .drawer-modal-header {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+}
+
+[data-theme="light"] .drawer-modal-body,
+html.light-mode .drawer-modal-body {
+  background: #f8fafc !important;
+}
+
+/* Wallet Cards */
+[data-theme="light"] .wallet-card,
+html.light-mode .wallet-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .wallet-card:hover,
+html.light-mode .wallet-card:hover {
+  border-color: #3b82f6 !important;
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.1) !important;
+}
+
+[data-theme="light"] .wallet-icon,
+html.light-mode .wallet-icon {
+  color: #3b82f6 !important;
+}
+
+[data-theme="light"] .wallet-name,
+html.light-mode .wallet-name {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .wallet-balance,
+html.light-mode .wallet-balance {
+  color: #10b981 !important;
+}
+
+[data-theme="light"] .wallet-stats,
+html.light-mode .wallet-stats {
+  color: #64748b !important;
+}
+
+/* Wallet Action Buttons */
+[data-theme="light"] .wallet-action-btn,
+html.light-mode .wallet-action-btn {
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #475569 !important;
+}
+
+[data-theme="light"] .wallet-action-btn:hover,
+html.light-mode .wallet-action-btn:hover {
+  background: #e2e8f0 !important;
+}
+
+[data-theme="light"] .wallet-action-btn.deposit,
+html.light-mode .wallet-action-btn.deposit {
+  color: #10b981 !important;
+}
+
+[data-theme="light"] .wallet-action-btn.withdraw,
+html.light-mode .wallet-action-btn.withdraw {
+  color: #ef4444 !important;
+}
+
+/* Quick Buttons in Drawer */
+[data-theme="light"] .drawer-quick-btn,
+html.light-mode .drawer-quick-btn {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #475569 !important;
+}
+
+[data-theme="light"] .drawer-quick-btn:hover,
+html.light-mode .drawer-quick-btn:hover {
+  background: #f1f5f9 !important;
+  border-color: #3b82f6 !important;
+  color: #3b82f6 !important;
+}
+
+/* Transactions Section */
+[data-theme="light"] .transactions-section,
+[data-theme="light"] .drawer-history,
+html.light-mode .transactions-section,
+html.light-mode .drawer-history {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .transaction-item,
+html.light-mode .transaction-item {
+  background: #f8fafc !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .transaction-item:hover,
+html.light-mode .transaction-item:hover {
+  background: #f1f5f9 !important;
+}
+
+/* Filter Tabs in Drawer */
+[data-theme="light"] .drawer-filter-btn,
+[data-theme="light"] .history-filter-btn,
+html.light-mode .drawer-filter-btn,
+html.light-mode .history-filter-btn {
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #64748b !important;
+}
+
+[data-theme="light"] .drawer-filter-btn.active,
+[data-theme="light"] .history-filter-btn.active,
+html.light-mode .drawer-filter-btn.active,
+html.light-mode .history-filter-btn.active {
+  background: #3b82f6 !important;
+  border-color: #3b82f6 !important;
+  color: #ffffff !important;
+}
+
+/* Shift Close Section */
+[data-theme="light"] .shift-close-section,
+html.light-mode .shift-close-section {
+  background: #fef3c7 !important;
+  border: 1px solid #fcd34d !important;
+}
+
+[data-theme="light"] .shift-close-section *,
+html.light-mode .shift-close-section * {
+  color: #92400e !important;
+}
+
+/* Drawer Footer */
+[data-theme="light"] .drawer-modal-footer,
+html.light-mode .drawer-modal-footer {
+  background: #ffffff !important;
+  border-top: 1px solid #e2e8f0 !important;
+}
+
+/* ═══════════════════════════════════════
+   📋 RECENT SALES / HISTORY MODAL - LIGHT THEME
+   ═══════════════════════════════════════ */
+
+[data-theme="light"] #salesHistoryModal,
+[data-theme="light"] .sales-history-modal,
+html.light-mode #salesHistoryModal,
+html.light-mode .sales-history-modal {
+  background: rgba(15, 23, 42, 0.4) !important;
+}
+
+[data-theme="light"] #salesHistoryModal .modal-container,
+[data-theme="light"] .sales-history-container,
+html.light-mode #salesHistoryModal .modal-container,
+html.light-mode .sales-history-container {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+/* History Table */
+[data-theme="light"] .history-table,
+html.light-mode .history-table {
+  background: #ffffff !important;
+}
+
+[data-theme="light"] .history-table th,
+html.light-mode .history-table th {
+  background: #f1f5f9 !important;
+  color: #0f172a !important;
+  border-bottom: 2px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .history-table td,
+html.light-mode .history-table td {
+  background: #ffffff !important;
+  color: #334155 !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .history-table tr:hover td,
+html.light-mode .history-table tr:hover td {
+  background: #f8fafc !important;
+}
+
+/* Sale Details */
+[data-theme="light"] .sale-details,
+html.light-mode .sale-details {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .sale-info-row,
+html.light-mode .sale-info-row {
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .sale-info-label,
+html.light-mode .sale-info-label {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .sale-info-value,
+html.light-mode .sale-info-value {
+  color: #0f172a !important;
+}
+
+/* ═══════════════════════════════════════
+   💰 CASH DRAWER - TRANSACTIONS SECTION (LIGHT FIX)
+   ═══════════════════════════════════════ */
+
+[data-theme="light"] .drawer-transactions-section,
+html.light-mode .drawer-transactions-section {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .transactions-header,
+html.light-mode .transactions-header {
+  border-bottom: 1px solid #e2e8f0 !important;
+  padding-bottom: 12px !important;
+  margin-bottom: 12px !important;
+}
+
+[data-theme="light"] .transactions-title,
+html.light-mode .transactions-title {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .title-icon,
+html.light-mode .title-icon {
+  color: #3b82f6 !important;
+}
+
+/* Drawer Tab Buttons */
+[data-theme="light"] .drawer-tab-btn,
+html.light-mode .drawer-tab-btn {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #64748b !important;
+}
+
+[data-theme="light"] .drawer-tab-btn:hover,
+html.light-mode .drawer-tab-btn:hover {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+  color: #334155 !important;
+}
+
+[data-theme="light"] .drawer-tab-btn.active,
+html.light-mode .drawer-tab-btn.active {
+  background: #3b82f6 !important;
+  border-color: #3b82f6 !important;
+  color: #ffffff !important;
+}
+
+/* Transactions List */
+[data-theme="light"] .transactions-list,
+html.light-mode .transactions-list {
+  background: #f8fafc !important;
+  border-radius: 8px !important;
+}
+
+[data-theme="light"] .transaction-item,
+html.light-mode .transaction-item {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  margin-bottom: 8px !important;
+  border-radius: 8px !important;
+}
+
+[data-theme="light"] .transaction-item:hover,
+html.light-mode .transaction-item:hover {
+  background: #f1f5f9 !important;
+  border-color: #3b82f6 !important;
+}
+
+[data-theme="light"] .transaction-type,
+html.light-mode .transaction-type {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .transaction-details,
+html.light-mode .transaction-details {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .transaction-amount,
+html.light-mode .transaction-amount {
+  color: #10b981 !important;
+}
+
+[data-theme="light"] .transaction-amount.negative,
+html.light-mode .transaction-amount.negative {
+  color: #ef4444 !important;
+}
+
+[data-theme="light"] .transactions-loading,
+html.light-mode .transactions-loading {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .transactions-empty,
+html.light-mode .transactions-empty {
+  color: #94a3b8 !important;
+}
+
+/* ═══════════════════════════════════════
+   💰 CASH DRAWER - CLOSING SECTION (LIGHT FIX)
+   ═══════════════════════════════════════ */
+
+[data-theme="light"] .drawer-closing-section,
+html.light-mode .drawer-closing-section {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.08) 0%, rgba(245, 158, 11, 0.03) 100%) !important;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
+}
+
+[data-theme="light"] .closing-header,
+html.light-mode .closing-header {
+  color: #b45309 !important;
+}
+
+[data-theme="light"] .closing-title,
+html.light-mode .closing-title {
+  color: #b45309 !important;
+}
+
+[data-theme="light"] .closing-summary,
+html.light-mode .closing-summary {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .summary-title,
+html.light-mode .summary-title {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .wallet-summary-card,
+html.light-mode .wallet-summary-card {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .wallet-summary-card:hover,
+html.light-mode .wallet-summary-card:hover {
+  border-color: #3b82f6 !important;
+}
+
+[data-theme="light"] .wallet-summary-name,
+html.light-mode .wallet-summary-name {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .wallet-summary-balance,
+html.light-mode .wallet-summary-balance {
+  color: #10b981 !important;
+}
+
+[data-theme="light"] .wallet-summary-stats,
+html.light-mode .wallet-summary-stats {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .stat-item,
+html.light-mode .stat-item {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 6px !important;
+  padding: 6px 10px !important;
+}
+
+[data-theme="light"] .stat-label,
+html.light-mode .stat-label {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .stat-value,
+html.light-mode .stat-value {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .stat-value.positive,
+html.light-mode .stat-value.positive {
+  color: #10b981 !important;
+}
+
+[data-theme="light"] .stat-value.negative,
+html.light-mode .stat-value.negative {
+  color: #ef4444 !important;
+}
+
+/* Closing Form */
+[data-theme="light"] .closing-input-group label,
+html.light-mode .closing-input-group label {
+  color: #374151 !important;
+}
+
+[data-theme="light"] .closing-input,
+html.light-mode .closing-input {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .closing-input:focus,
+html.light-mode .closing-input:focus {
+  border-color: #f59e0b !important;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.15) !important;
+}
+
+/* Quick Action Buttons Row */
+[data-theme="light"] .drawer-quick-actions,
+html.light-mode .drawer-quick-actions {
+  background: transparent !important;
+}
+
+[data-theme="light"] .action-btn,
+html.light-mode .action-btn {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #475569 !important;
+}
+
+[data-theme="light"] .action-btn:hover,
+html.light-mode .action-btn:hover {
+  background: #f1f5f9 !important;
+  border-color: #3b82f6 !important;
+  color: #3b82f6 !important;
+}
+
+[data-theme="light"] .action-btn.deposit,
+html.light-mode .action-btn.deposit {
+  background: rgba(16, 185, 129, 0.1) !important;
+  border-color: rgba(16, 185, 129, 0.3) !important;
+  color: #10b981 !important;
+}
+
+[data-theme="light"] .action-btn.withdraw,
+html.light-mode .action-btn.withdraw {
+  background: rgba(239, 68, 68, 0.1) !important;
+  border-color: rgba(239, 68, 68, 0.3) !important;
+  color: #ef4444 !important;
+}
+
+/* Transfer & History Buttons */
+[data-theme="light"] .transfer-btn,
+[data-theme="light"] .history-btn,
+html.light-mode .transfer-btn,
+html.light-mode .history-btn {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #475569 !important;
+}
+
+[data-theme="light"] .transfer-btn:hover,
+[data-theme="light"] .history-btn:hover,
+html.light-mode .transfer-btn:hover,
+html.light-mode .history-btn:hover {
+  background: #f1f5f9 !important;
+  border-color: #3b82f6 !important;
+  color: #3b82f6 !important;
+}
+
+/* Collapse Toggle */
+[data-theme="light"] .collapse-icon,
+html.light-mode .collapse-icon {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .collapsible-content,
+html.light-mode .collapsible-content {
+  background: transparent !important;
+}
+
+/* ═══════════════════════════════════════
+   💰 CASH DRAWER - WALLETS SUMMARY SECTION (LIGHT FIX)
+   ملخص المحافظ - ما سيُسجل في الخزنة
+   ═══════════════════════════════════════ */
+
+[data-theme="light"] .drawer-wallets-summary,
+html.light-mode .drawer-wallets-summary {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .wallets-summary-header,
+html.light-mode .wallets-summary-header {
+  background: transparent !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .wallets-summary-title,
+html.light-mode .wallets-summary-title {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .wallets-summary-subtitle,
+html.light-mode .wallets-summary-subtitle {
+  color: #3b82f6 !important;
+}
+
+/* Wallet Cards - كاش سائل، محفظة إلكترونية، حساب بنكي */
+[data-theme="light"] .wallet-card,
+html.light-mode .wallet-card {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .wallet-card:hover,
+html.light-mode .wallet-card:hover {
+  background: #f1f5f9 !important;
+  border-color: #3b82f6 !important;
+}
+
+[data-theme="light"] .wallet-header,
+html.light-mode .wallet-header {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .wallet-name,
+html.light-mode .wallet-name {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .wallet-icon,
+html.light-mode .wallet-icon {
+  color: #3b82f6 !important;
+}
+
+/* Wallet Stats Grid - مبيعات، إيداعات، مسحوبات، مشتريات، الصافي */
+[data-theme="light"] .wallet-stats,
+html.light-mode .wallet-stats {
+  background: transparent !important;
+}
+
+[data-theme="light"] .wallet-stat,
+html.light-mode .wallet-stat {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 6px !important;
+}
+
+[data-theme="light"] .wallet-stat-label,
+html.light-mode .wallet-stat-label {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .wallet-stat-value,
+html.light-mode .wallet-stat-value {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .wallet-stat-value.positive,
+html.light-mode .wallet-stat-value.positive {
+  color: #10b981 !important;
+}
+
+[data-theme="light"] .wallet-stat-value.negative,
+html.light-mode .wallet-stat-value.negative {
+  color: #ef4444 !important;
+}
+
+/* Total Row - إجمالي ما سيُسجل في الخزنة */
+[data-theme="light"] .wallets-total,
+html.light-mode .wallets-total {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%) !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+  border-radius: 8px !important;
+}
+
+[data-theme="light"] .wallets-total-label,
+html.light-mode .wallets-total-label {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .wallets-total-value,
+html.light-mode .wallets-total-value {
+  color: #10b981 !important;
+}
+
+/* Cash Matching Section - مطابقة درج الكاش */
+[data-theme="light"] .drawer-matching-section,
+html.light-mode .drawer-matching-section {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .matching-header,
+html.light-mode .matching-header {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .matching-title,
+html.light-mode .matching-title {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .matching-description,
+html.light-mode .matching-description {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .matching-status,
+html.light-mode .matching-status {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #64748b !important;
+}
+
+[data-theme="light"] .matching-status.waiting,
+html.light-mode .matching-status.waiting {
+  background: rgba(245, 158, 11, 0.1) !important;
+  border-color: rgba(245, 158, 11, 0.3) !important;
+  color: #b45309 !important;
+}
+
+[data-theme="light"] .matching-status.matched,
+html.light-mode .matching-status.matched {
+  background: rgba(16, 185, 129, 0.1) !important;
+  border-color: rgba(16, 185, 129, 0.3) !important;
+  color: #10b981 !important;
+}
+
+[data-theme="light"] .matching-btn,
+html.light-mode .matching-btn {
+  background: #3b82f6 !important;
+  border: none !important;
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .matching-btn:hover,
+html.light-mode .matching-btn:hover {
+  background: #2563eb !important;
+}
+
+/* ═══════════════════════════════════════
+   💰 CASH DRAWER - CLOSING WALLETS BREAKDOWN (LIGHT FIX)
+   ملخص المحافظ - ما سيُسجل في الخزنة
+   ═══════════════════════════════════════ */
+
+[data-theme="light"] .closing-wallets-breakdown,
+html.light-mode .closing-wallets-breakdown {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 12px !important;
+  padding: 16px !important;
+}
+
+[data-theme="light"] .breakdown-title,
+html.light-mode .breakdown-title {
+  color: #0f172a !important;
+  font-weight: 600 !important;
+  margin-bottom: 12px !important;
+}
+
+/* Wallet Rows - كاش سائل، محفظة إلكترونية، حساب بنكي */
+[data-theme="light"] .closing-wallet-row,
+html.light-mode .closing-wallet-row {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 8px !important;
+  margin-bottom: 10px !important;
+  padding: 12px !important;
+}
+
+[data-theme="light"] .closing-wallet-row:hover,
+html.light-mode .closing-wallet-row:hover {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+}
+
+/* Wallet Row Header */
+[data-theme="light"] .wallet-row-header,
+html.light-mode .wallet-row-header {
+  color: #0f172a !important;
+  margin-bottom: 8px !important;
+}
+
+[data-theme="light"] .wallet-row-icon,
+html.light-mode .wallet-row-icon {
+  color: #3b82f6 !important;
+}
+
+[data-theme="light"] .wallet-row-name,
+html.light-mode .wallet-row-name {
+  color: #0f172a !important;
+  font-weight: 600 !important;
+}
+
+/* Wallet Row Details Grid */
+[data-theme="light"] .wallet-row-details,
+html.light-mode .wallet-row-details {
+  background: transparent !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+}
+
+[data-theme="light"] .wallet-detail,
+html.light-mode .wallet-detail {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 6px !important;
+  padding: 6px 10px !important;
+  text-align: center !important;
+}
+
+[data-theme="light"] .detail-label,
+html.light-mode .detail-label {
+  color: #64748b !important;
+  font-size: 11px !important;
+  display: block !important;
+}
+
+[data-theme="light"] .detail-value,
+html.light-mode .detail-value {
+  color: #0f172a !important;
+  font-weight: 600 !important;
+  font-size: 13px !important;
+}
+
+[data-theme="light"] .detail-value.positive,
+html.light-mode .detail-value.positive {
+  color: #10b981 !important;
+}
+
+[data-theme="light"] .detail-value.negative,
+html.light-mode .detail-value.negative {
+  color: #ef4444 !important;
+}
+
+/* Net Row - الصافي */
+[data-theme="light"] .wallet-net,
+html.light-mode .wallet-net {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%) !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+  border-radius: 6px !important;
+  padding: 8px 12px !important;
+}
+
+[data-theme="light"] .wallet-net .detail-label,
+html.light-mode .wallet-net .detail-label {
+  color: #047857 !important;
+}
+
+[data-theme="light"] .wallet-net .detail-value,
+html.light-mode .wallet-net .detail-value {
+  color: #10b981 !important;
+  font-weight: 700 !important;
+}
+
+/* Total Section - إجمالي ما سيُسجل في الخزنة */
+[data-theme="light"] .closing-total-row,
+html.light-mode .closing-total-row {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(59, 130, 246, 0.05) 100%) !important;
+  border: 2px solid rgba(59, 130, 246, 0.3) !important;
+  border-radius: 10px !important;
+  padding: 14px !important;
+  margin-top: 12px !important;
+}
+
+[data-theme="light"] .closing-total-label,
+html.light-mode .closing-total-label {
+  color: #1e40af !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="light"] .closing-total-value,
+html.light-mode .closing-total-value {
+  color: #3b82f6 !important;
+  font-weight: 700 !important;
+  font-size: 18px !important;
+}

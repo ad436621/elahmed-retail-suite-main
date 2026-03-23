@@ -1,0 +1,62 @@
+<!-- صفحة نقطة البيع - POS (مؤقت - سيتم تحويلها بالكامل لاحقاً) -->
+<style>
+  .loading-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 70vh;
+    text-align: center;
+  }
+  .loading-placeholder .icon {
+    font-size: 80px;
+    margin-bottom: 20px;
+    animation: pulse 2s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.1); opacity: 0.8; }
+  }
+  .loading-placeholder h2 {
+    font-size: 24px;
+    color: var(--text-primary);
+    margin-bottom: 10px;
+  }
+  .loading-placeholder p {
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+  }
+  .fallback-btn {
+    padding: 14px 28px;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+  .fallback-btn:hover {
+    background: var(--accent-hover);
+    transform: translateY(-2px);
+  }
+</style>
+
+<div class="loading-placeholder">
+  <div class="icon">🛒</div>
+  <h2>نقطة البيع</h2>
+  <p>جاري تحميل صفحة نقطة البيع...</p>
+  <button class="fallback-btn" onclick="window.location.href='./pos.html'">
+    فتح بالطريقة التقليدية
+  </button>
+</div>
+
+<script>
+// مؤقتاً: فتح الصفحة القديمة
+window.init_pos = function() {
+  console.log('[POS] Page loaded - redirecting to full page');
+  // يمكن إزالة هذا السطر عند تحويل الصفحة بالكامل
+  // window.location.href = './pos.html';
+};
+</script>

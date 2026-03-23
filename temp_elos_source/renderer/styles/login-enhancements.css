@@ -1,0 +1,942 @@
+/**
+ * ELOS Login Page Enhancements
+ * تحسينات صفحة تسجيل الدخول
+ * Version: 2.0 - Glass & Glow Edition
+ */
+
+/* ═══════════════════════════════════════
+   LOGIN PAGE BACKGROUND - خلفية صفحة الدخول
+   ═══════════════════════════════════════ */
+.login-page {
+  background: #0a0e14 !important;
+  position: relative;
+}
+
+html[data-theme="light"] .login-page {
+  background: #f8fafc !important;
+}
+
+/* Subtle ambient glow effect */
+.login-page::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(circle, rgba(59, 130, 246, 0.08) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+html[data-theme="light"] .login-page::before {
+  background: radial-gradient(circle, rgba(37, 99, 235, 0.06) 0%, transparent 70%);
+}
+
+/* ═══════════════════════════════════════
+   LOGIN HEADER - ترويسة صفحة الدخول
+   ═══════════════════════════════════════ */
+.login-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  padding: 8px 16px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.6875rem;
+  color: #8b949e;
+  border-bottom: 1px solid rgba(59, 130, 246, 0.15);
+  background: rgba(10, 14, 20, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 100;
+  -webkit-app-region: drag;
+}
+
+html[data-theme="light"] .login-header {
+  color: #64748b;
+  border-bottom-color: rgba(37, 99, 235, 0.12);
+  background: rgba(248, 250, 252, 0.9);
+}
+
+.header-section {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 600;
+  color: #c9d1d9;
+}
+
+html[data-theme="light"] .header-brand {
+  color: #24292f;
+}
+
+.header-brand-icon {
+  font-size: 1rem;
+}
+
+.header-brand-text {
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+}
+
+.header-status {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.625rem;
+  color: #8b949e;
+}
+
+html[data-theme="light"] .header-status {
+  color: #57606a;
+}
+
+.header-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #3fb950;
+  box-shadow: 0 0 4px rgba(63, 185, 80, 0.5);
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.header-status-dot.offline {
+  background: #f85149;
+  box-shadow: 0 0 4px rgba(248, 81, 73, 0.5);
+  animation: none;
+}
+
+.header-time {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.6875rem;
+  color: #8b949e;
+  font-weight: 500;
+}
+
+html[data-theme="light"] .header-time {
+  color: #57606a;
+}
+
+.header-time-icon {
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+.header-divider {
+  width: 1px;
+  height: 10px;
+  background: #30363d;
+  opacity: 0.5;
+}
+
+html[data-theme="light"] .header-divider {
+  background: #d0d7de;
+}
+
+/* ═══════════════════════════════════════
+   WINDOW CONTROLS IN HEADER - أزرار النافذة في الهيدر
+   ═══════════════════════════════════════ */
+.window-controls-header {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  -webkit-app-region: no-drag;
+}
+
+.window-btn-header {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  border-radius: 4px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  -webkit-app-region: no-drag;
+}
+
+.window-btn-header svg {
+  width: 12px;
+  height: 12px;
+  stroke: #8b949e;
+  stroke-width: 2;
+  stroke-linecap: round;
+  fill: none;
+}
+
+.window-btn-header:hover {
+  background: rgba(139, 148, 158, 0.15);
+}
+
+.window-btn-header:hover svg {
+  stroke: #c9d1d9;
+}
+
+.window-btn-header.close:hover {
+  background: #f85149;
+}
+
+.window-btn-header.close:hover svg {
+  stroke: #ffffff;
+}
+
+html[data-theme="light"] .window-btn-header svg {
+  stroke: #57606a;
+}
+
+html[data-theme="light"] .window-btn-header:hover {
+  background: rgba(87, 96, 106, 0.12);
+}
+
+html[data-theme="light"] .window-btn-header:hover svg {
+  stroke: #24292f;
+}
+
+html[data-theme="light"] .window-btn-header.close:hover {
+  background: #cf222e;
+}
+
+html[data-theme="light"] .window-btn-header.close:hover svg {
+  stroke: #ffffff;
+}
+
+/* Make header links and buttons non-draggable */
+.login-header .header-section,
+.login-header .header-brand,
+.login-header .header-status,
+.login-header .header-time {
+  -webkit-app-region: no-drag;
+}
+
+/* ═══════════════════════════════════════
+   LOGIN FOOTER - معلومات الصفحة السفلية
+   ═══════════════════════════════════════ */
+.login-footer {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 8px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.6875rem;
+  color: #6e7681;
+  border-top: 1px solid rgba(48, 54, 61, 0.4);
+  background: rgba(13, 17, 23, 0.5);
+  backdrop-filter: blur(8px);
+  z-index: 5;
+}
+
+html[data-theme="light"] .login-footer {
+  color: #57606a;
+  border-top-color: rgba(208, 215, 222, 0.6);
+  background: rgba(246, 248, 250, 0.7);
+}
+
+.footer-section {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.footer-version {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-weight: 500;
+}
+
+.footer-version-number {
+  color: #58a6ff;
+  font-weight: 600;
+}
+
+html[data-theme="light"] .footer-version-number {
+  color: #2563eb;
+}
+
+.footer-links {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.footer-link {
+  color: #8b949e;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-size: 0.6875rem;
+}
+
+.footer-link:hover {
+  color: #58a6ff;
+  background: rgba(88, 166, 255, 0.08);
+}
+
+html[data-theme="light"] .footer-link {
+  color: #57606a;
+}
+
+html[data-theme="light"] .footer-link:hover {
+  color: #2563eb;
+  background: rgba(37, 99, 235, 0.06);
+}
+
+.footer-copyright {
+  font-size: 0.625rem;
+  opacity: 0.7;
+}
+
+.footer-divider {
+  width: 1px;
+  height: 10px;
+  background: #30363d;
+  opacity: 0.5;
+}
+
+html[data-theme="light"] .footer-divider {
+  background: #d0d7de;
+}
+
+/* ═══════════════════════════════════════
+   زر تبديل الثيم في الفوتر
+   ═══════════════════════════════════════ */
+.theme-toggle-btn {
+  background: none;
+  border: none;
+  color: #8b949e;
+  cursor: pointer;
+  padding: 3px 6px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.6875rem;
+  transition: all 0.15s ease;
+}
+
+.theme-toggle-btn:hover {
+  color: #58a6ff;
+  background: rgba(88, 166, 255, 0.08);
+}
+
+html[data-theme="light"] .theme-toggle-btn {
+  color: #57606a;
+}
+
+html[data-theme="light"] .theme-toggle-btn:hover {
+  color: #2563eb;
+  background: rgba(37, 99, 235, 0.06);
+}
+
+.theme-toggle-btn .theme-icon {
+  font-size: 0.75rem;
+}
+
+/* ═══════════════════════════════════════
+   تاريخ آخر تسجيل دخول في بطاقة المستخدم
+   ═══════════════════════════════════════ */
+.user-last-login {
+  font-size: 0.5625rem;
+  color: #6e7681;
+  margin-top: 1px;
+  opacity: 0.85;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+html[data-theme="light"] .user-last-login {
+  color: #8c959f;
+}
+
+.user-card:hover .user-last-login {
+  color: #8b949e;
+}
+
+html[data-theme="light"] .user-card:hover .user-last-login {
+  color: #57606a;
+}
+
+/* ═══════════════════════════════════════
+   GLASSMORPHISM USER CARDS - بطاقات المستخدمين الزجاجية
+   ═══════════════════════════════════════ */
+.user-card {
+  position: relative;
+  overflow: hidden;
+  /* Glass effect - Dark mode */
+  background: rgba(30, 41, 59, 0.4) !important;
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(148, 163, 184, 0.15) !important;
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+html[data-theme="light"] .user-card {
+  /* Glass effect - Light mode */
+  background: rgba(255, 255, 255, 0.6) !important;
+  backdrop-filter: blur(16px) saturate(180%);
+  -webkit-backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(148, 163, 184, 0.3) !important;
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+/* Glass shine effect overlay */
+.user-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.08),
+    transparent
+  );
+  opacity: 0;
+  transition: all 0.5s ease;
+  pointer-events: none;
+  border-radius: inherit;
+  z-index: 1;
+}
+
+.user-card:hover::before {
+  left: 100%;
+  opacity: 1;
+}
+
+/* Hover state with glow */
+.user-card:hover {
+  transform: translateY(-4px) scale(1.02) !important;
+  border-color: rgba(59, 130, 246, 0.5) !important;
+  box-shadow:
+    0 8px 32px rgba(59, 130, 246, 0.25),
+    0 0 0 1px rgba(59, 130, 246, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+}
+
+html[data-theme="light"] .user-card:hover {
+  border-color: rgba(37, 99, 235, 0.4) !important;
+  box-shadow:
+    0 8px 32px rgba(37, 99, 235, 0.15),
+    0 0 0 1px rgba(37, 99, 235, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+.user-card:focus {
+  outline: none;
+  border-color: #3b82f6 !important;
+  box-shadow:
+    0 0 0 3px rgba(59, 130, 246, 0.25),
+    0 8px 32px rgba(59, 130, 246, 0.2) !important;
+}
+
+html[data-theme="light"] .user-card:focus {
+  border-color: #2563eb !important;
+  box-shadow:
+    0 0 0 3px rgba(37, 99, 235, 0.2),
+    0 8px 32px rgba(37, 99, 235, 0.12) !important;
+}
+
+.user-card.keyboard-focus {
+  animation: glassGlow 1.5s ease-in-out infinite;
+}
+
+@keyframes glassGlow {
+  0%, 100% {
+    box-shadow:
+      0 0 0 3px rgba(59, 130, 246, 0.2),
+      0 8px 32px rgba(59, 130, 246, 0.15);
+  }
+  50% {
+    box-shadow:
+      0 0 0 4px rgba(59, 130, 246, 0.35),
+      0 8px 32px rgba(59, 130, 246, 0.3),
+      0 0 40px rgba(59, 130, 246, 0.15);
+  }
+}
+
+/* Selected card with glass enhancement */
+.user-card.selected {
+  transform: scale(1.02);
+  background: rgba(59, 130, 246, 0.15) !important;
+  border-color: rgba(59, 130, 246, 0.5) !important;
+  box-shadow:
+    0 0 0 2px rgba(59, 130, 246, 0.3),
+    0 8px 32px rgba(59, 130, 246, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+}
+
+html[data-theme="light"] .user-card.selected {
+  background: rgba(37, 99, 235, 0.1) !important;
+  border-color: rgba(37, 99, 235, 0.4) !important;
+  box-shadow:
+    0 0 0 2px rgba(37, 99, 235, 0.2),
+    0 8px 32px rgba(37, 99, 235, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+.user-card.selected::after {
+  content: '';
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  width: 10px;
+  height: 10px;
+  background: linear-gradient(135deg, #10b981, #34d399);
+  border-radius: 50%;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.5);
+  z-index: 2;
+  animation: checkPulse 2s ease-in-out infinite;
+}
+
+@keyframes checkPulse {
+  0%, 100% { box-shadow: 0 0 8px rgba(16, 185, 129, 0.5); }
+  50% { box-shadow: 0 0 16px rgba(16, 185, 129, 0.8); }
+}
+
+html[data-theme="light"] .user-card.selected::after {
+  background: linear-gradient(135deg, #059669, #10b981);
+  box-shadow: 0 0 8px rgba(5, 150, 105, 0.4);
+}
+
+/* User avatar glass enhancement */
+.user-avatar {
+  position: relative;
+  z-index: 1;
+  box-shadow:
+    0 4px 12px rgba(59, 130, 246, 0.3),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.user-card:hover .user-avatar {
+  box-shadow:
+    0 6px 20px rgba(59, 130, 246, 0.4),
+    inset 0 -2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Other user card (+ button) glass style */
+.user-card.other-user {
+  background: rgba(71, 85, 105, 0.3) !important;
+  border: 1px dashed rgba(148, 163, 184, 0.3) !important;
+}
+
+html[data-theme="light"] .user-card.other-user {
+  background: rgba(241, 245, 249, 0.6) !important;
+  border: 1px dashed rgba(148, 163, 184, 0.4) !important;
+}
+
+.user-card.other-user:hover {
+  background: rgba(59, 130, 246, 0.15) !important;
+  border: 1px solid rgba(59, 130, 246, 0.4) !important;
+}
+
+html[data-theme="light"] .user-card.other-user:hover {
+  background: rgba(37, 99, 235, 0.1) !important;
+  border: 1px solid rgba(37, 99, 235, 0.3) !important;
+}
+
+/* ═══════════════════════════════════════
+   GLOWING LOGIN BUTTON - زر الدخول المتوهج
+   ═══════════════════════════════════════ */
+.password-form .btn,
+.username-form .btn,
+#btn,
+#btn2 {
+  position: relative;
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%) !important;
+  border: none !important;
+  box-shadow:
+    0 4px 15px rgba(59, 130, 246, 0.4),
+    0 0 0 0 rgba(59, 130, 246, 0),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Glow pulse animation */
+.password-form .btn::before,
+.username-form .btn::before,
+#btn::before,
+#btn2::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.25),
+    transparent
+  );
+  transition: left 0.5s ease;
+  z-index: 1;
+}
+
+.password-form .btn:hover::before,
+.username-form .btn:hover::before,
+#btn:hover::before,
+#btn2:hover::before {
+  left: 100%;
+}
+
+/* Outer glow ring on hover */
+.password-form .btn::after,
+.username-form .btn::after,
+#btn::after,
+#btn2::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(135deg, #60a5fa, #3b82f6, #2563eb, #3b82f6);
+  border-radius: 12px;
+  z-index: -1;
+  opacity: 0;
+  filter: blur(8px);
+  transition: opacity 0.3s ease;
+}
+
+.password-form .btn:hover::after,
+.username-form .btn:hover::after,
+#btn:hover::after,
+#btn2:hover::after {
+  opacity: 1;
+  animation: glowPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes glowPulse {
+  0%, 100% {
+    opacity: 0.6;
+    filter: blur(8px);
+  }
+  50% {
+    opacity: 1;
+    filter: blur(12px);
+  }
+}
+
+/* Hover state */
+.password-form .btn:hover:not(:disabled),
+.username-form .btn:hover:not(:disabled),
+#btn:hover:not(:disabled),
+#btn2:hover:not(:disabled) {
+  transform: translateY(-3px) !important;
+  box-shadow:
+    0 8px 25px rgba(59, 130, 246, 0.5),
+    0 0 40px rgba(59, 130, 246, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+}
+
+/* Active/Click state */
+.password-form .btn:active:not(:disabled),
+.username-form .btn:active:not(:disabled),
+#btn:active:not(:disabled),
+#btn2:active:not(:disabled) {
+  transform: translateY(-1px) scale(0.98) !important;
+  box-shadow:
+    0 4px 15px rgba(59, 130, 246, 0.4),
+    inset 0 2px 4px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Light theme glow button */
+html[data-theme="light"] .password-form .btn,
+html[data-theme="light"] .username-form .btn,
+html[data-theme="light"] #btn,
+html[data-theme="light"] #btn2 {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 50%, #1e40af 100%) !important;
+  box-shadow:
+    0 4px 15px rgba(37, 99, 235, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+}
+
+html[data-theme="light"] .password-form .btn:hover:not(:disabled),
+html[data-theme="light"] .username-form .btn:hover:not(:disabled),
+html[data-theme="light"] #btn:hover:not(:disabled),
+html[data-theme="light"] #btn2:hover:not(:disabled) {
+  box-shadow:
+    0 8px 25px rgba(37, 99, 235, 0.4),
+    0 0 40px rgba(37, 99, 235, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+}
+
+/* Button text styling */
+.password-form .btn span,
+.username-form .btn span,
+#btnText,
+#btnText2 {
+  position: relative;
+  z-index: 2;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* ═══════════════════════════════════════
+   GLASS INPUT FIELDS - حقول الإدخال الزجاجية
+   ═══════════════════════════════════════ */
+.password-form input,
+.username-form input,
+#password,
+#passwordField,
+#usernameField {
+  background: rgba(30, 41, 59, 0.5) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+html[data-theme="light"] .password-form input,
+html[data-theme="light"] .username-form input,
+html[data-theme="light"] #password,
+html[data-theme="light"] #passwordField,
+html[data-theme="light"] #usernameField {
+  background: rgba(255, 255, 255, 0.7) !important;
+  border: 1px solid rgba(148, 163, 184, 0.3) !important;
+}
+
+/* Focus state with glow */
+.password-form input:focus,
+.username-form input:focus,
+#password:focus,
+#passwordField:focus,
+#usernameField:focus {
+  border-color: rgba(59, 130, 246, 0.6) !important;
+  box-shadow:
+    0 0 0 3px rgba(59, 130, 246, 0.15),
+    0 0 20px rgba(59, 130, 246, 0.1),
+    inset 0 0 0 1px rgba(59, 130, 246, 0.1) !important;
+  background: rgba(30, 41, 59, 0.7) !important;
+}
+
+html[data-theme="light"] .password-form input:focus,
+html[data-theme="light"] .username-form input:focus,
+html[data-theme="light"] #password:focus,
+html[data-theme="light"] #passwordField:focus,
+html[data-theme="light"] #usernameField:focus {
+  border-color: rgba(37, 99, 235, 0.5) !important;
+  box-shadow:
+    0 0 0 3px rgba(37, 99, 235, 0.12),
+    0 0 20px rgba(37, 99, 235, 0.08) !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+}
+
+/* ═══════════════════════════════════════
+   GLASS SELECTED USER DISPLAY - عرض المستخدم المختار
+   ═══════════════════════════════════════ */
+.selected-user-display {
+  background: rgba(30, 41, 59, 0.4) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(148, 163, 184, 0.15) !important;
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+html[data-theme="light"] .selected-user-display {
+  background: rgba(255, 255, 255, 0.6) !important;
+  border: 1px solid rgba(148, 163, 184, 0.25) !important;
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+/* ═══════════════════════════════════════
+   ENHANCED LOGO GLOW - تحسين توهج الشعار
+   ═══════════════════════════════════════ */
+
+/* Support for image logo */
+.brand-icon .brand-logo-img {
+  filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.4)) drop-shadow(0 4px 12px rgba(59, 130, 246, 0.3)) !important;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.brand-icon:hover .brand-logo-img {
+  filter: drop-shadow(0 0 30px rgba(59, 130, 246, 0.6)) drop-shadow(0 6px 20px rgba(59, 130, 246, 0.4)) !important;
+  transform: scale(1.05);
+}
+
+html[data-theme="light"] .brand-icon .brand-logo-img {
+  filter: drop-shadow(0 0 20px rgba(37, 99, 235, 0.3)) drop-shadow(0 4px 12px rgba(37, 99, 235, 0.25)) !important;
+}
+
+html[data-theme="light"] .brand-icon:hover .brand-logo-img {
+  filter: drop-shadow(0 0 30px rgba(37, 99, 235, 0.5)) drop-shadow(0 6px 20px rgba(37, 99, 235, 0.35)) !important;
+}
+
+/* Legacy SVG support (fallback) */
+.brand-icon svg {
+  filter: drop-shadow(0 0 20px rgba(59, 130, 246, 0.4)) drop-shadow(0 4px 12px rgba(59, 130, 246, 0.3)) !important;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.brand-icon:hover svg {
+  filter: drop-shadow(0 0 30px rgba(59, 130, 246, 0.6)) drop-shadow(0 6px 20px rgba(59, 130, 246, 0.4)) !important;
+  transform: scale(1.05);
+}
+
+html[data-theme="light"] .brand-icon svg {
+  filter: drop-shadow(0 0 20px rgba(37, 99, 235, 0.3)) drop-shadow(0 4px 12px rgba(37, 99, 235, 0.25)) !important;
+}
+
+html[data-theme="light"] .brand-icon:hover svg {
+  filter: drop-shadow(0 0 30px rgba(37, 99, 235, 0.5)) drop-shadow(0 6px 20px rgba(37, 99, 235, 0.35)) !important;
+}
+
+/* Logo text glow */
+.logo-text {
+  text-shadow: 0 0 30px rgba(59, 130, 246, 0.2);
+  transition: text-shadow 0.3s ease;
+}
+
+.logo:hover .logo-text {
+  text-shadow: 0 0 40px rgba(59, 130, 246, 0.35);
+}
+
+html[data-theme="light"] .logo-text {
+  text-shadow: none;
+}
+
+html[data-theme="light"] .logo:hover .logo-text {
+  text-shadow: 0 0 40px rgba(37, 99, 235, 0.2);
+}
+
+/* Product name glow */
+.product-name {
+  text-shadow: 0 0 20px rgba(88, 166, 255, 0.3);
+  transition: text-shadow 0.3s ease;
+}
+
+.logo:hover .product-name {
+  text-shadow: 0 0 30px rgba(88, 166, 255, 0.5);
+}
+
+html[data-theme="light"] .product-name {
+  text-shadow: 0 0 20px rgba(37, 99, 235, 0.15);
+}
+
+html[data-theme="light"] .logo:hover .product-name {
+  text-shadow: 0 0 30px rgba(37, 99, 235, 0.3);
+}
+
+/* ═══════════════════════════════════════
+   GLASS MODAL OVERLAY - نافذة المودال الزجاجية
+   ═══════════════════════════════════════ */
+.modal-overlay.show {
+  background: rgba(10, 14, 20, 0.85) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+html[data-theme="light"] .modal-overlay.show {
+  background: rgba(15, 23, 42, 0.6) !important;
+}
+
+.modal {
+  background: rgba(22, 27, 34, 0.95) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(148, 163, 184, 0.15) !important;
+  box-shadow:
+    0 24px 48px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 255, 255, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+}
+
+html[data-theme="light"] .modal {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid rgba(148, 163, 184, 0.3) !important;
+  box-shadow:
+    0 24px 48px rgba(0, 0, 0, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+}
+
+/* ═══════════════════════════════════════
+   ENHANCED HEADER & FOOTER GLASS - تحسين الهيدر والفوتر
+   ═══════════════════════════════════════ */
+.login-footer {
+  background: rgba(10, 14, 20, 0.85) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(59, 130, 246, 0.15) !important;
+}
+
+html[data-theme="light"] .login-footer {
+  background: rgba(248, 250, 252, 0.9) !important;
+  border-top-color: rgba(37, 99, 235, 0.12) !important;
+}
+
+/* Theme toggle button glass effect */
+.theme-toggle-btn {
+  background: rgba(59, 130, 246, 0.1) !important;
+  border-radius: 6px;
+  transition: all 0.25s ease !important;
+}
+
+.theme-toggle-btn:hover {
+  background: rgba(59, 130, 246, 0.2) !important;
+  box-shadow: 0 0 15px rgba(59, 130, 246, 0.2);
+}
+
+html[data-theme="light"] .theme-toggle-btn {
+  background: rgba(37, 99, 235, 0.08) !important;
+}
+
+html[data-theme="light"] .theme-toggle-btn:hover {
+  background: rgba(37, 99, 235, 0.15) !important;
+  box-shadow: 0 0 15px rgba(37, 99, 235, 0.15);
+}
+
+/* Footer link glass effect */
+.footer-link {
+  transition: all 0.25s ease !important;
+}
+
+.footer-link:hover {
+  background: rgba(59, 130, 246, 0.1) !important;
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.15);
+}
+
+html[data-theme="light"] .footer-link:hover {
+  background: rgba(37, 99, 235, 0.08) !important;
+  box-shadow: 0 0 10px rgba(37, 99, 235, 0.1);
+}

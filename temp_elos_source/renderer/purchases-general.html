@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>المشتريات العامة • ElOs Accounting</title>
+    <script>
+      // ⚡ تطبيق فوري للثيم - يمنع الوميض
+      (function(){var p=new URLSearchParams(location.search),t=p.get('theme')||localStorage.getItem('elos_theme')||localStorage.getItem('elos-theme')||'dark',h=document.documentElement;h.setAttribute('data-theme',t==='light'?'light':'dark');})();
+    </script>
+  <!-- 🔐 SESSION INJECTION - MUST BE FIRST! -->
+  <script src="session-inject.js"></script>
+  <!-- 📱 SPA Mode Detection -->
+  <script src="spa-mode.js"></script>
+  <!-- 🌙 Theme Sync -->
+  <script src="theme-sync.js"></script>
+  <!-- 🔤 Font Scale Manager -->
+  <script src="js/font-scale-manager.js"></script>
+  <!-- 🔊 Shared Sound & Toast System -->
+  <script src="shared.js"></script>
+  <!-- 🎨 Design System Tokens (theme colors - MUST BE FIRST) -->
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/tokens-alias.css">
+  <!-- 🎨 Design System (component styles) -->
+  <link rel="stylesheet" href="styles/design-system.css">
+  <!-- 🎨 Theme Governance Layer (load LAST to override legacy styles) -->
+  <link rel="stylesheet" href="styles/theme-fixes.css">
+  <!-- 📏 Font Sizes - تحسين أحجام الخطوط -->
+  <link rel="stylesheet" href="styles/font-sizes.css">
+
+    <style>
+      /* ═══════════════════════════════════════
+         Color variables are now in tokens.css and tokens-alias.css
+         Only layout-specific styles here
+         ═══════════════════════════════════════ */
+
+      /* ═══════════════════════════════════════
+         🔧 RESET & BASE
+         ═══════════════════════════════════════ */
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        font-family: system-ui, "Cairo", "Segoe UI", sans-serif;
+        overflow: hidden;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* ═══════════════════════════════════════
+         📱 HEADER
+         ═══════════════════════════════════════ */
+      .header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 10px 24px;
+        background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+        border-bottom: 1px solid var(--border);
+        box-shadow: var(--shadow);
+        flex-shrink: 0;
+        height: 65px;
+      }
+
+      .logo {
+        width: 40px;
+        height: 40px;
+        color: #ffffff;
+        filter: drop-shadow(0 2px 6px rgba(255, 255, 255, 0.15));
+        flex-shrink: 0;
+      }
+
+      .brand {
+        font-weight: 900;
+        font-size: 24px;
+        color: #d1d5db;
+        letter-spacing: 2px;
+        text-shadow: 0 2px 6px rgba(255, 255, 255, 0.1);
+      }
+
+      .brand-container {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+      }
+
+      .page-subtitle {
+        font-size: 11px;
+        color: var(--text-secondary);
+        font-weight: 500;
+        opacity: 0.8;
+      }
+
+      .page-title {
+        font-weight: 900;
+        font-size: 22px;
+        color: var(--text-primary);
+        line-height: 1.2;
+      }
+
+      .header-actions {
+        margin-left: auto;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+
+      /* ═══════════════════════════════════════
+         📊 MAIN LAYOUT
+         ═══════════════════════════════════════ */
+      .main-container {
+        display: flex;
+        flex: 1;
+        overflow: hidden;
+      }
+
+      /* ═══════════════════════════════════════
+         🔍 SIDEBAR FILTERS
+         ═══════════════════════════════════════ */
+      .sidebar {
+        width: 280px;
+        background: var(--bg-secondary);
+        border-left: 1px solid var(--border);
+        padding: 20px;
+        overflow-y: auto;
+        flex-shrink: 0;
+      }
+
+      .filter-group {
+        margin-bottom: 24px;
+      }
+
+      .filter-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        margin-bottom: 8px;
+        display: block;
+      }
+
+      .filter-input {
+        width: 100%;
+        padding: 10px 12px;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        color: var(--text-primary);
+        font-size: 14px;
+        transition: var(--transition);
+      }
+
+      .filter-input:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+      }
+
+      .quick-filters {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 12px;
+      }
+
+      .quick-filter-btn {
+        padding: 8px 12px;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        color: var(--text-primary);
+        font-size: 13px;
+        cursor: pointer;
+        transition: var(--transition);
+        text-align: right;
+      }
+
+      .quick-filter-btn:hover {
+        background: var(--bg-card);
+        border-color: var(--accent);
+      }
+
+      .quick-filter-btn.active {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: white;
+      }
+
+      /* ═══════════════════════════════════════
+         📋 TABLE CONTAINER
+         ═══════════════════════════════════════ */
+      .table-container {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        background: var(--bg-primary);
+      }
+
+      .table-header {
+        padding: 16px 24px;
+        background: var(--bg-secondary);
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-shrink: 0;
+      }
+
+      .table-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text-primary);
+      }
+
+      .table-actions {
+        display: flex;
+        gap: 8px;
+      }
+
+      .table-wrapper {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px 24px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+      }
+
+      thead {
+        position: sticky;
+        top: 0;
+        background: var(--bg-secondary);
+        z-index: 10;
+      }
+
+      th {
+        padding: 12px 16px;
+        text-align: right;
+        font-weight: 600;
+        color: var(--text-secondary);
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 2px solid var(--border);
+      }
+
+      td {
+        padding: 14px 16px;
+        border-bottom: 1px solid var(--border);
+        color: var(--text-primary);
+      }
+
+      tbody tr {
+        transition: background 0.2s;
+      }
+
+      tbody tr:hover {
+        background: var(--bg-secondary);
+        cursor: pointer;
+      }
+
+      .type-badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+
+      .type-device {
+        background: rgba(59, 130, 246, 0.15);
+        color: #60a5fa;
+      }
+
+      .type-accessory {
+        background: rgba(16, 185, 129, 0.15);
+        color: #34d399;
+      }
+
+      .type-repair-part {
+        background: rgba(139, 92, 246, 0.15);
+        color: #a78bfa;
+      }
+
+      .status-badge {
+        display: inline-block;
+        padding: 4px 10px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+      }
+
+      .status-completed {
+        background: rgba(16, 185, 129, 0.15);
+        color: #34d399;
+      }
+
+      .status-returned {
+        background: rgba(239, 68, 68, 0.15);
+        color: #f87171;
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: var(--text-secondary);
+      }
+
+      .empty-state-icon {
+        font-size: 64px;
+        margin-bottom: 16px;
+        opacity: 0.5;
+      }
+
+      .empty-state-text {
+        font-size: 16px;
+        font-weight: 600;
+        margin-bottom: 8px;
+      }
+
+      .empty-state-subtext {
+        font-size: 13px;
+        opacity: 0.7;
+      }
+
+      /* ═══════════════════════════════════════
+         📄 PAGINATION
+         ═══════════════════════════════════════ */
+      .pagination {
+        padding: 16px 24px;
+        background: var(--bg-secondary);
+        border-top: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-shrink: 0;
+      }
+
+      .pagination-info {
+        font-size: 13px;
+        color: var(--text-secondary);
+      }
+
+      .pagination-controls {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+
+      .pagination-btn {
+        padding: 6px 12px;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        color: var(--text-primary);
+        font-size: 13px;
+        cursor: pointer;
+        transition: var(--transition);
+      }
+
+      .pagination-btn:hover:not(:disabled) {
+        background: var(--bg-card);
+        border-color: var(--accent);
+      }
+
+      .pagination-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .pagination-btn.active {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: white;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ═══════════════════════════════════════
+         📱 HEADER
+         ═══════════════════════════════════════ -->
+    <header class="header">
+      <svg class="logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+      </svg>
+      <div class="brand-container">
+        <div class="brand">ELOS</div>
+        <div class="page-subtitle">نظام المحاسبة المتكامل</div>
+      </div>
+      <div class="page-title">المشتريات العامة</div>
+      <div class="header-actions">
+        <button id="refreshBtn" class="pagination-btn" title="تحديث البيانات">
+          🔄 تحديث
+        </button>
+      </div>
+    </header>
+
+    <!-- ═══════════════════════════════════════
+         📊 MAIN CONTAINER
+         ═══════════════════════════════════════ -->
+    <div class="main-container">
+      <!-- ═══════════════════════════════════════
+           🔍 SIDEBAR FILTERS
+           ═══════════════════════════════════════ -->
+      <aside class="sidebar">
+        <div class="filter-group">
+          <label class="filter-label">من تاريخ</label>
+          <input type="date" id="from" class="filter-input" />
+        </div>
+
+        <div class="filter-group">
+          <label class="filter-label">إلى تاريخ</label>
+          <input type="date" id="to" class="filter-input" />
+        </div>
+
+        <div class="filter-group">
+          <label class="filter-label">نوع المشتريات</label>
+          <select id="typeFilter" class="filter-input">
+            <option value="all">الكل</option>
+            <option value="device">أجهزة</option>
+            <option value="accessory">إكسسوارات</option>
+            <option value="repair_part">قطع صيانة</option>
+          </select>
+        </div>
+
+        <div class="filter-group">
+          <label class="filter-label">البحث</label>
+          <input type="text" id="searchInput" class="filter-input" placeholder="اسم المنتج، المورد، أو رقم الفاتورة..." />
+        </div>
+
+        <div class="filter-group">
+          <label class="filter-label">فلترة سريعة</label>
+          <div class="quick-filters">
+            <button class="quick-filter-btn" data-filter="today">اليوم</button>
+            <button class="quick-filter-btn" data-filter="week">هذا الأسبوع</button>
+            <button class="quick-filter-btn" data-filter="month">هذا الشهر</button>
+            <button class="quick-filter-btn" data-filter="year">هذه السنة</button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- ═══════════════════════════════════════
+           📋 TABLE CONTAINER
+           ═══════════════════════════════════════ -->
+      <div class="table-container">
+        <div class="table-header">
+          <div class="table-title">جميع المشتريات</div>
+          <div class="table-actions">
+            <span id="totalCount" style="font-size: 13px; color: var(--text-secondary);">0 عنصر</span>
+          </div>
+        </div>
+
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>التاريخ</th>
+                <th>النوع</th>
+                <th>المنتج</th>
+                <th>المورد</th>
+                <th>الكمية</th>
+                <th>سعر الوحدة</th>
+                <th>الإجمالي</th>
+                <th>المدفوع</th>
+                <th>المتبقي</th>
+                <th>الحالة</th>
+              </tr>
+            </thead>
+            <tbody id="purchasesBody">
+              <tr>
+                <td colspan="10" class="empty-state">
+                  <div class="empty-state-icon">📦</div>
+                  <div class="empty-state-text">جاري التحميل...</div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pagination">
+          <div class="pagination-info">
+            <span id="paginationInfo">0 - 0 من 0</span>
+          </div>
+          <div class="pagination-controls">
+            <button id="prevPage" class="pagination-btn">السابق</button>
+            <span id="pageNumbers"></span>
+            <button id="nextPage" class="pagination-btn">التالي</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         📊 SHARED UTILITIES
+         ═══════════════════════════════════════ -->
+    <script src="js/sales-constants.js"></script>
+    <script src="js/sales-shared.js"></script>
+    <script src="js/sales-error-handler.js"></script>
+    <script src="js/warehouse-handler.js" data-page-type="purchases_general"></script>
+    <script src="purchases-general.js"></script>
+  </body>
+</html>
+

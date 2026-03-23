@@ -1,0 +1,1061 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>التذكيرات والمهام • ELOS System</title>
+  <script>(function(){var p=new URLSearchParams(location.search),t=p.get('theme')||localStorage.getItem('elos_theme')||localStorage.getItem('elos-theme')||'dark',h=document.documentElement;h.setAttribute('data-theme',t==='light'?'light':'dark');})();</script>
+  <script src="session-inject.js"></script>
+  <!-- 🎯 SPA Mode Detection -->
+  <script src="spa-mode.js"></script>
+  <!-- 🔊 Shared Sound & Toast System -->
+  <script src="shared.js"></script>
+  <!-- 🌙 Theme Sync -->
+  <script src="theme-sync.js"></script>
+  <!-- 🔤 Font Scale Manager -->
+  <script src="js/font-scale-manager.js"></script>
+  <!-- 🎨 Design System Tokens (theme colors - MUST BE FIRST) -->
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/tokens-alias.css">
+  <!-- 🎨 Design System (component styles) -->
+  <link rel="stylesheet" href="styles/design-system.css">
+  <!-- 📏 Font Sizes - تحسين أحجام الخطوط -->
+  <link rel="stylesheet" href="styles/font-sizes.css">
+
+  <style>
+    :root {
+      --bg-primary: #0a0e14;
+      --bg-secondary: #151921;
+      --bg-tertiary: #1a1f29;
+      --card: #151921;
+      --text-primary: #e6e8ee;
+      --text-secondary: #8b93a6;
+      --muted: #6b7280;
+      --border: #1e2530;
+      --line: #1e2530;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --purple: #a855f7;
+      --cyan: #06b6d4;
+      --pink: #ec4899;
+      --orange: #f97316;
+      --radius: 12px;
+      --shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg-primary); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, var(--accent) 0%, #1d4ed8 100%); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg, #60a5fa 0%, var(--accent) 100%); }
+    * { scrollbar-width: thin; scrollbar-color: var(--accent) var(--bg-primary); }
+
+    body { 
+      margin: 0; 
+      background: var(--bg-primary); 
+      color: var(--text-primary); 
+      font-family: system-ui, "Cairo", sans-serif; 
+      min-height: 100vh;
+      padding-bottom: 50px;
+    }
+    a { color: inherit; text-decoration: none; }
+
+    /* ═══════════════════════════════════════
+       📱 HEADER
+       ═══════════════════════════════════════ */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 10px 24px;
+      background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+      border-bottom: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      flex-wrap: wrap;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      width: 36px;
+      height: 36px;
+      color: #ffffff;
+      filter: drop-shadow(0 2px 6px rgba(255, 255, 255, 0.15));
+    }
+
+    .brand-container { display: flex; flex-direction: column; gap: 2px; }
+    .brand {
+      font-weight: 900;
+      font-size: 24px;
+      color: #d1d5db;
+      letter-spacing: 3px;
+    }
+    .page-subtitle { font-size: 11px; color: var(--text-secondary); }
+
+    .btn-back {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text-primary);
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .btn-back:hover {
+      background: var(--accent);
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+
+    .spacer { flex: 1; }
+
+    /* Header Cards */
+    .header-cards {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .header-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 14px;
+      background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      min-width: 85px;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+
+    .header-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(59,130,246,0.3);
+      border-color: var(--accent);
+    }
+
+    .header-card.blue { border-top: 2px solid var(--accent); }
+    .header-card.green { border-top: 2px solid var(--success); }
+    .header-card.orange { border-top: 2px solid var(--warning); }
+    .header-card.red { border-top: 2px solid var(--danger); }
+    .header-card.purple { border-top: 2px solid var(--purple); }
+
+    .header-card-icon { font-size: 18px; }
+    .header-card-value {
+      font-size: 16px;
+      font-weight: 900;
+      color: var(--text-primary);
+      font-family: 'Courier New', monospace;
+    }
+    .header-card-label { font-size: 9px; color: var(--text-secondary); }
+
+    /* Clock */
+    .header-clock {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 16px;
+      background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+    .clock-time {
+      font-size: 16px;
+      font-weight: 900;
+      color: var(--accent);
+      font-family: 'Courier New', monospace;
+      direction: ltr;
+    }
+    .clock-date { font-size: 9px; color: var(--text-secondary); }
+
+    /* ═══════════════════════════════════════
+       📊 CONTAINER
+       ═══════════════════════════════════════ */
+    .container {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 20px 24px;
+    }
+
+    /* ═══════════════════════════════════════
+       📑 TABS
+       ═══════════════════════════════════════ */
+    .tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 8px;
+    }
+
+    .tab {
+      padding: 10px 18px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 10px 10px 0 0;
+      color: var(--text-secondary);
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tab:hover { border-color: rgba(59,130,246,0.4); color: var(--accent); }
+    .tab.active {
+      background: linear-gradient(135deg, var(--accent) 0%, #2563eb 100%);
+      color: white;
+      border-color: var(--accent);
+    }
+
+    .tab .badge-count {
+      background: rgba(255,255,255,0.2);
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 11px;
+    }
+
+    .tab.active .badge-count {
+      background: rgba(255,255,255,0.3);
+    }
+
+    /* ═══════════════════════════════════════
+       📦 PANELS
+       ═══════════════════════════════════════ */
+    .panel { display: none; animation: fadeIn 0.3s ease; }
+    .panel.active { display: block; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ═══════════════════════════════════════
+       🎯 SECTION HEADER
+       ═══════════════════════════════════════ */
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    /* ═══════════════════════════════════════
+       🔘 BUTTONS
+       ═══════════════════════════════════════ */
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: inherit;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent) 0%, #2563eb 100%);
+      color: white;
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(59,130,246,0.4); }
+
+    .btn-success {
+      background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+      color: white;
+    }
+    .btn-success:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(16,185,129,0.4); }
+
+    .btn-warning {
+      background: linear-gradient(135deg, var(--warning) 0%, #d97706 100%);
+      color: white;
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%);
+      color: white;
+    }
+
+    .btn-secondary {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover { border-color: var(--accent); }
+
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+    /* ═══════════════════════════════════════
+       📅 FILTERS
+       ═══════════════════════════════════════ */
+    .filters {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .filter-group label {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .filter-group select,
+    .filter-group input {
+      padding: 8px 12px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 13px;
+    }
+
+    /* ═══════════════════════════════════════
+       📦 REMINDERS GRID
+       ═══════════════════════════════════════ */
+    .reminders-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      gap: 16px;
+    }
+
+    /* ═══════════════════════════════════════
+       📋 REMINDER CARD
+       ═══════════════════════════════════════ */
+    .reminder-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .reminder-card::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: var(--accent);
+    }
+
+    .reminder-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+      border-color: var(--accent);
+    }
+
+    .reminder-card.urgent::before { background: var(--danger); }
+    .reminder-card.high::before { background: var(--warning); }
+    .reminder-card.medium::before { background: var(--accent); }
+    .reminder-card.low::before { background: var(--success); }
+    .reminder-card.completed { opacity: 0.6; }
+    .reminder-card.completed::before { background: var(--success); }
+    .reminder-card.overdue::before { background: var(--danger); animation: pulse 1s infinite; }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.5; }
+    }
+
+    .reminder-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .reminder-icon { font-size: 32px; flex-shrink: 0; }
+    .reminder-content { flex: 1; min-width: 0; }
+    .reminder-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; }
+    .reminder-desc { font-size: 13px; color: var(--text-secondary); margin-bottom: 12px; line-height: 1.5; }
+
+    .reminder-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      font-size: 12px;
+      margin-bottom: 12px;
+    }
+
+    .reminder-meta-item {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      color: var(--text-secondary);
+      background: var(--bg-tertiary);
+      padding: 4px 10px;
+      border-radius: 6px;
+    }
+
+    .reminder-actions {
+      display: flex;
+      gap: 6px;
+      justify-content: flex-end;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    /* ═══════════════════════════════════════
+       🏷️ BADGES
+       ═══════════════════════════════════════ */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .badge-urgent { background: rgba(239,68,68,0.15); color: var(--danger); }
+    .badge-high { background: rgba(245,158,11,0.15); color: var(--warning); }
+    .badge-medium { background: rgba(59,130,246,0.15); color: var(--accent); }
+    .badge-low { background: rgba(16,185,129,0.15); color: var(--success); }
+    .badge-completed { background: rgba(16,185,129,0.15); color: var(--success); }
+    .badge-pending { background: rgba(245,158,11,0.15); color: var(--warning); }
+    .badge-overdue { background: rgba(239,68,68,0.15); color: var(--danger); }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-secondary);
+    }
+    .empty-state-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
+
+    /* ═══════════════════════════════════════
+       📅 CALENDAR VIEW
+       ═══════════════════════════════════════ */
+    .calendar-container {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+
+    .calendar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .calendar-title { font-size: 18px; font-weight: 700; }
+
+    .calendar-nav {
+      display: flex;
+      gap: 8px;
+    }
+
+    .calendar-nav button {
+      width: 36px;
+      height: 36px;
+      border: 1px solid var(--border);
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      transition: all 0.2s;
+    }
+
+    .calendar-nav button:hover {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+    }
+
+    .calendar-day-header {
+      text-align: center;
+      padding: 10px;
+      font-weight: 600;
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .calendar-day {
+      aspect-ratio: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 8px;
+      border-radius: 8px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+      position: relative;
+    }
+
+    .calendar-day:hover { background: var(--bg-tertiary); }
+    .calendar-day.today { background: var(--accent); color: white; font-weight: 700; }
+    .calendar-day.other-month { opacity: 0.3; }
+    .calendar-day.has-reminders::after {
+      content: '';
+      position: absolute;
+      bottom: 4px;
+      width: 6px;
+      height: 6px;
+      background: var(--danger);
+      border-radius: 50%;
+    }
+
+    /* ═══════════════════════════════════════
+       🪟 MODAL
+       ═══════════════════════════════════════ */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal.active { display: flex; }
+
+    .modal-content {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      width: 100%;
+      max-width: 550px;
+      max-height: 90vh;
+      overflow: hidden;
+      animation: modalIn 0.3s ease;
+    }
+
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.95) translateY(-20px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-tertiary);
+    }
+
+    .modal-title {
+      font-size: 16px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .close-btn {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: rgba(239,68,68,0.1);
+      color: var(--danger);
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    .close-btn:hover { background: var(--danger); color: white; }
+
+    .modal-body {
+      padding: 20px;
+      overflow-y: auto;
+      max-height: calc(90vh - 140px);
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+      background: var(--bg-tertiary);
+    }
+
+    /* ═══════════════════════════════════════
+       📝 FORMS
+       ═══════════════════════════════════════ */
+    .form-group { margin-bottom: 16px; }
+
+    .form-label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .form-label.required::after {
+      content: ' *';
+      color: var(--danger);
+    }
+
+    .form-input, .form-select, .form-textarea {
+      width: 100%;
+      padding: 10px 14px;
+      background: var(--ds-bg-input, var(--bg-primary));
+      border: 1px solid var(--ds-border, var(--border));
+      border-radius: 8px;
+      color: var(--ds-text, var(--text-primary));
+      font-size: 14px;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+    html[data-theme="light"] .form-input,
+    html[data-theme="light"] .form-select,
+    html[data-theme="light"] .form-textarea {
+      background: #ffffff;
+      border-color: #d1d5db;
+      color: #1f2937;
+      color-scheme: light;
+    }
+
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+    }
+
+    .form-textarea { min-height: 80px; resize: vertical; }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    /* ═══════════════════════════════════════
+       🔔 TOAST
+       ═══════════════════════════════════════ */
+    .toast {
+      position: fixed;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 12px 24px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+      font-size: 14px;
+      z-index: 2000;
+      animation: toastIn 0.3s ease;
+    }
+
+    .toast.success { background: var(--success); color: white; }
+    .toast.error { background: var(--danger); color: white; }
+    .toast.warning { background: var(--warning); color: white; }
+
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+      to { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+
+    /* ═══════════════════════════════════════
+       🦶 FOOTER
+       ═══════════════════════════════════════ */
+    footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 24px;
+      background: var(--card);
+      border-top: 1px solid var(--line);
+      font-size: 10px;
+      color: var(--muted);
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 50;
+    }
+
+    /* ═══════════════════════════════════════
+       📱 RESPONSIVE
+       ═══════════════════════════════════════ */
+    @media (max-width: 768px) {
+      .header { padding: 10px 16px; }
+      .container { padding: 16px; }
+      .header-cards { display: none; }
+      .form-row { grid-template-columns: 1fr; }
+      .reminders-grid { grid-template-columns: 1fr; }
+      .tabs { overflow-x: auto; flex-wrap: nowrap; }
+      .tab { white-space: nowrap; }
+    }
+  </style>
+  <link rel="stylesheet" href="responsive.css">
+</head>
+<body>
+  <!-- ═══════════════════════════════════════
+       📱 HEADER
+       ═══════════════════════════════════════ -->
+  <header class="header">
+    <svg class="logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+      <path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>
+    </svg>
+
+    <div class="brand-container">
+      <span class="brand">ELOS SYSTEM</span>
+      <span class="page-subtitle">⏰ التذكيرات والمهام</span>
+    </div>
+
+    <a href="index.html" class="btn-back">← الرئيسية</a>
+
+    <div class="spacer"></div>
+
+    <div class="header-cards">
+      <div class="header-card blue" onclick="switchTab('all')">
+        <span class="header-card-icon">📋</span>
+        <span class="header-card-value" id="statTotal">0</span>
+        <span class="header-card-label">الكل</span>
+      </div>
+      <div class="header-card orange" onclick="switchTab('pending')">
+        <span class="header-card-icon">⏳</span>
+        <span class="header-card-value" id="statPending">0</span>
+        <span class="header-card-label">قيد الانتظار</span>
+      </div>
+      <div class="header-card red" onclick="switchTab('today')">
+        <span class="header-card-icon">📅</span>
+        <span class="header-card-value" id="statToday">0</span>
+        <span class="header-card-label">اليوم</span>
+      </div>
+      <div class="header-card purple" onclick="switchTab('urgent')">
+        <span class="header-card-icon">🔥</span>
+        <span class="header-card-value" id="statUrgent">0</span>
+        <span class="header-card-label">عاجل</span>
+      </div>
+      <div class="header-card green" onclick="switchTab('completed')">
+        <span class="header-card-icon">✅</span>
+        <span class="header-card-value" id="statCompleted">0</span>
+        <span class="header-card-label">مكتمل</span>
+      </div>
+    </div>
+
+    <div class="header-clock">
+      <span class="clock-time" id="headerTime">00:00:00</span>
+      <span class="clock-date" id="headerDate">--</span>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════════════════════
+       📊 MAIN CONTENT
+       ═══════════════════════════════════════ -->
+  <div class="container">
+    <!-- Tabs -->
+    <div class="tabs">
+      <div class="tab active" data-tab="all" onclick="switchTab('all')">
+        📋 كل التذكيرات <span class="badge-count" id="tabAll">0</span>
+      </div>
+      <div class="tab" data-tab="pending" onclick="switchTab('pending')">
+        ⏳ قيد الانتظار <span class="badge-count" id="tabPending">0</span>
+      </div>
+      <div class="tab" data-tab="today" onclick="switchTab('today')">
+        📅 اليوم <span class="badge-count" id="tabToday">0</span>
+      </div>
+      <div class="tab" data-tab="urgent" onclick="switchTab('urgent')">
+        🔥 عاجل <span class="badge-count" id="tabUrgent">0</span>
+      </div>
+      <div class="tab" data-tab="overdue" onclick="switchTab('overdue')">
+        ⚠️ متأخر <span class="badge-count" id="tabOverdue">0</span>
+      </div>
+      <div class="tab" data-tab="completed" onclick="switchTab('completed')">
+        ✅ مكتمل <span class="badge-count" id="tabCompleted">0</span>
+      </div>
+      <div class="tab" data-tab="calendar" onclick="switchTab('calendar')">
+        📆 التقويم
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         📋 REMINDERS PANEL
+         ═══════════════════════════════════════ -->
+    <div id="remindersPanel" class="panel active">
+      <div class="section-header">
+        <h2 class="section-title">⏰ <span id="panelTitle">كل التذكيرات</span></h2>
+        <div class="section-actions">
+          <button class="btn btn-primary" onclick="openReminderModal()">
+            ➕ إضافة تذكير
+          </button>
+        </div>
+      </div>
+
+      <div class="filters">
+        <div class="filter-group">
+          <label>البحث:</label>
+          <input type="text" id="searchReminder" placeholder="عنوان التذكير..." oninput="filterReminders()">
+        </div>
+        <div class="filter-group">
+          <label>التصنيف:</label>
+          <select id="filterCategory" onchange="filterReminders()">
+            <option value="">الكل</option>
+            <option value="payment">💰 دفعة</option>
+            <option value="meeting">🤝 اجتماع</option>
+            <option value="followup">📞 متابعة</option>
+            <option value="maintenance">🔧 صيانة</option>
+            <option value="task">📝 مهمة</option>
+            <option value="other">📌 أخرى</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>الأولوية:</label>
+          <select id="filterPriority" onchange="filterReminders()">
+            <option value="">الكل</option>
+            <option value="urgent">🔥 عاجل</option>
+            <option value="high">⚠️ عالية</option>
+            <option value="medium">ℹ️ متوسطة</option>
+            <option value="low">✅ منخفضة</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="reminders-grid" id="remindersList">
+        <div class="empty-state">
+          <div class="empty-state-icon">⏰</div>
+          <div>جاري التحميل...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         📆 CALENDAR PANEL
+         ═══════════════════════════════════════ -->
+    <div id="calendarPanel" class="panel">
+      <div class="section-header">
+        <h2 class="section-title">📆 عرض التقويم</h2>
+        <div class="section-actions">
+          <button class="btn btn-primary" onclick="openReminderModal()">
+            ➕ إضافة تذكير
+          </button>
+        </div>
+      </div>
+
+      <div class="calendar-container">
+        <div class="calendar-header">
+          <h3 class="calendar-title" id="calendarTitle">نوفمبر 2025</h3>
+          <div class="calendar-nav">
+            <button onclick="prevMonth()">←</button>
+            <button onclick="goToToday()">اليوم</button>
+            <button onclick="nextMonth()">→</button>
+          </div>
+        </div>
+        <div class="calendar-grid" id="calendarGrid">
+          <!-- Calendar will be rendered here -->
+        </div>
+      </div>
+
+      <div style="margin-top:20px">
+        <h4 style="margin-bottom:12px">📋 تذكيرات اليوم المحدد:</h4>
+        <div id="selectedDateReminders" class="reminders-grid">
+          <div class="empty-state">
+            <div class="empty-state-icon">📅</div>
+            <div>اختر يوماً من التقويم</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       🦶 FOOTER
+       ═══════════════════════════════════════ -->
+  <footer>
+    <span>Developed by ElOs | 4Accounting System © 2025</span>
+    <span>التذكيرات v2.0 • نظام إدارة المهام والتنبيهات</span>
+  </footer>
+
+  <!-- ═══════════════════════════════════════
+       🪟 REMINDER MODAL
+       ═══════════════════════════════════════ -->
+  <div id="reminderModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">⏰ <span id="reminderModalTitle">إضافة تذكير جديد</span></h3>
+        <button class="close-btn" onclick="closeReminderModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="reminderForm" onsubmit="handleReminderSubmit(event)">
+          <input type="hidden" id="reminderId">
+          
+          <div class="form-group">
+            <label class="form-label required">العنوان</label>
+            <input type="text" id="reminderTitle" class="form-input" required placeholder="عنوان التذكير">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">الوصف</label>
+            <textarea id="reminderDescription" class="form-textarea" placeholder="وصف تفصيلي (اختياري)"></textarea>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label required">التاريخ</label>
+              <input type="date" id="reminderDate" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">الوقت</label>
+              <input type="time" id="reminderTime" class="form-input">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">التصنيف</label>
+              <select id="reminderCategory" class="form-select">
+                <option value="task">📝 مهمة</option>
+                <option value="payment">💰 دفعة</option>
+                <option value="meeting">🤝 اجتماع</option>
+                <option value="followup">📞 متابعة</option>
+                <option value="maintenance">🔧 صيانة</option>
+                <option value="other">📌 أخرى</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">الأولوية</label>
+              <select id="reminderPriority" class="form-select">
+                <option value="urgent">🔥 عاجل</option>
+                <option value="high">⚠️ عالية</option>
+                <option value="medium" selected>ℹ️ متوسطة</option>
+                <option value="low">✅ منخفضة</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">ملاحظات</label>
+            <textarea id="reminderNotes" class="form-textarea" placeholder="ملاحظات إضافية..."></textarea>
+          </div>
+
+          <div class="modal-footer" style="margin: -20px; margin-top: 20px; padding: 16px 20px; background: var(--bg-tertiary); border-top: 1px solid var(--border);">
+            <button type="button" class="btn btn-secondary" onclick="closeReminderModal()">إلغاء</button>
+            <button type="submit" class="btn btn-success">💾 حفظ</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script src="./reminders.js"></script>
+
+  <!-- Company Logo Script -->
+  <script>
+    (function() {
+      let companyName = 'ELOS SYSTEM';
+      let companyLogo = null;
+
+      async function loadCompanyData() {
+        try {
+          const saved = localStorage.getItem('appSettings');
+          if (saved) {
+            const settings = JSON.parse(saved);
+            if (settings.companyName) companyName = settings.companyName;
+            if (settings.companyLogo) companyLogo = settings.companyLogo;
+            updateHeaderLogo();
+          }
+        } catch (error) {
+          console.warn('[HEADER] Failed to load company data:', error);
+        }
+      }
+
+      function isArabic(text) { return /[؀-ۿ]/.test(text); }
+
+      function updateHeaderLogo() {
+        const logoSvg = document.querySelector('.logo');
+        const companyNameEl = document.querySelector('.brand');
+
+        if (logoSvg && companyLogo) {
+          const img = document.createElement('img');
+          img.src = companyLogo;
+          img.alt = companyName;
+          img.className = logoSvg.className;
+          img.style.width = '40px';
+          img.style.height = '40px';
+          img.style.objectFit = 'contain';
+          img.style.borderRadius = '8px';
+          logoSvg.replaceWith(img);
+        }
+
+        if (companyNameEl) {
+          companyNameEl.textContent = companyName;
+          if (isArabic(companyName)) {
+            companyNameEl.style.fontFamily = '"Tajawal", "Cairo", sans-serif';
+            companyNameEl.style.letterSpacing = '0';
+          }
+        }
+      }
+
+      window.addEventListener('storage', (e) => {
+        if (e.key === 'appSettings') loadCompanyData();
+      });
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', loadCompanyData);
+      } else {
+        loadCompanyData();
+      }
+    })();
+  </script>
+</body>
+</html>

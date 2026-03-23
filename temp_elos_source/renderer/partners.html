@@ -1,0 +1,1082 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>الشركاء • ELOS System</title>
+  <script>(function(){var p=new URLSearchParams(location.search),t=p.get('theme')||localStorage.getItem('elos_theme')||localStorage.getItem('elos-theme')||'dark',h=document.documentElement;h.setAttribute('data-theme',t==='light'?'light':'dark');})();</script>
+  <script src="session-inject.js"></script>
+  <!-- 🎯 SPA Mode Detection -->
+  <script src="spa-mode.js"></script>
+  <!-- 🔊 Shared Sound & Toast System -->
+  <script src="shared.js"></script>
+  <!-- 🌙 Theme Sync -->
+  <script src="theme-sync.js"></script>
+  <!-- 🔤 Font Scale Manager -->
+  <script src="js/font-scale-manager.js"></script>
+  <!-- 🎨 Design System Tokens (theme colors - MUST BE FIRST) -->
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/tokens-alias.css">
+  <!-- 🎨 Design System (component styles) -->
+  <link rel="stylesheet" href="styles/design-system.css">
+  <!-- 🎨 Theme Governance Layer (load LAST to override legacy styles) -->
+  <link rel="stylesheet" href="styles/theme-fixes.css">
+  <!-- 📏 Font Sizes - تحسين أحجام الخطوط -->
+  <link rel="stylesheet" href="styles/font-sizes.css">
+
+  <style>
+    :root {
+      --bg-primary: #0a0e14;
+      --bg-secondary: #151921;
+      --bg-tertiary: #1a1f29;
+      --card: #151921;
+      --text-primary: #e6e8ee;
+      --text-secondary: #8b93a6;
+      --muted: #6b7280;
+      --border: #1e2530;
+      --line: #1e2530;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --purple: #a855f7;
+      --cyan: #06b6d4;
+      --pink: #ec4899;
+      --radius: 12px;
+      --shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg-primary); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, var(--accent) 0%, #1d4ed8 100%); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg, #60a5fa 0%, var(--accent) 100%); }
+    * { scrollbar-width: thin; scrollbar-color: var(--accent) var(--bg-primary); }
+
+    body { 
+      margin: 0; 
+      background: var(--bg-primary); 
+      color: var(--text-primary); 
+      font-family: system-ui, "Cairo", sans-serif; 
+      min-height: 100vh;
+      padding-bottom: 50px;
+    }
+    a { color: inherit; text-decoration: none; }
+
+    /* ═══════════════════════════════════════
+       📱 HEADER
+       ═══════════════════════════════════════ */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 10px 24px;
+      background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+      border-bottom: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      flex-wrap: wrap;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      width: 36px;
+      height: 36px;
+      color: #ffffff;
+      filter: drop-shadow(0 2px 6px rgba(255, 255, 255, 0.15));
+    }
+
+    .brand-container { display: flex; flex-direction: column; gap: 2px; }
+    .brand {
+      font-weight: 900;
+      font-size: 24px;
+      color: #d1d5db;
+      letter-spacing: 3px;
+    }
+    .page-subtitle { font-size: 11px; color: var(--text-secondary); }
+
+    .btn-back {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text-primary);
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .btn-back:hover {
+      background: var(--accent);
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+
+    .spacer { flex: 1; }
+
+    .header-clock {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 16px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+    .clock-time {
+      font-size: 18px;
+      font-weight: 900;
+      color: var(--accent);
+      font-family: 'Courier New', monospace;
+      direction: ltr;
+    }
+    .clock-date { font-size: 10px; color: var(--text-secondary); }
+
+    .header-cards { display: flex; gap: 12px; }
+    .header-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 14px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      min-width: 90px;
+      transition: all 0.3s ease;
+    }
+    .header-card:hover { transform: translateY(-2px); border-color: var(--accent); }
+    .header-card.purple { border-top: 2px solid var(--purple); }
+    .header-card.success { border-top: 2px solid var(--success); }
+    .header-card.danger { border-top: 2px solid var(--danger); }
+    .header-card.info { border-top: 2px solid var(--accent); }
+    .header-card-icon { font-size: 18px; }
+    .header-card-value { font-size: 16px; font-weight: 900; }
+    .header-card-label { font-size: 9px; color: var(--text-secondary); }
+
+    /* ═══════════════════════════════════════
+       📊 MAIN CONTENT
+       ═══════════════════════════════════════ */
+    .container { max-width: 1600px; margin: 0 auto; padding: 24px; }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .panel-title {
+      font-size: 20px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-group { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn:hover { transform: translateY(-2px); }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+      color: white;
+    }
+    .btn-purple {
+      background: linear-gradient(135deg, var(--purple) 0%, #7c3aed 100%);
+      color: white;
+    }
+    .btn-success {
+      background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+      color: white;
+    }
+    .btn-warning {
+      background: linear-gradient(135deg, var(--warning) 0%, #d97706 100%);
+      color: white;
+    }
+    .btn-danger {
+      background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%);
+      color: white;
+    }
+    .btn-secondary {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+    }
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+    /* Action Buttons with Labels */
+    .actions-cell {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .actions-cell .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 6px 10px;
+      font-size: 11px;
+      white-space: nowrap;
+    }
+    .actions-cell .btn-icon {
+      font-size: 12px;
+    }
+    .actions-cell .btn-text {
+      font-size: 11px;
+    }
+    .actions-cell .btn-primary {
+      background: linear-gradient(135deg, var(--accent) 0%, #1d4ed8 100%);
+      color: white;
+    }
+    .actions-cell .btn-success {
+      background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+      color: white;
+    }
+    .actions-cell .btn-danger {
+      background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%);
+      color: white;
+    }
+
+    /* ═══════════════════════════════════════
+       📋 TABLE
+       ═══════════════════════════════════════ */
+    .table-container {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    table { width: 100%; border-collapse: collapse; }
+    th, td {
+      padding: 14px 16px;
+      text-align: right;
+      border-bottom: 1px solid var(--border);
+    }
+    th {
+      background: var(--bg-tertiary);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+    }
+    td { font-size: 13px; }
+    tr:hover td { background: rgba(59,130,246,0.05); }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-secondary);
+    }
+    .empty-state-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
+
+    /* Status Badges */
+    .status-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .status-badge.active { background: rgba(16,185,129,0.15); color: var(--success); }
+    .status-badge.paused { background: rgba(245,158,11,0.15); color: var(--warning); }
+    .status-badge.ended { background: rgba(239,68,68,0.15); color: var(--danger); }
+
+    .type-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .type-badge.devices { background: rgba(59,130,246,0.15); color: var(--accent); }
+    .type-badge.accessories { background: rgba(168,85,247,0.15); color: var(--purple); }
+    .type-badge.both { background: rgba(6,182,212,0.15); color: var(--cyan); }
+    .type-badge.repair_parts { background: rgba(6,182,212,0.2); color: var(--cyan); }
+    .type-badge.repairs { background: rgba(245,158,11,0.2); color: var(--warning); }
+
+    /* ═══════════════════════════════════════
+       🪟 MODAL
+       ═══════════════════════════════════════ */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(8px);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal.show { display: flex; }
+
+    .modal-content {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 600px;
+      max-height: 90vh;
+      overflow-y: auto;
+      animation: slideUp 0.3s ease;
+    }
+    .modal-content.large { max-width: 900px; }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px 24px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(135deg, rgba(168,85,247,0.1) 0%, rgba(139,92,246,0.05) 100%);
+    }
+    .modal-title {
+      font-size: 18px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .close-btn {
+      width: 36px;
+      height: 36px;
+      border: none;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.1);
+      color: var(--text-secondary);
+      font-size: 20px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .close-btn:hover { background: var(--danger); color: white; }
+
+    .modal-body { padding: 24px; }
+
+    .form-group { margin-bottom: 20px; }
+    .form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+    }
+    .form-label.required::after {
+      content: ' *';
+      color: var(--danger);
+    }
+
+    .form-input, .form-select, .form-textarea {
+      width: 100%;
+      padding: 12px 16px;
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text-primary);
+      font-size: 14px;
+      transition: all 0.2s ease;
+    }
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.2);
+    }
+    .form-textarea { min-height: 80px; resize: vertical; }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+    .form-row-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+      margin-top: 20px;
+    }
+
+    /* Partnership Type Selector */
+    .partnership-types {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    .partnership-type-btn {
+      padding: 16px;
+      background: var(--bg-primary);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s ease;
+    }
+    .partnership-type-btn:hover { border-color: var(--accent); }
+    .partnership-type-btn.active { border-color: var(--purple); background: rgba(168,85,247,0.1); }
+    .partnership-type-icon { font-size: 28px; margin-bottom: 8px; }
+    .partnership-type-label { font-size: 12px; font-weight: 700; color: var(--text-primary); }
+
+    /* ═══════════════════════════════════════
+       📊 PROFIT CALCULATION MODAL
+       ═══════════════════════════════════════ */
+    .profit-summary {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .profit-summary-card {
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      text-align: center;
+    }
+    .profit-summary-card.devices { border-top: 3px solid var(--accent); }
+    .profit-summary-card.accessories { border-top: 3px solid var(--purple); }
+    .profit-summary-card.repair-parts { border-top: 3px solid var(--cyan); }
+    .profit-summary-card.repairs { border-top: 3px solid var(--warning); }
+    .profit-summary-card.total { border-top: 3px solid var(--success); }
+    .profit-summary-card.expenses { border-top: 3px solid var(--danger); }
+    .profit-summary-card.salaries { border-top: 3px solid var(--danger); }
+    .profit-summary-card.expenses .profit-summary-value,
+    .profit-summary-card.salaries .profit-summary-value { color: var(--danger); }
+    .profit-summary-card.net-profit { border-top: 3px solid var(--success); }
+    .profit-summary-card.net-profit .profit-summary-value { color: var(--success); font-size: 28px; }
+    .profit-summary-icon { font-size: 28px; margin-bottom: 8px; }
+    .profit-summary-value { font-size: 24px; font-weight: 900; margin-bottom: 4px; }
+    .profit-summary-label { font-size: 11px; color: var(--text-secondary); }
+
+    .distribution-list { max-height: 300px; overflow-y: auto; }
+    .distribution-item {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 16px;
+      align-items: center;
+      padding: 16px;
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      margin-bottom: 12px;
+    }
+    .distribution-avatar {
+      width: 48px;
+      height: 48px;
+      background: linear-gradient(135deg, var(--purple) 0%, #7c3aed 100%);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      color: white;
+    }
+    .distribution-info h4 { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+    .distribution-info p { font-size: 12px; color: var(--text-secondary); }
+    .distribution-amount {
+      text-align: left;
+    }
+    .distribution-amount-value { font-size: 20px; font-weight: 900; color: var(--success); }
+    .distribution-amount-breakdown { font-size: 10px; color: var(--text-secondary); }
+
+    /* ═══════════════════════════════════════
+       💬 NOTIFICATION
+       ═══════════════════════════════════════ */
+    .notification {
+      position: fixed;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      padding: 16px 24px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      color: var(--text-primary);
+      font-weight: 600;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.3);
+      z-index: 2000;
+      opacity: 0;
+      transition: all 0.3s ease;
+    }
+    .notification.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+    .notification.success { border-color: var(--success); }
+    .notification.error { border-color: var(--danger); }
+
+    /* ═══════════════════════════════════════
+       🦶 FOOTER
+       ═══════════════════════════════════════ */
+    footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 24px;
+      background: var(--card);
+      border-top: 1px solid var(--line);
+      font-size: 10px;
+      color: var(--muted);
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 50;
+    }
+
+    @media (max-width: 768px) {
+      .header { padding: 10px 16px; }
+      .container { padding: 16px; }
+      .header-cards { display: none; }
+      .form-row, .form-row-3 { grid-template-columns: 1fr; }
+      .partnership-types { grid-template-columns: 1fr !important; }
+      .profit-summary { grid-template-columns: 1fr !important; }
+    }
+  </style>
+  <link rel="stylesheet" href="responsive.css">
+</head>
+<body>
+  <!-- ═══════════════════════════════════════
+       📱 HEADER
+       ═══════════════════════════════════════ -->
+  <header class="header">
+    <svg class="logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+    </svg>
+
+    <div class="brand-container">
+      <div class="brand">ELOS SYSTEM</div>
+      <div class="page-subtitle">🤝 إدارة الشركاء والأرباح</div>
+    </div>
+
+    <a href="index.html" class="btn-back">
+      <span>←</span>
+      <span>الرئيسية</span>
+    </a>
+
+    <div class="spacer"></div>
+
+    <div class="header-cards">
+      <div class="header-card purple">
+        <div class="header-card-icon">🤝</div>
+        <div class="header-card-value" id="totalPartners">0</div>
+        <div class="header-card-label">الشركاء</div>
+      </div>
+      <div class="header-card success">
+        <div class="header-card-icon">💰</div>
+        <div class="header-card-value" id="totalInvestments">0</div>
+        <div class="header-card-label">الاستثمارات</div>
+      </div>
+      <div class="header-card danger">
+        <div class="header-card-icon">💸</div>
+        <div class="header-card-value" id="totalWithdrawals">0</div>
+        <div class="header-card-label">السحوبات</div>
+      </div>
+      <div class="header-card info">
+        <div class="header-card-icon">📊</div>
+        <div class="header-card-value" id="netBalance">0</div>
+        <div class="header-card-label">الصافي</div>
+      </div>
+    </div>
+
+    <div class="header-clock">
+      <div class="clock-time" id="headerTime">00:00:00</div>
+      <div class="clock-date" id="headerDate">--</div>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════════════════════
+       📊 MAIN CONTENT
+       ═══════════════════════════════════════ -->
+  <main class="container">
+    <div class="panel-header">
+      <h2 class="panel-title">
+        <span>🤝</span>
+        <span>قائمة الشركاء</span>
+      </h2>
+      <div class="btn-group">
+        <button class="btn btn-success" onclick="openProfitModal()">
+          <span>📊</span>
+          <span>حساب الأرباح</span>
+        </button>
+        <button class="btn btn-purple" onclick="openAddModal()">
+          <span>➕</span>
+          <span>إضافة شريك</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>الشريك</th>
+            <th>الهاتف</th>
+            <th>نوع الشراكة</th>
+            <th>نسبة الأجهزة</th>
+            <th>نسبة الإكسسوارات</th>
+            <th>نسبة قطع الغيار</th>
+            <th>نسبة الصيانة</th>
+            <th>الاستثمار</th>
+            <th>السحوبات</th>
+            <th>الحالة</th>
+            <th>إجراءات</th>
+          </tr>
+        </thead>
+        <tbody id="partnersBody">
+          <tr>
+            <td colspan="12" class="empty-state">
+              <div class="empty-state-icon">🤝</div>
+              <div>لا توجد بيانات شركاء حالياً</div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </main>
+
+  <!-- ═══════════════════════════════════════
+       🪟 PARTNER MODAL
+       ═══════════════════════════════════════ -->
+  <div id="partnerModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title" id="modalTitle">
+          <span>🤝</span>
+          <span>إضافة شريك جديد</span>
+        </h3>
+        <button class="close-btn" onclick="closeModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <form id="partnerForm" onsubmit="handleSubmit(event)">
+          <input type="hidden" id="partnerId" />
+
+          <!-- Basic Info -->
+          <div class="form-group">
+            <label class="form-label required" for="name">اسم الشريك</label>
+            <input type="text" id="name" class="form-input" required placeholder="أدخل اسم الشريك" />
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="phone">رقم الهاتف</label>
+              <input type="text" id="phone" class="form-input" placeholder="01xxxxxxxxx" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="email">البريد الإلكتروني</label>
+              <input type="email" id="email" class="form-input" placeholder="email@example.com" />
+            </div>
+          </div>
+
+          <!-- Partnership Type -->
+          <div class="form-group">
+            <label class="form-label required">نوع الشراكة</label>
+            <div class="partnership-types" style="grid-template-columns: repeat(5, 1fr);">
+              <div class="partnership-type-btn" data-type="devices" onclick="selectPartnershipType('devices')">
+                <div class="partnership-type-icon">📱</div>
+                <div class="partnership-type-label">أجهزة فقط</div>
+              </div>
+              <div class="partnership-type-btn" data-type="accessories" onclick="selectPartnershipType('accessories')">
+                <div class="partnership-type-icon">🎧</div>
+                <div class="partnership-type-label">إكسسوارات فقط</div>
+              </div>
+              <div class="partnership-type-btn active" data-type="both" onclick="selectPartnershipType('both')">
+                <div class="partnership-type-icon">📱🎧</div>
+                <div class="partnership-type-label">أجهزة + إكسسوارات</div>
+              </div>
+              <div class="partnership-type-btn" data-type="repair_parts" onclick="selectPartnershipType('repair_parts')">
+                <div class="partnership-type-icon">🔩</div>
+                <div class="partnership-type-label">قطع غيار فقط</div>
+              </div>
+              <div class="partnership-type-btn" data-type="repairs" onclick="selectPartnershipType('repairs')">
+                <div class="partnership-type-icon">🔧</div>
+                <div class="partnership-type-label">صيانة فقط</div>
+              </div>
+            </div>
+            <input type="hidden" id="partnershipType" value="both" />
+          </div>
+
+          <!-- Profit Shares -->
+          <div class="form-row form-row-3" id="profitSharesRow">
+            <div class="form-group" id="devicesShareGroup">
+              <label class="form-label">📱 نسبة الربح من الأجهزة (%)</label>
+              <input type="number" id="profitShareDevices" class="form-input" step="0.1" min="0" max="100" value="0" />
+            </div>
+            <div class="form-group" id="accessoriesShareGroup">
+              <label class="form-label">🎧 نسبة الربح من الإكسسوارات (%)</label>
+              <input type="number" id="profitShareAccessories" class="form-input" step="0.1" min="0" max="100" value="0" />
+            </div>
+            <div class="form-group" id="repairPartsShareGroup" style="display:none;">
+              <label class="form-label">🔩 نسبة الربح من قطع الغيار (%)</label>
+              <input type="number" id="profitShareRepairParts" class="form-input" step="0.1" min="0" max="100" value="0" />
+            </div>
+            <div class="form-group" id="repairsShareGroup" style="display:none;">
+              <label class="form-label">🔧 نسبة الربح من الصيانة (%)</label>
+              <input type="number" id="profitShareRepairs" class="form-input" step="0.1" min="0" max="100" value="0" />
+            </div>
+          </div>
+
+          <!-- Investment -->
+          <div class="form-group">
+            <label class="form-label" for="investmentAmount">💰 مبلغ الاستثمار</label>
+            <input type="number" id="investmentAmount" class="form-input" step="0.01" min="0" value="0" />
+          </div>
+
+          <!-- Agreement -->
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="agreementStartDate">📅 تاريخ بداية الاتفاق</label>
+              <input type="date" id="agreementStartDate" class="form-input" />
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="agreementEndDate">📅 تاريخ نهاية الاتفاق</label>
+              <input type="date" id="agreementEndDate" class="form-input" />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="agreementTerms">📋 شروط الاتفاق</label>
+            <textarea id="agreementTerms" class="form-textarea" placeholder="اكتب شروط الاتفاق هنا..."></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="notes">📝 ملاحظات</label>
+            <textarea id="notes" class="form-textarea" placeholder="أي ملاحظات إضافية..."></textarea>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" onclick="closeModal()">إلغاء</button>
+            <button type="submit" class="btn btn-purple">💾 حفظ</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       🪟 TRANSACTIONS MODAL
+       ═══════════════════════════════════════ -->
+  <div id="transactionsModal" class="modal">
+    <div class="modal-content large">
+      <div class="modal-header">
+        <h3 class="modal-title">
+          <span>💰</span>
+          <span>معاملات الشريك: <span id="transPartnerName"></span></span>
+        </h3>
+        <button class="close-btn" onclick="closeTransactionsModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div style="margin-bottom: 16px;">
+          <button class="btn btn-success btn-sm" onclick="openAddTransactionModal()">
+            <span>➕</span>
+            <span>إضافة معاملة</span>
+          </button>
+        </div>
+
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>النوع</th>
+                <th>المبلغ</th>
+                <th>الوصف</th>
+                <th>التاريخ</th>
+              </tr>
+            </thead>
+            <tbody id="transactionsBody">
+              <tr>
+                <td colspan="5" class="empty-state">لا توجد معاملات</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       🪟 ADD TRANSACTION MODAL
+       ═══════════════════════════════════════ -->
+  <div id="addTransactionModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">
+          <span>💵</span>
+          <span>إضافة معاملة</span>
+        </h3>
+        <button class="close-btn" onclick="closeAddTransactionModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <form id="transactionForm" onsubmit="handleTransactionSubmit(event)">
+          <input type="hidden" id="transPartnerId" />
+
+          <div class="form-group">
+            <label class="form-label required" for="transType">نوع المعاملة</label>
+            <select id="transType" class="form-select" required>
+              <option value="">-- اختر النوع --</option>
+              <option value="investment">💰 استثمار</option>
+              <option value="withdrawal">💸 سحب</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required" for="transAmount">المبلغ</label>
+            <input type="number" id="transAmount" class="form-input" step="0.01" min="0" required />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="transDescription">الوصف</label>
+            <textarea id="transDescription" class="form-textarea" placeholder="وصف المعاملة..."></textarea>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" onclick="closeAddTransactionModal()">إلغاء</button>
+            <button type="submit" class="btn btn-success">💾 حفظ</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       🪟 PROFIT CALCULATION MODAL
+       ═══════════════════════════════════════ -->
+  <div id="profitModal" class="modal">
+    <div class="modal-content large">
+      <div class="modal-header" style="background: linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(6,182,212,0.1) 100%);">
+        <h3 class="modal-title">
+          <span>📊</span>
+          <span>حساب أرباح الشركاء</span>
+        </h3>
+        <button class="close-btn" onclick="closeProfitModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Month Selector -->
+        <div class="form-group">
+          <label class="form-label required">📅 اختر الشهر</label>
+          <input type="month" id="profitMonth" class="form-input" style="max-width: 200px;" />
+          <button class="btn btn-primary btn-sm" style="margin-right: 10px;" onclick="calculateProfits()">
+            🔄 حساب
+          </button>
+        </div>
+
+        <!-- Profit Summary -->
+        <div id="profitSummarySection" style="display: none;">
+          <!-- صف 1: أرباح الفئات الإجمالية -->
+          <div class="profit-summary" style="grid-template-columns: repeat(5, 1fr);">
+            <div class="profit-summary-card devices">
+              <div class="profit-summary-icon">📱</div>
+              <div class="profit-summary-value" id="devicesProfitValue">0</div>
+              <div class="profit-summary-label">ربح الأجهزة (<span id="devicesSalesCount">0</span>)</div>
+            </div>
+            <div class="profit-summary-card accessories">
+              <div class="profit-summary-icon">🎧</div>
+              <div class="profit-summary-value" id="accessoriesProfitValue">0</div>
+              <div class="profit-summary-label">ربح الإكسسوارات (<span id="accessoriesSalesCount">0</span>)</div>
+            </div>
+            <div class="profit-summary-card repair-parts">
+              <div class="profit-summary-icon">🔩</div>
+              <div class="profit-summary-value" id="repairPartsProfitValue">0</div>
+              <div class="profit-summary-label">ربح قطع الغيار (<span id="repairPartsSalesCount">0</span>)</div>
+            </div>
+            <div class="profit-summary-card repairs">
+              <div class="profit-summary-icon">🔧</div>
+              <div class="profit-summary-value" id="repairsProfitValue">0</div>
+              <div class="profit-summary-label">ربح الصيانة (<span id="repairsCount">0</span> تذكرة)</div>
+            </div>
+            <div class="profit-summary-card total">
+              <div class="profit-summary-icon">💰</div>
+              <div class="profit-summary-value" id="grossProfitValue">0</div>
+              <div class="profit-summary-label">إجمالي الربح</div>
+            </div>
+          </div>
+          <!-- صف 2: الخصومات وصافي الربح -->
+          <div class="profit-summary" style="grid-template-columns: repeat(3, 1fr);">
+            <div class="profit-summary-card expenses">
+              <div class="profit-summary-icon">📤</div>
+              <div class="profit-summary-value" id="totalExpensesValue">0</div>
+              <div class="profit-summary-label">مصاريف الخزنة</div>
+            </div>
+            <div class="profit-summary-card salaries">
+              <div class="profit-summary-icon">👷</div>
+              <div class="profit-summary-value" id="totalSalariesValue">0</div>
+              <div class="profit-summary-label">المرتبات</div>
+            </div>
+            <div class="profit-summary-card net-profit">
+              <div class="profit-summary-icon">✅</div>
+              <div class="profit-summary-value" id="netProfitValue">0</div>
+              <div class="profit-summary-label">صافي الربح</div>
+            </div>
+          </div>
+
+          <h4 style="margin-bottom: 16px; display: flex; align-items: center; gap: 8px;">
+            <span>👥</span>
+            <span>توزيع الأرباح على الشركاء</span>
+          </h4>
+
+          <div class="distribution-list" id="distributionList">
+            <!-- Will be populated dynamically -->
+          </div>
+
+          <div class="form-actions">
+            <button type="button" class="btn btn-secondary" onclick="closeProfitModal()">إلغاء</button>
+            <button type="button" class="btn btn-success" onclick="confirmDistribution()">
+              ✅ تأكيد التوزيع
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       🪟 DISTRIBUTIONS HISTORY MODAL
+       ═══════════════════════════════════════ -->
+  <div id="distributionsModal" class="modal">
+    <div class="modal-content large">
+      <div class="modal-header">
+        <h3 class="modal-title">
+          <span>📋</span>
+          <span>سجل توزيعات الأرباح</span>
+        </h3>
+        <button class="close-btn" onclick="closeDistributionsModal()">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>الشهر</th>
+                <th>الشريك</th>
+                <th>ربح الأجهزة</th>
+                <th>ربح الإكسسوارات</th>
+                <th>ربح قطع الغيار</th>
+                <th>ربح الصيانة</th>
+                <th>حصة الشريك</th>
+                <th>الحالة</th>
+                <th>إجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="distributionsBody">
+              <tr>
+                <td colspan="9" class="empty-state">لا توجد توزيعات</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       💬 NOTIFICATION
+       ═══════════════════════════════════════ -->
+  <div id="notification" class="notification"></div>
+
+  <!-- ═══════════════════════════════════════
+       🦶 FOOTER
+       ═══════════════════════════════════════ -->
+  <footer>
+    <span>Developed by ElOs | 4Accounting System © 2025</span>
+    <span>الشركاء v2.0 • نظام توزيع الأرباح</span>
+  </footer>
+
+  <script src="./partners.js"></script>
+
+  <!-- Company Logo Script -->
+  <script>
+    (function() {
+      let companyName = 'ELOS SYSTEM';
+      let companyLogo = null;
+
+      async function loadCompanyData() {
+        try {
+          const saved = localStorage.getItem('appSettings');
+          if (saved) {
+            const settings = JSON.parse(saved);
+            if (settings.companyName) companyName = settings.companyName;
+            if (settings.companyLogo) companyLogo = settings.companyLogo;
+            updateHeaderLogo();
+          }
+        } catch (error) {
+          console.warn('[HEADER] Failed to load company data:', error);
+        }
+      }
+
+      function isArabic(text) { return /[؀-ۿ]/.test(text); }
+
+      function updateHeaderLogo() {
+        const logoSvg = document.querySelector('.logo');
+        const companyNameEl = document.querySelector('.brand');
+
+        if (logoSvg && companyLogo) {
+          const img = document.createElement('img');
+          img.src = companyLogo;
+          img.alt = companyName;
+          img.className = logoSvg.className;
+          img.style.width = '40px';
+          img.style.height = '40px';
+          img.style.objectFit = 'contain';
+          img.style.borderRadius = '8px';
+          logoSvg.replaceWith(img);
+        }
+
+        if (companyNameEl) {
+          companyNameEl.textContent = companyName;
+          if (isArabic(companyName)) {
+            companyNameEl.style.fontFamily = '"Tajawal", "Cairo", sans-serif';
+            companyNameEl.style.letterSpacing = '0';
+          }
+        }
+      }
+
+      window.addEventListener('storage', (e) => {
+        if (e.key === 'appSettings') loadCompanyData();
+      });
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', loadCompanyData);
+      } else {
+        loadCompanyData();
+      }
+    })();
+  </script>
+</body>
+</html>

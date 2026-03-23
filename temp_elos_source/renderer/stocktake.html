@@ -1,0 +1,1083 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>الجرد - ELOS Accounting</title>
+
+  <!-- Theme Flash Prevention -->
+  <script>
+    (function(){
+      var t = localStorage.getItem('elos-theme') || localStorage.getItem('elos_theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', t === 'light' ? 'light' : 'dark');
+    })();
+  </script>
+
+  <!-- Session Injection - MUST BE FIRST -->
+  <script src="session-inject.js"></script>
+  <!-- SPA Mode Detection -->
+  <script src="spa-mode.js"></script>
+  <!-- Shared Sound & Toast System -->
+  <script src="shared.js"></script>
+  <!-- Theme Sync -->
+  <script src="theme-sync.js"></script>
+  <!-- Font Scale Manager -->
+  <script src="js/font-scale-manager.js"></script>
+
+  <!-- Design System Tokens -->
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/tokens-alias.css">
+  <!-- Design System Components -->
+  <link rel="stylesheet" href="styles/design-system.css">
+  <!-- Theme Governance -->
+  <link rel="stylesheet" href="styles/theme-fixes.css">
+  <!-- Font Sizes -->
+  <link rel="stylesheet" href="styles/font-sizes.css">
+
+  <style>
+    /* ========================================
+       STOCKTAKE PAGE STYLES
+       ======================================== */
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: var(--bg-primary, #0a0a0f);
+      color: var(--text-primary, #ffffff);
+      min-height: 100vh;
+    }
+
+    /* Header */
+    .stocktake-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem 1.5rem;
+      background: var(--bg-secondary, #12121a);
+      border-bottom: 1px solid var(--border-color, #2a2a3a);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .stocktake-back-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 1rem;
+      background: var(--bg-tertiary, #1a1a2e);
+      border: 1px solid var(--border-color, #2a2a3a);
+      border-radius: 8px;
+      color: var(--text-primary, #fff);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+
+    .stocktake-back-btn:hover {
+      background: var(--bg-hover, #252540);
+      border-color: var(--accent-color, #6366f1);
+    }
+
+    .stocktake-title {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin: 0;
+    }
+
+    .stocktake-title-icon {
+      font-size: 1.75rem;
+    }
+
+    .stocktake-spacer {
+      flex: 1;
+    }
+
+    .stocktake-header-actions {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    .stocktake-header-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.6rem 1rem;
+      background: var(--bg-tertiary, #1a1a2e);
+      border: 1px solid var(--border-color, #2a2a3a);
+      border-radius: 8px;
+      color: var(--text-primary, #fff);
+      cursor: pointer;
+      font-size: 0.9rem;
+      transition: all 0.2s;
+    }
+
+    .stocktake-header-btn:hover {
+      background: var(--bg-hover, #252540);
+    }
+
+    .stocktake-header-btn.btn-primary {
+      background: var(--accent-color, #6366f1);
+      border-color: var(--accent-color, #6366f1);
+    }
+
+    .stocktake-header-btn.btn-primary:hover {
+      background: var(--accent-hover, #5558e3);
+    }
+
+    /* Main Content */
+    .stocktake-main {
+      padding: 1.5rem;
+    }
+
+    /* Stats Cards */
+    .stocktake-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .stocktake-stat-card {
+      background: var(--bg-secondary, #12121a);
+      border: 1px solid var(--border-color, #2a2a3a);
+      border-radius: 12px;
+      padding: 1.25rem;
+      text-align: center;
+    }
+
+    .stocktake-stat-value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--accent-color, #6366f1);
+      margin-bottom: 0.25rem;
+    }
+
+    .stocktake-stat-label {
+      font-size: 0.85rem;
+      color: var(--text-secondary, #888);
+    }
+
+    /* Filters Bar */
+    .stocktake-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      padding: 1rem;
+      background: var(--bg-secondary, #12121a);
+      border-radius: 12px;
+      border: 1px solid var(--border-color, #2a2a3a);
+    }
+
+    .stocktake-search-wrapper {
+      position: relative;
+      flex: 1;
+      min-width: 250px;
+    }
+
+    .stocktake-search-icon {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 1rem;
+      opacity: 0.5;
+    }
+
+    .stocktake-search-input {
+      width: 100%;
+      padding: 0.75rem 2.5rem 0.75rem 1rem;
+      background: var(--bg-tertiary, #1a1a2e);
+      border: 1px solid var(--border-color, #2a2a3a);
+      border-radius: 8px;
+      color: var(--text-primary, #fff);
+      font-size: 0.95rem;
+    }
+
+    .stocktake-search-input:focus {
+      outline: none;
+      border-color: var(--accent-color, #6366f1);
+    }
+
+    .stocktake-filter-select {
+      padding: 0.75rem 1rem;
+      background: var(--bg-tertiary, #1a1a2e);
+      border: 1px solid var(--border-color, #2a2a3a);
+      border-radius: 8px;
+      color: var(--text-primary, #fff);
+      font-size: 0.9rem;
+      min-width: 150px;
+    }
+
+    /* Table */
+    .stocktake-table-wrapper {
+      background: var(--bg-secondary, #12121a);
+      border-radius: 12px;
+      border: 1px solid var(--border-color, #2a2a3a);
+      overflow: hidden;
+    }
+
+    .stocktake-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .stocktake-table th,
+    .stocktake-table td {
+      padding: 1rem;
+      text-align: right;
+      border-bottom: 1px solid var(--border-color, #2a2a3a);
+    }
+
+    .stocktake-table th {
+      background: var(--bg-tertiary, #1a1a2e);
+      font-weight: 600;
+      font-size: 0.85rem;
+      color: var(--text-secondary, #888);
+      text-transform: uppercase;
+    }
+
+    .stocktake-table tr:hover {
+      background: var(--bg-hover, rgba(99, 102, 241, 0.05));
+    }
+
+    .stocktake-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    /* Status Badges */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+
+    .status-draft {
+      background: rgba(156, 163, 175, 0.2);
+      color: #9ca3af;
+    }
+
+    .status-in_progress {
+      background: rgba(59, 130, 246, 0.2);
+      color: #60a5fa;
+    }
+
+    .status-pending_review {
+      background: rgba(245, 158, 11, 0.2);
+      color: #fbbf24;
+    }
+
+    .status-completed {
+      background: rgba(34, 197, 94, 0.2);
+      color: #4ade80;
+    }
+
+    .status-cancelled {
+      background: rgba(239, 68, 68, 0.2);
+      color: #f87171;
+    }
+
+    /* Action Buttons */
+    .action-btn {
+      padding: 0.4rem 0.75rem;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: all 0.2s;
+      margin-left: 0.5rem;
+    }
+
+    .action-btn-view {
+      background: rgba(99, 102, 241, 0.2);
+      color: #818cf8;
+    }
+
+    .action-btn-view:hover {
+      background: rgba(99, 102, 241, 0.3);
+    }
+
+    .action-btn-count {
+      background: rgba(34, 197, 94, 0.2);
+      color: #4ade80;
+    }
+
+    .action-btn-count:hover {
+      background: rgba(34, 197, 94, 0.3);
+    }
+
+    .action-btn-delete {
+      background: rgba(239, 68, 68, 0.2);
+      color: #f87171;
+    }
+
+    .action-btn-delete:hover {
+      background: rgba(239, 68, 68, 0.3);
+    }
+
+    /* Empty State */
+    .stocktake-empty {
+      text-align: center;
+      padding: 4rem 2rem;
+    }
+
+    .stocktake-empty-icon {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+
+    .stocktake-empty-text {
+      font-size: 1.1rem;
+      color: var(--text-secondary, #888);
+      margin-bottom: 1.5rem;
+    }
+
+    /* Loading Overlay */
+    .stocktake-loading {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .stocktake-loading.active {
+      display: flex;
+    }
+
+    .stocktake-spinner {
+      width: 50px;
+      height: 50px;
+      border: 3px solid var(--border-color, #2a2a3a);
+      border-top-color: var(--accent-color, #6366f1);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ========================================
+       MODALS
+       ======================================== */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+
+    .modal-overlay.active {
+      display: flex;
+    }
+
+    .modal {
+      background: var(--bg-secondary, #12121a);
+      border: 1px solid var(--border-color, #2a2a3a);
+      border-radius: 16px;
+      width: 100%;
+      max-width: 600px;
+      max-height: 90vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-lg {
+      max-width: 900px;
+    }
+
+    .modal-xl {
+      max-width: 1200px;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border-color, #2a2a3a);
+    }
+
+    .modal-header h2 {
+      margin: 0;
+      font-size: 1.25rem;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      color: var(--text-secondary, #888);
+      cursor: pointer;
+      padding: 0;
+      line-height: 1;
+    }
+
+    .modal-close:hover {
+      color: var(--text-primary, #fff);
+    }
+
+    .modal-body {
+      padding: 1.5rem;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+      padding: 1rem 1.5rem;
+      border-top: 1px solid var(--border-color, #2a2a3a);
+    }
+
+    /* Form Styles */
+    .form-group {
+      margin-bottom: 1.25rem;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+      color: var(--text-secondary, #aaa);
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      background: var(--bg-tertiary, #1a1a2e);
+      border: 1px solid var(--border-color, #2a2a3a);
+      border-radius: 8px;
+      color: var(--text-primary, #fff);
+      font-size: 0.95rem;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--accent-color, #6366f1);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+    }
+
+    .btn {
+      padding: 0.75rem 1.5rem;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.95rem;
+      font-weight: 500;
+      transition: all 0.2s;
+    }
+
+    .btn-secondary {
+      background: var(--bg-tertiary, #1a1a2e);
+      color: var(--text-primary, #fff);
+      border: 1px solid var(--border-color, #2a2a3a);
+    }
+
+    .btn-secondary:hover {
+      background: var(--bg-hover, #252540);
+    }
+
+    .btn-primary {
+      background: var(--accent-color, #6366f1);
+      color: #fff;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover, #5558e3);
+    }
+
+    .btn-success {
+      background: #22c55e;
+      color: #fff;
+    }
+
+    .btn-success:hover {
+      background: #16a34a;
+    }
+
+    .btn-danger {
+      background: #ef4444;
+      color: #fff;
+    }
+
+    .btn-danger:hover {
+      background: #dc2626;
+    }
+
+    /* ========================================
+       COUNTING VIEW STYLES
+       ======================================== */
+    .counting-view {
+      display: none;
+    }
+
+    .counting-view.active {
+      display: block;
+    }
+
+    .list-view.hidden {
+      display: none;
+    }
+
+    .counting-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
+      padding: 1rem;
+      background: var(--bg-secondary, #12121a);
+      border-radius: 12px;
+      border: 1px solid var(--border-color, #2a2a3a);
+    }
+
+    .counting-info h2 {
+      margin: 0 0 0.5rem 0;
+      font-size: 1.25rem;
+    }
+
+    .counting-info p {
+      margin: 0;
+      color: var(--text-secondary, #888);
+    }
+
+    .counting-progress {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .progress-bar {
+      width: 200px;
+      height: 8px;
+      background: var(--bg-tertiary, #1a1a2e);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      background: var(--accent-color, #6366f1);
+      transition: width 0.3s;
+    }
+
+    .progress-text {
+      font-size: 0.9rem;
+      color: var(--text-secondary, #888);
+    }
+
+    /* Barcode Scanner Section */
+    .barcode-section {
+      margin-bottom: 1.5rem;
+      padding: 1.5rem;
+      background: var(--bg-secondary, #12121a);
+      border-radius: 12px;
+      border: 2px dashed var(--accent-color, #6366f1);
+    }
+
+    .barcode-input-wrapper {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .barcode-input {
+      flex: 1;
+      padding: 1rem 1.5rem;
+      font-size: 1.25rem;
+      background: var(--bg-tertiary, #1a1a2e);
+      border: 1px solid var(--border-color, #2a2a3a);
+      border-radius: 8px;
+      color: var(--text-primary, #fff);
+      text-align: center;
+    }
+
+    .barcode-input:focus {
+      outline: none;
+      border-color: var(--accent-color, #6366f1);
+    }
+
+    .barcode-hint {
+      text-align: center;
+      margin-top: 0.75rem;
+      color: var(--text-secondary, #888);
+      font-size: 0.9rem;
+    }
+
+    /* Counting Items Table */
+    .counting-items-table th.qty-col,
+    .counting-items-table td.qty-col {
+      width: 120px;
+      text-align: center;
+    }
+
+    .qty-input {
+      width: 80px;
+      padding: 0.5rem;
+      text-align: center;
+      background: var(--bg-tertiary, #1a1a2e);
+      border: 1px solid var(--border-color, #2a2a3a);
+      border-radius: 6px;
+      color: var(--text-primary, #fff);
+      font-size: 1rem;
+    }
+
+    .qty-input:focus {
+      outline: none;
+      border-color: var(--accent-color, #6366f1);
+    }
+
+    .qty-input.counted {
+      border-color: #22c55e;
+      background: rgba(34, 197, 94, 0.1);
+    }
+
+    .variance-positive {
+      color: #4ade80;
+    }
+
+    .variance-negative {
+      color: #f87171;
+    }
+
+    .variance-zero {
+      color: var(--text-secondary, #888);
+    }
+
+    .item-counted {
+      background: rgba(34, 197, 94, 0.05);
+    }
+
+    /* Variance Summary */
+    .variance-summary {
+      margin-top: 1.5rem;
+      padding: 1.5rem;
+      background: var(--bg-secondary, #12121a);
+      border-radius: 12px;
+      border: 1px solid var(--border-color, #2a2a3a);
+    }
+
+    .variance-summary h3 {
+      margin: 0 0 1rem 0;
+      font-size: 1.1rem;
+    }
+
+    .variance-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+    }
+
+    .variance-item {
+      text-align: center;
+      padding: 1rem;
+      background: var(--bg-tertiary, #1a1a2e);
+      border-radius: 8px;
+    }
+
+    .variance-item-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+
+    .variance-item-label {
+      font-size: 0.85rem;
+      color: var(--text-secondary, #888);
+      margin-top: 0.25rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .stocktake-header {
+        flex-wrap: wrap;
+      }
+
+      .stocktake-stats {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      .stocktake-filters {
+        flex-direction: column;
+      }
+
+      .stocktake-search-wrapper {
+        width: 100%;
+      }
+
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+
+      .modal {
+        max-height: 100vh;
+        border-radius: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Loading Overlay -->
+  <div class="stocktake-loading" id="loadingOverlay">
+    <div class="stocktake-spinner"></div>
+    <span>جاري التحميل...</span>
+  </div>
+
+  <!-- ========================================
+       LIST VIEW
+       ======================================== -->
+  <div class="list-view" id="listView">
+    <!-- Header -->
+    <header class="stocktake-header">
+      <a href="app.html" class="stocktake-back-btn" id="backBtn">
+        <span>→</span>
+        <span>رجوع</span>
+      </a>
+
+      <h1 class="stocktake-title">
+        <span class="stocktake-title-icon">📋</span>
+        <span>إدارة الجرد</span>
+      </h1>
+
+      <div class="stocktake-spacer"></div>
+
+      <div class="stocktake-header-actions">
+        <button class="stocktake-header-btn" id="btnRefresh" title="تحديث">
+          <span>🔄</span>
+          <span>تحديث</span>
+        </button>
+        <button class="stocktake-header-btn btn-primary" id="btnNewStocktake" title="جرد جديد">
+          <span>➕</span>
+          <span>جرد جديد</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="stocktake-main">
+      <!-- Stats -->
+      <div class="stocktake-stats">
+        <div class="stocktake-stat-card">
+          <div class="stocktake-stat-value" id="statTotal">0</div>
+          <div class="stocktake-stat-label">إجمالي عمليات الجرد</div>
+        </div>
+        <div class="stocktake-stat-card">
+          <div class="stocktake-stat-value" id="statInProgress">0</div>
+          <div class="stocktake-stat-label">قيد التنفيذ</div>
+        </div>
+        <div class="stocktake-stat-card">
+          <div class="stocktake-stat-value" id="statPending">0</div>
+          <div class="stocktake-stat-label">في انتظار المراجعة</div>
+        </div>
+        <div class="stocktake-stat-card">
+          <div class="stocktake-stat-value" id="statCompleted">0</div>
+          <div class="stocktake-stat-label">مكتملة</div>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="stocktake-filters">
+        <div class="stocktake-search-wrapper">
+          <span class="stocktake-search-icon">🔍</span>
+          <input type="text" id="searchInput" class="stocktake-search-input" placeholder="بحث برقم الجرد أو المخزن...">
+        </div>
+
+        <select id="filterStatus" class="stocktake-filter-select">
+          <option value="">كل الحالات</option>
+          <option value="draft">مسودة</option>
+          <option value="in_progress">قيد التنفيذ</option>
+          <option value="pending_review">في انتظار المراجعة</option>
+          <option value="completed">مكتمل</option>
+          <option value="cancelled">ملغي</option>
+        </select>
+
+        <select id="filterWarehouse" class="stocktake-filter-select">
+          <option value="">كل المخازن</option>
+        </select>
+      </div>
+
+      <!-- Table -->
+      <div class="stocktake-table-wrapper">
+        <table class="stocktake-table" id="stocktakeTable">
+          <thead>
+            <tr>
+              <th>رقم الجرد</th>
+              <th>المخزن</th>
+              <th>النوع</th>
+              <th>الحالة</th>
+              <th>الأصناف</th>
+              <th>تم جردها</th>
+              <th>الفروقات</th>
+              <th>تاريخ الإنشاء</th>
+              <th>إجراءات</th>
+            </tr>
+          </thead>
+          <tbody id="stocktakeTableBody">
+            <!-- Rows rendered by JS -->
+          </tbody>
+        </table>
+
+        <!-- Empty State -->
+        <div class="stocktake-empty" id="emptyState" style="display: none;">
+          <div class="stocktake-empty-icon">📋</div>
+          <div class="stocktake-empty-text">لا توجد عمليات جرد حالياً</div>
+          <button class="btn btn-primary" id="btnNewStocktakeEmpty">
+            <span>➕</span>
+            إنشاء جرد جديد
+          </button>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ========================================
+       COUNTING VIEW
+       ======================================== -->
+  <div class="counting-view" id="countingView">
+    <!-- Header -->
+    <header class="stocktake-header">
+      <button class="stocktake-back-btn" id="btnBackToList">
+        <span>→</span>
+        <span>رجوع للقائمة</span>
+      </button>
+
+      <h1 class="stocktake-title">
+        <span class="stocktake-title-icon">📦</span>
+        <span id="countingTitle">جرد المخزن</span>
+      </h1>
+
+      <div class="stocktake-spacer"></div>
+
+      <div class="stocktake-header-actions">
+        <button class="stocktake-header-btn" id="btnSaveCounting" title="حفظ">
+          <span>💾</span>
+          <span>حفظ</span>
+        </button>
+        <button class="stocktake-header-btn btn-success" id="btnCompleteCounting" title="إنهاء الجرد">
+          <span>✅</span>
+          <span>إنهاء الجرد</span>
+        </button>
+      </div>
+    </header>
+
+    <main class="stocktake-main">
+      <!-- Counting Header Info -->
+      <div class="counting-header">
+        <div class="counting-info">
+          <h2 id="countingStocktakeNo">جرد رقم: ---</h2>
+          <p id="countingWarehouseName">المخزن: ---</p>
+        </div>
+        <div class="counting-progress">
+          <div class="progress-bar">
+            <div class="progress-bar-fill" id="progressFill" style="width: 0%"></div>
+          </div>
+          <span class="progress-text" id="progressText">0 / 0</span>
+        </div>
+      </div>
+
+      <!-- Barcode Scanner -->
+      <div class="barcode-section">
+        <div class="barcode-input-wrapper">
+          <input type="text" id="barcodeInput" class="barcode-input" placeholder="امسح الباركود أو أدخله يدوياً..." autofocus>
+          <button class="btn btn-primary" id="btnScanBarcode">بحث</button>
+        </div>
+        <div class="barcode-hint">امسح الباركود بالقارئ أو أدخله يدوياً واضغط Enter</div>
+      </div>
+
+      <!-- Counting Items Table -->
+      <div class="stocktake-table-wrapper">
+        <table class="stocktake-table counting-items-table">
+          <thead>
+            <tr>
+              <th>الباركود</th>
+              <th>اسم الصنف</th>
+              <th>النوع</th>
+              <th class="qty-col">الكمية بالنظام</th>
+              <th class="qty-col">الكمية الفعلية</th>
+              <th class="qty-col">الفرق</th>
+              <th>ملاحظات</th>
+            </tr>
+          </thead>
+          <tbody id="countingItemsBody">
+            <!-- Items rendered by JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Variance Summary -->
+      <div class="variance-summary" id="varianceSummary">
+        <h3>ملخص الفروقات</h3>
+        <div class="variance-grid">
+          <div class="variance-item">
+            <div class="variance-item-value" id="summaryTotal">0</div>
+            <div class="variance-item-label">إجمالي الأصناف</div>
+          </div>
+          <div class="variance-item">
+            <div class="variance-item-value" id="summaryCounted">0</div>
+            <div class="variance-item-label">تم جردها</div>
+          </div>
+          <div class="variance-item">
+            <div class="variance-item-value variance-positive" id="summaryPositive">0</div>
+            <div class="variance-item-label">زيادة</div>
+          </div>
+          <div class="variance-item">
+            <div class="variance-item-value variance-negative" id="summaryNegative">0</div>
+            <div class="variance-item-label">نقص</div>
+          </div>
+          <div class="variance-item">
+            <div class="variance-item-value" id="summaryVarianceValue">0 ج.م</div>
+            <div class="variance-item-label">قيمة الفروقات</div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ========================================
+       MODALS
+       ======================================== -->
+
+  <!-- New Stocktake Modal -->
+  <div class="modal-overlay" id="newStocktakeModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>إنشاء جرد جديد</h2>
+        <button class="modal-close" data-close-modal="newStocktakeModal">×</button>
+      </div>
+      <div class="modal-body">
+        <form id="newStocktakeForm">
+          <div class="form-group">
+            <label for="newWarehouse">المخزن *</label>
+            <select id="newWarehouse" required>
+              <option value="">-- اختر المخزن --</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="newWarehouseType">نوع المخزن *</label>
+            <select id="newWarehouseType" required>
+              <option value="">-- اختر النوع --</option>
+              <option value="devices">أجهزة</option>
+              <option value="accessories">إكسسوارات</option>
+              <option value="spare_parts">قطع غيار</option>
+              <option value="mixed">مختلط</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="newNotes">ملاحظات</label>
+            <textarea id="newNotes" rows="3" placeholder="ملاحظات إضافية..."></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-close-modal="newStocktakeModal">إلغاء</button>
+        <button class="btn btn-primary" id="btnCreateStocktake">إنشاء الجرد</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <div class="modal-overlay" id="deleteModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2>تأكيد الحذف</h2>
+        <button class="modal-close" data-close-modal="deleteModal">×</button>
+      </div>
+      <div class="modal-body">
+        <p>هل أنت متأكد من حذف هذا الجرد؟</p>
+        <p><strong id="deleteStocktakeNo"></strong></p>
+        <p style="color: #f87171;">هذا الإجراء لا يمكن التراجع عنه.</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-close-modal="deleteModal">إلغاء</button>
+        <button class="btn btn-danger" id="btnConfirmDelete">حذف</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Complete Stocktake Modal -->
+  <div class="modal-overlay" id="completeModal">
+    <div class="modal modal-lg">
+      <div class="modal-header">
+        <h2>إنهاء الجرد وتطبيق التعديلات</h2>
+        <button class="modal-close" data-close-modal="completeModal">×</button>
+      </div>
+      <div class="modal-body">
+        <p>سيتم تطبيق الفروقات التالية على المخزون:</p>
+
+        <div class="variance-summary" style="margin: 1rem 0;">
+          <div class="variance-grid">
+            <div class="variance-item">
+              <div class="variance-item-value variance-positive" id="completePositive">0</div>
+              <div class="variance-item-label">أصناف بزيادة</div>
+            </div>
+            <div class="variance-item">
+              <div class="variance-item-value variance-negative" id="completeNegative">0</div>
+              <div class="variance-item-label">أصناف بنقص</div>
+            </div>
+            <div class="variance-item">
+              <div class="variance-item-value" id="completeValue">0 ج.م</div>
+              <div class="variance-item-label">إجمالي قيمة الفروقات</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="completeReason">سبب التعديل *</label>
+          <textarea id="completeReason" rows="3" placeholder="أدخل سبب التعديلات..." required></textarea>
+        </div>
+
+        <p style="color: #fbbf24;">⚠️ سيتم تحديث كميات المخزون تلقائياً. هل تريد المتابعة؟</p>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-close-modal="completeModal">إلغاء</button>
+        <button class="btn btn-success" id="btnConfirmComplete">تأكيد وتطبيق</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script src="stocktake.js"></script>
+</body>
+</html>

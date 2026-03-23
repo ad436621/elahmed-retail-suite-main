@@ -1,0 +1,1439 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>الأرشيف • ElOs Accounting</title>
+    <script>(function(){var p=new URLSearchParams(location.search),t=p.get('theme')||localStorage.getItem('elos_theme')||localStorage.getItem('elos-theme')||'dark',h=document.documentElement;h.setAttribute('data-theme',t==='light'?'light':'dark');})();</script>
+  <!-- 🔐 SESSION INJECTION - MUST BE FIRST! -->
+  <script src="session-inject.js"></script>
+  <!-- 🎯 SPA Mode Detection -->
+  <script src="spa-mode.js"></script>
+  <!-- 🔊 Shared Sound & Toast System -->
+  <script src="shared.js"></script>
+  <!-- 🌙 Theme Sync -->
+  <script src="theme-sync.js"></script>
+  <!-- 🔤 Font Scale Manager -->
+  <script src="js/font-scale-manager.js"></script>
+  <!-- 🎨 Design System Tokens (theme colors - MUST BE FIRST) -->
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/tokens-alias.css">
+  <!-- 🎨 Design System (component styles) -->
+  <link rel="stylesheet" href="styles/design-system.css">
+  <!-- 🎨 Theme Governance Layer (load LAST to override legacy styles) -->
+  <link rel="stylesheet" href="styles/theme-fixes.css">
+  <!-- 📏 Font Sizes - تحسين أحجام الخطوط -->
+  <link rel="stylesheet" href="styles/font-sizes.css">
+
+    <style>
+      /* ═══════════════════════════════════════
+         🎨 MODERN VARIABLES
+         ═══════════════════════════════════════ */
+      :root {
+        --bg-primary: #0a0e14;
+        --bg-secondary: #151921;
+        --bg-tertiary: #1a1f29;
+        --text-primary: #e6e8ee;
+        --text-secondary: #8b93a6;
+        --border: #1e2530;
+        --accent: #3b82f6;
+        --accent-hover: #2563eb;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --purple: #a855f7;
+        --cyan: #06b6d4;
+        --radius: 12px;
+        --shadow: 0 2px 8px rgba(0,0,0,0.2);
+        --shadow-hover: 0 4px 16px rgba(59,130,246,0.2);
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        font-family: system-ui, "Cairo", "Segoe UI", sans-serif;
+        overflow: hidden;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* HEADER */
+      .header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 10px 24px;
+        background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+        border-bottom: 1px solid var(--border);
+        box-shadow: var(--shadow);
+        flex-shrink: 0;
+        height: 65px;
+      }
+
+      .back-btn {
+        background: rgba(59,130,246,0.1);
+        border: 1px solid rgba(59,130,246,0.2);
+        border-radius: 8px;
+        padding: 8px 16px;
+        color: var(--accent);
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .back-btn:hover {
+        background: rgba(59,130,246,0.2);
+        transform: translateX(4px);
+      }
+
+      .page-title {
+        font-weight: 900;
+        font-size: 26px;
+        background: linear-gradient(135deg, var(--warning) 0%, var(--danger) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .spacer {
+        flex: 1;
+      }
+
+      /* STATS */
+      .stats {
+        display: flex;
+        gap: 10px;
+      }
+
+      .stat {
+        background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 8px 14px;
+        font-size: 12px;
+        font-weight: 600;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-width: 90px;
+        transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      }
+
+      .stat:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(239,68,68,0.25);
+      }
+
+      .stat-label {
+        font-size: 9px;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 4px;
+      }
+
+      .stat-value {
+        font-size: 18px;
+        font-weight: 900;
+        color: var(--danger);
+        line-height: 1;
+        transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+      }
+
+      .stat-value.loaded {
+        animation: statFadeIn 0.4s ease-out forwards;
+      }
+
+      @keyframes statFadeIn {
+        from {
+          opacity: 0.5;
+          transform: scale(0.9);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      /* MAIN */
+      .main {
+        flex: 1;
+        padding: 24px;
+        overflow-y: auto;
+      }
+
+      .main::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      .main::-webkit-scrollbar-track {
+        background: var(--bg-secondary);
+      }
+
+      .main::-webkit-scrollbar-thumb {
+        background: var(--border);
+        border-radius: 4px;
+      }
+
+      .container {
+        max-width: 1600px;
+        margin: 0 auto;
+      }
+
+      .search-bar {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 24px;
+        background: var(--bg-secondary);
+        padding: 20px;
+        border-radius: var(--radius);
+        border: 1px solid var(--border);
+      }
+
+      .search-input {
+        flex: 1;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 12px 16px;
+        color: var(--text-primary);
+        font-size: 14px;
+        outline: none;
+      }
+
+      .search-input:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+      }
+
+      /* MODEL GROUPS */
+      .model-group {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        margin-bottom: 20px;
+        overflow: hidden;
+        box-shadow: var(--shadow);
+      }
+
+      /* All devices grid (no grouping) */
+      .all-devices-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 16px;
+      }
+
+      .model-header {
+        background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+        padding: 16px 20px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid var(--border);
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .model-header:hover {
+        background: var(--bg-tertiary);
+      }
+
+      .model-title {
+        font-size: 18px;
+        font-weight: 800;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .model-count {
+        background: rgba(239,68,68,0.1);
+        border: 1px solid rgba(239,68,68,0.2);
+        color: var(--danger);
+        padding: 4px 12px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 700;
+      }
+
+      .model-devices {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 16px;
+        padding: 20px;
+      }
+
+      .device-card {
+        background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 16px;
+        transition: all 0.15s ease-out;
+        cursor: pointer;
+      }
+
+      .device-card:hover {
+        border-color: var(--danger);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 16px rgba(239,68,68,0.2);
+      }
+
+      .device-id {
+        font-size: 12px;
+        color: var(--text-secondary);
+        margin-bottom: 8px;
+      }
+
+      .device-model {
+        font-size: 16px;
+        font-weight: 800;
+        color: var(--text-primary);
+        margin-bottom: 8px;
+      }
+
+      .device-info {
+        font-size: 13px;
+        color: var(--text-secondary);
+        margin-bottom: 12px;
+        line-height: 1.6;
+      }
+
+      .device-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+
+      .btn-action {
+        flex: 1;
+        min-width: 80px;
+        border: none;
+        border-radius: 8px;
+        padding: 10px;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.15s ease-out;
+      }
+
+      .btn-action:hover {
+        transform: translateY(-2px);
+      }
+
+      .btn-details {
+        background: var(--accent);
+        color: white;
+      }
+
+      .btn-details:hover {
+        background: var(--accent-hover);
+        box-shadow: 0 4px 12px rgba(59,130,246,0.4);
+      }
+
+      .btn-restore {
+        background: var(--success);
+        color: white;
+      }
+
+      .btn-restore:hover {
+        background: #059669;
+        box-shadow: 0 4px 12px rgba(16,185,129,0.4);
+      }
+
+      .btn-delete {
+        background: var(--danger);
+        color: white;
+      }
+
+      .btn-delete:hover {
+        background: #dc2626;
+        box-shadow: 0 4px 12px rgba(239,68,68,0.4);
+      }
+
+      .empty-state {
+        text-align: center;
+        padding: 80px 20px;
+        color: var(--text-secondary);
+      }
+
+      .empty-icon {
+        font-size: 64px;
+        margin-bottom: 16px;
+        opacity: 0.5;
+      }
+    
+
+/* Archive details modal */
+.archive-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+.archive-modal {
+  background: var(--bg-secondary);
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  padding: 0;
+  max-width: 500px;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  box-shadow: 0 18px 45px rgba(0,0,0,0.6);
+}
+
+.archive-modal::-webkit-scrollbar {
+  width: 6px;
+}
+
+.archive-modal::-webkit-scrollbar-track {
+  background: var(--bg-tertiary);
+}
+
+.archive-modal::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+.archive-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: var(--bg-tertiary);
+  border-bottom: 2px solid var(--danger);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.archive-modal-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.archive-modal-close {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 24px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.2s ease;
+  line-height: 1;
+}
+.archive-modal-close:hover {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+}
+.archive-modal-grid {
+  padding: 16px 20px;
+}
+.archive-modal-section {
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+}
+.archive-modal-section:last-child {
+  margin-bottom: 0;
+}
+.archive-modal-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.archive-modal-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  flex-direction: row-reverse;
+}
+.archive-modal-row:not(:last-child) {
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.archive-modal-label {
+  color: var(--text-secondary);
+  font-size: 12px;
+  text-align: right;
+}
+.archive-modal-value {
+  color: var(--text-primary);
+  font-weight: 500;
+  font-size: 13px;
+  text-align: left;
+  direction: ltr;
+}
+
+/* ═══════════════════════════════════════
+   🖱️ CONTEXT MENU (Right Click)
+   ═══════════════════════════════════════ */
+.context-menu {
+  position: fixed;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+  z-index: 10000;
+  min-width: 160px;
+  display: none;
+}
+
+.context-menu-item {
+  padding: 10px 14px;
+  color: var(--text-primary);
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.context-menu-item:hover {
+  background: var(--accent);
+  color: white;
+}
+
+.context-menu-item .icon {
+  font-size: 16px;
+  width: 20px;
+  text-align: center;
+}
+</style>
+  <link rel="stylesheet" href="responsive.css">
+  </head>
+  <body>
+    <!-- HEADER -->
+    <header class="header">
+      <svg class="logo" viewBox="0 0 814 1000" xmlns="http://www.w3.org/2000/svg" style="width: 32px; height: 32px; color: #ffffff; filter: drop-shadow(0 2px 6px rgba(255, 255, 255, 0.15)); flex-shrink: 0;">
+        <path d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76.5 0-103.7 40.8-165.9 40.8s-105.6-57-155.5-127C46.7 790.7 0 663 0 541.8c0-194.4 126.4-297.5 250.8-297.5 66.1 0 121.2 43.4 162.7 43.4 39.5 0 101.1-46 176.3-46 28.5 0 130.9 2.6 198.3 99.2zm-234-181.5c31.1-36.9 53.1-88.1 53.1-139.3 0-7.1-.6-14.3-1.9-20.1-50.6 1.9-110.8 33.7-147.1 75.8-28.5 32.4-55.1 83.6-55.1 135.5 0 7.8 1.3 15.6 1.9 18.1 3.2.6 8.4 1.3 13.6 1.3 45.4 0 102.5-30.4 135.5-71.3z" fill="currentColor"/>
+      </svg>
+      <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 2px;">
+        <h1 style="font-weight: 900; font-size: 28px; color: #d1d5db; letter-spacing: 4px; text-shadow: 0 2px 6px rgba(255, 255, 255, 0.1); line-height: 1; margin: 0;">ELOS</h1>
+        <div style="font-size: 11px; color: var(--text-secondary); font-weight: 500; opacity: 0.8;">مرحباً بك</div>
+      </div>
+      <a href="./index.html" class="back-btn">
+        <span>🏠</span>
+        الرئيسية
+      </a>
+      <a href="./inventory.html" class="back-btn" style="margin-right: -8px;">
+        <span>📦</span>
+        المخزون
+      </a>
+      <h1 class="page-title">
+        <span>🗄️</span>
+        الأرشيف
+      </h1>
+      <div class="spacer"></div>
+      <div class="stats" id="archiveStats">
+        <div class="stat">
+          <div class="stat-label">الأجهزة</div>
+          <div class="stat-value" id="statCount">---</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">التكلفة</div>
+          <div class="stat-value" id="statCost">---</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">المبيعات</div>
+          <div class="stat-value" id="statSales">---</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- MAIN -->
+    <main class="main">
+      <div class="container">
+        <div class="search-bar">
+          <input 
+            type="text" 
+            id="searchInput" 
+            class="search-input" 
+            placeholder="🔍 بحث في الأرشيف (موديل، IMEI، نوع)..."
+          />
+        </div>
+
+        <div id="archiveContent"></div>
+        
+        <div id="emptyState" class="empty-state" style="display:none;">
+          <div class="empty-icon">📦</div>
+          <div>لا توجد أجهزة في الأرشيف</div>
+        </div>
+      </div>
+    </main>
+
+    <script type="module">
+      // Toast notification system
+      let activeToasts = new Map();
+      const MAX_TOASTS = 3;
+
+      function showToast(message, type = 'info', duration = 3000) {
+        let container = document.getElementById('toast-container');
+        if (!container) {
+          container = document.createElement('div');
+          container.id = 'toast-container';
+          container.style.cssText = `
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 10000;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            pointer-events: none;
+          `;
+          document.body.appendChild(container);
+        }
+
+        if (activeToasts.has(message)) return;
+
+        if (container.children.length >= MAX_TOASTS) {
+          const oldest = container.firstChild;
+          if (oldest) oldest.remove();
+        }
+
+        const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
+        const colors = { success: '#10b981', error: '#ef4444', warning: '#f59e0b', info: '#3b82f6' };
+
+        const toast = document.createElement('div');
+        toast.innerHTML = `
+          <div style="
+            background: linear-gradient(135deg, #1a1f29 0%, #151921 100%);
+            border: 1px solid ${colors[type]};
+            border-radius: 12px;
+            padding: 14px 20px;
+            color: #e6e8ee;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            min-width: 300px;
+            max-width: 500px;
+            pointer-events: auto;
+            animation: toastSlideIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+            font-size: 14px;
+            font-weight: 500;
+          ">
+            <span style="font-size: 20px;">${icons[type]}</span>
+            <span style="flex: 1;">${message}</span>
+          </div>
+        `;
+
+        if (!document.getElementById('toast-animations')) {
+          const style = document.createElement('style');
+          style.id = 'toast-animations';
+          style.textContent = `
+            @keyframes toastSlideIn {
+              from { opacity: 0; transform: translateX(100px) scale(0.8); }
+              to { opacity: 1; transform: translateX(0) scale(1); }
+            }
+            @keyframes toastSlideOut {
+              from { opacity: 1; transform: translateX(0) scale(1); }
+              to { opacity: 0; transform: translateX(100px) scale(0.8); }
+            }
+          `;
+          document.head.appendChild(style);
+        }
+
+        container.appendChild(toast);
+        activeToasts.set(message, toast);
+
+        setTimeout(() => {
+          const content = toast.querySelector('div');
+          if (content) {
+            content.style.animation = 'toastSlideOut 0.4s forwards';
+          }
+          setTimeout(() => {
+            toast.remove();
+            activeToasts.delete(message);
+          }, 400);
+        }, duration);
+      }
+
+      // Format number
+      const fmt = (n) => Number(n || 0).toLocaleString('ar-EG');
+
+      // Load archived devices
+      async function loadArchive() {
+        try {
+          const res = await fetch('elos-db://inventory');
+          if (!res.ok) throw new Error('Failed to load');
+          
+          const devices = await res.json();
+          
+          // Filter ONLY archived devices and sort by ID descending (newest first)
+          const archived = devices
+            .filter(d => d.status === 'archived')
+            .sort((a, b) => b.id - a.id);
+          window.archiveDevices = archived;
+
+          // Update stats
+          const totalCost = archived.reduce((sum, d) => sum + Number(d.purchase_cost || 0), 0);
+          const totalSales = archived.reduce((sum, d) => sum + Number(d.sell_price || 0), 0);
+          
+          const statCount = document.getElementById('statCount');
+          const statCost = document.getElementById('statCost');
+          const statSales = document.getElementById('statSales');
+          
+          statCount.textContent = archived.length.toLocaleString();
+          statCost.textContent = fmt(totalCost);
+          statSales.textContent = fmt(totalSales);
+          
+          statCount.classList.add('loaded');
+          statCost.classList.add('loaded');
+          statSales.classList.add('loaded');
+          
+          if (archived.length === 0) {
+            document.getElementById('emptyState').style.display = 'block';
+            document.getElementById('archiveContent').innerHTML = '';
+            return;
+          }
+          
+          // Render devices directly without grouping - sorted by newest first
+          const content = document.getElementById('archiveContent');
+          content.innerHTML = '';
+          document.getElementById('emptyState').style.display = 'none';
+          
+          // Create a single container for all devices
+          const devicesContainer = document.createElement('div');
+          devicesContainer.className = 'all-devices-grid';
+          devicesContainer.innerHTML = archived.map(d => `
+            <div class="device-card" ondblclick="showArchiveDetails(${d.id})">
+              <div class="device-id">#${d.id}</div>
+              <div class="device-model">${d.model}</div>
+              <div class="device-info">
+                النوع: ${d.type}<br>
+                السعة: ${d.storage || '—'}<br>
+                IMEI: ${d.imei1 || '—'}<br>
+                تكلفة: ${fmt(d.purchase_cost)}<br>
+                بيع: ${fmt(d.sell_price)}
+              </div>
+              <div class="device-actions">
+                <button class="btn-action btn-details" onclick="event.stopPropagation(); showArchiveDetails(${d.id})">
+                  🔍 تفاصيل
+                </button>
+                <button class="btn-action btn-restore" onclick="event.stopPropagation(); restoreDevice(${d.id}, '${d.model.replace(/'/g, "\\'")}')">
+                  ↩️ إرجاع
+                </button>
+                <button class="btn-action btn-delete" onclick="event.stopPropagation(); deleteDevice(${d.id}, '${d.model.replace(/'/g, "\\'")}')">
+                  🗑️ حذف
+                </button>
+              </div>
+            </div>
+          `).join('');
+          
+          content.appendChild(devicesContainer);
+
+          // Show loaded message after delay
+          setTimeout(() => {
+            showToast(`تم تحميل ${archived.length} جهاز من الأرشيف`, 'success', 2000);
+          }, 3000);
+          
+        } catch (error) {
+          console.error('Error:', error);
+          showToast('حدث خطأ أثناء تحميل الأرشيف', 'error');
+        }
+      }
+
+      function getStatusLabel(status) {
+        const labels = {
+          sold: 'مباع',
+          scrapped: 'هالك',
+          returned: 'مرتجع'
+        };
+        return labels[status] || status;
+      }
+
+      // Restore device to inventory (change status to in_stock)
+      window.restoreDevice = async function(id, model) {
+        if (!confirm(`هل تريد إرجاع الجهاز "${model}" للمخزون؟`)) {
+          return;
+        }
+        
+        try {
+          // Find the card by searching all cards for the matching ID
+          let card = null;
+          document.querySelectorAll('.device-card').forEach(c => {
+            if (c.querySelector('.device-id')?.textContent === `#${id}`) {
+              card = c;
+            }
+          });
+          
+          if (card) {
+            card.style.transition = 'all 0.3s ease-out';
+            card.style.transform = 'scale(0.8)';
+            card.style.opacity = '0';
+          }
+          
+          const res = await fetch('elos-db://update-device', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ 
+              id: id, 
+              status: 'in_stock'
+            })
+          });
+          
+          if (!res.ok) {
+            const errorText = await res.text();
+            throw new Error(errorText || 'Failed to restore');
+          }
+          
+          // Remove card from DOM immediately
+          setTimeout(() => {
+            if (card) {
+              const parent = card.parentElement;
+              card.remove();
+              
+              // Check if model group is empty
+              if (parent && parent.children.length === 0) {
+                const group = parent.closest('.model-group');
+                if (group) group.remove();
+              }
+              
+              // Update stats
+              updateStatsAfterRemoval(id);
+            }
+          }, 300);
+          
+          showToast(`✅ تم إرجاع "${model}" للمخزون`, 'success');
+          
+        } catch (error) {
+          console.error('Restore error:', error);
+          showToast('حدث خطأ أثناء الإرجاع: ' + error.message, 'error');
+          // Restore card visibility on error
+          let card = null;
+          document.querySelectorAll('.device-card').forEach(c => {
+            if (c.querySelector('.device-id')?.textContent === `#${id}`) {
+              card = c;
+            }
+          });
+          if (card) {
+            card.style.transform = 'scale(1)';
+            card.style.opacity = '1';
+          }
+        }
+      };
+
+      // Update stats after removing a device
+      function updateStatsAfterRemoval(id) {
+        const device = window.archiveDevices.find(d => d.id === id);
+        if (!device) return;
+        
+        // Remove from local array
+        window.archiveDevices = window.archiveDevices.filter(d => d.id !== id);
+        
+        // Recalculate stats
+        const archived = window.archiveDevices;
+        const totalCost = archived.reduce((sum, d) => sum + Number(d.purchase_cost || 0), 0);
+        const totalSales = archived.reduce((sum, d) => sum + Number(d.sell_price || 0), 0);
+        
+        document.getElementById('statCount').textContent = archived.length.toLocaleString();
+        document.getElementById('statCost').textContent = fmt(totalCost);
+        document.getElementById('statSales').textContent = fmt(totalSales);
+        
+        // Show empty state if no devices left
+        if (archived.length === 0) {
+          document.getElementById('emptyState').style.display = 'block';
+          document.getElementById('archiveContent').innerHTML = '';
+        }
+      }
+
+      // Delete device permanently
+      window.deleteDevice = async function(id, model) {
+        if (!confirm(`هل أنت متأكد من حذف الجهاز "${model}" نهائياً؟\n\nلن يمكن استرجاعه!`)) {
+          return;
+        }
+        
+        try {
+          // Find the card by searching all cards for the matching ID
+          let card = null;
+          document.querySelectorAll('.device-card').forEach(c => {
+            if (c.querySelector('.device-id')?.textContent === `#${id}`) {
+              card = c;
+            }
+          });
+          
+          if (card) {
+            card.style.transition = 'all 0.3s ease-out';
+            card.style.transform = 'scale(0.8)';
+            card.style.opacity = '0';
+          }
+          
+          const res = await fetch(`elos-db://device/${id}`, {
+            method: 'DELETE'
+          });
+          
+          if (!res.ok) {
+            const errorText = await res.text();
+            throw new Error(errorText || 'Failed to delete');
+          }
+          
+          // Remove card from DOM immediately
+          setTimeout(() => {
+            if (card) {
+              const parent = card.parentElement;
+              card.remove();
+              
+              // Check if model group is empty
+              if (parent && parent.children.length === 0) {
+                const group = parent.closest('.model-group');
+                if (group) group.remove();
+              }
+              
+              // Update stats
+              updateStatsAfterRemoval(id);
+            }
+          }, 300);
+          
+          showToast(`🗑️ تم حذف "${model}" نهائياً`, 'warning');
+          
+        } catch (error) {
+          console.error('Delete error:', error);
+          showToast('حدث خطأ أثناء الحذف: ' + error.message, 'error');
+          // Restore card visibility on error
+          let card = null;
+          document.querySelectorAll('.device-card').forEach(c => {
+            if (c.querySelector('.device-id')?.textContent === `#${id}`) {
+              card = c;
+            }
+          });
+          if (card) {
+            card.style.transform = 'scale(1)';
+            card.style.opacity = '1';
+          }
+        }
+      };
+
+      // Search
+      document.getElementById('searchInput').addEventListener('input', (e) => {
+        const term = e.target.value.toLowerCase();
+        const cards = document.querySelectorAll('.device-card');
+        
+        cards.forEach(card => {
+          const text = card.textContent.toLowerCase();
+          card.style.display = text.includes(term) ? 'block' : 'none';
+        });
+      });
+
+      // Init
+      loadArchive();
+    
+
+window.showArchiveDetails = function(id) {
+  try {
+    const list = (window.archiveDevices || []);
+    const device = list.find(d => d.id === id);
+    if (!device) {
+      showToast('لم يتم العثور على الجهاز', 'error');
+      return;
+    }
+
+    const fmt = (n) => {
+      const num = Number(n || 0);
+      return isNaN(num) ? '—' : num.toLocaleString('ar-EG');
+    };
+
+    const content = document.getElementById('archiveDetailContent');
+    
+    // Format dates
+    const purchaseDate = device.purchase_date
+      ? new Date(device.purchase_date).toLocaleDateString('ar-EG')
+      : 'غير متوفر';
+    const saleDate = device.sale_date
+      ? new Date(device.sale_date).toLocaleDateString('ar-EG')
+      : 'غير متوفر';
+    const createdAt = device.created_at
+      ? new Date(device.created_at).toLocaleDateString('ar-EG')
+      : 'غير متوفر';
+    const updatedAt = device.updated_at
+      ? new Date(device.updated_at).toLocaleDateString('ar-EG')
+      : 'غير متوفر';
+
+    // Get condition label
+    const conditionLabels = {
+      new: 'جديد',
+      like_new: 'كالجديد',
+      used: 'مستعمل',
+      faulty: 'عاطل'
+    };
+    const conditionLabel = conditionLabels[device.condition] || device.condition || '—';
+
+    // Calculate profit
+    const cost = Number(device.purchase_cost || 0);
+    const sellPrice = Number(device.sell_price || 0);
+    const ntraTax = Number(device.ntra_tax || 0);
+    const profit = sellPrice - cost - ntraTax;
+    const profitColor = profit >= 0 ? '#10b981' : '#ef4444';
+
+    content.innerHTML = `
+      <div class="archive-modal-section">
+        <div class="archive-modal-section-title">📱 معلومات الجهاز</div>
+        
+        <div class="archive-modal-row">
+          <span class="archive-modal-label">رقم التعريف</span>
+          <span class="archive-modal-value">#${device.id}</span>
+        </div>
+        <div class="archive-modal-row">
+          <span class="archive-modal-label">النوع</span>
+          <span class="archive-modal-value">${device.type || '—'}</span>
+        </div>
+        <div class="archive-modal-row">
+          <span class="archive-modal-label">الموديل</span>
+          <span class="archive-modal-value">${device.model || '—'}</span>
+        </div>
+        <div class="archive-modal-row">
+          <span class="archive-modal-label">السعة</span>
+          <span class="archive-modal-value">${device.storage || '—'}</span>
+        </div>
+        <div class="archive-modal-row">
+          <span class="archive-modal-label">اللون</span>
+          <span class="archive-modal-value">${device.color || '—'}</span>
+        </div>
+        <div class="archive-modal-row">
+          <span class="archive-modal-label">الحالة</span>
+          <span class="archive-modal-value">${conditionLabel}</span>
+        </div>
+        <div class="archive-modal-row">
+          <span class="archive-modal-label">نسبة البطارية</span>
+          <span class="archive-modal-value">${device.battery_health ? device.battery_health + '%' : '—'}</span>
+        </div>
+        <div class="archive-modal-row">
+          <span class="archive-modal-label">الكرتونة</span>
+          <span class="archive-modal-value">${device.has_box ? '✓ مع كرتونة' : 'بدون'}</span>
+        </div>
+      </div>
+
+      <div class="archive-modal-section">
+        <div class="archive-modal-section-title">🔢 أرقام IMEI</div>
+        
+        <div class="archive-modal-row">
+          <span class="archive-modal-label">IMEI 1</span>
+          <span class="archive-modal-value">${device.imei1 || '—'}</span>
+        </div>
+        <div class="archive-modal-row">
+          <span class="archive-modal-label">IMEI 2</span>
+          <span class="archive-modal-value">${device.imei2 || '—'}</span>
+        </div>
+      </div>
+
+      <div class="archive-modal-section">
+        <div class="archive-modal-section-title">💰 المعلومات المالية</div>
+        
+        <div class="archive-modal-row">
+          <span class="archive-modal-label">سعر التكلفة</span>
+          <span class="archive-modal-value">${fmt(cost)} ج.م</span>
+        </div>
+        <div class="archive-modal-row">
+          <span class="archive-modal-label">سعر البيع</span>
+          <span class="archive-modal-value">${fmt(sellPrice)} ج.م</span>
+        </div>
+        <div class="archive-modal-row">
+          <span class="archive-modal-label">ضريبة NTRA</span>
+          <span class="archive-modal-value">${fmt(ntraTax)} ج.م</span>
+        </div>
+        <div class="archive-modal-row">
+          <span class="archive-modal-label">السعر المتوقع</span>
+          <span class="archive-modal-value">${fmt(device.expected_price)} ج.م</span>
+        </div>
+        <div class="archive-modal-row">
+          <span class="archive-modal-label">صافي الربح</span>
+          <span class="archive-modal-value" style="color: ${profitColor}; font-weight: 800;">${fmt(profit)} ج.م</span>
+        </div>
+      </div>
+
+      <div class="archive-modal-section">
+        <div class="archive-modal-section-title">📅 التواريخ</div>
+        
+        <div class="archive-modal-row">
+          <span class="archive-modal-label">تاريخ الإضافة</span>
+          <span class="archive-modal-value">${createdAt}</span>
+        </div>
+        <div class="archive-modal-row">
+          <span class="archive-modal-label">تاريخ الشراء</span>
+          <span class="archive-modal-value">${purchaseDate}</span>
+        </div>
+        <div class="archive-modal-row">
+          <span class="archive-modal-label">تاريخ البيع</span>
+          <span class="archive-modal-value">${saleDate}</span>
+        </div>
+        <div class="archive-modal-row">
+          <span class="archive-modal-label">آخر تحديث</span>
+          <span class="archive-modal-value">${updatedAt}</span>
+        </div>
+      </div>
+
+      <div class="archive-modal-section">
+        <div class="archive-modal-section-title">📝 معلومات إضافية</div>
+        
+        <div class="archive-modal-row">
+          <span class="archive-modal-label">المصدر</span>
+          <span class="archive-modal-value">${device.source || '—'}</span>
+        </div>
+        <div class="archive-modal-row">
+          <span class="archive-modal-label">اسم العميل</span>
+          <span class="archive-modal-value">${device.customer_name || '—'}</span>
+        </div>
+        <div class="archive-modal-row">
+          <span class="archive-modal-label">رقم العميل</span>
+          <span class="archive-modal-value">${device.customer_phone || '—'}</span>
+        </div>
+        <div class="archive-modal-row">
+          <span class="archive-modal-label">ملاحظات</span>
+          <span class="archive-modal-value">${device.notes || 'لا توجد'}</span>
+        </div>
+      </div>
+    `;
+
+    const backdrop = document.getElementById('archiveDetailBackdrop');
+    if (backdrop) backdrop.style.display = 'flex';
+  } catch (e) {
+    console.error('Archive details error:', e);
+    showToast('حدث خطأ أثناء عرض التفاصيل', 'error');
+  }
+}
+
+window.hideArchiveDetails = function(ev) {
+  if (ev && ev.target && ev.target.id && ev.target.id !== 'archiveDetailBackdrop') {
+    // clicked inside modal, ignore
+  }
+  const backdrop = document.getElementById('archiveDetailBackdrop');
+  if (backdrop) backdrop.style.display = 'none';
+}
+
+</script>
+  
+
+<!-- Archive device details modal -->
+<div id="archiveDetailBackdrop" class="archive-modal-backdrop" onclick="hideArchiveDetails(event)">
+  <div class="archive-modal" onclick="event.stopPropagation()">
+    <div class="archive-modal-header">
+      <div class="archive-modal-title">تفاصيل الجهاز المؤرشف</div>
+      <button class="archive-modal-close" onclick="hideArchiveDetails()">×</button>
+    </div>
+    <div id="archiveDetailContent" class="archive-modal-grid"></div>
+  </div>
+</div>
+
+<!-- Context Menu (Right Click) -->
+<div id="contextMenu" class="context-menu">
+  <div class="context-menu-item" data-action="copy">
+    <span class="icon">📋</span>
+    <span>نسخ</span>
+  </div>
+  <div class="context-menu-item" data-action="cut" style="display: none;">
+    <span class="icon">✂️</span>
+    <span>قص</span>
+  </div>
+  <div class="context-menu-item" data-action="paste" style="display: none;">
+    <span class="icon">📄</span>
+    <span>لصق</span>
+  </div>
+</div>
+
+<script>
+  // ═══════════════════════════════════════
+  // 🖱️ CONTEXT MENU (Right Click Copy/Cut/Paste)
+  // ═══════════════════════════════════════
+  const contextMenu = document.getElementById('contextMenu');
+  const copyItem = contextMenu.querySelector('[data-action="copy"]');
+  const cutItem = contextMenu.querySelector('[data-action="cut"]');
+  const pasteItem = contextMenu.querySelector('[data-action="paste"]');
+  let selectedInput = null;
+
+  document.addEventListener('contextmenu', (e) => {
+    const inputTarget = e.target.closest('input, textarea');
+    
+    if (inputTarget) {
+      e.preventDefault();
+      selectedInput = inputTarget;
+      
+      copyItem.style.display = 'flex';
+      cutItem.style.display = 'flex';
+      pasteItem.style.display = 'flex';
+      
+      contextMenu.style.display = 'block';
+      contextMenu.style.left = e.pageX + 'px';
+      contextMenu.style.top = e.pageY + 'px';
+    }
+  });
+
+  document.addEventListener('click', (e) => {
+    if (!contextMenu.contains(e.target)) {
+      contextMenu.style.display = 'none';
+      selectedInput = null;
+    }
+  });
+
+  copyItem?.addEventListener('click', async () => {
+    if (selectedInput) {
+      let textToCopy = '';
+      if (selectedInput.selectionStart !== selectedInput.selectionEnd) {
+        textToCopy = selectedInput.value.substring(selectedInput.selectionStart, selectedInput.selectionEnd);
+      } else {
+        textToCopy = selectedInput.value;
+      }
+      
+      if (textToCopy) {
+        try {
+          await navigator.clipboard.writeText(textToCopy);
+          showNotification('✅ تم النسخ: ' + (textToCopy.length > 30 ? textToCopy.substring(0, 30) + '...' : textToCopy));
+        } catch (err) {
+          console.error('Failed to copy:', err);
+        }
+      }
+    }
+    contextMenu.style.display = 'none';
+    selectedInput = null;
+  });
+
+  cutItem?.addEventListener('click', async () => {
+    if (selectedInput) {
+      let textToCut = '';
+      
+      if (selectedInput.selectionStart !== selectedInput.selectionEnd) {
+        textToCut = selectedInput.value.substring(selectedInput.selectionStart, selectedInput.selectionEnd);
+        selectedInput.value = selectedInput.value.substring(0, selectedInput.selectionStart) + 
+                             selectedInput.value.substring(selectedInput.selectionEnd);
+      } else {
+        textToCut = selectedInput.value;
+        selectedInput.value = '';
+      }
+      
+      if (textToCut) {
+        try {
+          await navigator.clipboard.writeText(textToCut);
+          showNotification('✂️ تم القص: ' + (textToCut.length > 30 ? textToCut.substring(0, 30) + '...' : textToCut));
+        } catch (err) {
+          console.error('Failed to cut:', err);
+        }
+      }
+    }
+    contextMenu.style.display = 'none';
+    selectedInput = null;
+  });
+
+  pasteItem?.addEventListener('click', async () => {
+    if (selectedInput) {
+      try {
+        const text = await navigator.clipboard.readText();
+        
+        if (selectedInput.selectionStart !== selectedInput.selectionEnd) {
+          selectedInput.value = selectedInput.value.substring(0, selectedInput.selectionStart) + 
+                               text + 
+                               selectedInput.value.substring(selectedInput.selectionEnd);
+        } else {
+          const cursorPos = selectedInput.selectionStart;
+          selectedInput.value = selectedInput.value.substring(0, cursorPos) + 
+                               text + 
+                               selectedInput.value.substring(cursorPos);
+        }
+        
+        showNotification('📄 تم اللصق: ' + (text.length > 30 ? text.substring(0, 30) + '...' : text));
+      } catch (err) {
+        console.error('Failed to paste:', err);
+      }
+    }
+    contextMenu.style.display = 'none';
+    selectedInput = null;
+  });
+
+  function showNotification(message) {
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+      position: fixed;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: linear-gradient(135deg, #1a1f29 0%, #151921 100%);
+      border: 1px solid #10b981;
+      border-radius: 12px;
+      padding: 14px 20px;
+      color: #e6e8ee;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+      z-index: 10001;
+      font-size: 14px;
+      font-weight: 500;
+    `;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    
+    setTimeout(() => toast.remove(), 2000);
+  }
+
+  // ═══════════════════════════════════════
+  // 🔊 SOUND SYSTEM
+  // ═══════════════════════════════════════
+  const sounds = {
+    click: () => {
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const oscillator = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      
+      oscillator.frequency.value = 800;
+      oscillator.type = 'sine';
+      
+      gainNode.gain.setValueAtTime(0.1, audioCtx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+      
+      oscillator.start(audioCtx.currentTime);
+      oscillator.stop(audioCtx.currentTime + 0.1);
+    }
+  };
+
+  function playSound(type) {
+    if (localStorage.getItem('elos_sounds') === 'off') return;
+    try {
+      sounds[type]?.();
+    } catch (e) {
+      console.log('Sound disabled');
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const observer = new MutationObserver(() => {
+      document.querySelectorAll('.device-card, .model-header, .back-btn').forEach(el => {
+        if (!el.hasAttribute('data-sound-added')) {
+          el.setAttribute('data-sound-added', 'true');
+          el.addEventListener('click', () => playSound('click'));
+        }
+      });
+    });
+    
+    observer.observe(document.body, { childList: true, subtree: true });
+    
+    document.querySelectorAll('.device-card, .model-header, .back-btn').forEach(el => {
+      el.setAttribute('data-sound-added', 'true');
+      el.addEventListener('click', () => playSound('click'));
+    });
+  });
+</script>
+
+
+    
+  
+    <!-- ═══════════════════════════════════════
+         🏢 Company Name & Logo Update Script
+         ═══════════════════════════════════════ -->
+    <script>
+      (function() {
+        // متغيرات اسم الشركة واللوجو
+        let companyName = 'ELOS ACC SYSTEM';
+        let companyLogo = null;
+
+        // جلب البيانات من localStorage
+        async function loadCompanyData() {
+          try {
+            const saved = localStorage.getItem('appSettings');
+            if (saved) {
+              const settings = JSON.parse(saved);
+              
+              if (settings.companyName) {
+                companyName = settings.companyName;
+              }
+              if (settings.companyLogo) {
+                companyLogo = settings.companyLogo;
+              }
+              
+              updateHeaderLogo();
+            }
+          } catch (error) {
+            console.warn('[HEADER] Failed to load company data:', error);
+          }
+        }
+
+        // التحقق من النص العربي
+        function isArabic(text) {
+          return /[؀-ۿ]/.test(text);
+        }
+
+        // تحديث اللوجو والاسم في الهيدر
+        function updateHeaderLogo() {
+          // محاولة العثور على اللوجو - عدة احتمالات
+          const logoSvg = document.querySelector('.logo') || 
+                         document.querySelector('.hdr .logo') || 
+                         document.querySelector('header .logo') ||
+                         document.querySelector('.header .logo');
+          
+          // محاولة العثور على الاسم - عدة احتمالات
+          const companyNameEl = document.querySelector('.brand') || 
+                               document.querySelector('.hdr .brand') ||
+                               document.querySelector('.logo-text') ||
+                               document.querySelector('.header h1') ||
+                               document.querySelector('header h1');
+          
+          // تحديث اللوجو
+          if (logoSvg && companyLogo) {
+            const img = document.createElement('img');
+            img.src = companyLogo;
+            img.alt = companyName;
+            img.className = logoSvg.className;
+            img.style.width = '40px';
+            img.style.height = '40px';
+            img.style.objectFit = 'contain';
+            img.style.borderRadius = '8px';
+            img.style.filter = 'drop-shadow(0 2px 8px rgba(255, 255, 255, 0.15))';
+            logoSvg.replaceWith(img);
+          }
+          
+          // تحديث الاسم
+          if (companyNameEl) {
+            companyNameEl.textContent = companyName;
+            
+            // تطبيق خط عربي إذا لزم الأمر
+            if (isArabic(companyName)) {
+              companyNameEl.style.fontFamily = '"Tajawal", "Cairo", "Dubai", "Segoe UI", system-ui, sans-serif';
+              companyNameEl.style.letterSpacing = '0';
+            }
+          }
+        }
+
+        // الاستماع للتغييرات
+        window.addEventListener('storage', async (e) => {
+          if (e.key === 'appSettings') {
+            await loadCompanyData();
+          }
+        });
+
+        // تحميل البيانات عند بدء الصفحة
+        if (document.readyState === 'loading') {
+          document.addEventListener('DOMContentLoaded', loadCompanyData);
+        } else {
+          loadCompanyData();
+        }
+      })();
+    </script>
+  </body>
+</html>

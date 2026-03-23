@@ -1,0 +1,728 @@
+/**
+ * ELOS Checkout Modal Enhancements
+ * تحسينات نافذة إتمام البيع
+ * Version: 1.0 - Glass & Glow Edition
+ */
+
+/* ═══════════════════════════════════════
+   MODAL OVERLAY - خلفية النافذة
+   ═══════════════════════════════════════ */
+.unified-checkout-modal {
+  background: rgba(10, 14, 20, 0.85) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+html[data-theme="light"] .unified-checkout-modal {
+  background: rgba(15, 23, 42, 0.6) !important;
+}
+
+/* ═══════════════════════════════════════
+   MODAL CONTAINER - الحاوية الرئيسية
+   ═══════════════════════════════════════ */
+.unified-checkout-container {
+  background: rgba(22, 27, 34, 0.95) !important;
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(99, 102, 241, 0.25) !important;
+  box-shadow:
+    0 25px 80px rgba(0, 0, 0, 0.6),
+    0 0 60px rgba(99, 102, 241, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+  animation: checkoutSlideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html[data-theme="light"] .unified-checkout-container {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border: 1px solid rgba(99, 102, 241, 0.2) !important;
+  box-shadow:
+    0 25px 80px rgba(0, 0, 0, 0.2),
+    0 0 60px rgba(99, 102, 241, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8) !important;
+}
+
+@keyframes checkoutSlideIn {
+  from {
+    transform: translateY(50px) scale(0.92);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+/* ═══════════════════════════════════════
+   HEADER - ترويسة النافذة
+   ═══════════════════════════════════════ */
+.unified-checkout-header {
+  background: linear-gradient(135deg,
+    rgba(99, 102, 241, 0.15) 0%,
+    rgba(16, 185, 129, 0.1) 50%,
+    rgba(59, 130, 246, 0.1) 100%) !important;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(99, 102, 241, 0.2) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Animated gradient shine */
+.unified-checkout-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.05),
+    transparent
+  );
+  animation: headerShine 4s ease-in-out infinite;
+}
+
+@keyframes headerShine {
+  0%, 100% { left: -100%; }
+  50% { left: 100%; }
+}
+
+html[data-theme="light"] .unified-checkout-header {
+  background: linear-gradient(135deg,
+    rgba(99, 102, 241, 0.1) 0%,
+    rgba(16, 185, 129, 0.08) 50%,
+    rgba(59, 130, 246, 0.08) 100%) !important;
+  border-bottom: 1px solid rgba(99, 102, 241, 0.15) !important;
+}
+
+/* Header Icon with glow */
+.unified-header-icon {
+  filter: drop-shadow(0 0 8px rgba(99, 102, 241, 0.5));
+  animation: iconPulse 2s ease-in-out infinite;
+}
+
+@keyframes iconPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+/* Total display with glow */
+.unified-header-total {
+  background: linear-gradient(135deg,
+    rgba(16, 185, 129, 0.2) 0%,
+    rgba(16, 185, 129, 0.1) 100%) !important;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  box-shadow:
+    0 0 20px rgba(16, 185, 129, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  text-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+  animation: totalGlow 2s ease-in-out infinite;
+}
+
+@keyframes totalGlow {
+  0%, 100% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1); }
+  50% { box-shadow: 0 0 30px rgba(16, 185, 129, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.1); }
+}
+
+/* Close button enhancement */
+.unified-close-btn {
+  background: rgba(239, 68, 68, 0.15) !important;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.unified-close-btn:hover {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.4);
+  transform: rotate(90deg) scale(1.1);
+}
+
+/* ═══════════════════════════════════════
+   CART SECTION - قسم السلة
+   ═══════════════════════════════════════ */
+.unified-cart-section {
+  background: rgba(0, 0, 0, 0.3) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-left: 1px solid rgba(99, 102, 241, 0.15) !important;
+}
+
+html[data-theme="light"] .unified-cart-section {
+  background: rgba(248, 250, 252, 0.9) !important;
+  border-left: 1px solid rgba(99, 102, 241, 0.12) !important;
+}
+
+/* Section header glass effect */
+.unified-section-header {
+  background: linear-gradient(135deg,
+    rgba(99, 102, 241, 0.15) 0%,
+    rgba(99, 102, 241, 0.08) 100%) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(99, 102, 241, 0.2) !important;
+}
+
+html[data-theme="light"] .unified-section-header {
+  background: linear-gradient(135deg,
+    rgba(99, 102, 241, 0.1) 0%,
+    rgba(99, 102, 241, 0.05) 100%) !important;
+}
+
+/* Cart item count badge with glow */
+.section-count {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+  box-shadow: 0 0 12px rgba(99, 102, 241, 0.5);
+  animation: countPulse 2s ease-in-out infinite;
+}
+
+@keyframes countPulse {
+  0%, 100% { box-shadow: 0 0 12px rgba(99, 102, 241, 0.5); }
+  50% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.7); }
+}
+
+/* ═══════════════════════════════════════
+   CART ITEMS - عناصر السلة
+   ═══════════════════════════════════════ */
+.unified-cart-item {
+  background: rgba(255, 255, 255, 0.03) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Glass shine effect */
+.unified-cart-item::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.05),
+    transparent
+  );
+  transition: left 0.5s ease;
+  pointer-events: none;
+}
+
+.unified-cart-item:hover::before {
+  left: 100%;
+}
+
+.unified-cart-item:hover {
+  background: rgba(99, 102, 241, 0.12) !important;
+  border-color: rgba(99, 102, 241, 0.35) !important;
+  transform: translateX(-4px);
+  box-shadow:
+    0 4px 20px rgba(99, 102, 241, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+html[data-theme="light"] .unified-cart-item {
+  background: rgba(255, 255, 255, 0.6) !important;
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+}
+
+html[data-theme="light"] .unified-cart-item:hover {
+  background: rgba(99, 102, 241, 0.08) !important;
+  border-color: rgba(99, 102, 241, 0.25) !important;
+}
+
+/* Cart item icon glass effect */
+.cart-item-icon {
+  background: linear-gradient(135deg,
+    rgba(99, 102, 241, 0.25) 0%,
+    rgba(99, 102, 241, 0.1) 100%) !important;
+  box-shadow:
+    0 2px 8px rgba(99, 102, 241, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transition: all 0.3s ease;
+}
+
+.unified-cart-item:hover .cart-item-icon {
+  transform: scale(1.1) rotate(5deg);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+}
+
+/* Price with glow */
+.cart-item-price {
+  text-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}
+
+/* Remove button enhancement */
+.cart-item-remove {
+  background: rgba(239, 68, 68, 0.1) !important;
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.cart-item-remove:hover {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+  transform: scale(1.1);
+}
+
+/* ═══════════════════════════════════════
+   PAYMENT SECTION - قسم الدفع
+   ═══════════════════════════════════════ */
+.unified-payment-section {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+html[data-theme="light"] .unified-payment-section {
+  background: rgba(248, 250, 252, 0.5);
+}
+
+/* ═══════════════════════════════════════
+   BLOCKS - البلوكات
+   ═══════════════════════════════════════ */
+.unified-block {
+  background: rgba(255, 255, 255, 0.03) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  transition: all 0.3s ease;
+}
+
+.unified-block:hover {
+  border-color: rgba(99, 102, 241, 0.2) !important;
+  box-shadow:
+    0 6px 24px rgba(0, 0, 0, 0.15),
+    0 0 20px rgba(99, 102, 241, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+html[data-theme="light"] .unified-block {
+  background: rgba(255, 255, 255, 0.7) !important;
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+html[data-theme="light"] .unified-block:hover {
+  border-color: rgba(99, 102, 241, 0.25) !important;
+}
+
+/* Block header icon glow */
+.block-icon {
+  filter: drop-shadow(0 0 4px rgba(99, 102, 241, 0.3));
+}
+
+/* ═══════════════════════════════════════
+   INPUT FIELDS - حقول الإدخال
+   ═══════════════════════════════════════ */
+.unified-input, .unified-select {
+  background: rgba(30, 41, 59, 0.5) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(148, 163, 184, 0.2) !important;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.unified-input:focus, .unified-select:focus {
+  background: rgba(30, 41, 59, 0.7) !important;
+  border-color: rgba(99, 102, 241, 0.6) !important;
+  box-shadow:
+    0 0 0 3px rgba(99, 102, 241, 0.15),
+    0 0 20px rgba(99, 102, 241, 0.1),
+    inset 0 0 0 1px rgba(99, 102, 241, 0.1) !important;
+  outline: none;
+}
+
+html[data-theme="light"] .unified-input,
+html[data-theme="light"] .unified-select {
+  background: rgba(255, 255, 255, 0.8) !important;
+  border: 1px solid rgba(148, 163, 184, 0.3) !important;
+}
+
+html[data-theme="light"] .unified-input:focus,
+html[data-theme="light"] .unified-select:focus {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(99, 102, 241, 0.5) !important;
+  box-shadow:
+    0 0 0 3px rgba(99, 102, 241, 0.12),
+    0 0 20px rgba(99, 102, 241, 0.08) !important;
+}
+
+/* Cash input special styling */
+.unified-cash-input {
+  background: linear-gradient(135deg,
+    rgba(16, 185, 129, 0.1) 0%,
+    rgba(30, 41, 59, 0.5) 100%) !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+}
+
+.unified-cash-input:focus {
+  border-color: rgba(16, 185, 129, 0.6) !important;
+  box-shadow:
+    0 0 0 3px rgba(16, 185, 129, 0.15),
+    0 0 20px rgba(16, 185, 129, 0.1) !important;
+}
+
+/* ═══════════════════════════════════════
+   PAYMENT METHOD BUTTONS - أزرار طرق الدفع
+   ═══════════════════════════════════════ */
+.payment-method-btn {
+  background: rgba(255, 255, 255, 0.03) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Shine effect */
+.payment-method-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
+  transition: left 0.4s ease;
+}
+
+.payment-method-btn:hover::before {
+  left: 100%;
+}
+
+.payment-method-btn:hover {
+  background: rgba(99, 102, 241, 0.15) !important;
+  border-color: rgba(99, 102, 241, 0.4) !important;
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.2);
+}
+
+/* Active state with glow */
+.payment-method-btn.active {
+  background: linear-gradient(135deg,
+    rgba(99, 102, 241, 0.25) 0%,
+    rgba(99, 102, 241, 0.15) 100%) !important;
+  border: 2px solid rgba(99, 102, 241, 0.6) !important;
+  box-shadow:
+    0 0 20px rgba(99, 102, 241, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  transform: translateY(-2px);
+}
+
+.payment-method-btn.active span {
+  filter: drop-shadow(0 0 6px rgba(99, 102, 241, 0.5));
+  animation: methodIconPulse 1.5s ease-in-out infinite;
+}
+
+@keyframes methodIconPulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+html[data-theme="light"] .payment-method-btn {
+  background: rgba(255, 255, 255, 0.6) !important;
+  border: 1px solid rgba(148, 163, 184, 0.25) !important;
+}
+
+html[data-theme="light"] .payment-method-btn:hover {
+  background: rgba(99, 102, 241, 0.1) !important;
+  border-color: rgba(99, 102, 241, 0.35) !important;
+}
+
+html[data-theme="light"] .payment-method-btn.active {
+  background: linear-gradient(135deg,
+    rgba(99, 102, 241, 0.15) 0%,
+    rgba(99, 102, 241, 0.08) 100%) !important;
+  border: 2px solid rgba(99, 102, 241, 0.5) !important;
+}
+
+/* ═══════════════════════════════════════
+   CHANGE DISPLAY - عرض الباقي
+   ═══════════════════════════════════════ */
+.unified-change-display {
+  background: linear-gradient(135deg,
+    rgba(16, 185, 129, 0.2) 0%,
+    rgba(16, 185, 129, 0.08) 100%) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(16, 185, 129, 0.35) !important;
+  box-shadow:
+    0 4px 20px rgba(16, 185, 129, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  animation: changeGlow 2s ease-in-out infinite;
+}
+
+@keyframes changeGlow {
+  0%, 100% { box-shadow: 0 4px 20px rgba(16, 185, 129, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1); }
+  50% { box-shadow: 0 4px 30px rgba(16, 185, 129, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.1); }
+}
+
+.change-value {
+  text-shadow: 0 0 15px rgba(16, 185, 129, 0.5);
+}
+
+/* ═══════════════════════════════════════
+   SPLIT PAYMENT SECTION - قسم التقسيم
+   ═══════════════════════════════════════ */
+.unified-split-section {
+  background: linear-gradient(135deg,
+    rgba(59, 130, 246, 0.15) 0%,
+    rgba(59, 130, 246, 0.05) 100%) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(59, 130, 246, 0.25) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+html[data-theme="light"] .unified-split-section {
+  background: linear-gradient(135deg,
+    rgba(59, 130, 246, 0.1) 0%,
+    rgba(59, 130, 246, 0.03) 100%) !important;
+  border: 1px solid rgba(59, 130, 246, 0.2) !important;
+}
+
+/* ═══════════════════════════════════════
+   CLIENT BALANCE - رصيد العميل
+   ═══════════════════════════════════════ */
+.unified-client-balance {
+  background: linear-gradient(135deg,
+    rgba(245, 158, 11, 0.15) 0%,
+    rgba(245, 158, 11, 0.05) 100%) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(245, 158, 11, 0.35) !important;
+  box-shadow:
+    0 4px 16px rgba(245, 158, 11, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* ═══════════════════════════════════════
+   FOOTER - الفوتر
+   ═══════════════════════════════════════ */
+.unified-checkout-footer {
+  background: linear-gradient(180deg,
+    rgba(0, 0, 0, 0.4) 0%,
+    rgba(0, 0, 0, 0.6) 100%) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(99, 102, 241, 0.15) !important;
+}
+
+html[data-theme="light"] .unified-checkout-footer {
+  background: linear-gradient(180deg,
+    rgba(248, 250, 252, 0.9) 0%,
+    rgba(241, 245, 249, 0.95) 100%) !important;
+  border-top: 1px solid rgba(99, 102, 241, 0.12) !important;
+}
+
+/* Summary total with glow */
+.unified-summary .summary-row.total {
+  text-shadow: 0 0 10px rgba(16, 185, 129, 0.4);
+}
+
+/* ═══════════════════════════════════════
+   ACTION BUTTONS - أزرار الإجراءات
+   ═══════════════════════════════════════ */
+.unified-btn {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Shine effect */
+.unified-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: left 0.5s ease;
+}
+
+.unified-btn:hover::before {
+  left: 100%;
+}
+
+/* Secondary button */
+.unified-btn-secondary {
+  background: rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.unified-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+/* Print button with glow */
+.unified-btn-print {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+}
+
+.unified-btn-print:hover {
+  transform: translateY(-3px) !important;
+  box-shadow:
+    0 8px 25px rgba(245, 158, 11, 0.4),
+    0 0 30px rgba(245, 158, 11, 0.2) !important;
+}
+
+/* Confirm button with glow */
+.unified-btn-confirm {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  box-shadow:
+    0 4px 15px rgba(16, 185, 129, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.unified-btn-confirm::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  right: -2px;
+  bottom: -2px;
+  background: linear-gradient(135deg, #34d399, #10b981, #059669, #10b981);
+  border-radius: 12px;
+  z-index: -1;
+  opacity: 0;
+  filter: blur(10px);
+  transition: opacity 0.3s ease;
+}
+
+.unified-btn-confirm:hover::after {
+  opacity: 1;
+  animation: confirmGlow 1.5s ease-in-out infinite;
+}
+
+@keyframes confirmGlow {
+  0%, 100% { opacity: 0.5; filter: blur(10px); }
+  50% { opacity: 1; filter: blur(15px); }
+}
+
+.unified-btn-confirm:hover {
+  transform: translateY(-3px) scale(1.02) !important;
+  box-shadow:
+    0 8px 30px rgba(16, 185, 129, 0.5),
+    0 0 40px rgba(16, 185, 129, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.25) !important;
+}
+
+.unified-btn-confirm:active {
+  transform: translateY(-1px) scale(0.98) !important;
+}
+
+/* ═══════════════════════════════════════
+   TOGGLE SWITCH - زر التبديل
+   ═══════════════════════════════════════ */
+.toggle-slider {
+  background: rgba(100, 116, 139, 0.4) !important;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.unified-toggle input:checked + .toggle-slider {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%) !important;
+  box-shadow:
+    0 0 15px rgba(99, 102, 241, 0.4),
+    inset 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* ═══════════════════════════════════════
+   DEFERRED PAYMENT BLOCK - بلوك البيع بالآجل
+   ═══════════════════════════════════════ */
+.unified-deferred-block {
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* ═══════════════════════════════════════
+   SAVE CLIENT OPTION - خيار حفظ العميل
+   ═══════════════════════════════════════ */
+.save-new-client-option {
+  background: linear-gradient(135deg,
+    rgba(16, 185, 129, 0.15) 0%,
+    rgba(59, 130, 246, 0.1) 100%) !important;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.checkbox-custom {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.save-client-checkbox:hover .checkbox-custom {
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.3);
+  transform: scale(1.05);
+}
+
+.save-client-checkbox input[type="checkbox"]:checked + .checkbox-custom {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+  box-shadow: 0 0 12px rgba(16, 185, 129, 0.5);
+}
+
+/* ═══════════════════════════════════════
+   SCROLLBAR CUSTOMIZATION - تخصيص شريط التمرير
+   ═══════════════════════════════════════ */
+.unified-cart-items::-webkit-scrollbar,
+.unified-payment-section::-webkit-scrollbar {
+  width: 6px;
+}
+
+.unified-cart-items::-webkit-scrollbar-track,
+.unified-payment-section::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.unified-cart-items::-webkit-scrollbar-thumb,
+.unified-payment-section::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #6366f1 0%, #4f46e5 100%);
+  border-radius: 3px;
+  box-shadow: 0 0 6px rgba(99, 102, 241, 0.3);
+}
+
+.unified-cart-items::-webkit-scrollbar-thumb:hover,
+.unified-payment-section::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #818cf8 0%, #6366f1 100%);
+}
+
+/* ═══════════════════════════════════════
+   RESPONSIVE ADJUSTMENTS - تعديلات الاستجابة
+   ═══════════════════════════════════════ */
+@media (max-width: 900px) {
+  .unified-checkout-body {
+    grid-template-columns: 1fr !important;
+  }
+
+  .unified-cart-section {
+    border-left: none !important;
+    border-top: 1px solid rgba(99, 102, 241, 0.15);
+    max-height: 200px;
+  }
+}

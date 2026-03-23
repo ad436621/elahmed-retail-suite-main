@@ -97,6 +97,7 @@ const NAV_GROUPS: NavGroup[] = [
       { to: '/devices', icon: Tv, label: 'الأجهزة', perm: 'devices' },
       { to: '/cars', icon: Car, label: 'السيارات', perm: 'cars' },
       { to: '/used-inventory', icon: Package, label: 'المستعمل', perm: 'used' },
+      { to: '/maintenance/parts', icon: Wrench, label: 'قطع وأكسسوارات الصيانة', perm: 'maintenance' },
       { to: '/warehouse', icon: Warehouse, label: 'المستودع', perm: 'warehouse' },
       { to: '/stocktake', icon: PackageSearch, label: 'جرد المخزون', perm: 'stocktake' },
       { to: '/barcodes', icon: Barcode, label: 'طباعة الباركود', perm: 'inventory' },

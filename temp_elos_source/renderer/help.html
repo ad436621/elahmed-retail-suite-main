@@ -1,0 +1,1169 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ELOS - دليل المستخدم</title>
+  <script>(function(){var p=new URLSearchParams(location.search),t=p.get('theme')||localStorage.getItem('elos_theme')||localStorage.getItem('elos-theme')||'dark',h=document.documentElement;h.setAttribute('data-theme',t==='light'?'light':'dark');})();</script>
+  <!-- 🌙 Theme Sync -->
+  <script src="theme-sync.js"></script>
+  <!-- 🔤 Font Scale Manager -->
+  <script src="js/font-scale-manager.js"></script>
+  <!-- 🎨 Design System Tokens (MUST BE FIRST) -->
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/tokens-alias.css">
+  <!-- 🎨 Design System (component styles) -->
+  <link rel="stylesheet" href="styles/design-system.css">
+  <!-- 📏 Font Sizes - تحسين أحجام الخطوط -->
+  <link rel="stylesheet" href="styles/font-sizes.css">
+  <style>
+    /* Color variables removed - use tokens.css */
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text-primary);
+      min-height: 100vh;
+      line-height: 1.6;
+      /* إصلاح الاسكرول في وضع SPA */
+      overflow: auto !important;
+      height: auto !important;
+    }
+
+    .help-container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 30px 20px;
+      padding-bottom: 60px;
+    }
+
+    /* Header */
+    .help-header {
+      text-align: center;
+      padding: 40px 0;
+      margin-bottom: 40px;
+      background: linear-gradient(135deg, var(--bg-secondary), var(--bg-tertiary));
+      border-radius: 20px;
+      border: 1px solid var(--border);
+    }
+
+    .help-logo {
+      font-size: 64px;
+      margin-bottom: 20px;
+    }
+
+    .help-title {
+      font-size: 2.5rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), var(--accent-light));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 10px;
+    }
+
+    .help-subtitle {
+      color: var(--text-secondary);
+      font-size: 1.1rem;
+    }
+
+    /* Search */
+    .help-search {
+      margin-bottom: 40px;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 16px 24px;
+      font-size: 16px;
+      background: var(--bg-secondary);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      color: var(--text-primary);
+      transition: all 0.3s;
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 20px rgba(99, 102, 241, 0.2);
+    }
+
+    .search-input::placeholder {
+      color: var(--text-secondary);
+    }
+
+    /* Navigation */
+    .help-nav {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 40px;
+      justify-content: center;
+    }
+
+    .nav-btn {
+      padding: 12px 24px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text-secondary);
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav-btn:hover,
+    .nav-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+    }
+
+    .nav-btn .icon {
+      font-size: 18px;
+    }
+
+    /* Sections */
+    .help-section {
+      margin-bottom: 40px;
+      background: var(--bg-secondary);
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      overflow: hidden;
+    }
+
+    .section-header {
+      padding: 20px 24px;
+      background: var(--bg-tertiary);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .section-icon {
+      font-size: 28px;
+    }
+
+    .section-title {
+      font-size: 1.3rem;
+      font-weight: 700;
+    }
+
+    .section-content {
+      padding: 24px;
+    }
+
+    /* Cards */
+    .help-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+
+    .help-card {
+      background: var(--bg-tertiary);
+      border-radius: 12px;
+      padding: 20px;
+      cursor: pointer;
+      transition: all 0.3s;
+      border: 1px solid transparent;
+    }
+
+    .help-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+
+    .card-icon {
+      font-size: 32px;
+      margin-bottom: 12px;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .card-desc {
+      font-size: 13px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    /* Steps */
+    .steps-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .step-item {
+      display: flex;
+      gap: 16px;
+      padding: 16px;
+      background: var(--bg-tertiary);
+      border-radius: 12px;
+    }
+
+    .step-number {
+      width: 36px;
+      height: 36px;
+      background: var(--accent);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .step-content {
+      flex: 1;
+    }
+
+    .step-title {
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+
+    .step-desc {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    /* Shortcuts Table */
+    .shortcuts-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .shortcuts-table th,
+    .shortcuts-table td {
+      padding: 14px 16px;
+      text-align: right;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .shortcuts-table th {
+      background: var(--bg-tertiary);
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .shortcuts-table tr:hover td {
+      background: rgba(99, 102, 241, 0.1);
+    }
+
+    .shortcut-key {
+      display: inline-block;
+      padding: 6px 12px;
+      background: linear-gradient(135deg, var(--accent), #8b5cf6);
+      color: white;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      font-family: 'Consolas', monospace;
+    }
+
+    /* FAQ */
+    .faq-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .faq-item {
+      background: var(--bg-tertiary);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .faq-question {
+      padding: 16px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.3s;
+    }
+
+    .faq-question:hover {
+      background: rgba(99, 102, 241, 0.1);
+    }
+
+    .faq-arrow {
+      transition: transform 0.3s;
+    }
+
+    .faq-item.open .faq-arrow {
+      transform: rotate(180deg);
+    }
+
+    .faq-answer {
+      padding: 0 20px;
+      max-height: 0;
+      overflow: hidden;
+      transition: all 0.3s;
+    }
+
+    .faq-item.open .faq-answer {
+      padding: 16px 20px;
+      max-height: 500px;
+      border-top: 1px solid var(--border);
+    }
+
+    .faq-answer p {
+      color: var(--text-secondary);
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    /* Tips */
+    .tip-box {
+      background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(139, 92, 246, 0.1));
+      border: 1px solid var(--accent);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-top: 16px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .tip-icon {
+      font-size: 20px;
+    }
+
+    .tip-text {
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    /* Warning */
+    .warning-box {
+      background: rgba(245, 158, 11, 0.1);
+      border: 1px solid var(--warning);
+      border-radius: 12px;
+      padding: 16px 20px;
+      margin-top: 16px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    /* Footer */
+    .help-footer {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
+    .help-footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    /* Video placeholder */
+    .video-placeholder {
+      background: var(--bg-tertiary);
+      border-radius: 12px;
+      padding: 60px 20px;
+      text-align: center;
+      border: 2px dashed var(--border);
+    }
+
+    .video-placeholder .icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .help-title {
+        font-size: 1.8rem;
+      }
+
+      .help-cards {
+        grid-template-columns: 1fr;
+      }
+
+      .help-nav {
+        overflow-x: auto;
+        flex-wrap: nowrap;
+        justify-content: flex-start;
+        padding-bottom: 10px;
+      }
+
+      .nav-btn {
+        white-space: nowrap;
+      }
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--bg);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--accent);
+    }
+
+    /* Print */
+    @media print {
+      body {
+        background: white;
+        color: black;
+      }
+
+      .help-nav,
+      .help-search {
+        display: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="help-container">
+    <!-- Header -->
+    <header class="help-header">
+      <div class="help-logo">📖</div>
+      <h1 class="help-title">دليل المستخدم</h1>
+      <p class="help-subtitle">كل ما تحتاج معرفته لاستخدام نظام ELOS</p>
+    </header>
+
+    <!-- Search -->
+    <div class="help-search">
+      <input type="text" class="search-input" id="helpSearch" placeholder="ابحث في الدليل... (مثال: كيف أضيف منتج)">
+    </div>
+
+    <!-- Navigation -->
+    <nav class="help-nav">
+      <button class="nav-btn active" data-section="getting-started">
+        <span class="icon">🚀</span>
+        <span>البداية السريعة</span>
+      </button>
+      <button class="nav-btn" data-section="pos">
+        <span class="icon">🛒</span>
+        <span>نقطة البيع</span>
+      </button>
+      <button class="nav-btn" data-section="inventory">
+        <span class="icon">📱</span>
+        <span>المخزون</span>
+      </button>
+      <button class="nav-btn" data-section="clients">
+        <span class="icon">👥</span>
+        <span>العملاء</span>
+      </button>
+      <button class="nav-btn" data-section="repairs">
+        <span class="icon">🔧</span>
+        <span>الصيانة</span>
+      </button>
+      <button class="nav-btn" data-section="wallets">
+        <span class="icon">💰</span>
+        <span>المحافظ</span>
+      </button>
+      <button class="nav-btn" data-section="warehouses">
+        <span class="icon">🏪</span>
+        <span>المخازن</span>
+      </button>
+      <button class="nav-btn" data-section="salaries">
+        <span class="icon">💵</span>
+        <span>الرواتب</span>
+      </button>
+      <button class="nav-btn" data-section="shortcuts">
+        <span class="icon">⌨️</span>
+        <span>الاختصارات</span>
+      </button>
+      <button class="nav-btn" data-section="faq">
+        <span class="icon">❓</span>
+        <span>الأسئلة الشائعة</span>
+      </button>
+    </nav>
+
+    <!-- Getting Started Section -->
+    <section class="help-section" id="getting-started">
+      <div class="section-header">
+        <span class="section-icon">🚀</span>
+        <h2 class="section-title">البداية السريعة</h2>
+      </div>
+      <div class="section-content">
+        <div class="help-cards">
+          <div class="help-card">
+            <div class="card-icon">1️⃣</div>
+            <div class="card-title">إعداد الشركة</div>
+            <div class="card-desc">أدخل اسم شركتك والشعار من الإعدادات. هذه البيانات تظهر في الفواتير</div>
+          </div>
+          <div class="help-card">
+            <div class="card-icon">2️⃣</div>
+            <div class="card-title">إضافة المنتجات</div>
+            <div class="card-desc">أضف أجهزتك للمخزون مع الباركود والسعر. يمكنك الإضافة يدوياً أو بالاستيراد</div>
+          </div>
+          <div class="help-card">
+            <div class="card-icon">3️⃣</div>
+            <div class="card-title">تسجيل أول بيع</div>
+            <div class="card-desc">اذهب لنقطة البيع، امسح الباركود، اختر العميل، وأتم البيع</div>
+          </div>
+          <div class="help-card">
+            <div class="card-icon">4️⃣</div>
+            <div class="card-title">متابعة التقارير</div>
+            <div class="card-desc">راجع تقارير المبيعات والأرباح يومياً من صفحة التقارير</div>
+          </div>
+        </div>
+
+        <div class="tip-box">
+          <span class="tip-icon">💡</span>
+          <span class="tip-text">نصيحة: استخدم الاختصار <strong>Ctrl + K</strong> للبحث السريع في أي مكان بالبرنامج</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- POS Section -->
+    <section class="help-section" id="pos">
+      <div class="section-header">
+        <span class="section-icon">🛒</span>
+        <h2 class="section-title">نقطة البيع (POS)</h2>
+      </div>
+      <div class="section-content">
+        <h3 style="margin-bottom: 16px;">كيفية إتمام عملية بيع:</h3>
+        <div class="steps-list">
+          <div class="step-item">
+            <div class="step-number">1</div>
+            <div class="step-content">
+              <div class="step-title">البحث عن المنتج</div>
+              <div class="step-desc">امسح الباركود بالقارئ أو اكتب اسم المنتج في خانة البحث</div>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-number">2</div>
+            <div class="step-content">
+              <div class="step-title">إضافة للسلة</div>
+              <div class="step-desc">اضغط على المنتج لإضافته للسلة. يمكنك تعديل الكمية أو السعر</div>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-number">3</div>
+            <div class="step-content">
+              <div class="step-title">اختيار العميل (اختياري)</div>
+              <div class="step-desc">اختر العميل إذا كان البيع آجل أو تريد تسجيله باسمه</div>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-number">4</div>
+            <div class="step-content">
+              <div class="step-title">إتمام البيع</div>
+              <div class="step-desc">اضغط زر "إتمام البيع"، اختر طريقة الدفع، وستُطبع الفاتورة</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tip-box">
+          <span class="tip-icon">💡</span>
+          <span class="tip-text">للوصول السريع لنقطة البيع: اضغط <strong>Ctrl + 2</strong> من أي صفحة</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Inventory Section -->
+    <section class="help-section" id="inventory">
+      <div class="section-header">
+        <span class="section-icon">📱</span>
+        <h2 class="section-title">إدارة المخزون</h2>
+      </div>
+      <div class="section-content">
+        <h3 style="margin-bottom: 16px;">إضافة جهاز جديد:</h3>
+        <div class="steps-list">
+          <div class="step-item">
+            <div class="step-number">1</div>
+            <div class="step-content">
+              <div class="step-title">اضغط زر "إضافة جهاز"</div>
+              <div class="step-desc">الزر الأخضر في أعلى الصفحة</div>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-number">2</div>
+            <div class="step-content">
+              <div class="step-title">أدخل بيانات الجهاز</div>
+              <div class="step-desc">الاسم، الموديل، IMEI، سعر الشراء، سعر البيع</div>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-number">3</div>
+            <div class="step-content">
+              <div class="step-title">امسح أو أدخل الباركود</div>
+              <div class="step-desc">استخدم قارئ الباركود أو أدخله يدوياً</div>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-number">4</div>
+            <div class="step-content">
+              <div class="step-title">احفظ الجهاز</div>
+              <div class="step-desc">اضغط "حفظ" وسيُضاف الجهاز للمخزون</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="warning-box">
+          <span class="tip-icon">⚠️</span>
+          <span class="tip-text">تأكد من إدخال IMEI صحيح للأجهزة - يُستخدم للتتبع والضمان</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Clients Section -->
+    <section class="help-section" id="clients">
+      <div class="section-header">
+        <span class="section-icon">👥</span>
+        <h2 class="section-title">إدارة العملاء</h2>
+      </div>
+      <div class="section-content">
+        <h3 style="margin-bottom: 16px;">إضافة عميل جديد:</h3>
+        <div class="steps-list">
+          <div class="step-item">
+            <div class="step-number">1</div>
+            <div class="step-content">
+              <div class="step-title">اضغط "إضافة عميل"</div>
+              <div class="step-desc">من صفحة العملاء أو أثناء البيع</div>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-number">2</div>
+            <div class="step-content">
+              <div class="step-title">أدخل بيانات العميل</div>
+              <div class="step-desc">الاسم (إجباري)، رقم الهاتف، العنوان</div>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-number">3</div>
+            <div class="step-content">
+              <div class="step-title">احفظ العميل</div>
+              <div class="step-desc">سيظهر العميل في قائمة الاختيار عند البيع</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tip-box">
+          <span class="tip-icon">💡</span>
+          <span class="tip-text">يمكنك رؤية كل مشتريات العميل وديونه بالضغط على اسمه</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Repairs Section -->
+    <section class="help-section" id="repairs">
+      <div class="section-header">
+        <span class="section-icon">🔧</span>
+        <h2 class="section-title">إدارة الصيانة</h2>
+      </div>
+      <div class="section-content">
+        <h3 style="margin-bottom: 16px;">استلام جهاز للصيانة:</h3>
+        <div class="steps-list">
+          <div class="step-item">
+            <div class="step-number">1</div>
+            <div class="step-content">
+              <div class="step-title">فتح تذكرة صيانة جديدة</div>
+              <div class="step-desc">اضغط "تذكرة جديدة" من صفحة الصيانة</div>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-number">2</div>
+            <div class="step-content">
+              <div class="step-title">إدخال بيانات العميل والجهاز</div>
+              <div class="step-desc">أدخل اسم العميل، رقم الهاتف، نوع الجهاز، الماركة، الموديل، IMEI</div>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-number">3</div>
+            <div class="step-content">
+              <div class="step-title">وصف المشكلة والملحقات</div>
+              <div class="step-desc">اكتب وصف المشكلة بالتفصيل وسجّل الملحقات المستلمة (شاحن، جراب، إلخ)</div>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-number">4</div>
+            <div class="step-content">
+              <div class="step-title">استلام العربون (اختياري)</div>
+              <div class="step-desc">يمكنك استلام عربون من العميل واختيار المحفظة للإيداع</div>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-number">5</div>
+            <div class="step-content">
+              <div class="step-title">طباعة إيصال الاستلام</div>
+              <div class="step-desc">سيُطبع إيصال للعميل يحتوي على رقم التذكرة والباركود</div>
+            </div>
+          </div>
+        </div>
+
+        <h3 style="margin: 24px 0 16px;">متابعة وتسليم الجهاز:</h3>
+        <div class="steps-list">
+          <div class="step-item">
+            <div class="step-number">1</div>
+            <div class="step-content">
+              <div class="step-title">تحديث حالة التذكرة</div>
+              <div class="step-desc">غيّر الحالة: قيد الفحص ← جاري الإصلاح ← جاهز للتسليم</div>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-number">2</div>
+            <div class="step-content">
+              <div class="step-title">إضافة قطع الغيار والتكاليف</div>
+              <div class="step-desc">سجّل قطع الغيار المستخدمة وتكلفة الإصلاح</div>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-number">3</div>
+            <div class="step-content">
+              <div class="step-title">تسليم الجهاز</div>
+              <div class="step-desc">استلم المبلغ المتبقي واطبع فاتورة التسليم</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tip-box">
+          <span class="tip-icon">💡</span>
+          <span class="tip-text">يمكنك البحث عن التذكرة بمسح الباركود من إيصال الاستلام</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Wallets Section -->
+    <section class="help-section" id="wallets">
+      <div class="section-header">
+        <span class="section-icon">💰</span>
+        <h2 class="section-title">المحافظ المتعددة (الخزنة)</h2>
+      </div>
+      <div class="section-content">
+        <h3 style="margin-bottom: 16px;">إنشاء محفظة جديدة:</h3>
+        <div class="steps-list">
+          <div class="step-item">
+            <div class="step-number">1</div>
+            <div class="step-content">
+              <div class="step-title">اذهب لصفحة الخزنة</div>
+              <div class="step-desc">من القائمة الجانبية اختر "الخزنة"</div>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-number">2</div>
+            <div class="step-content">
+              <div class="step-title">إضافة محفظة جديدة</div>
+              <div class="step-desc">اضغط "محفظة جديدة" وأدخل الاسم (مثال: الصندوق، البنك، فودافون كاش)</div>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-number">3</div>
+            <div class="step-content">
+              <div class="step-title">تحديد الرصيد الافتتاحي</div>
+              <div class="step-desc">أدخل الرصيد الحالي للمحفظة عند إنشائها</div>
+            </div>
+          </div>
+        </div>
+
+        <h3 style="margin: 24px 0 16px;">العمليات على المحافظ:</h3>
+        <div class="help-cards">
+          <div class="help-card">
+            <div class="card-icon">💵</div>
+            <div class="card-title">إيداع</div>
+            <div class="card-desc">إضافة مبلغ للمحفظة مع تسجيل السبب (مبيعات، تحصيل، إلخ)</div>
+          </div>
+          <div class="help-card">
+            <div class="card-icon">💸</div>
+            <div class="card-title">سحب</div>
+            <div class="card-desc">سحب مبلغ من المحفظة مع تسجيل السبب (مصروفات، مشتريات، إلخ)</div>
+          </div>
+          <div class="help-card">
+            <div class="card-icon">🔄</div>
+            <div class="card-title">تحويل</div>
+            <div class="card-desc">تحويل مبلغ من محفظة لأخرى (مثال: من الصندوق للبنك)</div>
+          </div>
+          <div class="help-card">
+            <div class="card-icon">📊</div>
+            <div class="card-title">كشف حساب</div>
+            <div class="card-desc">عرض جميع العمليات على المحفظة مع إمكانية التصدير PDF</div>
+          </div>
+        </div>
+
+        <div class="tip-box">
+          <span class="tip-icon">💡</span>
+          <span class="tip-text">عند البيع، يمكنك اختيار المحفظة التي سيُودع فيها المبلغ تلقائياً</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Warehouses Section -->
+    <section class="help-section" id="warehouses">
+      <div class="section-header">
+        <span class="section-icon">🏪</span>
+        <h2 class="section-title">المخازن المتعددة</h2>
+      </div>
+      <div class="section-content">
+        <h3 style="margin-bottom: 16px;">إنشاء مخزن جديد:</h3>
+        <div class="steps-list">
+          <div class="step-item">
+            <div class="step-number">1</div>
+            <div class="step-content">
+              <div class="step-title">اذهب للإعدادات</div>
+              <div class="step-desc">من القائمة الجانبية اختر "الإعدادات" ثم "المخازن"</div>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-number">2</div>
+            <div class="step-content">
+              <div class="step-title">إضافة مخزن جديد</div>
+              <div class="step-desc">اضغط "إضافة مخزن" وأدخل الاسم والموقع</div>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-number">3</div>
+            <div class="step-content">
+              <div class="step-title">تعيين المخزن الافتراضي</div>
+              <div class="step-desc">اختر المخزن الذي سيُستخدم تلقائياً عند إضافة المنتجات</div>
+            </div>
+          </div>
+        </div>
+
+        <h3 style="margin: 24px 0 16px;">عمليات المخازن:</h3>
+        <div class="help-cards">
+          <div class="help-card">
+            <div class="card-icon">📦</div>
+            <div class="card-title">إضافة منتج لمخزن</div>
+            <div class="card-desc">عند إضافة منتج جديد، اختر المخزن المراد الإضافة إليه</div>
+          </div>
+          <div class="help-card">
+            <div class="card-icon">🔄</div>
+            <div class="card-title">نقل بين المخازن</div>
+            <div class="card-desc">نقل كمية من منتج من مخزن لآخر</div>
+          </div>
+          <div class="help-card">
+            <div class="card-icon">📋</div>
+            <div class="card-title">جرد المخزن</div>
+            <div class="card-desc">عمل جرد شامل لمخزن محدد ومطابقة الكميات</div>
+          </div>
+          <div class="help-card">
+            <div class="card-icon">📊</div>
+            <div class="card-title">تقرير المخزن</div>
+            <div class="card-desc">عرض تقرير شامل بمحتويات كل مخزن وقيمته</div>
+          </div>
+        </div>
+
+        <div class="warning-box">
+          <span class="tip-icon">⚠️</span>
+          <span class="tip-text">تأكد من تحديد المخزن الصحيح عند البيع - سيُخصم المنتج من المخزن المحدد فقط</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Salaries Section -->
+    <section class="help-section" id="salaries">
+      <div class="section-header">
+        <span class="section-icon">💵</span>
+        <h2 class="section-title">رواتب الموظفين</h2>
+      </div>
+      <div class="section-content">
+        <h3 style="margin-bottom: 16px;">إضافة موظف جديد:</h3>
+        <div class="steps-list">
+          <div class="step-item">
+            <div class="step-number">1</div>
+            <div class="step-content">
+              <div class="step-title">اذهب لصفحة الموظفين</div>
+              <div class="step-desc">من قسم الإدارة اختر "الموظفين"</div>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-number">2</div>
+            <div class="step-content">
+              <div class="step-title">إضافة موظف</div>
+              <div class="step-desc">أدخل الاسم، رقم الهاتف، الوظيفة، الراتب الأساسي</div>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-number">3</div>
+            <div class="step-content">
+              <div class="step-title">تحديد تاريخ التعيين</div>
+              <div class="step-desc">أدخل تاريخ بداية العمل لحساب الرواتب بشكل صحيح</div>
+            </div>
+          </div>
+        </div>
+
+        <h3 style="margin: 24px 0 16px;">إدارة الرواتب:</h3>
+        <div class="help-cards">
+          <div class="help-card">
+            <div class="card-icon">💰</div>
+            <div class="card-title">صرف الراتب</div>
+            <div class="card-desc">صرف الراتب الشهري للموظف مع خصم السلف إن وجدت</div>
+          </div>
+          <div class="help-card">
+            <div class="card-icon">💸</div>
+            <div class="card-title">سلفة</div>
+            <div class="card-desc">صرف سلفة للموظف يتم خصمها من الراتب لاحقاً</div>
+          </div>
+          <div class="help-card">
+            <div class="card-icon">➕</div>
+            <div class="card-title">مكافأة</div>
+            <div class="card-desc">إضافة مكافأة أو حافز للموظف</div>
+          </div>
+          <div class="help-card">
+            <div class="card-icon">➖</div>
+            <div class="card-title">خصم</div>
+            <div class="card-desc">خصم مبلغ من الراتب (غياب، تأخير، إلخ)</div>
+          </div>
+        </div>
+
+        <h3 style="margin: 24px 0 16px;">تقارير الرواتب:</h3>
+        <div class="steps-list">
+          <div class="step-item">
+            <div class="step-number">📊</div>
+            <div class="step-content">
+              <div class="step-title">كشف رواتب شهري</div>
+              <div class="step-desc">عرض جميع الرواتب المصروفة في شهر معين</div>
+            </div>
+          </div>
+          <div class="step-item">
+            <div class="step-number">📋</div>
+            <div class="step-content">
+              <div class="step-title">سجل الموظف</div>
+              <div class="step-desc">عرض تاريخ جميع الرواتب والسلف والخصومات لموظف محدد</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tip-box">
+          <span class="tip-icon">💡</span>
+          <span class="tip-text">يتم خصم مبلغ الراتب تلقائياً من المحفظة المحددة عند الصرف</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Shortcuts Section -->
+    <section class="help-section" id="shortcuts">
+      <div class="section-header">
+        <span class="section-icon">⌨️</span>
+        <h2 class="section-title">اختصارات لوحة المفاتيح</h2>
+      </div>
+      <div class="section-content">
+        <table class="shortcuts-table">
+          <thead>
+            <tr>
+              <th>الاختصار</th>
+              <th>الوظيفة</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="shortcut-key">Ctrl</span> + <span class="shortcut-key">K</span></td>
+              <td>البحث الشامل</td>
+            </tr>
+            <tr>
+              <td><span class="shortcut-key">Ctrl</span> + <span class="shortcut-key">/</span></td>
+              <td>عرض كل الاختصارات</td>
+            </tr>
+            <tr>
+              <td><span class="shortcut-key">Ctrl</span> + <span class="shortcut-key">1</span></td>
+              <td>الصفحة الرئيسية</td>
+            </tr>
+            <tr>
+              <td><span class="shortcut-key">Ctrl</span> + <span class="shortcut-key">2</span></td>
+              <td>نقطة البيع</td>
+            </tr>
+            <tr>
+              <td><span class="shortcut-key">Ctrl</span> + <span class="shortcut-key">3</span></td>
+              <td>المخزون</td>
+            </tr>
+            <tr>
+              <td><span class="shortcut-key">Ctrl</span> + <span class="shortcut-key">4</span></td>
+              <td>الإكسسوارات</td>
+            </tr>
+            <tr>
+              <td><span class="shortcut-key">Ctrl</span> + <span class="shortcut-key">5</span></td>
+              <td>المبيعات</td>
+            </tr>
+            <tr>
+              <td><span class="shortcut-key">Ctrl</span> + <span class="shortcut-key">6</span></td>
+              <td>المشتريات</td>
+            </tr>
+            <tr>
+              <td><span class="shortcut-key">Ctrl</span> + <span class="shortcut-key">7</span></td>
+              <td>العملاء</td>
+            </tr>
+            <tr>
+              <td><span class="shortcut-key">Alt</span> + <span class="shortcut-key">H</span></td>
+              <td>العودة للرئيسية</td>
+            </tr>
+            <tr>
+              <td><span class="shortcut-key">Alt</span> + <span class="shortcut-key">←</span></td>
+              <td>الرجوع للصفحة السابقة</td>
+            </tr>
+            <tr>
+              <td><span class="shortcut-key">ESC</span></td>
+              <td>إغلاق النوافذ المنبثقة</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="help-section" id="faq">
+      <div class="section-header">
+        <span class="section-icon">❓</span>
+        <h2 class="section-title">الأسئلة الشائعة</h2>
+      </div>
+      <div class="section-content">
+        <div class="faq-list">
+          <div class="faq-item">
+            <div class="faq-question" onclick="this.parentElement.classList.toggle('open')">
+              <span>كيف أعمل نسخة احتياطية من البيانات؟</span>
+              <span class="faq-arrow">▼</span>
+            </div>
+            <div class="faq-answer">
+              <p>النظام يعمل نسخ احتياطية تلقائية يومياً. تُحفظ في مجلد البرنامج ويتم نسخها تلقائياً لـ D:\ أو E:\ إن وجدت. للتصدير اليدوي، اذهب للإعدادات > النسخ الاحتياطي.</p>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <div class="faq-question" onclick="this.parentElement.classList.toggle('open')">
+              <span>كيف أطبع فاتورة سابقة؟</span>
+              <span class="faq-arrow">▼</span>
+            </div>
+            <div class="faq-answer">
+              <p>اذهب لصفحة المبيعات، ابحث عن الفاتورة المطلوبة، واضغط على زر الطباعة. يمكنك أيضاً البحث برقم الفاتورة أو اسم العميل.</p>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <div class="faq-question" onclick="this.parentElement.classList.toggle('open')">
+              <span>كيف أعدل سعر منتج؟</span>
+              <span class="faq-arrow">▼</span>
+            </div>
+            <div class="faq-answer">
+              <p>اذهب للمخزون، ابحث عن المنتج، اضغط عليه لفتح التفاصيل، ثم اضغط "تعديل". غيّر السعر واحفظ التغييرات.</p>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <div class="faq-question" onclick="this.parentElement.classList.toggle('open')">
+              <span>كيف أضيف مستخدم (كاشير) جديد؟</span>
+              <span class="faq-arrow">▼</span>
+            </div>
+            <div class="faq-answer">
+              <p>من الإعدادات > المستخدمون > إضافة مستخدم. حدد الصلاحيات المناسبة (كاشير أو مدير).</p>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <div class="faq-question" onclick="this.parentElement.classList.toggle('open')">
+              <span>كيف أرجع منتج (مرتجع)؟</span>
+              <span class="faq-arrow">▼</span>
+            </div>
+            <div class="faq-answer">
+              <p>من صفحة المبيعات، ابحث عن الفاتورة، واضغط "إرجاع". اختر المنتج المراد إرجاعه وسيعود للمخزون تلقائياً.</p>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <div class="faq-question" onclick="this.parentElement.classList.toggle('open')">
+              <span>البرنامج بطيء، ماذا أفعل؟</span>
+              <span class="faq-arrow">▼</span>
+            </div>
+            <div class="faq-answer">
+              <p>1. أغلق البرنامج وأعد تشغيله<br>2. تأكد من وجود مساحة كافية على القرص<br>3. إذا استمرت المشكلة، تواصل مع الدعم الفني</p>
+            </div>
+          </div>
+
+          <div class="faq-item">
+            <div class="faq-question" onclick="this.parentElement.classList.toggle('open')">
+              <span>نسيت كلمة المرور، ماذا أفعل؟</span>
+              <span class="faq-arrow">▼</span>
+            </div>
+            <div class="faq-answer">
+              <p>تواصل مع مدير النظام لإعادة تعيين كلمة المرور. إذا كنت المدير الوحيد، استخدم أداة استعادة كلمة المرور من مجلد البرنامج.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="help-footer">
+      <p>ELOS Point of Sale System</p>
+      <p style="margin-top: 8px;">للدعم الفني: <a href="#">support@elos.com</a></p>
+    </footer>
+  </div>
+
+  <script src="spa-mode.js"></script>
+  <script src="theme-sync.js"></script>
+  <script>
+    // إصلاح الاسكرول في وضع SPA - تجاوز قيود spa-mode.js
+    (function() {
+      const style = document.createElement('style');
+      style.textContent = `
+        html, body {
+          overflow: auto !important;
+          height: auto !important;
+          overflow-y: auto !important;
+        }
+        .help-container {
+          overflow: visible !important;
+          height: auto !important;
+        }
+      `;
+      document.head.appendChild(style);
+    })();
+  </script>
+  <script>
+    // Navigation
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        const sectionId = btn.dataset.section;
+        document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth' });
+      });
+    });
+
+    // Search
+    const searchInput = document.getElementById('helpSearch');
+    searchInput?.addEventListener('input', (e) => {
+      const query = e.target.value.toLowerCase();
+
+      document.querySelectorAll('.help-section').forEach(section => {
+        const text = section.textContent.toLowerCase();
+        section.style.display = text.includes(query) ? 'block' : 'none';
+      });
+
+      // إذا البحث فارغ، أظهر الكل
+      if (!query) {
+        document.querySelectorAll('.help-section').forEach(section => {
+          section.style.display = 'block';
+        });
+      }
+    });
+  </script>
+</body>
+</html>

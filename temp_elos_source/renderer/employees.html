@@ -1,0 +1,1834 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>إدارة الموظفين • ELOS System</title>
+  <script>
+    // ⚡ تطبيق فوري للثيم - يمنع الوميض
+    (function(){var p=new URLSearchParams(location.search),t=p.get('theme')||localStorage.getItem('elos_theme')||localStorage.getItem('elos-theme')||'dark',h=document.documentElement;h.setAttribute('data-theme',t==='light'?'light':'dark');})();
+  </script>
+  <script src="session-inject.js"></script>
+  <!-- 📱 SPA Mode Detection -->
+  <script src="spa-mode.js"></script>
+  <!-- 🔊 Shared Sound & Toast System -->
+  <script src="shared.js"></script>
+  <!-- 🌙 Theme Sync -->
+  <script src="theme-sync.js"></script>
+  <!-- 🔤 Font Scale Manager -->
+  <script src="js/font-scale-manager.js"></script>
+  <!-- 🎨 Design System Tokens (theme colors - MUST BE FIRST) -->
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/tokens-alias.css">
+  <!-- 🎨 Design System (component styles) -->
+  <link rel="stylesheet" href="styles/design-system.css">
+  <!-- 🎨 Theme Governance Layer (load LAST to override legacy styles) -->
+  <link rel="stylesheet" href="styles/theme-fixes.css">
+  <!-- 📏 Font Sizes - تحسين أحجام الخطوط -->
+  <link rel="stylesheet" href="styles/font-sizes.css">
+
+  <style>
+    :root {
+      --bg-primary: #0a0e14;
+      --bg-secondary: #151921;
+      --bg-tertiary: #1a1f29;
+      --card: #151921;
+      --text-primary: #e6e8ee;
+      --text-secondary: #8b93a6;
+      --muted: #6b7280;
+      --border: #1e2530;
+      --line: #1e2530;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --purple: #a855f7;
+      --cyan: #06b6d4;
+      --pink: #ec4899;
+      --orange: #f97316;
+      --radius: 12px;
+      --shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg-primary); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, var(--accent) 0%, #1d4ed8 100%); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg, #60a5fa 0%, var(--accent) 100%); }
+    * { scrollbar-width: thin; scrollbar-color: var(--accent) var(--bg-primary); }
+
+    body { 
+      margin: 0; 
+      background: var(--bg-primary); 
+      color: var(--text-primary); 
+      font-family: system-ui, "Cairo", sans-serif; 
+      min-height: 100vh;
+      padding-bottom: 50px;
+    }
+    a { color: inherit; text-decoration: none; }
+
+    /* ═══════════════════════════════════════
+       📱 HEADER
+       ═══════════════════════════════════════ */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 10px 24px;
+      background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+      border-bottom: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      flex-wrap: wrap;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      width: 36px;
+      height: 36px;
+      color: #ffffff;
+      filter: drop-shadow(0 2px 6px rgba(255, 255, 255, 0.15));
+    }
+
+    .brand-container { display: flex; flex-direction: column; gap: 2px; }
+    .brand {
+      font-weight: 900;
+      font-size: 24px;
+      color: #d1d5db;
+      letter-spacing: 3px;
+    }
+    .page-subtitle { font-size: 11px; color: var(--text-secondary); }
+
+    .btn-back {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text-primary);
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .btn-back:hover {
+      background: var(--accent);
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+
+    .spacer { flex: 1; }
+
+    /* Header Cards */
+    .header-cards {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .header-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 14px;
+      background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      min-width: 85px;
+      transition: all 0.3s ease;
+    }
+
+    .header-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(59,130,246,0.3);
+      border-color: var(--accent);
+    }
+
+    .header-card.blue { border-top: 2px solid var(--accent); }
+    .header-card.green { border-top: 2px solid var(--success); }
+    .header-card.purple { border-top: 2px solid var(--purple); }
+    .header-card.orange { border-top: 2px solid var(--orange); }
+    .header-card.cyan { border-top: 2px solid var(--cyan); }
+    .header-card.pink { border-top: 2px solid var(--pink); }
+
+    .header-card-icon { font-size: 18px; }
+    .header-card-value {
+      font-size: 16px;
+      font-weight: 900;
+      color: var(--text-primary);
+      font-family: 'Courier New', monospace;
+    }
+    .header-card-label { font-size: 9px; color: var(--text-secondary); }
+
+    /* Clock */
+    .header-clock {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 16px;
+      background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+    .clock-time {
+      font-size: 16px;
+      font-weight: 900;
+      color: var(--accent);
+      font-family: 'Courier New', monospace;
+      direction: ltr;
+    }
+    .clock-date { font-size: 9px; color: var(--text-secondary); }
+
+    /* ═══════════════════════════════════════
+       📊 CONTAINER
+       ═══════════════════════════════════════ */
+    .container {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 20px 24px;
+    }
+
+    /* ═══════════════════════════════════════
+       📑 TABS
+       ═══════════════════════════════════════ */
+    .tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 8px;
+    }
+
+    .tab {
+      padding: 10px 18px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 10px 10px 0 0;
+      color: var(--text-secondary);
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tab:hover {
+      border-color: rgba(59,130,246,0.4);
+      color: var(--accent);
+    }
+
+    .tab.active {
+      background: linear-gradient(135deg, var(--accent) 0%, #2563eb 100%);
+      color: white;
+      border-color: var(--accent);
+    }
+
+    /* ═══════════════════════════════════════
+       📦 PANELS
+       ═══════════════════════════════════════ */
+    .panel {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .panel.active { display: block; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ═══════════════════════════════════════
+       🎯 SECTION HEADER
+       ═══════════════════════════════════════ */
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    /* ═══════════════════════════════════════
+       🔘 BUTTONS
+       ═══════════════════════════════════════ */
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: inherit;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent) 0%, #2563eb 100%);
+      color: white;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(59,130,246,0.4);
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+      color: white;
+    }
+    .btn-success:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(16,185,129,0.4);
+    }
+
+    .btn-purple {
+      background: linear-gradient(135deg, var(--purple) 0%, #7c3aed 100%);
+      color: white;
+    }
+    .btn-purple:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(168,85,247,0.4);
+    }
+
+    .btn-warning {
+      background: linear-gradient(135deg, var(--warning) 0%, #d97706 100%);
+      color: white;
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%);
+      color: white;
+    }
+
+    .btn-secondary {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover {
+      border-color: var(--accent);
+    }
+
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 12px;
+    }
+
+    .btn-icon {
+      width: 36px;
+      height: 36px;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+    }
+
+    /* ═══════════════════════════════════════
+       📋 TABLE
+       ═══════════════════════════════════════ */
+    .table-wrapper {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .table-scroll {
+      overflow-x: auto;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 800px;
+    }
+
+    th, td {
+      padding: 12px 14px;
+      text-align: right;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+
+    th {
+      background: var(--bg-tertiary);
+      font-weight: 700;
+      color: var(--text-secondary);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    tr:hover { background: rgba(59,130,246,0.05); }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-secondary);
+    }
+    .empty-state-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
+
+    /* ═══════════════════════════════════════
+       🏷️ STATUS BADGES
+       ═══════════════════════════════════════ */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .badge-active { background: rgba(16,185,129,0.15); color: var(--success); }
+    .badge-inactive { background: rgba(239,68,68,0.15); color: var(--danger); }
+    .badge-suspended { background: rgba(245,158,11,0.15); color: var(--warning); }
+
+    .badge-present { background: rgba(16,185,129,0.15); color: var(--success); }
+    .badge-absent { background: rgba(239,68,68,0.15); color: var(--danger); }
+    .badge-late { background: rgba(245,158,11,0.15); color: var(--warning); }
+    .badge-vacation { background: rgba(168,85,247,0.15); color: var(--purple); }
+    .badge-sick { background: rgba(236,72,153,0.15); color: var(--pink); }
+
+    .badge-pending { background: rgba(245,158,11,0.15); color: var(--warning); }
+    .badge-approved { background: rgba(16,185,129,0.15); color: var(--success); }
+    .badge-rejected { background: rgba(239,68,68,0.15); color: var(--danger); }
+    .badge-paid { background: rgba(59,130,246,0.15); color: var(--accent); }
+
+    /* ═══════════════════════════════════════
+       🪟 MODAL
+       ═══════════════════════════════════════ */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal.active { display: flex; }
+
+    .modal-content {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      width: 100%;
+      max-width: 600px;
+      max-height: 90vh;
+      overflow: hidden;
+      animation: modalIn 0.3s ease;
+    }
+
+    .modal-content.large { max-width: 900px; }
+    .modal-content.xlarge { max-width: 1200px; }
+
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.95) translateY(-20px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-tertiary);
+    }
+
+    .modal-title {
+      font-size: 16px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .close-btn {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: rgba(239,68,68,0.1);
+      color: var(--danger);
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    .close-btn:hover { background: var(--danger); color: white; }
+
+    .modal-body {
+      padding: 20px;
+      overflow-y: auto;
+      max-height: calc(90vh - 140px);
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+      background: var(--bg-tertiary);
+    }
+
+    /* ═══════════════════════════════════════
+       📝 FORMS
+       ═══════════════════════════════════════ */
+    .form-group { margin-bottom: 16px; }
+
+    .form-label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .form-label.required::after {
+      content: ' *';
+      color: var(--danger);
+    }
+
+    .form-input, .form-select, .form-textarea {
+      width: 100%;
+      padding: 10px 14px;
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 14px;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+
+    .form-input:focus, .form-select:focus, .form-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+    }
+
+    .form-textarea { min-height: 80px; resize: vertical; }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    .form-row-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .form-row-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    /* ═══════════════════════════════════════
+       💳 INFO CARDS
+       ═══════════════════════════════════════ */
+    .info-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .info-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      transition: all 0.3s ease;
+    }
+
+    .info-card:hover {
+      transform: translateY(-2px);
+      border-color: var(--accent);
+    }
+
+    .info-card-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+    }
+
+    .info-card-icon.blue { background: rgba(59,130,246,0.15); }
+    .info-card-icon.green { background: rgba(16,185,129,0.15); }
+    .info-card-icon.purple { background: rgba(168,85,247,0.15); }
+    .info-card-icon.orange { background: rgba(249,115,22,0.15); }
+    .info-card-icon.pink { background: rgba(236,72,153,0.15); }
+
+    .info-card-content { flex: 1; }
+    .info-card-label { font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; }
+    .info-card-value { font-size: 20px; font-weight: 800; }
+
+    /* ═══════════════════════════════════════
+       👤 EMPLOYEE CARD (Profile)
+       ═══════════════════════════════════════ */
+    .employee-profile {
+      display: grid;
+      grid-template-columns: 300px 1fr;
+      gap: 20px;
+    }
+
+    .profile-sidebar {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      text-align: center;
+    }
+
+    .profile-avatar {
+      width: 100px;
+      height: 100px;
+      background: linear-gradient(135deg, var(--accent) 0%, var(--purple) 100%);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      margin: 0 auto 16px;
+      color: white;
+    }
+
+    .profile-name { font-size: 20px; font-weight: 800; margin-bottom: 4px; }
+    .profile-job { font-size: 13px; color: var(--text-secondary); margin-bottom: 16px; }
+
+    .profile-stats {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+    }
+
+    .profile-stat {
+      text-align: center;
+      padding: 12px;
+      background: var(--bg-tertiary);
+      border-radius: 8px;
+    }
+
+    .profile-stat-value { font-size: 18px; font-weight: 800; color: var(--accent); }
+    .profile-stat-label { font-size: 10px; color: var(--text-secondary); margin-top: 4px; }
+
+    .profile-content {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* ═══════════════════════════════════════
+       📊 SALARY CALCULATION BOX
+       ═══════════════════════════════════════ */
+    .salary-calc-box {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+    }
+
+    .salary-calc-title {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .salary-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px dashed var(--border);
+      font-size: 13px;
+    }
+
+    .salary-row:last-child { border-bottom: none; }
+
+    .salary-row.total {
+      border-top: 2px solid var(--accent);
+      border-bottom: none;
+      margin-top: 10px;
+      padding-top: 14px;
+      font-weight: 800;
+      font-size: 16px;
+    }
+
+    .salary-row.add { color: var(--success); }
+    .salary-row.sub { color: var(--danger); }
+
+    /* ═══════════════════════════════════════
+       📅 FILTERS
+       ═══════════════════════════════════════ */
+    .filters {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .filter-group label {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .filter-group select,
+    .filter-group input {
+      padding: 8px 12px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 13px;
+    }
+
+    /* ═══════════════════════════════════════
+       🦶 FOOTER
+       ═══════════════════════════════════════ */
+    footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 24px;
+      background: var(--card);
+      border-top: 1px solid var(--line);
+      font-size: 10px;
+      color: var(--muted);
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 50;
+    }
+
+    /* ═══════════════════════════════════════
+       🔔 TOAST
+       ═══════════════════════════════════════ */
+    .toast {
+      position: fixed;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 12px 24px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+      font-size: 14px;
+      z-index: 2000;
+      animation: toastIn 0.3s ease;
+    }
+
+    .toast.success { background: var(--success); color: white; }
+    .toast.error { background: var(--danger); color: white; }
+    .toast.warning { background: var(--warning); color: white; }
+
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+      to { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+
+    /* ═══════════════════════════════════════
+       📱 RESPONSIVE
+       ═══════════════════════════════════════ */
+    @media (max-width: 1024px) {
+      .employee-profile { grid-template-columns: 1fr; }
+      .form-row-4 { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 768px) {
+      .header { padding: 10px 16px; }
+      .container { padding: 16px; }
+      .header-cards { display: none; }
+      .form-row, .form-row-3, .form-row-4 { grid-template-columns: 1fr; }
+      .tabs { overflow-x: auto; flex-wrap: nowrap; }
+      .tab { white-space: nowrap; }
+    }
+  </style>
+  <link rel="stylesheet" href="responsive.css">
+</head>
+<body data-page="employees">
+  <!-- ═══════════════════════════════════════
+       📱 HEADER
+       ═══════════════════════════════════════ -->
+  <header class="header">
+    <svg class="logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+      <path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>
+    </svg>
+
+    <div class="brand-container">
+      <span class="brand">ELOS SYSTEM</span>
+      <span class="page-subtitle">👥 إدارة الموظفين والرواتب</span>
+    </div>
+
+    <a href="index.html" class="btn-back">← الرئيسية</a>
+
+    <div class="spacer"></div>
+
+    <div class="header-cards">
+      <div class="header-card blue">
+        <span class="header-card-icon">👥</span>
+        <span class="header-card-value" id="statEmployees">0</span>
+        <span class="header-card-label">الموظفين</span>
+      </div>
+      <div class="header-card green">
+        <span class="header-card-icon">💰</span>
+        <span class="header-card-value" id="statSalaries">0</span>
+        <span class="header-card-label">إجمالي الرواتب</span>
+      </div>
+      <div class="header-card purple">
+        <span class="header-card-icon">💳</span>
+        <span class="header-card-value" id="statAdvances">0</span>
+        <span class="header-card-label">السلف النشطة</span>
+      </div>
+      <div class="header-card orange">
+        <span class="header-card-icon">🏖️</span>
+        <span class="header-card-value" id="statVacations">0</span>
+        <span class="header-card-label">طلبات الإجازة</span>
+      </div>
+      <div class="header-card cyan">
+        <span class="header-card-icon">✅</span>
+        <span class="header-card-value" id="statAttendance">0</span>
+        <span class="header-card-label">حضور اليوم</span>
+      </div>
+    </div>
+
+    <div class="header-clock">
+      <span class="clock-time" id="headerTime">00:00:00</span>
+      <span class="clock-date" id="headerDate">--</span>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════════════════════
+       📊 MAIN CONTENT
+       ═══════════════════════════════════════ -->
+  <div class="container">
+    <!-- Tabs -->
+    <div class="tabs">
+      <div class="tab active" data-tab="employees" onclick="switchTab('employees')">
+        👥 الموظفين
+      </div>
+      <div class="tab" data-tab="salaries" onclick="switchTab('salaries')">
+        💰 الرواتب
+      </div>
+      <div class="tab" data-tab="advances" onclick="switchTab('advances')">
+        💳 السلف والعُهد
+      </div>
+      <div class="tab" data-tab="vacations" onclick="switchTab('vacations')">
+        🏖️ الإجازات
+      </div>
+      <div class="tab" data-tab="attendance" onclick="switchTab('attendance')">
+        📋 الحضور والانصراف
+      </div>
+      <div class="tab" data-tab="reports" onclick="switchTab('reports')">
+        📊 التقارير
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         👥 EMPLOYEES PANEL
+         ═══════════════════════════════════════ -->
+    <div id="employeesPanel" class="panel active">
+      <div class="section-header">
+        <h2 class="section-title">👥 قائمة الموظفين</h2>
+        <div class="section-actions">
+          <button class="btn btn-primary" onclick="openEmployeeModal()">
+            ➕ إضافة موظف
+          </button>
+        </div>
+      </div>
+
+      <div class="filters">
+        <div class="filter-group">
+          <label>البحث:</label>
+          <input type="text" id="searchEmployee" placeholder="اسم الموظف..." oninput="filterEmployees()">
+        </div>
+        <div class="filter-group">
+          <label>القسم:</label>
+          <select id="filterDepartment" onchange="filterEmployees()">
+            <option value="">الكل</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>الحالة:</label>
+          <select id="filterStatus" onchange="filterEmployees()">
+            <option value="">الكل</option>
+            <option value="active">نشط</option>
+            <option value="inactive">غير نشط</option>
+            <option value="suspended">معلق</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>الموظف</th>
+                <th>الوظيفة</th>
+                <th>القسم</th>
+                <th>الهاتف</th>
+                <th>تاريخ التعيين</th>
+                <th>الراتب</th>
+                <th>رصيد الإجازات</th>
+                <th>الحالة</th>
+                <th>إجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="employeesBody">
+              <tr>
+                <td colspan="10" class="empty-state">
+                  <div class="empty-state-icon">👥</div>
+                  <div>جاري التحميل...</div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         💰 SALARIES PANEL
+         ═══════════════════════════════════════ -->
+    <div id="salariesPanel" class="panel">
+      <div class="section-header">
+        <h2 class="section-title">💰 سجل الرواتب</h2>
+        <div class="section-actions">
+          <button class="btn btn-success" onclick="openCalculateSalaryModal()">
+            🧮 حساب راتب شهري
+          </button>
+          <button class="btn btn-primary" onclick="openSalaryModal()">
+            ➕ إضافة راتب يدوي
+          </button>
+        </div>
+      </div>
+
+      <div class="filters">
+        <div class="filter-group">
+          <label>الموظف:</label>
+          <select id="filterSalaryEmployee" onchange="filterSalaries()">
+            <option value="">الكل</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>الشهر:</label>
+          <select id="filterSalaryMonth" onchange="filterSalaries()">
+            <option value="">الكل</option>
+            <option value="01">يناير</option>
+            <option value="02">فبراير</option>
+            <option value="03">مارس</option>
+            <option value="04">أبريل</option>
+            <option value="05">مايو</option>
+            <option value="06">يونيو</option>
+            <option value="07">يوليو</option>
+            <option value="08">أغسطس</option>
+            <option value="09">سبتمبر</option>
+            <option value="10">أكتوبر</option>
+            <option value="11">نوفمبر</option>
+            <option value="12">ديسمبر</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>السنة:</label>
+          <input type="number" id="filterSalaryYear" value="" style="width:80px" onchange="filterSalaries()">
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>الموظف</th>
+                <th>الشهر</th>
+                <th>الراتب الأساسي</th>
+                <th>البدلات</th>
+                <th>الحوافز</th>
+                <th>الخصومات</th>
+                <th>أقساط السلف</th>
+                <th>الصافي</th>
+                <th>الحالة</th>
+                <th>إجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="salariesBody">
+              <tr>
+                <td colspan="11" class="empty-state">
+                  <div class="empty-state-icon">💰</div>
+                  <div>لا توجد رواتب</div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         💳 ADVANCES PANEL
+         ═══════════════════════════════════════ -->
+    <div id="advancesPanel" class="panel">
+      <div class="section-header">
+        <h2 class="section-title">💳 السلف والعُهد</h2>
+        <div class="section-actions">
+          <button class="btn btn-purple" onclick="openAdvanceModal()">
+            ➕ طلب سلفة جديدة
+          </button>
+        </div>
+      </div>
+
+      <!-- Summary Cards -->
+      <div class="info-cards">
+        <div class="info-card">
+          <div class="info-card-icon purple">💳</div>
+          <div class="info-card-content">
+            <div class="info-card-label">إجمالي السلف النشطة</div>
+            <div class="info-card-value" id="totalActiveAdvances">0</div>
+          </div>
+        </div>
+        <div class="info-card">
+          <div class="info-card-icon orange">💵</div>
+          <div class="info-card-content">
+            <div class="info-card-label">إجمالي المبالغ</div>
+            <div class="info-card-value" id="totalAdvancesAmount">0</div>
+          </div>
+        </div>
+        <div class="info-card">
+          <div class="info-card-icon green">✅</div>
+          <div class="info-card-content">
+            <div class="info-card-label">المسدد</div>
+            <div class="info-card-value" id="totalPaidAdvances">0</div>
+          </div>
+        </div>
+        <div class="info-card">
+          <div class="info-card-icon pink">⏳</div>
+          <div class="info-card-content">
+            <div class="info-card-label">المتبقي</div>
+            <div class="info-card-value" id="totalRemainingAdvances">0</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="filters">
+        <div class="filter-group">
+          <label>الموظف:</label>
+          <select id="filterAdvanceEmployee" onchange="filterAdvances()">
+            <option value="">الكل</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>الحالة:</label>
+          <select id="filterAdvanceStatus" onchange="filterAdvances()">
+            <option value="">الكل</option>
+            <option value="pending">قيد الانتظار</option>
+            <option value="approved">موافق عليها</option>
+            <option value="active">نشطة (جاري السداد)</option>
+            <option value="paid">مسددة</option>
+            <option value="rejected">مرفوضة</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>الموظف</th>
+                <th>المبلغ</th>
+                <th>عدد الأقساط</th>
+                <th>قيمة القسط</th>
+                <th>المسدد</th>
+                <th>المتبقي</th>
+                <th>تاريخ الطلب</th>
+                <th>الحالة</th>
+                <th>إجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="advancesBody">
+              <tr>
+                <td colspan="10" class="empty-state">
+                  <div class="empty-state-icon">💳</div>
+                  <div>لا توجد سلف</div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         🏖️ VACATIONS PANEL
+         ═══════════════════════════════════════ -->
+    <div id="vacationsPanel" class="panel">
+      <div class="section-header">
+        <h2 class="section-title">🏖️ طلبات الإجازات</h2>
+        <div class="section-actions">
+          <button class="btn btn-success" onclick="openVacationModal()">
+            ➕ طلب إجازة جديدة
+          </button>
+        </div>
+      </div>
+
+      <div class="filters">
+        <div class="filter-group">
+          <label>الموظف:</label>
+          <select id="filterVacationEmployee" onchange="filterVacations()">
+            <option value="">الكل</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>النوع:</label>
+          <select id="filterVacationType" onchange="filterVacations()">
+            <option value="">الكل</option>
+            <option value="annual">سنوية</option>
+            <option value="sick">مرضية</option>
+            <option value="emergency">طارئة</option>
+            <option value="unpaid">بدون راتب</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>الحالة:</label>
+          <select id="filterVacationStatus" onchange="filterVacations()">
+            <option value="">الكل</option>
+            <option value="pending">قيد الانتظار</option>
+            <option value="approved">موافق عليها</option>
+            <option value="rejected">مرفوضة</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>الموظف</th>
+                <th>نوع الإجازة</th>
+                <th>من تاريخ</th>
+                <th>إلى تاريخ</th>
+                <th>عدد الأيام</th>
+                <th>السبب</th>
+                <th>الحالة</th>
+                <th>إجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="vacationsBody">
+              <tr>
+                <td colspan="9" class="empty-state">
+                  <div class="empty-state-icon">🏖️</div>
+                  <div>لا توجد طلبات إجازة</div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         📋 ATTENDANCE PANEL
+         ═══════════════════════════════════════ -->
+    <div id="attendancePanel" class="panel">
+      <div class="section-header">
+        <h2 class="section-title">📋 سجل الحضور والانصراف</h2>
+        <div class="section-actions">
+          <button class="btn btn-primary" onclick="openAttendanceModal()">
+            ➕ تسجيل حضور
+          </button>
+        </div>
+      </div>
+
+      <div class="filters">
+        <div class="filter-group">
+          <label>الموظف:</label>
+          <select id="filterAttendanceEmployee" onchange="filterAttendance()">
+            <option value="">الكل</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>من تاريخ:</label>
+          <input type="date" id="filterAttendanceFrom" onchange="filterAttendance()">
+        </div>
+        <div class="filter-group">
+          <label>إلى تاريخ:</label>
+          <input type="date" id="filterAttendanceTo" onchange="filterAttendance()">
+        </div>
+        <div class="filter-group">
+          <label>الحالة:</label>
+          <select id="filterAttendanceStatus" onchange="filterAttendance()">
+            <option value="">الكل</option>
+            <option value="present">حاضر</option>
+            <option value="absent">غائب</option>
+            <option value="late">متأخر</option>
+            <option value="vacation">إجازة</option>
+            <option value="sick">مريض</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>الموظف</th>
+                <th>التاريخ</th>
+                <th>الفترات</th>
+                <th>إجمالي الساعات</th>
+                <th>الحالة</th>
+                <th>ملاحظات</th>
+                <th>إجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="attendanceBody">
+              <tr>
+                <td colspan="9" class="empty-state">
+                  <div class="empty-state-icon">📋</div>
+                  <div>لا توجد سجلات</div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         📊 REPORTS PANEL
+         ═══════════════════════════════════════ -->
+    <div id="reportsPanel" class="panel">
+      <div class="section-header">
+        <h2 class="section-title">📊 التقارير</h2>
+      </div>
+
+      <div class="info-cards">
+        <div class="info-card" onclick="generatePayslipReport()" style="cursor:pointer">
+          <div class="info-card-icon blue">📄</div>
+          <div class="info-card-content">
+            <div class="info-card-label">كشف راتب موظف</div>
+            <div class="info-card-value" style="font-size:14px">تقرير تفصيلي</div>
+          </div>
+        </div>
+        <div class="info-card" onclick="generateMonthlySalaryReport()" style="cursor:pointer">
+          <div class="info-card-icon green">📊</div>
+          <div class="info-card-content">
+            <div class="info-card-label">تقرير رواتب شهري</div>
+            <div class="info-card-value" style="font-size:14px">جميع الموظفين</div>
+          </div>
+        </div>
+        <div class="info-card" onclick="generateAttendanceReport()" style="cursor:pointer">
+          <div class="info-card-icon purple">📋</div>
+          <div class="info-card-content">
+            <div class="info-card-label">تقرير الحضور</div>
+            <div class="info-card-value" style="font-size:14px">حسب الفترة</div>
+          </div>
+        </div>
+        <div class="info-card" onclick="generateAdvancesReport()" style="cursor:pointer">
+          <div class="info-card-icon orange">💳</div>
+          <div class="info-card-content">
+            <div class="info-card-label">تقرير السلف</div>
+            <div class="info-card-value" style="font-size:14px">المستحقات</div>
+          </div>
+        </div>
+      </div>
+
+      <div id="reportContent" style="margin-top:20px"></div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       🦶 FOOTER
+       ═══════════════════════════════════════ -->
+  <footer>
+    <span>Developed by ElOs | 4Accounting System © 2025</span>
+    <span>الموظفين v2.0 • نظام شامل للرواتب والسلف والإجازات</span>
+  </footer>
+
+  <!-- ═══════════════════════════════════════
+       🪟 EMPLOYEE MODAL
+       ═══════════════════════════════════════ -->
+  <div id="employeeModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">👤 <span id="employeeModalTitle">إضافة موظف جديد</span></h3>
+        <button class="close-btn" onclick="closeEmployeeModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="employeeForm" onsubmit="handleEmployeeSubmit(event)">
+          <input type="hidden" id="employeeId">
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label required">اسم الموظف</label>
+              <input type="text" id="employeeName" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">رقم الهوية</label>
+              <input type="text" id="employeeNationalId" class="form-input">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">الهاتف</label>
+              <input type="tel" id="employeePhone" class="form-input">
+            </div>
+            <div class="form-group">
+              <label class="form-label">البريد الإلكتروني</label>
+              <input type="email" id="employeeEmail" class="form-input">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label required">الوظيفة</label>
+              <input type="text" id="employeeJobTitle" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">القسم</label>
+              <input type="text" id="employeeDepartment" class="form-input" list="departmentsList">
+              <datalist id="departmentsList"></datalist>
+            </div>
+          </div>
+
+          <div class="form-row-3">
+            <div class="form-group">
+              <label class="form-label required">نوع الراتب</label>
+              <select id="employeeSalaryType" class="form-select" onchange="toggleSalaryFields()">
+                <option value="monthly">شهري</option>
+                <option value="hourly">بالساعة</option>
+              </select>
+            </div>
+            <div class="form-group" id="monthlySalaryGroup">
+              <label class="form-label required">الراتب الشهري</label>
+              <input type="number" id="employeeSalary" class="form-input" step="0.01" min="0" required>
+            </div>
+            <div class="form-group" id="hourlyRateGroup" style="display:none">
+              <label class="form-label required">معدل الساعة</label>
+              <input type="number" id="employeeHourlyRate" class="form-input" step="0.01" min="0" value="0">
+            </div>
+            <div class="form-group">
+              <label class="form-label">البدلات الثابتة</label>
+              <input type="number" id="employeeAllowances" class="form-input" step="0.01" min="0" value="0">
+            </div>
+          </div>
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">رصيد الإجازات السنوي</label>
+              <input type="number" id="employeeVacationBalance" class="form-input" min="0" value="21">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label required">تاريخ التعيين</label>
+              <input type="date" id="employeeHireDate" class="form-input" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">الحالة</label>
+              <select id="employeeStatus" class="form-select">
+                <option value="active">نشط</option>
+                <option value="inactive">غير نشط</option>
+                <option value="suspended">معلق</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">العنوان</label>
+            <input type="text" id="employeeAddress" class="form-input">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">ملاحظات</label>
+            <textarea id="employeeNotes" class="form-textarea"></textarea>
+          </div>
+
+          <div class="modal-footer" style="margin: -20px; margin-top: 20px; padding: 16px 20px; background: var(--bg-tertiary); border-top: 1px solid var(--border);">
+            <button type="button" class="btn btn-secondary" onclick="closeEmployeeModal()">إلغاء</button>
+            <button type="submit" class="btn btn-primary">💾 حفظ</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       🪟 SALARY MODAL
+       ═══════════════════════════════════════ -->
+  <div id="salaryModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">💰 <span id="salaryModalTitle">إضافة راتب</span></h3>
+        <button class="close-btn" onclick="closeSalaryModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="salaryForm" onsubmit="handleSalarySubmit(event)">
+          <input type="hidden" id="salaryId">
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label required">الموظف</label>
+              <div style="display:flex;gap:8px">
+                <select id="salaryEmployeeId" class="form-select" required onchange="loadEmployeeSalaryData()" style="flex:1">
+                  <option value="">-- اختر الموظف --</option>
+                </select>
+                <button type="button" class="btn btn-sm btn-secondary" onclick="loadEmployeeSalaryData()" title="إعادة حساب من الحضور">
+                  🔄
+                </button>
+              </div>
+            </div>
+            <div class="form-group">
+              <label class="form-label required">الشهر/السنة</label>
+              <div class="form-row" style="gap:8px">
+                <select id="salaryMonth" class="form-select" required>
+                  <option value="01">يناير</option>
+                  <option value="02">فبراير</option>
+                  <option value="03">مارس</option>
+                  <option value="04">أبريل</option>
+                  <option value="05">مايو</option>
+                  <option value="06">يونيو</option>
+                  <option value="07">يوليو</option>
+                  <option value="08">أغسطس</option>
+                  <option value="09">سبتمبر</option>
+                  <option value="10">أكتوبر</option>
+                  <option value="11">نوفمبر</option>
+                  <option value="12">ديسمبر</option>
+                </select>
+                <input type="number" id="salaryYear" class="form-input" required style="width:100px">
+              </div>
+            </div>
+          </div>
+
+          <!-- معلومات الساعات (للموظفين بالراتب بالساعة) -->
+          <div id="salaryHoursInfo" style="display:none"></div>
+          
+          <!-- Salary Calculation Box -->
+          <div class="salary-calc-box">
+            <div class="salary-calc-title">🧮 حساب الراتب</div>
+            
+            <div class="form-row-4">
+              <div class="form-group">
+                <label class="form-label">الراتب الأساسي</label>
+                <input type="number" id="salaryBaseSalary" class="form-input" step="0.01" oninput="calculateSalary()">
+              </div>
+              <div class="form-group">
+                <label class="form-label">البدلات</label>
+                <input type="number" id="salaryAllowances" class="form-input" step="0.01" value="0" oninput="calculateSalary()">
+              </div>
+              <div class="form-group">
+                <label class="form-label">الحوافز/المكافآت</label>
+                <input type="number" id="salaryBonus" class="form-input" step="0.01" value="0" oninput="calculateSalary()">
+              </div>
+              <div class="form-group">
+                <label class="form-label">ساعات إضافية</label>
+                <input type="number" id="salaryOvertime" class="form-input" step="0.01" value="0" oninput="calculateSalary()">
+              </div>
+            </div>
+
+            <div class="form-row-4">
+              <div class="form-group">
+                <label class="form-label">خصم الغياب</label>
+                <input type="number" id="salaryAbsenceDeduction" class="form-input" step="0.01" value="0" oninput="calculateSalary()">
+              </div>
+              <div class="form-group">
+                <label class="form-label">خصومات أخرى</label>
+                <input type="number" id="salaryDeductions" class="form-input" step="0.01" value="0" oninput="calculateSalary()">
+              </div>
+              <div class="form-group">
+                <label class="form-label">قسط السلفة</label>
+                <input type="number" id="salaryAdvanceDeduction" class="form-input" step="0.01" value="0" readonly style="background:#1a1f29">
+              </div>
+              <div class="form-group">
+                <label class="form-label">التأمينات</label>
+                <input type="number" id="salaryInsurance" class="form-input" step="0.01" value="0" oninput="calculateSalary()">
+              </div>
+            </div>
+
+            <div class="salary-row add">
+              <span>إجمالي الاستحقاقات</span>
+              <span id="totalEarnings">0.00 ج.م</span>
+            </div>
+            <div class="salary-row sub">
+              <span>إجمالي الخصومات</span>
+              <span id="totalDeductions">0.00 ج.م</span>
+            </div>
+            <div class="salary-row total">
+              <span>صافي الراتب</span>
+              <span id="netSalaryDisplay">0.00 ج.م</span>
+            </div>
+            <input type="hidden" id="salaryNetSalary">
+          </div>
+
+          <div class="form-group" style="margin-top:16px">
+            <label class="form-label">ملاحظات</label>
+            <textarea id="salaryNotes" class="form-textarea"></textarea>
+          </div>
+
+          <div class="modal-footer" style="margin: -20px; margin-top: 20px; padding: 16px 20px; background: var(--bg-tertiary); border-top: 1px solid var(--border);">
+            <button type="button" class="btn btn-secondary" onclick="closeSalaryModal()">إلغاء</button>
+            <button type="submit" class="btn btn-success">💾 حفظ الراتب</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       🪟 ADVANCE MODAL
+       ═══════════════════════════════════════ -->
+  <div id="advanceModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">💳 <span id="advanceModalTitle">طلب سلفة جديدة</span></h3>
+        <button class="close-btn" onclick="closeAdvanceModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="advanceForm" onsubmit="handleAdvanceSubmit(event)">
+          <input type="hidden" id="advanceId">
+
+          <div class="form-group">
+            <label class="form-label required">الموظف</label>
+            <select id="advanceEmployeeId" class="form-select" required>
+              <option value="">-- اختر الموظف --</option>
+            </select>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label required">مبلغ السلفة</label>
+              <input type="number" id="advanceAmount" class="form-input" step="0.01" min="0" required oninput="calculateInstallment()">
+            </div>
+            <div class="form-group">
+              <label class="form-label required">عدد الأقساط</label>
+              <input type="number" id="advanceInstallments" class="form-input" min="1" value="1" required oninput="calculateInstallment()">
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">قيمة القسط الشهري</label>
+              <input type="number" id="advanceInstallmentAmount" class="form-input" readonly style="background:#1a1f29;font-weight:bold;color:var(--accent)">
+            </div>
+            <div class="form-group">
+              <label class="form-label">تاريخ بدء الخصم</label>
+              <input type="date" id="advanceStartDate" class="form-input">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">سبب السلفة</label>
+            <textarea id="advanceReason" class="form-textarea" placeholder="اكتب سبب طلب السلفة..."></textarea>
+          </div>
+
+          <div class="modal-footer" style="margin: -20px; margin-top: 20px; padding: 16px 20px; background: var(--bg-tertiary); border-top: 1px solid var(--border);">
+            <button type="button" class="btn btn-secondary" onclick="closeAdvanceModal()">إلغاء</button>
+            <button type="submit" class="btn btn-purple">💾 تقديم الطلب</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       🪟 VACATION MODAL
+       ═══════════════════════════════════════ -->
+  <div id="vacationModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">🏖️ <span id="vacationModalTitle">طلب إجازة جديدة</span></h3>
+        <button class="close-btn" onclick="closeVacationModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="vacationForm" onsubmit="handleVacationSubmit(event)">
+          <input type="hidden" id="vacationId">
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label required">الموظف</label>
+              <select id="vacationEmployeeId" class="form-select" required onchange="showVacationBalance()">
+                <option value="">-- اختر الموظف --</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">رصيد الإجازات المتاح</label>
+              <input type="text" id="vacationBalance" class="form-input" readonly style="background:#1a1f29;color:var(--success);font-weight:bold" value="--">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required">نوع الإجازة</label>
+            <select id="vacationType" class="form-select" required>
+              <option value="annual">سنوية (من الرصيد)</option>
+              <option value="sick">مرضية</option>
+              <option value="emergency">طارئة</option>
+              <option value="unpaid">بدون راتب</option>
+            </select>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label required">من تاريخ</label>
+              <input type="date" id="vacationFromDate" class="form-input" required onchange="calculateVacationDays()">
+            </div>
+            <div class="form-group">
+              <label class="form-label required">إلى تاريخ</label>
+              <input type="date" id="vacationToDate" class="form-input" required onchange="calculateVacationDays()">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">عدد الأيام</label>
+            <input type="number" id="vacationDays" class="form-input" readonly style="background:#1a1f29" value="0">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">السبب/ملاحظات</label>
+            <textarea id="vacationReason" class="form-textarea" placeholder="سبب طلب الإجازة..."></textarea>
+          </div>
+
+          <div class="modal-footer" style="margin: -20px; margin-top: 20px; padding: 16px 20px; background: var(--bg-tertiary); border-top: 1px solid var(--border);">
+            <button type="button" class="btn btn-secondary" onclick="closeVacationModal()">إلغاء</button>
+            <button type="submit" class="btn btn-success">💾 تقديم الطلب</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       🪟 ATTENDANCE MODAL
+       ═══════════════════════════════════════ -->
+  <div id="attendanceModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">📋 تسجيل حضور</h3>
+        <button class="close-btn" onclick="closeAttendanceModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="attendanceForm" onsubmit="handleAttendanceSubmit(event)">
+          <input type="hidden" id="attendanceId">
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label required">الموظف</label>
+              <select id="attendanceEmployeeId" class="form-select" required>
+                <option value="">-- اختر الموظف --</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label required">التاريخ</label>
+              <input type="date" id="attendanceDate" class="form-input" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">فترات الحضور (يمكن إضافة عدة فترات)</label>
+            <div id="attendanceSessionsContainer">
+              <div class="session-row" style="display:flex;gap:8px;margin-bottom:8px;align-items:flex-end">
+                <div style="flex:1">
+                  <label class="form-label" style="font-size:11px">وقت الحضور</label>
+                  <input type="time" class="form-input session-checkin" style="font-size:12px">
+                </div>
+                <div style="flex:1">
+                  <label class="form-label" style="font-size:11px">وقت الانصراف</label>
+                  <input type="time" class="form-input session-checkout" style="font-size:12px">
+                </div>
+                <button type="button" class="btn btn-sm btn-danger" onclick="removeSession(this)" style="height:38px">🗑️</button>
+              </div>
+            </div>
+            <button type="button" class="btn btn-sm btn-secondary" onclick="addSession()" style="margin-top:8px">➕ إضافة فترة أخرى</button>
+          </div>
+          
+          <!-- الطريقة القديمة (للتوافق) -->
+          <div class="form-row" style="display:none" id="legacyTimeRow">
+            <div class="form-group">
+              <label class="form-label">وقت الحضور</label>
+              <input type="time" id="attendanceCheckIn" class="form-input">
+            </div>
+            <div class="form-group">
+              <label class="form-label">وقت الانصراف</label>
+              <input type="time" id="attendanceCheckOut" class="form-input">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">الحالة</label>
+            <select id="attendanceStatus" class="form-select">
+              <option value="present">حاضر</option>
+              <option value="absent">غائب</option>
+              <option value="late">متأخر</option>
+              <option value="vacation">إجازة</option>
+              <option value="sick">مريض</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">ملاحظات</label>
+            <textarea id="attendanceNotes" class="form-textarea"></textarea>
+          </div>
+
+          <div class="modal-footer" style="margin: -20px; margin-top: 20px; padding: 16px 20px; background: var(--bg-tertiary); border-top: 1px solid var(--border);">
+            <button type="button" class="btn btn-secondary" onclick="closeAttendanceModal()">إلغاء</button>
+            <button type="submit" class="btn btn-primary">💾 حفظ</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       🪟 EMPLOYEE PROFILE MODAL
+       ═══════════════════════════════════════ -->
+  <div id="profileModal" class="modal">
+    <div class="modal-content xlarge">
+      <div class="modal-header">
+        <h3 class="modal-title">👤 بطاقة الموظف</h3>
+        <button class="close-btn" onclick="closeProfileModal()">&times;</button>
+      </div>
+      <div class="modal-body" id="profileContent">
+        <!-- Will be filled dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <script src="./employees.js"></script>
+
+  <!-- Company Logo Script -->
+  <script>
+    (function() {
+      let companyName = 'ELOS SYSTEM';
+      let companyLogo = null;
+
+      async function loadCompanyData() {
+        try {
+          const saved = localStorage.getItem('appSettings');
+          if (saved) {
+            const settings = JSON.parse(saved);
+            if (settings.companyName) companyName = settings.companyName;
+            if (settings.companyLogo) companyLogo = settings.companyLogo;
+            updateHeaderLogo();
+          }
+        } catch (error) {
+          console.warn('[HEADER] Failed to load company data:', error);
+        }
+      }
+
+      function isArabic(text) { return /[؀-ۿ]/.test(text); }
+
+      function updateHeaderLogo() {
+        const logoSvg = document.querySelector('.logo');
+        const companyNameEl = document.querySelector('.brand');
+
+        if (logoSvg && companyLogo) {
+          const img = document.createElement('img');
+          img.src = companyLogo;
+          img.alt = companyName;
+          img.className = logoSvg.className;
+          img.style.width = '40px';
+          img.style.height = '40px';
+          img.style.objectFit = 'contain';
+          img.style.borderRadius = '8px';
+          logoSvg.replaceWith(img);
+        }
+
+        if (companyNameEl) {
+          companyNameEl.textContent = companyName;
+          if (isArabic(companyName)) {
+            companyNameEl.style.fontFamily = '"Tajawal", "Cairo", sans-serif';
+            companyNameEl.style.letterSpacing = '0';
+          }
+        }
+      }
+
+      window.addEventListener('storage', (e) => {
+        if (e.key === 'appSettings') loadCompanyData();
+      });
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', loadCompanyData);
+      } else {
+        loadCompanyData();
+      }
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,662 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>المبيعات العامة • ElOs Accounting</title>
+    <script>
+      // ⚡ تطبيق فوري للثيم - يمنع الوميض
+      (function(){var p=new URLSearchParams(location.search),t=p.get('theme')||localStorage.getItem('elos_theme')||localStorage.getItem('elos-theme')||'dark',h=document.documentElement;h.setAttribute('data-theme',t==='light'?'light':'dark');})();
+    </script>
+  <!-- 🔐 SESSION INJECTION - MUST BE FIRST! -->
+  <script src="session-inject.js"></script>
+  <!-- 📱 SPA Mode Detection -->
+  <script src="spa-mode.js"></script>
+  <!-- 🌙 Theme Sync -->
+  <script src="theme-sync.js"></script>
+  <!-- 🔤 Font Scale Manager -->
+  <script src="js/font-scale-manager.js"></script>
+  <!-- 🔊 Shared Sound & Toast System -->
+  <script src="shared.js"></script>
+  <!-- 🎨 Design System Tokens (theme colors - MUST BE FIRST) -->
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/tokens-alias.css">
+  <!-- 🎨 Design System (component styles) -->
+  <link rel="stylesheet" href="styles/design-system.css">
+  <!-- 🎨 Theme Governance Layer (load LAST to override legacy styles) -->
+  <link rel="stylesheet" href="styles/theme-fixes.css">
+  <!-- 📏 Font Sizes - تحسين أحجام الخطوط -->
+  <link rel="stylesheet" href="styles/font-sizes.css">
+
+    <style>
+      /* ═══════════════════════════════════════
+         Color variables are now in tokens.css and tokens-alias.css
+         Only layout-specific styles here
+         ═══════════════════════════════════════ */
+
+      /* ═══════════════════════════════════════
+         🔧 RESET & BASE
+         ═══════════════════════════════════════ */
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        font-family: system-ui, "Cairo", "Segoe UI", sans-serif;
+        overflow: hidden;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* ═══════════════════════════════════════
+         📱 HEADER
+         ═══════════════════════════════════════ */
+      .header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 10px 24px;
+        background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+        border-bottom: 1px solid var(--border);
+        box-shadow: var(--shadow);
+        flex-shrink: 0;
+        height: 65px;
+      }
+
+      .logo {
+        width: 40px;
+        height: 40px;
+        color: #ffffff;
+        filter: drop-shadow(0 2px 6px rgba(255, 255, 255, 0.15));
+        flex-shrink: 0;
+      }
+
+      .brand {
+        font-weight: 900;
+        font-size: 24px;
+        color: #d1d5db;
+        letter-spacing: 2px;
+        text-shadow: 0 2px 6px rgba(255, 255, 255, 0.1);
+      }
+
+      .brand-container {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+      }
+
+      .page-subtitle {
+        font-size: 11px;
+        color: var(--text-secondary);
+        font-weight: 500;
+        opacity: 0.8;
+      }
+
+      .page-title {
+        font-weight: 900;
+        font-size: 22px;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .spacer {
+        flex: 1;
+      }
+
+      .stats {
+        display: flex;
+        gap: 10px;
+      }
+
+      .stat {
+        background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 8px 14px;
+        font-size: 12px;
+        font-weight: 600;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        min-width: 90px;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      }
+
+      .stat:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(59,130,246,0.25);
+        border-color: var(--accent);
+      }
+
+      .stat-label {
+        font-size: 9px;
+        color: var(--text-secondary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 4px;
+      }
+
+      .stat-value {
+        font-size: 18px;
+        font-weight: 900;
+        color: var(--text-primary);
+        line-height: 1;
+      }
+
+      #headerStats .stat:nth-child(1) .stat-value {
+        color: var(--accent);
+      }
+
+      #headerStats .stat:nth-child(2) .stat-value {
+        color: var(--success);
+      }
+
+      #headerStats .stat:nth-child(3) .stat-value {
+        color: var(--warning);
+      }
+
+      /* ═══════════════════════════════════════
+         📊 MAIN CONTENT
+         ═══════════════════════════════════════ */
+      .main {
+        flex: 1;
+        display: grid;
+        grid-template-columns: 300px 1fr;
+        gap: 20px;
+        padding: 20px 24px;
+        overflow: hidden;
+        min-height: 0;
+      }
+
+      .sidebar {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        overflow: visible;
+      }
+
+      .content-area {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+        overflow: hidden;
+        min-height: 0;
+      }
+
+      .panel {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 12px;
+        box-shadow: var(--shadow);
+        transition: all 0.2s ease;
+      }
+
+      .panel:hover {
+        box-shadow: var(--shadow-hover);
+      }
+
+      .panel-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+        padding-bottom: 10px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .panel-title {
+        font-size: 15px;
+        font-weight: 800;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      /* ═══════════════════════════════════════
+         🔽 FORM CONTROLS
+         ═══════════════════════════════════════ */
+      .form-group {
+        margin-bottom: 10px;
+      }
+
+      .form-label {
+        display: block;
+        font-size: 11px;
+        font-weight: 700;
+        color: var(--accent);
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .input, .select {
+        width: 100%;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px 12px;
+        color: var(--text-primary);
+        font-size: 13px;
+        outline: none;
+        transition: all 0.2s ease;
+      }
+
+      .input:focus, .select:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+      }
+
+      .input::placeholder {
+        color: var(--text-secondary);
+      }
+
+      /* ═══════════════════════════════════════
+         🔘 BUTTONS
+         ═══════════════════════════════════════ */
+      .btn {
+        background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        padding: 10px 16px;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        box-shadow: 0 2px 6px rgba(59,130,246,0.25);
+      }
+
+      .btn:hover:not(:disabled) {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(59,130,246,0.4);
+      }
+
+      .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .btn-ghost {
+        background: transparent;
+        color: var(--text-primary);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px 16px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+      }
+
+      .btn-ghost:hover:not(:disabled) {
+        background: rgba(59,130,246,0.1);
+        border-color: var(--accent);
+        color: var(--accent);
+      }
+
+      .btn-ghost.active {
+        background: var(--accent);
+        color: white;
+        border-color: var(--accent);
+      }
+
+      .btn-row {
+        display: flex;
+        gap: 8px;
+      }
+
+      .btn-row .btn,
+      .btn-row .btn-ghost {
+        flex: 1;
+      }
+
+      /* ═══════════════════════════════════════
+         📊 TABLE
+         ═══════════════════════════════════════ */
+      .table-wrap {
+        flex: 1;
+        overflow: auto;
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        box-shadow: var(--shadow);
+        min-height: 0;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+
+      thead {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+      }
+
+      th {
+        padding: 12px 10px;
+        text-align: right;
+        font-weight: 800;
+        font-size: 11px;
+        color: var(--accent);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 2px solid var(--border);
+        white-space: nowrap;
+      }
+
+      td {
+        padding: 10px;
+        border-bottom: 1px solid var(--border);
+        color: var(--text-primary);
+        vertical-align: middle;
+      }
+
+      tbody tr {
+        transition: all 0.2s ease;
+        cursor: pointer;
+      }
+
+      tbody tr:hover {
+        background: rgba(59,130,246,0.08);
+      }
+
+      /* ═══════════════════════════════════════
+         🏷️ BADGES
+         ═══════════════════════════════════════ */
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        white-space: nowrap;
+      }
+
+      .badge-device {
+        background: linear-gradient(135deg, rgba(59,130,246,0.15) 0%, rgba(59,130,246,0.05) 100%);
+        color: var(--accent);
+        border: 1px solid rgba(59,130,246,0.3);
+      }
+
+      .badge-accessory {
+        background: linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(16,185,129,0.05) 100%);
+        color: var(--success);
+        border: 1px solid rgba(16,185,129,0.3);
+      }
+
+      .badge-repair {
+        background: linear-gradient(135deg, rgba(245,158,11,0.15) 0%, rgba(245,158,11,0.05) 100%);
+        color: var(--warning);
+        border: 1px solid rgba(245,158,11,0.3);
+      }
+
+      .badge-repair-pos {
+        background: linear-gradient(135deg, rgba(139,92,246,0.15) 0%, rgba(139,92,246,0.05) 100%);
+        color: #8b5cf6;
+        border: 1px solid rgba(139,92,246,0.3);
+      }
+
+      .badge-completed {
+        background: linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(16,185,129,0.05) 100%);
+        color: var(--success);
+        border: 1px solid rgba(16,185,129,0.3);
+      }
+
+      .badge-returned {
+        background: linear-gradient(135deg, rgba(239,68,68,0.15) 0%, rgba(239,68,68,0.05) 100%);
+        color: var(--danger);
+        border: 1px solid rgba(239,68,68,0.3);
+      }
+
+      /* ═══════════════════════════════════════
+         📭 EMPTY STATE
+         ═══════════════════════════════════════ */
+      .empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 60px 20px;
+        color: var(--text-secondary);
+        font-size: 15px;
+        text-align: center;
+        background: var(--bg-tertiary);
+        border-radius: 12px;
+        border: 2px dashed var(--border);
+        margin: 20px 0;
+      }
+
+      .empty::before {
+        content: "📭";
+        font-size: 48px;
+        margin-bottom: 16px;
+        opacity: 0.5;
+      }
+
+      /* ═══════════════════════════════════════
+         📄 PAGINATION
+         ═══════════════════════════════════════ */
+      .pagination-controls {
+        background: var(--bg-secondary);
+        border-top: 1px solid var(--border);
+        flex-shrink: 0;
+        z-index: 10;
+        box-shadow: 0 -2px 8px rgba(0,0,0,0.2);
+        display: none;
+        align-items: center;
+        justify-content: space-between;
+        padding: 12px 20px;
+        gap: 16px;
+      }
+
+      .pagination-controls.visible {
+        display: flex;
+      }
+
+      /* Footer */
+      .footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 24px;
+        background: var(--bg-secondary);
+        border-top: 1px solid var(--border);
+        font-size: 11px;
+        color: var(--text-secondary);
+        flex-shrink: 0;
+      }
+
+      .num {
+        font-family: ui-monospace, "SF Mono", monospace;
+        letter-spacing: -0.5px;
+        text-align: left;
+        direction: ltr;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- ═══════════════════════════════════════
+         📱 HEADER
+         ═══════════════════════════════════════ -->
+    <header class="header">
+      <div class="brand-container">
+        <div class="brand" id="companyLogo">📊</div>
+        <div class="page-subtitle" id="companyName">ElOs</div>
+      </div>
+      <div class="spacer"></div>
+      <h1 class="page-title arabic-text">
+        <span>📈</span>
+        <span>المبيعات العامة</span>
+      </h1>
+      <div class="spacer"></div>
+      <div class="stats" id="headerStats">
+        <div class="stat">
+          <div class="stat-label">إجمالي المبيعات</div>
+          <div class="stat-value" id="totalSales">0</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">عدد العمليات</div>
+          <div class="stat-value" id="totalCount">0</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">صافي الربح</div>
+          <div class="stat-value" id="totalProfit">0</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ═══════════════════════════════════════
+         📊 MAIN CONTENT
+         ═══════════════════════════════════════ -->
+    <main class="main">
+      <!-- SIDEBAR -->
+      <aside class="sidebar">
+        <!-- Date Range Filter -->
+        <div class="panel">
+          <div class="panel-header">
+            <h3 class="panel-title">📅 نطاق التاريخ</h3>
+          </div>
+          <div class="form-group">
+            <label class="form-label">من</label>
+            <input type="date" id="from" class="input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">إلى</label>
+            <input type="date" id="to" class="input" />
+          </div>
+          <div class="btn-row">
+            <button class="btn" id="btnApply">تطبيق</button>
+            <button class="btn-ghost" id="btnToday">اليوم</button>
+          </div>
+        </div>
+
+        <!-- Quick Filters -->
+        <div class="panel">
+          <div class="panel-header">
+            <h3 class="panel-title">⚡ فلترة سريعة</h3>
+          </div>
+          <div class="btn-row">
+            <button class="btn-ghost quick-filter-btn" data-period="today">اليوم</button>
+          </div>
+          <div class="btn-row">
+            <button class="btn-ghost quick-filter-btn" data-period="week">هذا الأسبوع</button>
+          </div>
+          <div class="btn-row">
+            <button class="btn-ghost quick-filter-btn" data-period="month">هذا الشهر</button>
+          </div>
+          <div class="btn-row">
+            <button class="btn-ghost quick-filter-btn" data-period="30days">آخر 30 يوم</button>
+          </div>
+        </div>
+
+        <!-- Search -->
+        <div class="panel">
+          <div class="panel-header">
+            <h3 class="panel-title">🔍 بحث</h3>
+          </div>
+          <div class="form-group">
+            <input type="text" id="q" class="input" placeholder="ابحث في المبيعات..." />
+          </div>
+        </div>
+
+        <!-- Type Filter -->
+        <div class="panel">
+          <div class="panel-header">
+            <h3 class="panel-title">🏷️ نوع البيع</h3>
+          </div>
+          <div class="form-group">
+            <select id="typeFilter" class="select">
+              <option value="all">الكل</option>
+              <option value="device">أجهزة</option>
+              <option value="accessory">إكسسوارات</option>
+              <option value="repair">قطع صيانة</option>
+              <option value="repair_pos">قطع غيار (POS)</option>
+            </select>
+          </div>
+        </div>
+      </aside>
+
+      <!-- CONTENT AREA -->
+      <div class="content-area">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>النوع</th>
+                <th>المنتج</th>
+                <th>العميل</th>
+                <th>السعر</th>
+                <th>الكمية</th>
+                <th>الإجمالي</th>
+                <th>التاريخ</th>
+                <th>الحالة</th>
+              </tr>
+            </thead>
+            <tbody id="rows">
+              <tr>
+                <td colspan="9" class="empty">جاري التحميل...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination-controls" id="paginationControls">
+          <button class="btn-ghost" id="prevPage">السابق</button>
+          <span id="pageInfo">صفحة 1 من 1</span>
+          <button class="btn-ghost" id="nextPage">التالي</button>
+        </div>
+      </div>
+    </main>
+
+    <!-- ═══════════════════════════════════════
+         📄 FOOTER
+         ═══════════════════════════════════════ -->
+    <footer class="footer">
+      <span class="arabic-text">نسخة محسّنة • واجهة حديثة</span>
+    </footer>
+
+    <!-- ═══════════════════════════════════════
+         📊 SALES SHARED UTILITIES
+         ═══════════════════════════════════════ -->
+    <script src="js/sales-constants.js"></script>
+    <script src="js/sales-shared.js"></script>
+    <script src="js/sales-error-handler.js"></script>
+    <script src="js/warehouse-handler.js" data-page-type="general_sales"></script>
+    <script type="module" src="./sales-general.js"></script>
+  </body>
+</html>
+
+
+
+
+
+
+
+

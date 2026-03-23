@@ -50,7 +50,10 @@ const DEFAULT_LEGACY_CATEGORIES: string[] = [
 export function getCategories(): DynamicCategory[] {
     const stored = getStorageItem<DynamicCategory[] | null>(DYNAMIC_CATEGORIES_KEY, null);
     if (!stored) {
-        saveCategories(DEFAULT_DYNAMIC_CATEGORIES);
+        // DO NOT call saveCategories() here — it dispatches a storage event which
+        // triggers setState in other components, causing a "setState during render" error
+        // when this is called inside useMemo. Defer the write outside the render cycle.
+        setTimeout(() => saveCategories(DEFAULT_DYNAMIC_CATEGORIES), 0);
         return DEFAULT_DYNAMIC_CATEGORIES;
     }
     return stored;

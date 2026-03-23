@@ -1,0 +1,3155 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>ELOS • إدارة المخازن</title>
+    <script>(function(){var p=new URLSearchParams(location.search),t=p.get('theme')||localStorage.getItem('elos_theme')||localStorage.getItem('elos-theme')||'dark',h=document.documentElement;h.setAttribute('data-theme',t==='light'?'light':'dark');})();</script>
+  <!-- 🔐 SESSION INJECTION - MUST BE FIRST! -->
+  <script src="session-inject.js"></script>
+  <!-- 📱 SPA Mode Detection -->
+  <script src="spa-mode.js"></script>
+  <!-- 🔊 Shared Sound & Toast System -->
+  <script src="shared.js"></script>
+  <!-- 🌙 Theme Sync -->
+  <script src="theme-sync.js"></script>
+  <!-- 🔤 Font Scale Manager -->
+  <script src="js/font-scale-manager.js"></script>
+  <!-- 🎨 Design System Tokens (MUST BE FIRST) -->
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/tokens-alias.css">
+  <!-- 🎨 Design System (component styles) -->
+  <link rel="stylesheet" href="styles/design-system.css">
+  <!-- 🎨 Theme Governance Layer (load LAST to override legacy styles) -->
+  <link rel="stylesheet" href="styles/theme-fixes.css">
+  <!-- 📏 Font Sizes - تحسين أحجام الخطوط -->
+  <link rel="stylesheet" href="styles/font-sizes.css">
+
+  <!-- Arabic Font - Tajawal (non-blocking load) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+
+    <style>
+      /* ═══════════════════════════════════════
+         🎨 MODERN VARIABLES
+         ═══════════════════════════════════════ */
+      :root {
+        --bg-primary: #0a0e14;
+        --bg-secondary: #151921;
+        --bg-tertiary: #1a1f29;
+        --text-primary: #e6e8ee;
+        --text-secondary: #8b93a6;
+        --border: #1e2530;
+        --accent: #3b82f6;
+        --accent-hover: #2563eb;
+        --success: #10b981;
+        --warning: #f59e0b;
+        --danger: #ef4444;
+        --purple: #a855f7;
+        --cyan: #06b6d4;
+        --pink: #ec4899;
+        --radius: 12px;
+        --shadow: 0 2px 8px rgba(0,0,0,0.2);
+        --shadow-hover: 0 4px 16px rgba(59,130,246,0.2);
+      }
+
+      /* ═══════════════════════════════════════
+         🔧 RESET & BASE
+         ═══════════════════════════════════════ */
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        margin: 0;
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        font-family: system-ui, "Cairo", "Segoe UI", sans-serif;
+        overflow: hidden;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* Background Pattern */
+      body::before {
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: radial-gradient(circle at 50% 50%, rgba(59,130,246,0.03) 0%, transparent 50%);
+        pointer-events: none;
+        z-index: 0;
+      }
+
+      header, main {
+        position: relative;
+        z-index: 1;
+      }
+
+      /* ═══════════════════════════════════════
+         📱 COMPACT HEADER
+         ═══════════════════════════════════════ */
+      .header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 10px 24px;
+        background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+        border-bottom: 1px solid var(--border);
+        box-shadow: var(--shadow);
+        flex-shrink: 0;
+        height: 65px;
+      }
+
+      .logo {
+        width: 42px;
+        height: 42px;
+        color: #ffffff;
+        filter: drop-shadow(0 2px 6px rgba(255, 255, 255, 0.15));
+        flex-shrink: 0;
+      }
+
+      .brand-container {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+      }
+
+      .brand {
+        font-weight: 900;
+        font-size: 28px;
+        color: #d1d5db;
+        letter-spacing: 4px;
+        text-shadow: 0 2px 6px rgba(255, 255, 255, 0.1);
+        line-height: 1;
+      }
+      
+      .arabic-text {
+        font-family: "Tajawal", "Cairo", "Dubai", "Segoe UI", system-ui, sans-serif !important;
+        letter-spacing: 0 !important;
+        font-weight: 700 !important;
+      }
+
+      .welcome-msg {
+        font-size: 11px;
+        color: var(--text-secondary);
+        font-weight: 500;
+        opacity: 0.8;
+      }
+
+      .page-title {
+        font-weight: 900;
+        font-size: 26px;
+        background: linear-gradient(135deg, var(--accent) 0%, var(--purple) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin: 0 auto;
+      }
+
+      .spacer {
+        flex: 1;
+      }
+
+      .header-btn {
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 8px 12px;
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        text-decoration: none;
+      }
+
+      .header-btn:hover {
+        background: var(--accent);
+        color: white;
+        border-color: var(--accent);
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-hover);
+      }
+
+      /* ═══════════════════════════════════════
+         📦 MAIN CONTENT - WAREHOUSES GRID
+         ═══════════════════════════════════════ */
+      .main {
+        flex: 1;
+        padding: 24px;
+        overflow-y: auto;
+      }
+
+      .warehouses-container {
+        max-width: 1400px;
+        margin: 0 auto;
+      }
+
+      .section-header {
+        margin-bottom: 24px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .section-title {
+        font-size: 24px;
+        font-weight: 900;
+        color: var(--text-primary);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .section-icon {
+        font-size: 32px;
+        filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+      }
+
+      .add-warehouse-btn {
+        background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+        border: none;
+        border-radius: 10px;
+        padding: 12px 24px;
+        color: white;
+        font-size: 14px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(59,130,246,0.3);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .add-warehouse-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(59,130,246,0.4);
+      }
+
+      .warehouses-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+        gap: 24px;
+        animation: fadeIn 0.4s ease;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* ═══════════════════════════════════════
+         🎴 WAREHOUSE CARD
+         ═══════════════════════════════════════ */
+      .warehouse-card {
+        background: linear-gradient(135deg, var(--bg-secondary) 0%, rgba(26, 31, 41, 0.8) 100%);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 24px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+        backdrop-filter: blur(10px);
+        animation: slideUp 0.4s ease backwards;
+      }
+
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .warehouse-card:nth-child(1) { animation-delay: 0.05s; }
+      .warehouse-card:nth-child(2) { animation-delay: 0.1s; }
+      .warehouse-card:nth-child(3) { animation-delay: 0.15s; }
+      .warehouse-card:nth-child(4) { animation-delay: 0.2s; }
+
+      .warehouse-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, var(--card-color, var(--accent)) 0%, transparent 100%);
+      }
+
+      .warehouse-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 12px 32px rgba(0,0,0,0.3);
+        border-color: var(--card-color, var(--accent));
+      }
+
+      .warehouse-card:hover .warehouse-icon {
+        transform: scale(1.2) rotate(5deg);
+      }
+
+      /* ═══════════════════════════════════════
+         🔀 DRAG & DROP STYLES
+         ═══════════════════════════════════════ */
+      .warehouse-card.dragging {
+        opacity: 0.5;
+        transform: scale(1.02);
+        box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        z-index: 1000;
+        cursor: grabbing;
+      }
+
+      .warehouse-card.drag-over {
+        border: 2px dashed var(--accent);
+        background: rgba(59, 130, 246, 0.1);
+        transform: scale(1.02);
+      }
+
+      .warehouses-grid.drag-active .warehouse-card:not(.dragging) {
+        transition: transform 0.2s ease;
+      }
+
+      .warehouse-card .drag-handle {
+        position: absolute;
+        top: 8px;
+        left: 8px;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--text-tertiary);
+        cursor: grab;
+        opacity: 0;
+        transition: opacity 0.2s ease;
+        border-radius: 4px;
+        z-index: 10;
+      }
+
+      .warehouse-card:hover .drag-handle {
+        opacity: 0.6;
+      }
+
+      .warehouse-card .drag-handle:hover {
+        opacity: 1;
+        background: rgba(255,255,255,0.1);
+        color: var(--accent);
+      }
+
+      .warehouse-card .drag-handle:active {
+        cursor: grabbing;
+      }
+
+      /* إخفاء زر الترتيب عند السحب */
+      .warehouse-card.dragging .drag-handle {
+        opacity: 0;
+      }
+
+      .warehouse-header {
+        display: flex;
+        align-items: flex-start;
+        gap: 16px;
+        margin-bottom: 20px;
+      }
+
+      .warehouse-icon {
+        font-size: 48px;
+        transition: all 0.3s ease;
+        filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+      }
+
+      .warehouse-info {
+        flex: 1;
+      }
+
+      .warehouse-name {
+        font-size: 20px;
+        font-weight: 900;
+        color: var(--text-primary);
+        margin-bottom: 6px;
+      }
+
+      .warehouse-description {
+        font-size: 13px;
+        color: var(--text-secondary);
+        line-height: 1.5;
+      }
+
+      .warehouse-stats {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+
+      .stat-box {
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 12px;
+        text-align: center;
+      }
+
+      .stat-label {
+        font-size: 11px;
+        color: var(--text-secondary);
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .stat-value {
+        font-size: 22px;
+        font-weight: 900;
+        color: var(--card-color, var(--accent));
+      }
+
+      .warehouse-actions {
+        display: flex;
+        gap: 8px;
+      }
+
+      .action-btn {
+        flex: 1;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px;
+        color: var(--text-primary);
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+      }
+
+      .action-btn:hover {
+        background: var(--card-color, var(--accent));
+        border-color: var(--card-color, var(--accent));
+        color: white;
+        transform: translateY(-2px);
+      }
+
+      .action-btn.primary {
+        background: linear-gradient(135deg, var(--card-color, var(--accent)) 0%, var(--accent-hover) 100%);
+        color: white;
+        border: none;
+      }
+
+      .action-btn.primary:hover {
+        box-shadow: 0 4px 12px rgba(59,130,246,0.4);
+      }
+
+      .action-btn.transfer {
+        background: linear-gradient(135deg, var(--cyan, #06b6d4), var(--accent, #3b82f6));
+        color: white;
+        border: none;
+      }
+
+      .action-btn.transfer:hover {
+        box-shadow: 0 4px 12px rgba(6,182,212,0.4);
+      }
+
+      .action-btn.secondary {
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+      }
+
+      .action-btn.secondary:hover {
+        background: var(--accent);
+        color: white;
+      }
+
+      .action-btn.danger {
+        background: rgba(239,68,68,0.1);
+        border-color: rgba(239,68,68,0.3);
+        color: var(--danger, #ef4444);
+      }
+
+      .action-btn.danger:hover {
+        background: var(--danger, #ef4444);
+        color: white;
+      }
+
+      .action-btn.excel-export {
+        background: rgba(34,197,94,0.1);
+        border-color: rgba(34,197,94,0.3);
+        color: #22c55e;
+      }
+
+      .action-btn.excel-export:hover {
+        background: #22c55e;
+        color: white;
+      }
+
+      .action-btn.excel-import {
+        background: rgba(59,130,246,0.1);
+        border-color: rgba(59,130,246,0.3);
+        color: #3b82f6;
+      }
+
+      .action-btn.excel-import:hover {
+        background: #3b82f6;
+        color: white;
+      }
+
+      /* Empty State */
+      .empty-state {
+        text-align: center;
+        padding: 80px 20px;
+        animation: fadeIn 0.5s ease;
+      }
+
+      .empty-icon {
+        font-size: 80px;
+        margin-bottom: 20px;
+        opacity: 0.5;
+      }
+
+      .empty-text {
+        font-size: 18px;
+        color: var(--text-secondary);
+        margin-bottom: 24px;
+      }
+
+      /* Loading State */
+      .loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 100px 20px;
+        animation: fadeIn 0.3s ease;
+      }
+
+      .spinner {
+        width: 50px;
+        height: 50px;
+        border: 4px solid var(--border);
+        border-top-color: var(--accent);
+        border-radius: 50%;
+        animation: spin 0.8s linear infinite;
+      }
+
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+
+      @keyframes slideDown {
+        from {
+          opacity: 0;
+          transform: translateX(-50%) translateY(-20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(-50%) translateY(0);
+        }
+      }
+
+      @keyframes fadeOut {
+        from {
+          opacity: 1;
+          transform: translateX(-50%) translateY(0);
+        }
+        to {
+          opacity: 0;
+          transform: translateX(-50%) translateY(-20px);
+        }
+      }
+
+      /* Modal Styles */
+      .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(8px);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+        animation: fadeIn 0.2s ease;
+      }
+
+      .modal.show {
+        display: flex;
+      }
+
+      .modal-content {
+        background: var(--bg-secondary);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 32px;
+        max-width: 500px;
+        width: 90%;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+        animation: slideDown 0.3s ease;
+      }
+
+      @keyframes slideDown {
+        from {
+          opacity: 0;
+          transform: translateY(-30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 24px;
+      }
+
+      .modal-title {
+        font-size: 22px;
+        font-weight: 900;
+        color: var(--text-primary);
+      }
+
+      .close-btn {
+        background: none;
+        border: none;
+        color: var(--text-secondary);
+        font-size: 28px;
+        cursor: pointer;
+        padding: 0;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+      }
+
+      .close-btn:hover {
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+      }
+
+      .form-group {
+        margin-bottom: 20px;
+      }
+
+      .form-label {
+        display: block;
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text-secondary);
+        margin-bottom: 8px;
+      }
+
+      .form-input,
+      .form-select,
+      .form-textarea {
+        width: 100%;
+        background: var(--bg-tertiary);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 12px;
+        color: var(--text-primary);
+        font-size: 14px;
+        transition: all 0.2s ease;
+      }
+
+      .form-input:focus,
+      .form-select:focus,
+      .form-textarea:focus {
+        outline: none;
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px rgba(59,130,246,0.15);
+      }
+
+      .form-textarea {
+        resize: vertical;
+        min-height: 80px;
+      }
+
+      .color-picker-wrapper {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .color-preview {
+        width: 50px;
+        height: 50px;
+        border-radius: 8px;
+        border: 2px solid var(--border);
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+
+      .color-preview:hover {
+        transform: scale(1.1);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      }
+
+      .modal-actions {
+        display: flex;
+        gap: 12px;
+        margin-top: 24px;
+      }
+
+      .btn {
+        flex: 1;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        border: none;
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+        color: white;
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(59,130,246,0.4);
+      }
+
+      .btn-secondary {
+        background: var(--bg-tertiary);
+        color: var(--text-primary);
+        border: 1px solid var(--border);
+      }
+
+      .btn-secondary:hover {
+        background: var(--bg-primary);
+        border-color: var(--accent);
+      }
+
+      /* ═══════════════════════════════════════
+         📄 FOOTER
+         ═══════════════════════════════════════ */
+      .footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 24px;
+        background: var(--bg-secondary);
+        border-top: 1px solid var(--border);
+        font-size: 11px;
+        color: var(--text-secondary);
+        flex-shrink: 0;
+        margin-top: auto;
+      }
+
+      /* ═══════════════════════════════════════
+         📊 STATS
+         ═══════════════════════════════════════ */
+      .stats {
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+
+      .stat {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        padding: 10px 20px;
+        background: linear-gradient(135deg, rgba(59,130,246,0.1) 0%, rgba(139,92,246,0.1) 100%);
+        border-radius: 12px;
+        border: 1px solid rgba(59,130,246,0.2);
+        min-width: 110px;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .stat::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: linear-gradient(90deg, var(--accent), var(--purple));
+        opacity: 0.7;
+      }
+
+      .stat:hover {
+        transform: translateY(-2px);
+        border-color: rgba(59,130,246,0.4);
+        box-shadow: 0 4px 15px rgba(59,130,246,0.2);
+      }
+
+      .stat-label {
+        font-size: 10px;
+        color: var(--text-secondary);
+        font-weight: 600;
+        text-align: center;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .stat-value {
+        font-size: 22px;
+        font-weight: 800;
+        background: linear-gradient(135deg, var(--accent) 0%, var(--purple) 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        line-height: 1;
+        font-family: 'Segoe UI', system-ui, sans-serif;
+      }
+
+      .stat-value.loading {
+        background: none;
+        -webkit-text-fill-color: var(--text-secondary);
+        opacity: 0.5;
+      }
+
+      /* ═══════════════════════════════════════
+         🔧 Override font-sizes.css للمخازن
+         ═══════════════════════════════════════ */
+      .warehouse-card .stat-value,
+      .warehouse-card .kpi-value {
+        font-size: 22px !important;
+      }
+
+      .warehouse-card .stat-label,
+      .warehouse-card .kpi-label {
+        font-size: 11px !important;
+      }
+
+      .warehouse-card .action-btn {
+        font-size: 11px !important;
+        padding: 8px 6px !important;
+        min-height: auto !important;
+      }
+
+      .warehouse-card .warehouse-name {
+        font-size: 18px !important;
+      }
+
+      .warehouse-card .warehouse-description {
+        font-size: 12px !important;
+      }
+
+      /* Header stats override */
+      .header .stat-value {
+        font-size: 22px !important;
+      }
+
+      .header .stat-label {
+        font-size: 11px !important;
+      }
+    </style>
+    <link rel="stylesheet" href="responsive.css">
+  </head>
+
+  <body>
+    <!-- ═══════════════════════════════════════
+         HEADER
+         ═══════════════════════════════════════ -->
+    <header class="header">
+      <svg class="logo" id="headerLogo" viewBox="0 0 814 1000" xmlns="http://www.w3.org/2000/svg" style="width: 32px; height: 32px; color: #ffffff;">
+        <path d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76.5 0-103.7 40.8-165.9 40.8s-105.6-57-155.5-127C46.7 790.7 0 663 0 541.8c0-194.4 126.4-297.5 250.8-297.5 66.1 0 121.2 43.4 162.7 43.4 39.5 0 101.1-46 176.3-46 28.5 0 130.9 2.6 198.3 99.2zm-234-181.5c31.1-36.9 53.1-88.1 53.1-139.3 0-7.1-.6-14.3-1.9-20.1-50.6 1.9-110.8 33.7-147.1 75.8-28.5 32.4-55.1 83.6-55.1 135.5 0 7.8 1.3 15.6 1.9 18.1 3.2.6 8.4 1.3 13.6 1.3 45.4 0 102.5-30.4 135.5-71.3z" fill="currentColor"/>
+      </svg>
+      <div class="brand-container">
+        <h1 class="brand" id="headerCompanyName">ElOs</h1>
+        <div class="welcome-msg">إدارة المخازن</div>
+      </div>
+      
+      <!-- Navigation Button next to logo -->
+      <a href="./index.html" class="header-btn" style="margin-left: 12px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+          <polyline points="9 22 9 12 15 12 15 22"/>
+        </svg>
+        الرئيسية
+      </a>
+
+      <div class="spacer"></div>
+
+      <h1 class="page-title">
+        <span>📦</span>
+        إدارة المخازن
+      </h1>
+
+      <div class="spacer"></div>
+
+      <!-- Stats -->
+      <div class="stats" id="headerStats">
+        <div class="stat">
+          <div class="stat-label">عدد المخازن</div>
+          <div class="stat-value" id="statWarehousesCount">-</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">إجمالي الأصناف</div>
+          <div class="stat-value" id="statTotalItems">-</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">القيمة الإجمالية</div>
+          <div class="stat-value" id="statTotalValue">-</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ═══════════════════════════════════════
+         MAIN CONTENT
+         ═══════════════════════════════════════ -->
+    <main class="main">
+      <div class="warehouses-container">
+        <div class="section-header">
+          <div class="section-title">
+            <span class="section-icon">🏪</span>
+            <span class="arabic-text">المخازن المتاحة</span>
+          </div>
+          <button class="add-warehouse-btn" onclick="openStocktakePage()" style="background: linear-gradient(135deg, #22c55e, #16a34a);">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
+              <rect x="9" y="3" width="6" height="4" rx="2"/>
+              <path d="M9 12h6"/>
+              <path d="M9 16h6"/>
+            </svg>
+            <span class="arabic-text">الجرد</span>
+          </button>
+          <button class="add-warehouse-btn" onclick="openAddWarehouseModal()">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <line x1="12" y1="5" x2="12" y2="19"/>
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            <span class="arabic-text">إضافة مخزن تخزين</span>
+          </button>
+        </div>
+
+        <div id="warehousesGrid" class="warehouses-grid">
+          <!-- Loading State -->
+          <div class="loading">
+            <div class="spinner"></div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- ═══════════════════════════════════════
+         ADD WAREHOUSE MODAL
+         ═══════════════════════════════════════ -->
+    <div id="addWarehouseModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title arabic-text">إضافة مخزن تخزين</h2>
+          <button class="close-btn" onclick="closeAddWarehouseModal()">×</button>
+        </div>
+        <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 16px; padding: 10px; background: rgba(59,130,246,0.1); border-radius: 8px;">
+          📦 مخزن التخزين يحتوي على بضاعة مخزنة يمكن تحويلها للمخازن الرئيسية
+        </p>
+        <form id="addWarehouseForm" onsubmit="handleAddWarehouse(event)">
+          <div class="form-group">
+            <label class="form-label arabic-text">نوع المخزن *</label>
+            <select class="form-select" name="storage_type" required onchange="updateWarehouseIcon(this.value)">
+              <option value="">اختر نوع المخزن...</option>
+              <option value="devices">📱 أجهزة (موبايلات، تابلت، لابتوب)</option>
+              <option value="accessories">🎧 إكسسوارات (شواحن، سماعات، كفرات)</option>
+              <option value="spare_parts">🔧 قطع غيار (شاشات، بطاريات، فلاكسات)</option>
+              <option value="mixed">📦 مختلط (أجهزة + إكسسوارات + قطع غيار)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label arabic-text">اسم المخزن *</label>
+            <input type="text" class="form-input" name="name" required placeholder="مثال: مخزن قطع الغيار">
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label arabic-text">أيقونة المخزن</label>
+            <input type="text" class="form-input" name="icon" value="📦" placeholder="اختر إيموجي">
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label arabic-text">الوصف</label>
+            <textarea class="form-textarea" name="description" placeholder="وصف مختصر للمخزن..."></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label arabic-text">الموقع</label>
+            <input type="text" class="form-input" name="location" placeholder="مثال: الدور الأول - القسم A">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label arabic-text">المسؤول</label>
+            <input type="text" class="form-input" name="manager" placeholder="اسم المسؤول عن المخزن">
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label arabic-text">اللون المميز</label>
+            <div class="color-picker-wrapper">
+              <div class="color-preview" id="colorPreview" style="background: #3b82f6;" onclick="document.getElementById('colorInput').click()"></div>
+              <input type="color" id="colorInput" name="color" value="#3b82f6" style="display: none;" onchange="updateColorPreview(this.value)">
+              <input type="text" class="form-input" id="colorText" value="#3b82f6" placeholder="#3b82f6" onchange="updateColorPreview(this.value)">
+            </div>
+          </div>
+          
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" onclick="closeAddWarehouseModal()">
+              <span class="arabic-text">إلغاء</span>
+            </button>
+            <button type="submit" class="btn btn-primary">
+              <span class="arabic-text">إضافة المخزن</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         EDIT WAREHOUSE MODAL
+         ═══════════════════════════════════════ -->
+    <div id="editWarehouseModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title arabic-text">تعديل المخزن</h2>
+          <button class="close-btn" onclick="closeEditWarehouseModal()">×</button>
+        </div>
+        <form id="editWarehouseForm" onsubmit="handleEditWarehouse(event)">
+          <input type="hidden" name="id" id="editWarehouseId">
+
+          <div class="form-group">
+            <label class="form-label arabic-text">اسم المخزن *</label>
+            <input type="text" class="form-input" name="name" id="editWarehouseName" required placeholder="اسم المخزن">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label arabic-text">أيقونة المخزن</label>
+            <input type="text" class="form-input" name="icon" id="editWarehouseIcon" value="📦" placeholder="اختر إيموجي">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label arabic-text">الوصف</label>
+            <textarea class="form-textarea" name="description" id="editWarehouseDescription" placeholder="وصف مختصر للمخزن..."></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label arabic-text">اللون المميز</label>
+            <div class="color-picker-wrapper">
+              <div class="color-preview" id="editColorPreview" style="background: #3b82f6;" onclick="document.getElementById('editColorInput').click()"></div>
+              <input type="color" id="editColorInput" name="color" value="#3b82f6" style="display: none;" onchange="updateEditColorPreview(this.value)">
+              <input type="text" class="form-input" id="editColorText" value="#3b82f6" placeholder="#3b82f6" onchange="updateEditColorPreview(this.value)">
+            </div>
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" onclick="closeEditWarehouseModal()">
+              <span class="arabic-text">إلغاء</span>
+            </button>
+            <button type="submit" class="btn btn-primary">
+              <span class="arabic-text">حفظ التعديلات</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         IMPORT EXCEL MODAL
+         ═══════════════════════════════════════ -->
+    <div id="importExcelModal" class="modal">
+      <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+          <h2 class="modal-title arabic-text">استيراد من Excel</h2>
+          <button class="close-btn" onclick="closeImportModal()">×</button>
+        </div>
+        <div id="importModalBody">
+          <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 16px; padding: 10px; background: rgba(59,130,246,0.1); border-radius: 8px;">
+            📥 اختر ملف Excel أو CSV لاستيراد البيانات إلى المخزن
+          </p>
+
+          <div class="form-group">
+            <label class="form-label arabic-text">المخزن المستهدف</label>
+            <input type="text" class="form-input" id="importTargetWarehouse" readonly style="background: var(--bg-tertiary);">
+            <input type="hidden" id="importWarehouseId">
+            <input type="hidden" id="importWarehouseType">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label arabic-text">اختر الملف</label>
+            <div style="border: 2px dashed var(--border-color); border-radius: 8px; padding: 30px; text-align: center; cursor: pointer; transition: all 0.3s;"
+                 onclick="document.getElementById('importFileInput').click()"
+                 ondragover="this.style.borderColor='var(--primary)'; this.style.background='rgba(59,130,246,0.05)'; event.preventDefault();"
+                 ondragleave="this.style.borderColor='var(--border-color)'; this.style.background='transparent';"
+                 ondrop="handleFileDrop(event)">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-secondary)" stroke-width="1.5" style="margin-bottom: 10px;">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              <p class="arabic-text" style="margin: 0; color: var(--text-secondary);">اسحب الملف هنا أو اضغط للاختيار</p>
+              <p style="margin: 5px 0 0; font-size: 12px; color: var(--text-tertiary);">.xlsx, .xls, .csv</p>
+            </div>
+            <input type="file" id="importFileInput" accept=".xlsx,.xls,.csv" style="display: none;" onchange="handleFileSelect(event)">
+          </div>
+
+          <div id="selectedFileInfo" style="display: none; margin-top: 10px; padding: 10px; background: rgba(34,197,94,0.1); border-radius: 8px;">
+            <span style="color: #22c55e;">✓</span>
+            <span id="selectedFileName" class="arabic-text" style="margin-right: 5px;"></span>
+          </div>
+
+          <div style="margin-top: 15px; padding: 10px; background: rgba(245,158,11,0.1); border-radius: 8px;">
+            <p class="arabic-text" style="margin: 0; font-size: 12px; color: var(--warning);">
+              💡 <strong>نصيحة:</strong> قم بتحميل القالب أولاً وملئه بالبيانات ثم استيراده
+            </p>
+            <button type="button" onclick="downloadTemplate()" class="btn btn-secondary" style="margin-top: 10px; font-size: 12px; padding: 6px 12px;">
+              <span class="arabic-text">📄 تحميل القالب</span>
+            </button>
+          </div>
+
+          <div class="modal-actions" style="margin-top: 20px;">
+            <button type="button" class="btn btn-secondary" onclick="closeImportModal()">
+              <span class="arabic-text">إلغاء</span>
+            </button>
+            <button type="button" class="btn btn-primary" onclick="executeImport()" id="executeImportBtn" disabled>
+              <span class="arabic-text">استيراد البيانات</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         JAVASCRIPT
+         ═══════════════════════════════════════ -->
+    <script>
+      // ═══════════════════════════════════════
+      // SPA NAVIGATION HELPER
+      // ═══════════════════════════════════════
+      function navigateToRoute(route) {
+        if (window.parent && window.parent.router) {
+          window.parent.router.navigate(route);
+        } else {
+          // Fallback for non-SPA mode
+          window.location.href = route + '.html';
+        }
+      }
+
+      // ═══════════════════════════════════════
+      // API HELPER
+      // ═══════════════════════════════════════
+      async function dbFetch(endpoint, options = {}) {
+        // إزالة elos-db:// أو db:// من البداية إن كانت موجودة
+        endpoint = endpoint.replace(/^(elos-db|db):\/\//, '');
+        
+        // بناء الـ URL الصحيح
+        const url = `elos-db://${endpoint}`;
+        
+        // إضافة session header إذا لم يكن موجود
+        if (!options.headers) {
+          options.headers = {};
+        }
+        
+        if (!options.headers['x-session-id']) {
+          const sessionId = sessionStorage.getItem('sessionId') || localStorage.getItem('sessionId');
+          if (sessionId) {
+            options.headers['x-session-id'] = sessionId;
+          }
+        }
+        
+        console.log('[API] Calling:', url, options.method || 'GET');
+        
+        return await fetch(url, options);
+      }
+
+      // ═══════════════════════════════════════
+      // INITIALIZATION
+      // ═══════════════════════════════════════
+      document.addEventListener('DOMContentLoaded', async () => {
+        updateWelcomeMessage(); // ✅ أول حاجة
+        await loadWarehouses();
+      });
+
+      // ═══════════════════════════════════════
+      // INITIALIZE DEFAULT WAREHOUSES
+      // ═══════════════════════════════════════
+      async function initializeDefaultWarehouses() {
+        const grid = document.getElementById('warehousesGrid');
+        grid.innerHTML = `
+          <div class="loading">
+            <div class="spinner"></div>
+          </div>
+        `;
+
+        const defaultWarehouses = [
+          {
+            name: 'الأجهزة',
+            type: 'devices',
+            icon: '📱',
+            description: 'مخزن الموبايلات والأجهزة الإلكترونية',
+            color: '#10b981',
+            target_page: 'inventory.html'
+          },
+          {
+            name: 'الإكسسوارات',
+            type: 'accessories',
+            icon: '🎧',
+            description: 'مخزن إكسسوارات الموبايل',
+            color: '#8b5cf6',
+            target_page: 'accessories.html'
+          }
+        ];
+
+        try {
+          for (const warehouse of defaultWarehouses) {
+            const response = await dbFetch('warehouses', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(warehouse)
+            });
+
+            if (!response.ok) {
+              throw new Error(`فشل في إضافة ${warehouse.name}`);
+            }
+          }
+
+          showNotification('success', 'تم إضافة المخازن الافتراضية بنجاح! ✅');
+          await loadWarehouses();
+        } catch (error) {
+          console.error('Error initializing warehouses:', error);
+          showNotification('error', error.message || 'حدث خطأ في إضافة المخازن');
+          await loadWarehouses();
+        }
+      }
+
+      // ═══════════════════════════════════════
+      // LOAD WAREHOUSES
+      // ═══════════════════════════════════════
+      async function loadWarehouses() {
+        const grid = document.getElementById('warehousesGrid');
+        
+        try {
+          const response = await dbFetch('warehouses');
+
+          if (!response.ok) {
+            throw new Error('فشل في تحميل المخازن');
+          }
+
+          const data = await response.json();
+          console.log('[DEBUG] API Response:', data);
+          const warehouses = data.warehouses || [];
+          console.log('[DEBUG] Warehouses count:', warehouses.length);
+
+          // Update header stats
+          updateHeaderStats(warehouses);
+
+          if (warehouses.length === 0) {
+            grid.innerHTML = `
+              <div class="empty-state">
+                <div class="empty-icon">📦</div>
+                <div class="empty-text arabic-text">لا توجد مخازن في قاعدة البيانات</div>
+                <p style="color: var(--text-secondary); font-size: 14px; margin: 16px 0;">
+                  يمكنك إضافة المخازن الافتراضية أو إنشاء مخزن جديد
+                </p>
+                <div style="display: flex; gap: 12px; justify-content: center;">
+                  <button class="add-warehouse-btn" onclick="initializeDefaultWarehouses()" style="background: linear-gradient(135deg, var(--success) 0%, #059669 100%);">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <path d="M12 5v14M5 12h14"/>
+                    </svg>
+                    <span class="arabic-text">إضافة المخازن الافتراضية</span>
+                  </button>
+                  <button class="add-warehouse-btn" onclick="openAddWarehouseModal()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                      <line x1="12" y1="5" x2="12" y2="19"/>
+                      <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    <span class="arabic-text">إضافة مخزن مخصص</span>
+                  </button>
+                </div>
+              </div>
+            `;
+            return;
+          }
+
+          grid.innerHTML = warehouses.map(warehouse => createWarehouseCard(warehouse)).join('');
+        } catch (error) {
+          console.error('Error loading warehouses:', error);
+          grid.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-icon">⚠️</div>
+              <div class="empty-text arabic-text">حدث خطأ في تحميل المخازن</div>
+            </div>
+          `;
+        }
+      }
+
+      // ═══════════════════════════════════════
+      // UPDATE HEADER STATS
+      // ═══════════════════════════════════════
+      function updateHeaderStats(warehouses) {
+        const warehousesCount = warehouses.length;
+        let totalItems = 0;
+        let totalValue = 0;
+
+        warehouses.forEach(warehouse => {
+          totalItems += warehouse.items_count || 0;
+          totalValue += warehouse.total_value || 0;
+        });
+
+        const statWarehousesCount = document.getElementById('statWarehousesCount');
+        const statTotalItems = document.getElementById('statTotalItems');
+        const statTotalValue = document.getElementById('statTotalValue');
+
+        if (statWarehousesCount) {
+          statWarehousesCount.textContent = warehousesCount;
+          statWarehousesCount.classList.remove('loading');
+        }
+
+        if (statTotalItems) {
+          statTotalItems.textContent = totalItems.toLocaleString('en-US');
+          statTotalItems.classList.remove('loading');
+        }
+
+        if (statTotalValue) {
+          statTotalValue.textContent = formatCurrency(totalValue);
+          statTotalValue.classList.remove('loading');
+        }
+
+        console.log('[STATS] Warehouses:', warehousesCount, '| Items:', totalItems, '| Value:', totalValue);
+      }
+
+      // ═══════════════════════════════════════
+      // CREATE WAREHOUSE CARD
+      // ═══════════════════════════════════════
+      function createWarehouseCard(warehouse) {
+        const itemsCount = warehouse.items_count || 0;
+        const totalQuantity = warehouse.total_quantity || 0;
+        const totalValue = warehouse.total_value || 0;
+        const isStorageOnly = warehouse.is_storage_only || warehouse.type === 'storage';
+        // المخازن الرئيسية التي لا يمكن حذفها
+        const isMainWarehouse = ['devices', 'accessories', 'repair_parts'].includes(warehouse.type);
+
+        // ✅ تحديد نوع المخزن الفعلي (type للمخازن الرئيسية، storage_type للمخازن التخزينية)
+        const effectiveType = warehouse.type || warehouse.storage_type;
+        const effectiveStorageType = warehouse.storage_type || warehouse.type;
+
+        // Debug log for storage warehouses
+        if (isStorageOnly) {
+          console.log('[WAREHOUSE-CARD] Storage warehouse:', {
+            id: warehouse.id,
+            name: warehouse.name,
+            type: warehouse.type,
+            storage_type: warehouse.storage_type,
+            is_storage_only: warehouse.is_storage_only,
+            effectiveType,
+            effectiveStorageType
+          });
+        }
+
+        // تحديد الـ routes بناءً على نوع المخزن (للاستخدام مع SPA)
+        let inventoryRoute = '';
+        let salesRoute = '';
+        let purchasesRoute = '';
+
+        // الأجهزة لها صفحات خاصة
+        if (effectiveType === 'devices' || effectiveStorageType === 'devices') {
+          inventoryRoute = 'inventory';
+          salesRoute = 'sales';
+          purchasesRoute = 'purchases';
+        }
+        // قطع غيار الصيانة (المخازن الرئيسية والتخزينية)
+        else if (effectiveType === 'repair_parts' || effectiveStorageType === 'spare_parts' || effectiveStorageType === 'repair_parts') {
+          inventoryRoute = 'repair-parts';  // صفحة قطع الغيار
+          salesRoute = 'repair-parts-sales';
+          purchasesRoute = 'repair-parts-purchases';
+        }
+        // الأكسسوارات والمخازن المخصصة تستخدم نفس الصفحات
+        else {
+          inventoryRoute = 'accessories';  // أو warehouse-inventory مع params
+          salesRoute = 'accessory-sales';
+          purchasesRoute = 'accessory-purchases';
+        }
+
+        // حساب تنبيهات المخزون (يمكن إضافتها لاحقاً من API)
+        const lowStockItems = 0; // TODO: إضافة من API
+
+        // شارة مخزن التخزين مع نوع البضاعة
+        const storageTypeLabels = {
+          'devices': '📱 أجهزة',
+          'accessories': '🎧 إكسسوارات',
+          'spare_parts': '🔧 قطع غيار',
+          'repair_parts': '🔧 قطع غيار',
+          'mixed': '📦 مختلط'
+        };
+        const storageLabel = storageTypeLabels[warehouse.storage_type] || '📦 تخزين';
+
+        const storageBadge = isStorageOnly ? `
+          <div style="position: absolute; top: 8px; left: 8px; background: linear-gradient(135deg, var(--purple), var(--pink)); color: white; padding: 4px 10px; border-radius: 20px; font-size: 10px; font-weight: 700;">
+            ${storageLabel}
+          </div>
+        ` : '';
+
+        // أزرار موحدة لجميع المخازن
+        const storageActions = `
+          <div class="warehouse-actions">
+            <!-- زر فتح المخزن -->
+            ${isStorageOnly ? `
+              <button onclick="openWarehouseInventory(${warehouse.id}, '${warehouse.name}', '${effectiveStorageType || 'mixed'}')" class="action-btn primary">
+            ` : `
+              <button onclick="navigateToRoute('${inventoryRoute}')" class="action-btn primary">
+            `}
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+              <span class="arabic-text">فتح المخزن</span>
+            </button>
+
+            <!-- زر التحويل -->
+            <button onclick="openTransferModal(${warehouse.id}, '${warehouse.name}')" class="action-btn transfer" title="تحويل بين المخازن">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M7 16V4m0 0L3 8m4-4l4 4"/>
+                <path d="M17 8v12m0 0l4-4m-4 4l-4-4"/>
+              </svg>
+              <span class="arabic-text">تحويل</span>
+            </button>
+
+            <!-- زر التعديل -->
+            <button onclick="editWarehouse(${warehouse.id})" class="action-btn secondary" title="تعديل">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+            </button>
+
+            <!-- زر تصدير Excel -->
+            <button onclick="exportWarehouseToExcel(${warehouse.id}, '${warehouse.name}', '${effectiveStorageType}')" class="action-btn excel-export" title="تصدير Excel">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="7 10 12 15 17 10"/>
+                <line x1="12" y1="15" x2="12" y2="3"/>
+              </svg>
+            </button>
+
+            <!-- زر استيراد Excel -->
+            <button onclick="openImportModal(${warehouse.id}, '${warehouse.name}', '${effectiveStorageType}')" class="action-btn excel-import" title="استيراد Excel">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+            </button>
+
+            <!-- زر الحذف - للمخازن غير الأساسية فقط -->
+            ${!isMainWarehouse ? `
+              <button onclick="deleteWarehouse(${warehouse.id}, '${warehouse.name}')" class="action-btn danger" title="حذف">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"/>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>
+                </svg>
+              </button>
+            ` : ''}
+          </div>
+        `;
+
+        return `
+          <div class="warehouse-card" draggable="true" data-warehouse-id="${warehouse.id}" style="--card-color: ${warehouse.color || '#3b82f6'}; position: relative;">
+            <div class="drag-handle" title="اسحب لإعادة الترتيب">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="9" cy="5" r="1"/><circle cx="9" cy="12" r="1"/><circle cx="9" cy="19" r="1"/>
+                <circle cx="15" cy="5" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="19" r="1"/>
+              </svg>
+            </div>
+            ${storageBadge}
+            <div class="warehouse-header">
+              <div class="warehouse-icon">${warehouse.icon || '📦'}</div>
+              <div class="warehouse-info">
+                <div class="warehouse-name arabic-text">${warehouse.name}</div>
+                <div class="warehouse-description arabic-text">${warehouse.description || 'لا يوجد وصف'}</div>
+              </div>
+            </div>
+
+            <div class="warehouse-stats">
+              <div class="stat-box">
+                <div class="stat-label arabic-text">عدد الأصناف</div>
+                <div class="stat-value">${itemsCount.toLocaleString('en-US')}</div>
+              </div>
+              <div class="stat-box">
+                <div class="stat-label arabic-text">الكمية الإجمالية</div>
+                <div class="stat-value">${totalQuantity.toLocaleString('en-US')}</div>
+              </div>
+              <div class="stat-box" style="grid-column: 1 / -1;">
+                <div class="stat-label arabic-text">القيمة الإجمالية</div>
+                <div class="stat-value">${formatCurrency(totalValue)}</div>
+              </div>
+            </div>
+
+            ${lowStockItems > 0 ? `
+              <div style="background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.3); border-radius: 8px; padding: 10px; margin-bottom: 12px; text-align: center;">
+                <div style="font-size: 12px; color: var(--warning);">
+                  ⚠️ <span class="arabic-text">${lowStockItems} صنف منخفض المخزون</span>
+                </div>
+              </div>
+            ` : ''}
+
+            ${storageActions}
+          </div>
+        `;
+      }
+
+      // ═══════════════════════════════════════
+      // STOCKTAKE NAVIGATION
+      // ═══════════════════════════════════════
+      function openStocktakePage() {
+        console.log('[WAREHOUSES] Opening stocktake page...');
+        if (window.parent && window.parent.router) {
+          window.parent.router.navigate('stocktake');
+        } else {
+          window.location.href = 'stocktake.html';
+        }
+      }
+
+      // ═══════════════════════════════════════
+      // MODAL FUNCTIONS
+      // ═══════════════════════════════════════
+      function openAddWarehouseModal() {
+        document.getElementById('addWarehouseModal').classList.add('show');
+        document.getElementById('addWarehouseForm').reset();
+        updateColorPreview('#3b82f6');
+      }
+
+      function closeAddWarehouseModal() {
+        document.getElementById('addWarehouseModal').classList.remove('show');
+      }
+
+      function updateColorPreview(color) {
+        document.getElementById('colorPreview').style.background = color;
+        document.getElementById('colorInput').value = color;
+        document.getElementById('colorText').value = color;
+      }
+
+      // ═══════════════════════════════════════
+      // ADD WAREHOUSE
+      // ═══════════════════════════════════════
+      // تحديث الأيقونة تلقائياً حسب نوع المخزن
+      function updateWarehouseIcon(storageType) {
+        const iconInput = document.querySelector('input[name="icon"]');
+        const icons = {
+          'devices': '📱',
+          'accessories': '🎧',
+          'spare_parts': '🔧',
+          'mixed': '📦'
+        };
+        if (iconInput && icons[storageType]) {
+          iconInput.value = icons[storageType];
+        }
+      }
+
+      async function handleAddWarehouse(event) {
+        event.preventDefault();
+
+        const formData = new FormData(event.target);
+        const storageType = formData.get('storage_type');
+
+        // تحديد target_page حسب نوع المخزن
+        let targetPage = 'warehouse-inventory.html';
+        if (storageType === 'devices') {
+          targetPage = 'inventory.html'; // صفحة أجهزة المخزن (نفس صفحة المخزن الرئيسي مع warehouse_id)
+        } else if (storageType === 'accessories') {
+          targetPage = 'warehouse-accessories.html'; // صفحة إكسسوارات المخزن
+        } else if (storageType === 'spare_parts' || storageType === 'repair_parts') {
+          targetPage = 'repair-parts.html'; // صفحة قطع الغيار
+        }
+
+        const data = {
+          name: formData.get('name'),
+          icon: formData.get('icon') || '📦',
+          description: formData.get('description') || '',
+          location: formData.get('location') || '',
+          manager: formData.get('manager') || '',
+          color: formData.get('color') || '#3b82f6',
+          type: 'storage',  // مخزن تخزين - لا يرتبط بنقطة البيع
+          storage_type: storageType,  // نوع البضاعة في المخزن
+          target_page: targetPage,
+          is_storage_only: 1  // علامة للتمييز
+        };
+
+        console.log('[DEBUG] Adding warehouse:', data);
+
+        try {
+          const response = await dbFetch('warehouses', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+          });
+
+          if (!response.ok) {
+            let errorMessage = 'فشل في إضافة المخزن';
+            // Clone الـ response لقراءته مرة أخرى إذا فشلت JSON
+            const clonedResponse = response.clone();
+            try {
+              // محاولة قراءة كـ JSON أولاً
+              const errorData = await response.json();
+              errorMessage = errorData.error || errorData.message || errorMessage;
+            } catch (e) {
+              // إذا فشل JSON، محاولة قراءة كـ text من الـ cloned response
+              try {
+                const errorText = await clonedResponse.text();
+                errorMessage = errorText || errorMessage;
+              } catch (e2) {
+                // إذا فشل كلاهما، استخدام الرسالة الافتراضية
+                errorMessage = `خطأ ${response.status}: ${response.statusText}`;
+              }
+            }
+            console.error('[API] Error:', errorMessage);
+            throw new Error(errorMessage);
+          }
+
+          const result = await response.json();
+          console.log('[DEBUG] Add warehouse result:', result);
+          
+          // إغلاق المودال وإعادة تحميل المخازن
+          closeAddWarehouseModal();
+          await loadWarehouses();
+          
+          // إظهار رسالة نجاح
+          showNotification('success', result.message || 'تم إضافة المخزن بنجاح ✅');
+        } catch (error) {
+          console.error('[ERROR] Adding warehouse:', error);
+          showNotification('error', error.message || 'حدث خطأ في إضافة المخزن');
+        }
+      }
+
+      // ═══════════════════════════════════════
+      // UTILITY FUNCTIONS
+      // ═══════════════════════════════════════
+      function formatCurrency(amount) {
+        return new Intl.NumberFormat('en-US', {
+          style: 'decimal',
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 0
+        }).format(amount) + ' EGP';
+      }
+
+      function updateWelcomeMessage() {
+        // تحميل إعدادات الشركة من localStorage
+        const settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
+        
+        // دالة للتحقق إذا النص عربي
+        const isArabic = (text) => /[\u0600-\u06FF]/.test(text);
+        
+        // تحديث اسم الشركة في الهيدر
+        const brandElement = document.querySelector('.brand');
+        if (brandElement && settings.companyName) {
+          brandElement.textContent = settings.companyName;
+          
+          // إضافة كلاس النص العربي إذا كان النص عربي
+          if (isArabic(settings.companyName)) {
+            brandElement.classList.add('arabic-text');
+            brandElement.style.letterSpacing = '0';
+          } else {
+            brandElement.classList.remove('arabic-text');
+          }
+        }
+        
+        // تحديث اللوجو
+        const logoContainer = document.querySelector('.logo');
+        if (logoContainer && settings.companyLogo) {
+          // إنشاء عنصر صورة للوجو
+          logoContainer.innerHTML = `<img src="${settings.companyLogo}" alt="Logo" style="width: 100%; height: 100%; object-fit: contain; border-radius: 8px;" />`;
+        }
+      }
+
+      // ═══════════════════════════════════════
+      // EDIT & DELETE WAREHOUSE
+      // ═══════════════════════════════════════
+
+      // فتح مودال التعديل وتحميل بيانات المخزن
+      async function editWarehouse(id) {
+        try {
+          // جلب بيانات المخزن
+          const response = await dbFetch(`warehouses/${id}`);
+          if (!response.ok) {
+            const errData = await response.json();
+            throw new Error(errData.error || 'فشل في جلب بيانات المخزن');
+          }
+
+          const data = await response.json();
+          const warehouse = data.warehouse;
+
+          // تعبئة النموذج بالبيانات
+          document.getElementById('editWarehouseId').value = warehouse.id;
+          document.getElementById('editWarehouseName').value = warehouse.name || '';
+          document.getElementById('editWarehouseIcon').value = warehouse.icon || '📦';
+          document.getElementById('editWarehouseDescription').value = warehouse.description || '';
+
+          // تحديث اللون
+          const color = warehouse.color || '#3b82f6';
+          updateEditColorPreview(color);
+
+          // فتح المودال
+          document.getElementById('editWarehouseModal').classList.add('show');
+        } catch (error) {
+          console.error('[EDIT] Error loading warehouse:', error);
+          showNotification('error', error.message || 'فشل في تحميل بيانات المخزن');
+        }
+      }
+
+      // إغلاق مودال التعديل
+      function closeEditWarehouseModal() {
+        document.getElementById('editWarehouseModal').classList.remove('show');
+      }
+
+      // تحديث معاينة اللون في مودال التعديل
+      function updateEditColorPreview(color) {
+        document.getElementById('editColorPreview').style.background = color;
+        document.getElementById('editColorInput').value = color;
+        document.getElementById('editColorText').value = color;
+      }
+
+      // حفظ التعديلات
+      async function handleEditWarehouse(event) {
+        event.preventDefault();
+
+        const form = event.target;
+        const id = document.getElementById('editWarehouseId').value;
+
+        const data = {
+          name: form.name.value.trim(),
+          icon: form.icon.value.trim() || '📦',
+          description: form.description.value.trim(),
+          color: form.color.value
+        };
+
+        if (!data.name) {
+          showNotification('error', 'يرجى إدخال اسم المخزن');
+          return;
+        }
+
+        try {
+          const response = await dbFetch(`warehouses/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+          });
+
+          if (!response.ok) {
+            const errData = await response.json();
+            throw new Error(errData.error || 'فشل في تعديل المخزن');
+          }
+
+          showNotification('success', 'تم تعديل المخزن بنجاح');
+          closeEditWarehouseModal();
+          loadWarehouses(); // إعادة تحميل القائمة
+        } catch (error) {
+          console.error('[EDIT] Error updating warehouse:', error);
+          showNotification('error', error.message || 'فشل في تعديل المخزن');
+        }
+      }
+
+      async function deleteWarehouse(id, name) {
+        if (!confirm(`هل أنت متأكد من حذف المخزن "${name}"؟\n\nملاحظة: لا يمكن حذف مخزن يحتوي على أصناف نشطة`)) {
+          return;
+        }
+
+        try {
+          const response = await dbFetch(`warehouses/${id}`, {
+            method: 'DELETE'
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(errorText || 'فشل في حذف المخزن');
+          }
+
+          const result = await response.json();
+          showNotification('success', result.message || 'تم حذف المخزن بنجاح');
+          await loadWarehouses();
+        } catch (error) {
+          console.error('[ERROR] Deleting warehouse:', error);
+          showNotification('error', error.message || 'حدث خطأ في حذف المخزن');
+        }
+      }
+
+      function showNotification(type, message) {
+        // إنشاء notification بسيط ومحسّن
+        let bgColor = 'linear-gradient(135deg, var(--danger) 0%, #dc2626 100%)';
+        let icon = '⚠️';
+        if (type === 'success') {
+          bgColor = 'linear-gradient(135deg, var(--success) 0%, #059669 100%)';
+          icon = '✅';
+        } else if (type === 'info') {
+          bgColor = 'linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)';
+          icon = 'ℹ️';
+        }
+
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+          position: fixed;
+          top: 20px;
+          left: 50%;
+          transform: translateX(-50%);
+          background: ${bgColor};
+          color: white;
+          padding: 16px 24px;
+          border-radius: 12px;
+          box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+          z-index: 10000;
+          font-weight: 600;
+          font-size: 14px;
+          animation: slideDown 0.3s ease;
+          max-width: 90%;
+          text-align: center;
+        `;
+        notification.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <span style="font-size: 20px;">${icon}</span>
+            <span class="arabic-text">${message}</span>
+          </div>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+          notification.style.animation = 'fadeOut 0.3s ease';
+          setTimeout(() => {
+            document.body.removeChild(notification);
+          }, 300);
+        }, 3000);
+      }
+
+      // ═══════════════════════════════════════
+      // EXCEL EXPORT/IMPORT FUNCTIONS
+      // ═══════════════════════════════════════
+      let selectedImportFile = null;
+
+      // تصدير المخزن لـ Excel
+      async function exportWarehouseToExcel(warehouseId, warehouseName, warehouseType) {
+        try {
+          showNotification('info', 'جاري تصدير البيانات...');
+
+          // جلب بيانات المخزن
+          let items = [];
+          let headers = [];
+          let filename = '';
+
+          if (warehouseType === 'devices') {
+            const response = await dbFetch(`inventory?warehouse_id=${warehouseId}`);
+            const data = await response.json();
+            items = Array.isArray(data) ? data : (data.devices || data.inventory || []);
+            headers = ['نوع الجهاز', 'الموديل', 'اللون', 'الـ IMEI', 'السيريال نمبر', 'سعة التخزين', 'حالة البطارية', 'سعر الشراء', 'سعر البيع', 'الحالة', 'ملاحظات'];
+            items = items.map(d => [
+              d.type || '', d.model || '', d.color || '', d.imei || '', d.serial_number || '',
+              d.storage || '', d.battery_health || '', d.purchase_cost || 0, d.sale_price || 0,
+              d.status || '', d.notes || ''
+            ]);
+            filename = `${warehouseName}_devices`;
+          } else if (warehouseType === 'accessories') {
+            const response = await dbFetch(`accessories?warehouse_id=${warehouseId}`);
+            const data = await response.json();
+            items = data.accessories || [];
+            headers = ['اسم الصنف', 'الفئة', 'الماركة', 'الباركود', 'SKU', 'سعر الشراء', 'سعر البيع', 'الكمية', 'الحد الأدنى', 'ملاحظات'];
+            items = items.map(a => [
+              a.name || '', a.category || '', a.brand || '', a.barcode || '', a.sku || '',
+              a.purchase_price || 0, a.sell_price || a.sale_price || 0, a.quantity || 0,
+              a.min_stock || 0, a.notes || ''
+            ]);
+            filename = `${warehouseName}_accessories`;
+          } else if (warehouseType === 'repair_parts' || warehouseType === 'spare_parts') {
+            const response = await dbFetch(`repair-parts?warehouse_id=${warehouseId}`);
+            const data = await response.json();
+            items = Array.isArray(data) ? data : (data.parts || []);
+            headers = ['اسم القطعة', 'الفئة', 'SKU', 'سعر الشراء', 'سعر البيع', 'الكمية', 'الحد الأدنى', 'ملاحظات'];
+            items = items.map(p => [
+              p.name || '', p.category || '', p.sku || '', p.unit_cost || 0,
+              p.sell_price || 0, p.qty || 0, p.min_qty || 0, p.notes || ''
+            ]);
+            filename = `${warehouseName}_repair_parts`;
+          } else {
+            showNotification('error', 'نوع المخزن غير مدعوم للتصدير');
+            return;
+          }
+
+          // إنشاء CSV content
+          const BOM = '\uFEFF'; // لدعم العربية في Excel
+          let csvContent = BOM + headers.join(',') + '\n';
+          items.forEach(row => {
+            csvContent += row.map(cell => {
+              // إحاطة النصوص بعلامات اقتباس لتجنب مشاكل الفواصل
+              const cellStr = String(cell).replace(/"/g, '""');
+              return `"${cellStr}"`;
+            }).join(',') + '\n';
+          });
+
+          // تحميل الملف
+          const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `${filename}_${new Date().toISOString().split('T')[0]}.csv`;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+
+          showNotification('success', `تم تصدير ${items.length} صنف بنجاح`);
+        } catch (error) {
+          console.error('[EXPORT] Error:', error);
+          showNotification('error', 'فشل في تصدير البيانات: ' + error.message);
+        }
+      }
+
+      // فتح modal الاستيراد
+      function openImportModal(warehouseId, warehouseName, warehouseType) {
+        document.getElementById('importTargetWarehouse').value = warehouseName;
+        document.getElementById('importWarehouseId').value = warehouseId;
+        document.getElementById('importWarehouseType').value = warehouseType;
+        document.getElementById('selectedFileInfo').style.display = 'none';
+        document.getElementById('importFileInput').value = '';
+        document.getElementById('executeImportBtn').disabled = true;
+        selectedImportFile = null;
+        document.getElementById('importExcelModal').classList.add('show');
+      }
+
+      function closeImportModal() {
+        document.getElementById('importExcelModal').classList.remove('show');
+        selectedImportFile = null;
+      }
+
+      // معالجة اختيار الملف
+      function handleFileSelect(event) {
+        const file = event.target.files[0];
+        if (file) {
+          processSelectedFile(file);
+        }
+      }
+
+      function handleFileDrop(event) {
+        event.preventDefault();
+        event.target.style.borderColor = 'var(--border-color)';
+        event.target.style.background = 'transparent';
+        const file = event.dataTransfer.files[0];
+        if (file) {
+          processSelectedFile(file);
+        }
+      }
+
+      function processSelectedFile(file) {
+        const validTypes = ['.csv', '.xlsx', '.xls'];
+        const extension = '.' + file.name.split('.').pop().toLowerCase();
+        if (!validTypes.includes(extension)) {
+          showNotification('error', 'نوع الملف غير مدعوم. يرجى اختيار ملف CSV أو Excel');
+          return;
+        }
+        selectedImportFile = file;
+        document.getElementById('selectedFileName').textContent = file.name;
+        document.getElementById('selectedFileInfo').style.display = 'block';
+        document.getElementById('executeImportBtn').disabled = false;
+      }
+
+      // تحميل القالب
+      function downloadTemplate() {
+        const warehouseType = document.getElementById('importWarehouseType').value;
+        let templateContent = '';
+        let templateName = '';
+
+        if (warehouseType === 'devices') {
+          templateName = 'devices_template.csv';
+          templateContent = `Device Type,Model,Color,IMEI,Serial Number,Storage,Battery Health,Purchase Price,Sell Price,Status,Notes
+iPhone,14 Pro Max,Black,123456789012345,ABC123XYZ,256GB,95%,25000,30000,in_stock,New device
+Samsung,Galaxy S23,White,987654321098765,XYZ789ABC,128GB,100%,18000,22000,in_stock,`;
+        } else if (warehouseType === 'accessories') {
+          templateName = 'accessories_template.csv';
+          templateContent = `Name,Category,SKU,Barcode,Purchase Price,Sell Price,Quantity,Min Quantity,Notes
+iPhone 14 Case,Cases,ACC-IP14-CASE,123456789,50,100,20,5,Black color
+USB-C Cable,Cables,ACC-USBC-1M,987654321,25,50,50,10,1 meter`;
+        } else if (warehouseType === 'repair_parts' || warehouseType === 'spare_parts') {
+          templateName = 'repair_parts_template.csv';
+          templateContent = `Part Name,Category,SKU,Purchase Price,Sell Price,Quantity,Min Quantity,Notes
+iPhone 14 Pro Screen,Screens,SCR-IP14P,1500,2500,10,3,Original
+Samsung S23 Battery,Batteries,BAT-SS23,300,500,20,5,`;
+        } else {
+          showNotification('error', 'نوع المخزن غير مدعوم');
+          return;
+        }
+
+        // إنشاء وتحميل الملف مباشرة
+        const BOM = '\uFEFF';
+        const blob = new Blob([BOM + templateContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = templateName;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        showNotification('success', 'تم تحميل القالب بنجاح');
+      }
+
+      // تنفيذ الاستيراد
+      async function executeImport() {
+        if (!selectedImportFile) {
+          showNotification('error', 'يرجى اختيار ملف أولاً');
+          return;
+        }
+
+        const warehouseId = document.getElementById('importWarehouseId').value;
+        const warehouseType = document.getElementById('importWarehouseType').value;
+
+        try {
+          document.getElementById('executeImportBtn').disabled = true;
+          document.getElementById('executeImportBtn').innerHTML = '<span class="arabic-text">جاري الاستيراد...</span>';
+
+          const text = await selectedImportFile.text();
+          const rows = parseCSV(text);
+
+          if (rows.length < 2) {
+            throw new Error('الملف فارغ أو لا يحتوي على بيانات');
+          }
+
+          const headers = rows[0];
+          const dataRows = rows.slice(1).filter(row => row.some(cell => cell.trim()));
+
+          // تجهيز كل الأصناف
+          const items = [];
+          for (const row of dataRows) {
+            const item = mapRowToItem(headers, row, warehouseType);
+            if (item) {
+              items.push(item);
+            }
+          }
+
+          if (items.length === 0) {
+            throw new Error('لا توجد بيانات صالحة للاستيراد');
+          }
+
+          // تحديد الـ endpoint حسب النوع
+          let bulkEndpoint;
+          if (warehouseType === 'accessories') {
+            bulkEndpoint = 'accessories-bulk-import';
+          } else if (warehouseType === 'repair_parts' || warehouseType === 'spare_parts') {
+            bulkEndpoint = 'repair-parts-bulk-import';
+          } else if (warehouseType === 'devices') {
+            // الأجهزة تستخدم inventory-bulk-add الموجود مسبقاً
+            // لكنه يحتاج بنية مختلفة، فنستخدم الطريقة القديمة
+            let successCount = 0;
+            let errorCount = 0;
+            for (const item of items) {
+              try {
+                item.warehouse_id = warehouseId;
+                await saveImportedItem(item, warehouseType);
+                successCount++;
+              } catch (e) {
+                errorCount++;
+              }
+            }
+            closeImportModal();
+            await loadWarehouses();
+            showNotification('success', `تم استيراد ${successCount} صنف بنجاح${errorCount > 0 ? ` (${errorCount} أخطاء)` : ''}`);
+            return;
+          }
+
+          // إرسال Bulk request
+          const payload = { items, warehouse_id: parseInt(warehouseId) };
+          const response = await dbFetch(bulkEndpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error || 'فشل في الاستيراد');
+          }
+
+          const result = await response.json();
+
+          closeImportModal();
+          await loadWarehouses();
+
+          if (result.added > 0) {
+            let msg = `تم استيراد ${result.added} صنف بنجاح`;
+            if (result.failed > 0) msg += ` (${result.failed} فشل)`;
+            showNotification('success', msg);
+
+            if (result.errors && result.errors.length > 0) {
+              const errorList = result.errors.slice(0, 5).map(e =>
+                `سطر ${e.index + 2}: ${e.name || 'بدون اسم'} - ${e.error}`
+              ).join('\n');
+              console.warn('[IMPORT] Errors:', errorList);
+            }
+          } else {
+            showNotification('error', 'فشل في استيراد البيانات');
+          }
+
+        } catch (error) {
+          console.error('[IMPORT] Error:', error);
+          showNotification('error', 'فشل في استيراد البيانات: ' + error.message);
+        } finally {
+          document.getElementById('executeImportBtn').disabled = false;
+          document.getElementById('executeImportBtn').innerHTML = '<span class="arabic-text">استيراد البيانات</span>';
+        }
+      }
+
+      // تحليل CSV
+      function parseCSV(text) {
+        const lines = text.split(/\r?\n/);
+        return lines.map(line => {
+          const result = [];
+          let current = '';
+          let inQuotes = false;
+
+          for (let i = 0; i < line.length; i++) {
+            const char = line[i];
+            if (char === '"') {
+              inQuotes = !inQuotes;
+            } else if (char === ',' && !inQuotes) {
+              result.push(current.trim());
+              current = '';
+            } else {
+              current += char;
+            }
+          }
+          result.push(current.trim());
+          return result;
+        });
+      }
+
+      // تحويل الصف لكائن حسب نوع المخزن
+      function mapRowToItem(headers, row, warehouseType) {
+        const item = {};
+
+        if (warehouseType === 'devices') {
+          item.type = row[0] || '';
+          item.model = row[1] || '';
+          item.color = row[2] || '';
+          item.imei = row[3] || '';
+          item.serial_number = row[4] || '';
+          item.storage = row[5] || '';
+          item.battery_health = row[6] || '';
+          item.purchase_cost = parseFloat(row[7]) || 0;
+          item.sale_price = parseFloat(row[8]) || 0;
+          item.status = row[9] || 'in_stock';
+          item.notes = row[10] || '';
+          if (!item.type && !item.model) return null;
+        } else if (warehouseType === 'accessories') {
+          item.name = row[0] || '';
+          item.category = row[1] || '';
+          item.brand = row[2] || '';
+          item.barcode = row[3] || '';
+          item.sku = row[4] || '';
+          item.purchase_price = parseFloat(row[5]) || 0;
+          item.sell_price = parseFloat(row[6]) || 0;
+          item.quantity = parseInt(row[7]) || 0;
+          item.min_stock = parseInt(row[8]) || 0;
+          item.notes = row[9] || '';
+          if (!item.name) return null;
+        } else if (warehouseType === 'repair_parts' || warehouseType === 'spare_parts') {
+          item.name = row[0] || '';
+          item.category = row[1] || '';
+          item.sku = row[2] || '';
+          item.unit_cost = parseFloat(row[3]) || 0;
+          item.sell_price = parseFloat(row[4]) || 0;
+          item.qty = parseInt(row[5]) || 0;
+          item.min_qty = parseInt(row[6]) || 0;
+          item.notes = row[7] || '';
+          if (!item.name) return null;
+        }
+
+        return item;
+      }
+
+      // حفظ الصنف المستورد
+      async function saveImportedItem(item, warehouseType) {
+        let endpoint = '';
+
+        if (warehouseType === 'devices') {
+          endpoint = 'inventory';
+        } else if (warehouseType === 'accessories') {
+          endpoint = 'accessories';
+        } else if (warehouseType === 'repair_parts' || warehouseType === 'spare_parts') {
+          endpoint = 'repair-parts';
+        }
+
+        const response = await dbFetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(item)
+        });
+
+        if (!response.ok) {
+          throw new Error('فشل في حفظ الصنف');
+        }
+      }
+
+      // Close modal on Escape key
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+          closeAddWarehouseModal();
+          closeTransferModal();
+          closeImportModal();
+        }
+      });
+
+      // Close modal on background click
+      document.getElementById('addWarehouseModal').addEventListener('click', (e) => {
+        if (e.target.id === 'addWarehouseModal') {
+          closeAddWarehouseModal();
+        }
+      });
+
+      document.getElementById('editWarehouseModal').addEventListener('click', (e) => {
+        if (e.target.id === 'editWarehouseModal') {
+          closeEditWarehouseModal();
+        }
+      });
+
+      document.getElementById('importExcelModal').addEventListener('click', (e) => {
+        if (e.target.id === 'importExcelModal') {
+          closeImportModal();
+        }
+      });
+
+      // ═══════════════════════════════════════
+      // TRANSFER FUNCTIONS
+      // ═══════════════════════════════════════
+      let currentTransferWarehouse = null;
+      let allWarehouses = [];
+      let currentWarehouseType = null; // نوع المخزن الحالي للتحويل
+
+      function openWarehouseInventory(warehouseId, warehouseName, storageType) {
+        console.log('[OPEN-WAREHOUSE] Called with:', { warehouseId, warehouseName, storageType });
+
+        // فتح صفحة المخزن حسب نوعه
+        // الافتراضي: صفحة الإكسسوارات الجديدة (للمخازن القديمة أو mixed أو null)
+        let targetPage = 'storage-accessories';
+        let targetUrl = 'warehouse-accessories.html';
+
+        // إذا كان مخزن أجهزة، افتح صفحة الأجهزة
+        if (storageType === 'devices') {
+          targetPage = 'storage-devices';
+          targetUrl = 'storage-devices.html';
+        }
+        // إذا كان مخزن قطع غيار، افتح صفحة قطع الغيار
+        else if (storageType === 'spare_parts' || storageType === 'repair_parts') {
+          targetPage = 'repair-parts';
+          targetUrl = 'repair-parts.html';
+        }
+        // جميع الحالات الأخرى (accessories, mixed, null, storage, undefined)
+        // تستخدم صفحة الإكسسوارات الجديدة (الافتراضي أعلاه)
+
+        console.log('[OPEN-WAREHOUSE] Navigating to:', { targetPage, targetUrl, originalStorageType: storageType });
+
+        // إرسال اسم المخزن مع الـ navigation
+        const params = {
+          warehouse_id: warehouseId,
+          warehouse_name: warehouseName
+        };
+
+        if (window.parent && window.parent.router) {
+          console.log('[OPEN-WAREHOUSE] Using SPA router');
+          window.parent.router.navigate(targetPage, params);
+        } else {
+          console.log('[OPEN-WAREHOUSE] Using direct navigation');
+          window.location.href = `${targetUrl}?warehouse_id=${warehouseId}&warehouse_name=${encodeURIComponent(warehouseName)}`;
+        }
+      }
+
+      async function openTransferModal(warehouseId, warehouseName) {
+        currentTransferWarehouse = { id: warehouseId, name: warehouseName };
+
+        // تحميل معلومات المخزن المصدر
+        try {
+          const warehouseResponse = await dbFetch(`warehouses/${warehouseId}`);
+          if (!warehouseResponse.ok) {
+            throw new Error('فشل تحميل معلومات المخزن');
+          }
+          const warehouseData = await warehouseResponse.json();
+          const sourceWarehouse = warehouseData.warehouse || warehouseData;
+          
+          // تحديد نوع المخزن (type أو storage_type)
+          // المخازن الرئيسية تستخدم type، والمخازن التخزينية تستخدم storage_type
+          const sourceType = sourceWarehouse.type;
+          const sourceStorageType = sourceWarehouse.storage_type;
+          const isStorageOnly = sourceWarehouse.is_storage_only === 1 || sourceType === 'storage' || sourceType === 'custom';
+
+          // للمخزن التخزيني: استخدم storage_type
+          // للمخزن الرئيسي: استخدم type
+          currentWarehouseType = isStorageOnly ? sourceStorageType : sourceType;
+
+          console.log(`[TRANSFER] Source warehouse: type=${sourceType}, storage_type=${sourceStorageType}, isStorageOnly=${isStorageOnly}, currentWarehouseType=${currentWarehouseType}`);
+
+          if (!currentWarehouseType) {
+            showNotification('error', 'نوع المخزن غير محدد');
+            return;
+          }
+
+          // تحميل المخازن للـ dropdown - فلترة حسب نوع المخزن المصدر
+          const response = await dbFetch('warehouses');
+          const data = await response.json();
+          
+          // تحديد النوع الفعلي للمخزن المصدر
+          // إذا كان المخزن تخزيني (type='storage')، استخدم storage_type
+          // إذا كان مخزن رئيسي (type='devices'/'accessories'/'repair_parts')، استخدم type
+          const sourceEffectiveType = (sourceWarehouse.type === 'storage' || sourceWarehouse.is_storage_only === 1) 
+            ? sourceStorageType 
+            : sourceType;
+          
+          // دالة لتوحيد أنواع قطع الغيار (spare_parts = repair_parts)
+          const normalizeType = (type) => {
+            if (type === 'spare_parts' || type === 'repair_parts') return 'repair_parts';
+            return type;
+          };
+
+          allWarehouses = (data.warehouses || []).filter(w => {
+            if (w.id === warehouseId || w.is_active !== 1) return false;
+
+            const targetType = w.type;
+            const targetStorageType = w.storage_type;
+            const isTargetStorageOnly = w.is_storage_only === 1 || w.type === 'storage';
+
+            // تحديد النوع الفعلي للمخزن المستهدف
+            const targetEffectiveType = isTargetStorageOnly ? targetStorageType : targetType;
+
+            // توحيد الأنواع قبل المقارنة
+            const normalizedSource = normalizeType(sourceEffectiveType);
+            const normalizedTarget = normalizeType(targetEffectiveType);
+
+            // المطابقة: يجب أن يكون النوع الفعلي للمخزن المستهدف مطابق للنوع الفعلي للمخزن المصدر
+            const matches = normalizedTarget === normalizedSource;
+
+            console.log(`[TRANSFER] Warehouse ${w.name}: sourceEffectiveType=${sourceEffectiveType}, targetEffectiveType=${targetEffectiveType}, matches=${matches}`);
+            return matches;
+          });
+          
+          console.log(`[TRANSFER] Source warehouse type: ${sourceType || sourceStorageType}`);
+          console.log(`[TRANSFER] Found ${allWarehouses.length} compatible warehouses:`, allWarehouses.map(w => `${w.name} (type: ${w.type}, storage_type: ${w.storage_type})`));
+
+          const targetSelect = document.getElementById('targetWarehouse');
+          if (allWarehouses.length === 0) {
+            targetSelect.innerHTML = '<option value="">لا توجد مخازن من نفس النوع</option>';
+            showNotification('warning', 'لا توجد مخازن من نفس النوع للتحويل');
+          } else {
+            targetSelect.innerHTML = '<option value="">اختر المخزن الوجهة...</option>' +
+              allWarehouses.map(w => `<option value="${w.id}">${w.icon || '📦'} ${w.name}</option>`).join('');
+          }
+
+          // تحديث عنوان الـ Modal
+          document.getElementById('transferModalTitle').textContent = `تحويل من: ${warehouseName}`;
+
+          // إظهار/إخفاء حقل الكمية حسب نوع المخزن
+          // الأجهزة: الكمية دائماً 1 (إخفاء الحقل)
+          // الإكسسوارات وقطع الغيار: الكمية متغيرة (إظهار الحقل)
+          const quantityGroup = document.getElementById('transferQuantityGroup');
+          const quantityInput = document.getElementById('transferQuantity');
+          const isDevicesWarehouse = currentWarehouseType === 'devices';
+          
+          if (quantityGroup) {
+            if (isDevicesWarehouse) {
+              quantityGroup.style.display = 'none';
+              if (quantityInput) {
+                quantityInput.value = 1; // تعيين القيمة الافتراضية
+              }
+            } else {
+              quantityGroup.style.display = 'block';
+            }
+          }
+
+          // تحميل الأصناف المتاحة حسب نوع المخزن (تمرير معلومات المخزن المصدر)
+          await loadWarehouseItems(warehouseId, currentWarehouseType, sourceWarehouse);
+
+          document.getElementById('transferModal').classList.add('show');
+        } catch (error) {
+          console.error('[ERROR] Opening transfer modal:', error);
+          showNotification('error', 'حدث خطأ في فتح نافذة التحويل: ' + error.message);
+        }
+      }
+
+      // متغير لتخزين جميع الأصناف المحملة (للبحث)
+      let allLoadedItems = [];
+
+      async function loadWarehouseItems(warehouseId, warehouseType, sourceWarehouseInfo = null) {
+        const itemSelect = document.getElementById('transferItem');
+        itemSelect.innerHTML = '<option value="">جاري التحميل...</option>';
+
+        try {
+          let items = [];
+          
+          if (warehouseType === 'devices') {
+            // جلب الأجهزة من هذا المخزن
+            // للمخزن الرئيسي: الأجهزة التي warehouse_id IS NULL
+            // للمخزن التخزيني: الأجهزة التي warehouse_id = warehouseId
+            console.log(`[TRANSFER] Loading devices from warehouse ${warehouseId} (type: ${warehouseType})`);
+            
+            // التحقق إذا كان المخزن رئيسي أم تخزيني
+            let warehouseInfo = sourceWarehouseInfo;
+            if (!warehouseInfo) {
+              try {
+                const response = await dbFetch(`warehouses/${warehouseId}`);
+                const data = await response.json();
+                warehouseInfo = data.warehouse || data;
+              } catch (e) {
+                console.error('[ERROR] Failed to fetch warehouse info:', e);
+              }
+            }
+            
+            const isMainWarehouse = warehouseInfo && (warehouseInfo.type === 'devices' && !warehouseInfo.is_storage_only);
+            console.log(`[TRANSFER] Is main warehouse: ${isMainWarehouse}, warehouseInfo:`, warehouseInfo);
+            
+            try {
+              // للمخزن الرئيسي: لا نرسل warehouse_id (أو نرسل null)
+              // للمخزن التخزيني: نرسل warehouse_id
+              const apiUrl = isMainWarehouse 
+                ? `inventory?status=in_stock` // المخزن الرئيسي: جلب الأجهزة بدون warehouse_id
+                : `inventory?warehouse_id=${warehouseId}&status=in_stock`; // المخزن التخزيني
+              
+              console.log(`[TRANSFER] API URL: ${apiUrl}`);
+              const response = await dbFetch(apiUrl);
+              if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`API error: ${response.status} - ${errorText}`);
+              }
+              const data = await response.json();
+              console.log(`[TRANSFER] API response:`, data);
+              const devices = Array.isArray(data) ? data : (data.devices || data.inventory || []);
+              console.log(`[TRANSFER] Found ${devices.length} devices from API`);
+              
+              items = devices
+                .filter(d => {
+                  const status = d.status || '';
+                  const matchesStatus = status === 'in_stock';
+                  
+                  // للمخزن الرئيسي: الأجهزة التي warehouse_id IS NULL أو غير موجود
+                  // للمخزن التخزيني: الأجهزة التي warehouse_id = warehouseId
+                  let matchesWarehouse;
+                  if (isMainWarehouse) {
+                    matchesWarehouse = !d.warehouse_id || d.warehouse_id === null;
+                  } else {
+                    matchesWarehouse = d.warehouse_id && parseInt(d.warehouse_id) === parseInt(warehouseId);
+                  }
+                  
+                  console.log(`[TRANSFER] Device ${d.id}: status=${status}, warehouse_id=${d.warehouse_id}, isMain=${isMainWarehouse}, matchesWarehouse=${matchesWarehouse}`);
+                  return matchesStatus && matchesWarehouse;
+                })
+                .map(d => {
+                  const deviceName = `${d.type || ''} ${d.model || ''}`.trim() || 'جهاز';
+                  console.log('[TRANSFER] Device mapped:', { id: d.id, name: deviceName });
+                  return {
+                    type: 'device',
+                    id: d.id,
+                    name: deviceName,
+                    quantity: 1,
+                    max: 1
+                  };
+                });
+              
+              console.log(`[TRANSFER] Filtered to ${items.length} items for transfer`);
+            } catch (e) {
+              console.error('[ERROR] Loading devices:', e);
+              console.error('[ERROR] Stack:', e.stack);
+              // محاولة بديلة بدون warehouse_id
+              try {
+                console.log(`[TRANSFER] Fallback: Loading all devices and filtering client-side`);
+                const response = await dbFetch(`inventory?status=in_stock`);
+                if (!response.ok) {
+                  throw new Error(`Fallback API error: ${response.status}`);
+                }
+                const data = await response.json();
+                const allDevices = Array.isArray(data) ? data : (data.devices || data.inventory || []);
+                console.log(`[TRANSFER] Fallback: Found ${allDevices.length} total devices`);
+                items = allDevices
+                  .filter(d => {
+                    const status = d.status || '';
+                    const matchesStatus = status === 'in_stock';
+                    const matchesWarehouse = d.warehouse_id && parseInt(d.warehouse_id) === parseInt(warehouseId);
+                    return matchesStatus && matchesWarehouse;
+                  })
+                  .map(d => ({
+                    type: 'device',
+                    id: d.id,
+                    name: `${d.type || ''} ${d.model || ''}`.trim() || 'جهاز',
+                    quantity: 1,
+                    max: 1
+                  }));
+                console.log(`[TRANSFER] Fallback: Filtered to ${items.length} items`);
+              } catch (e2) {
+                console.error('[ERROR] Fallback loading devices failed:', e2);
+                console.error('[ERROR] Stack:', e2.stack);
+                items = [];
+              }
+            }
+            
+          } else if (warehouseType === 'accessories' || warehouseType === 'mixed') {
+            // جلب الإكسسوارات من هذا المخزن
+            const response = await dbFetch(`accessories?warehouse_id=${warehouseId}`);
+            const data = await response.json();
+            const accessories = (data.accessories || []).filter(a => a.quantity > 0);
+            items = accessories.map(a => ({
+              type: 'accessory',
+              id: a.id,
+              name: a.name,
+              quantity: a.quantity,
+              max: a.quantity
+            }));
+
+          } else if (warehouseType === 'repair_parts' || warehouseType === 'spare_parts') {
+            // جلب قطع غيار الصيانة (spare_parts = repair_parts)
+            console.log(`[TRANSFER] Loading repair parts from warehouse ${warehouseId} (type: ${warehouseType})`);
+            try {
+              // التحقق إذا كان المخزن رئيسي أم تخزيني
+              let warehouseInfo = sourceWarehouseInfo;
+              if (!warehouseInfo) {
+                try {
+                  const infoResponse = await dbFetch(`warehouses/${warehouseId}`);
+                  const infoData = await infoResponse.json();
+                  warehouseInfo = infoData.warehouse || infoData;
+                } catch (e) {
+                  console.error('[ERROR] Failed to fetch warehouse info:', e);
+                }
+              }
+
+              // المخزن الرئيسي: type = repair_parts و is_storage_only != 1
+              // المخزن التخزيني: is_storage_only = 1 و storage_type = spare_parts
+              const isMainWarehouse = warehouseInfo && (warehouseInfo.type === 'repair_parts' && !warehouseInfo.is_storage_only);
+              console.log(`[TRANSFER] Is main repair_parts warehouse: ${isMainWarehouse}`);
+
+              // للمخزن الرئيسي: لا نرسل warehouse_id (الأصناف لها warehouse_id = NULL)
+              // للمخزن التخزيني: نرسل warehouse_id
+              const apiUrl = isMainWarehouse
+                ? `repair-parts` // المخزن الرئيسي
+                : `repair-parts?warehouse_id=${warehouseId}`; // المخزن التخزيني
+
+              console.log(`[TRANSFER] Repair parts API URL: ${apiUrl}`);
+              const response = await dbFetch(apiUrl);
+              const data = await response.json();
+              console.log(`[TRANSFER] Repair parts API response:`, data);
+              const parts = (Array.isArray(data) ? data : (data.parts || [])).filter(p => (p.qty || p.quantity || 0) > 0);
+              console.log(`[TRANSFER] Found ${parts.length} repair parts`);
+              items = parts.map(p => ({
+                type: 'repair_part',
+                id: p.id,
+                name: p.name,
+                quantity: p.qty || p.quantity || 0,
+                max: p.qty || p.quantity || 0
+              }));
+            } catch (e) {
+              console.error('[ERROR] Loading repair parts:', e);
+              items = [];
+            }
+            
+          } else {
+            // مخازن مخصصة أو أنواع غير محددة - محاولة جلب الأجهزة أولاً
+            console.log(`[TRANSFER] Loading items for custom/storage warehouse (type: ${warehouseType || 'unknown'}, warehouseId: ${warehouseId})`);
+            
+            // محاولة 1: جلب الأجهزة
+            try {
+              const response = await dbFetch(`inventory?warehouse_id=${warehouseId}&status=in_stock`);
+              if (response.ok) {
+                const data = await response.json();
+                const devices = Array.isArray(data) ? data : (data.devices || data.inventory || []);
+                const filteredDevices = devices.filter(d => {
+                  const status = d.status || '';
+                  const matchesStatus = status === 'in_stock';
+                  const matchesWarehouse = d.warehouse_id && parseInt(d.warehouse_id) === parseInt(warehouseId);
+                  return matchesStatus && matchesWarehouse;
+                });
+                
+                if (filteredDevices.length > 0) {
+                  items = filteredDevices.map(d => ({
+                    type: 'device',
+                    id: d.id,
+                    name: `${d.type || ''} ${d.model || ''}`.trim() || 'جهاز',
+                    quantity: 1,
+                    max: 1
+                  }));
+                  console.log(`[TRANSFER] Found ${items.length} devices in warehouse`);
+                }
+              }
+            } catch (e) {
+              console.log(`[TRANSFER] Failed to load devices:`, e.message);
+            }
+            
+            // محاولة 2: إذا لم توجد أجهزة، جرب الإكسسوارات
+            if (items.length === 0) {
+              try {
+                const response = await dbFetch(`accessories?warehouse_id=${warehouseId}`);
+                const data = await response.json();
+                const accessories = (data.accessories || []).filter(a => a.quantity > 0);
+                if (accessories.length > 0) {
+                  items = accessories.map(a => ({
+                    type: 'accessory',
+                    id: a.id,
+                    name: a.name,
+                    quantity: a.quantity,
+                    max: a.quantity
+                  }));
+                  console.log(`[TRANSFER] Found ${items.length} accessories in warehouse`);
+                }
+              } catch (e2) {
+                console.log(`[TRANSFER] Failed to load accessories:`, e2.message);
+              }
+            }
+            
+            // محاولة 3: إذا لم توجد أجهزة أو إكسسوارات، جرب warehouse_items (للـ path parameter)
+            if (items.length === 0) {
+              try {
+                const response = await dbFetch(`warehouse-items/${warehouseId}`);
+                if (response.ok) {
+                  const data = await response.json();
+                  const warehouseItems = (data.items || []).filter(i => (i.quantity || 0) > 0);
+                  if (warehouseItems.length > 0) {
+                    items = warehouseItems.map(i => ({
+                      type: 'warehouse_item',
+                      id: i.id,
+                      name: i.name,
+                      quantity: i.quantity || 0,
+                      max: i.quantity || 0
+                    }));
+                    console.log(`[TRANSFER] Found ${items.length} warehouse items`);
+                  }
+                }
+              } catch (e3) {
+                console.log(`[TRANSFER] Failed to load warehouse items:`, e3.message);
+              }
+            }
+            
+            if (items.length === 0) {
+              console.log(`[TRANSFER] No items found in warehouse ${warehouseId}`);
+            }
+          }
+
+          if (items.length === 0) {
+            itemSelect.innerHTML = '<option value="">لا توجد أصناف متاحة للتحويل</option>';
+            allLoadedItems = [];
+            return;
+          }
+
+          // حفظ جميع الأصناف في المتغير العام للبحث
+          allLoadedItems = items;
+          console.log('[LOAD] Saved', items.length, 'items to allLoadedItems for search');
+          console.log('[LOAD] Items:', items.map(i => i.name));
+
+          // ملء القائمة المنسدلة
+          populateItemSelect(items);
+          
+          // إضافة event listener مباشر للبحث (بالإضافة إلى oninput في HTML)
+          const searchInput = document.getElementById('itemSearchInput');
+          if (searchInput) {
+            // إزالة الـ listeners القديمة لتجنب التكرار
+            searchInput.removeEventListener('input', window.filterItems);
+            searchInput.removeEventListener('keyup', window.filterItems);
+            // إضافة listeners جديدة
+            searchInput.addEventListener('input', window.filterItems);
+            searchInput.addEventListener('keyup', window.filterItems);
+            console.log('[LOAD] Event listeners attached to search input');
+          } else {
+            console.warn('[LOAD] Search input not found when trying to attach listeners');
+          }
+
+        } catch (error) {
+          console.error('[ERROR] Loading warehouse items:', error);
+          console.error('[ERROR] Stack:', error.stack);
+          itemSelect.innerHTML = `<option value="">خطأ في تحميل الأصناف: ${error.message}</option>`;
+        }
+      }
+
+      // ملء قائمة الأصناف (مع دعم البحث)
+      function populateItemSelect(items) {
+        const itemSelect = document.getElementById('transferItem');
+        if (!itemSelect) {
+          console.error('[SEARCH] transferItem select not found');
+          return;
+        }
+        
+        const searchInput = document.getElementById('itemSearchInput');
+        const searchTerm = searchInput ? searchInput.value.toLowerCase().trim() : '';
+        console.log('[SEARCH] populateItemSelect called with', items.length, 'items, searchTerm:', searchTerm);
+        
+        // حفظ القيمة المحددة حالياً (إن وجدت)
+        const currentValue = itemSelect.value;
+        
+        // فلترة الأصناف حسب مصطلح البحث
+        let filteredItems;
+        if (searchTerm) {
+          filteredItems = items.filter(item => {
+            const itemName = (item.name || '').toLowerCase();
+            // البحث في الاسم بالكامل (case-insensitive)
+            const matches = itemName.includes(searchTerm);
+            if (matches) {
+              console.log('[SEARCH] ✓ Match found:', itemName, 'for term:', searchTerm);
+            }
+            return matches;
+          });
+          console.log('[SEARCH] Filtered from', items.length, 'to', filteredItems.length, 'items');
+        } else {
+          filteredItems = items;
+          console.log('[SEARCH] No search term, showing all', items.length, 'items');
+        }
+        
+        console.log('[SEARCH] Filtered to', filteredItems.length, 'items');
+        
+        // ملء القائمة
+        itemSelect.innerHTML = '<option value="">اختر الصنف...</option>' +
+          filteredItems.map(item => {
+            const itemName = item.name || 'بدون اسم';
+            const quantityText = item.type === 'device' ? '' : `(متاح: ${item.max})`;
+            return `<option value="${item.type}_${item.id}" data-max="${item.max}" data-name="${itemName}">
+              ${itemName} ${quantityText}
+            </option>`;
+          }).join('');
+        
+        if (filteredItems.length === 0 && searchTerm) {
+          itemSelect.innerHTML += `<option value="" disabled>لا توجد نتائج لـ "${searchInput.value}"</option>`;
+        }
+        
+        // محاولة استعادة القيمة المحددة إذا كانت لا تزال موجودة
+        if (currentValue) {
+          const option = Array.from(itemSelect.options).find(opt => opt.value === currentValue);
+          if (option) {
+            itemSelect.value = currentValue;
+          }
+        }
+      }
+
+      // دالة البحث في الأصناف (يجب أن تكون global للوصول من inline handler)
+      window.filterItems = function filterItems(event) {
+        console.log('[SEARCH] filterItems called');
+        console.log('[SEARCH] allLoadedItems:', allLoadedItems);
+        console.log('[SEARCH] allLoadedItems length:', allLoadedItems ? allLoadedItems.length : 0);
+        
+        const searchInput = event ? event.target : document.getElementById('itemSearchInput');
+        if (!searchInput) {
+          console.error('[SEARCH] Search input not found');
+          return;
+        }
+        
+        const searchTerm = searchInput.value.toLowerCase().trim();
+        console.log('[SEARCH] Search term:', searchTerm);
+        
+        if (!allLoadedItems || allLoadedItems.length === 0) {
+          console.warn('[SEARCH] No items loaded yet. Waiting for items to load...');
+          return;
+        }
+        
+        console.log('[SEARCH] Filtering', allLoadedItems.length, 'items with term:', searchTerm);
+        populateItemSelect(allLoadedItems);
+      };
+
+      function onItemSelect() {
+        const itemSelect = document.getElementById('transferItem');
+        const selectedOption = itemSelect.options[itemSelect.selectedIndex];
+        const maxQty = selectedOption?.dataset?.max || 1;
+
+        const qtyInput = document.getElementById('transferQuantity');
+        const quantityGroup = document.getElementById('transferQuantityGroup');
+        
+        // للأجهزة: لا نحتاج تحديث الكمية (الحقل مخفي والكمية دائماً 1)
+        if (quantityGroup && quantityGroup.style.display !== 'none') {
+          qtyInput.max = maxQty;
+          qtyInput.value = Math.min(1, maxQty);
+          document.getElementById('maxQuantityHint').textContent = `الحد الأقصى: ${maxQty}`;
+        }
+      }
+
+      function closeTransferModal() {
+        document.getElementById('transferModal').classList.remove('show');
+        currentTransferWarehouse = null;
+        currentWarehouseType = null;
+        allLoadedItems = []; // إعادة تعيين قائمة الأصناف
+        // Reset form
+        const form = document.getElementById('transferForm');
+        if (form) form.reset();
+        // إعادة تعيين حقل البحث
+        const searchInput = document.getElementById('itemSearchInput');
+        if (searchInput) searchInput.value = '';
+      }
+
+      async function handleTransfer(event) {
+        event.preventDefault();
+
+        const targetWarehouseId = document.getElementById('targetWarehouse').value;
+        const itemValue = document.getElementById('transferItem').value;
+        const quantityInput = document.getElementById('transferQuantity');
+        const quantityGroup = document.getElementById('transferQuantityGroup');
+        
+        // للأجهزة: الكمية دائماً 1 (حتى لو الحقل مخفي)
+        // للإكسسوارات وقطع الغيار: الكمية من الحقل
+        const quantity = (quantityGroup && quantityGroup.style.display === 'none') 
+          ? 1 
+          : parseInt(quantityInput.value) || 1;
+        const notes = document.getElementById('transferNotes').value;
+
+        if (!targetWarehouseId || !itemValue || !quantity) {
+          showNotification('error', 'يرجى ملء جميع الحقول المطلوبة');
+          return;
+        }
+
+        // التحقق من نوع المخزن المستهدف
+        const targetWarehouse = allWarehouses.find(w => w.id == targetWarehouseId);
+        if (!targetWarehouse) {
+          showNotification('error', 'المخزن المستهدف غير موجود');
+          return;
+        }
+        
+        // التحقق من التوافق: نفس النوع (سواء كان type أو storage_type)
+        const targetType = targetWarehouse.type;
+        const targetStorageType = targetWarehouse.storage_type;
+        
+        // إعادة جلب معلومات المخزن المصدر للتأكد من نوعه
+        try {
+          const sourceResponse = await dbFetch(`warehouses/${currentTransferWarehouse.id}`);
+          const sourceData = await sourceResponse.json();
+          const source = sourceData.warehouse || sourceData;
+          const sourceType = source.type;
+          const sourceStorageType = source.storage_type;
+
+          // توحيد أنواع قطع الغيار (spare_parts = repair_parts)
+          const normalizeTypeForCheck = (type) => {
+            if (type === 'spare_parts' || type === 'repair_parts') return 'repair_parts';
+            return type;
+          };
+
+          const normalizedSourceType = normalizeTypeForCheck(sourceType);
+          const normalizedSourceStorageType = normalizeTypeForCheck(sourceStorageType);
+          const normalizedTargetType = normalizeTypeForCheck(targetType);
+          const normalizedTargetStorageType = normalizeTypeForCheck(targetStorageType);
+
+          // التحقق من التوافق: نفس النوع (مع توحيد spare_parts و repair_parts)
+          const isCompatible =
+            (normalizedSourceType && (normalizedTargetType === normalizedSourceType || normalizedTargetStorageType === normalizedSourceType)) ||
+            (normalizedSourceStorageType && (normalizedTargetType === normalizedSourceStorageType || normalizedTargetStorageType === normalizedSourceStorageType));
+
+          if (!isCompatible) {
+            showNotification('error', 'لا يمكن التحويل بين مخازن من أنواع مختلفة');
+            return;
+          }
+        } catch (e) {
+          console.error('[ERROR] Verifying warehouse compatibility:', e);
+          // في حالة الخطأ، نعتمد على currentWarehouseType مع توحيد الأنواع
+          const normalizeTypeFallback = (type) => {
+            if (type === 'spare_parts' || type === 'repair_parts') return 'repair_parts';
+            return type;
+          };
+          const targetTypeFinal = normalizeTypeFallback(targetType || targetStorageType);
+          const currentTypeFinal = normalizeTypeFallback(currentWarehouseType);
+          if (targetTypeFinal !== currentTypeFinal) {
+            showNotification('error', 'لا يمكن التحويل بين مخازن من أنواع مختلفة');
+            return;
+          }
+        }
+
+        // تحليل نوع الصنف ومعرفه
+        // القيمة مثل: "repair_part_5" أو "device_10" أو "accessory_3"
+        const lastUnderscoreIndex = itemValue.lastIndexOf('_');
+        const itemType = itemValue.substring(0, lastUnderscoreIndex);
+        const itemId = itemValue.substring(lastUnderscoreIndex + 1);
+
+        const transferData = {
+          from_warehouse_id: currentTransferWarehouse.id,
+          to_warehouse_id: parseInt(targetWarehouseId),
+          item_type: itemType,
+          item_id: parseInt(itemId),
+          quantity: quantity,
+          notes: notes
+        };
+        console.log('[TRANSFER] Sending transfer request:', transferData);
+
+        try {
+          const response = await dbFetch('warehouse-transfers', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(transferData)
+          });
+
+          if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(errorText || 'فشل في التحويل');
+          }
+
+          const result = await response.json();
+          showNotification('success', result.message || 'تم التحويل بنجاح');
+          closeTransferModal();
+          await loadWarehouses(); // إعادة تحميل المخازن لتحديث الإحصائيات
+
+        } catch (error) {
+          console.error('[ERROR] Transfer:', error);
+          showNotification('error', error.message || 'حدث خطأ في التحويل');
+        }
+      }
+
+      // Close transfer modal on background click
+      document.getElementById('transferModal')?.addEventListener('click', (e) => {
+        if (e.target.id === 'transferModal') {
+          closeTransferModal();
+        }
+      });
+
+      // ═══════════════════════════════════════
+      // 🔀 DRAG & DROP للمخازن
+      // ═══════════════════════════════════════
+      let draggedCard = null;
+      let draggedOverCard = null;
+      let dragDropListenersAttached = false; // ✅ منع تكرار الـ listeners
+
+      function initDragAndDrop() {
+        const grid = document.getElementById('warehousesGrid');
+        if (!grid) return;
+
+        // حفظ الترتيب من localStorage
+        const savedOrder = localStorage.getItem('warehousesOrder');
+        if (savedOrder) {
+          try {
+            const order = JSON.parse(savedOrder);
+            reorderCards(order);
+          } catch (e) {
+            console.warn('[DRAG] Error loading saved order:', e);
+          }
+        }
+
+        // ✅ إضافة event listeners مرة واحدة فقط
+        if (!dragDropListenersAttached) {
+          grid.addEventListener('dragstart', handleDragStart);
+          grid.addEventListener('dragend', handleDragEnd);
+          grid.addEventListener('dragover', handleDragOver);
+          grid.addEventListener('dragenter', handleDragEnter);
+          grid.addEventListener('dragleave', handleDragLeave);
+          grid.addEventListener('drop', handleDrop);
+          dragDropListenersAttached = true;
+          console.log('[DRAG] Drag & Drop initialized');
+        }
+      }
+
+      function handleDragStart(e) {
+        const card = e.target.closest('.warehouse-card');
+        if (!card) return;
+
+        // التأكد من بدء السحب من مقبض السحب أو البطاقة نفسها
+        draggedCard = card;
+        card.classList.add('dragging');
+        document.getElementById('warehousesGrid').classList.add('drag-active');
+
+        // تعيين بيانات السحب
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', card.dataset.warehouseId);
+
+        // تأخير قليل لإظهار تأثير السحب
+        setTimeout(() => {
+          card.style.opacity = '0.5';
+        }, 0);
+      }
+
+      function handleDragEnd(e) {
+        const card = e.target.closest('.warehouse-card');
+        if (!card) return;
+
+        card.classList.remove('dragging');
+        card.style.opacity = '';
+        document.getElementById('warehousesGrid').classList.remove('drag-active');
+
+        // إزالة كل حالات drag-over
+        document.querySelectorAll('.warehouse-card.drag-over').forEach(c => {
+          c.classList.remove('drag-over');
+        });
+
+        draggedCard = null;
+        draggedOverCard = null;
+      }
+
+      function handleDragOver(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+      }
+
+      function handleDragEnter(e) {
+        e.preventDefault();
+        const card = e.target.closest('.warehouse-card');
+        if (!card || card === draggedCard) return;
+
+        card.classList.add('drag-over');
+        draggedOverCard = card;
+      }
+
+      function handleDragLeave(e) {
+        const card = e.target.closest('.warehouse-card');
+        if (!card) return;
+
+        // التحقق من أن الماوس فعلاً غادر البطاقة
+        const rect = card.getBoundingClientRect();
+        if (e.clientX < rect.left || e.clientX > rect.right ||
+            e.clientY < rect.top || e.clientY > rect.bottom) {
+          card.classList.remove('drag-over');
+        }
+      }
+
+      function handleDrop(e) {
+        e.preventDefault();
+        const targetCard = e.target.closest('.warehouse-card');
+        if (!targetCard || !draggedCard || targetCard === draggedCard) return;
+
+        targetCard.classList.remove('drag-over');
+
+        const grid = document.getElementById('warehousesGrid');
+        const cards = Array.from(grid.querySelectorAll('.warehouse-card'));
+        const draggedIndex = cards.indexOf(draggedCard);
+        const targetIndex = cards.indexOf(targetCard);
+
+        if (draggedIndex < targetIndex) {
+          targetCard.after(draggedCard);
+        } else {
+          targetCard.before(draggedCard);
+        }
+
+        // حفظ الترتيب الجديد
+        saveWarehousesOrder();
+
+        // إظهار رسالة نجاح
+        showNotification('success', '✅ تم حفظ الترتيب الجديد');
+      }
+
+      function saveWarehousesOrder() {
+        const grid = document.getElementById('warehousesGrid');
+        const cards = Array.from(grid.querySelectorAll('.warehouse-card'));
+        const order = cards.map(card => card.dataset.warehouseId);
+        localStorage.setItem('warehousesOrder', JSON.stringify(order));
+        console.log('[DRAG] Order saved:', order);
+      }
+
+      function reorderCards(order) {
+        const grid = document.getElementById('warehousesGrid');
+        if (!grid) return;
+
+        const cards = Array.from(grid.querySelectorAll('.warehouse-card'));
+        const cardMap = {};
+
+        cards.forEach(card => {
+          cardMap[card.dataset.warehouseId] = card;
+        });
+
+        // إعادة ترتيب البطاقات حسب الترتيب المحفوظ
+        order.forEach(id => {
+          const card = cardMap[id];
+          if (card) {
+            grid.appendChild(card);
+          }
+        });
+
+        // إضافة البطاقات الجديدة التي ليست في الترتيب المحفوظ
+        cards.forEach(card => {
+          if (!order.includes(card.dataset.warehouseId)) {
+            grid.appendChild(card);
+          }
+        });
+      }
+
+      // تهيئة Drag & Drop بعد تحميل المخازن
+      // ✅ تم إصلاح التحميل المزدوج - initDragAndDrop آمنة للاستدعاء المتكرر
+      const originalLoadWarehouses = loadWarehouses;
+      loadWarehouses = async function() {
+        await originalLoadWarehouses();
+        initDragAndDrop(); // آمنة - الـ listeners تُضاف مرة واحدة فقط
+      };
+    </script>
+
+    <!-- ═══════════════════════════════════════
+         TRANSFER MODAL
+         ═══════════════════════════════════════ -->
+    <div id="transferModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 class="modal-title arabic-text" id="transferModalTitle">تحويل بين المخازن</h2>
+          <button class="close-btn" onclick="closeTransferModal()">×</button>
+        </div>
+        <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 16px; padding: 10px; background: rgba(6,182,212,0.1); border-radius: 8px;">
+          🔄 اختر الصنف والكمية المراد تحويلها للمخزن الوجهة
+        </p>
+        <form id="transferForm" onsubmit="handleTransfer(event)">
+          <div class="form-group">
+            <label class="form-label arabic-text">المخزن الوجهة *</label>
+            <select class="form-select" id="targetWarehouse" required>
+              <option value="">اختر المخزن الوجهة...</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label arabic-text">الصنف *</label>
+            <div style="position: relative;">
+              <input 
+                type="text" 
+                class="form-input" 
+                id="itemSearchInput" 
+                placeholder="🔍 ابحث عن الصنف..." 
+                oninput="window.filterItems(event)"
+                onkeyup="window.filterItems(event)"
+                style="margin-bottom: 8px; padding-right: 35px;"
+                autocomplete="off"
+              >
+              <span style="position: absolute; right: 12px; top: 8px; color: var(--text-secondary); pointer-events: none;">🔍</span>
+            </div>
+            <select class="form-select" id="transferItem" required onchange="onItemSelect()">
+              <option value="">اختر الصنف...</option>
+            </select>
+          </div>
+
+          <div class="form-group" id="transferQuantityGroup">
+            <label class="form-label arabic-text">الكمية *</label>
+            <input type="number" class="form-input" id="transferQuantity" min="1" value="1" required>
+            <small style="color: var(--text-secondary); font-size: 11px;" id="maxQuantityHint"></small>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label arabic-text">ملاحظات</label>
+            <textarea class="form-textarea" id="transferNotes" placeholder="ملاحظات التحويل (اختياري)"></textarea>
+          </div>
+
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" onclick="closeTransferModal()">
+              <span class="arabic-text">إلغاء</span>
+            </button>
+            <button type="submit" class="btn btn-primary" style="background: linear-gradient(135deg, var(--cyan), var(--accent));">
+              <span class="arabic-text">تنفيذ التحويل</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         📄 FOOTER
+         ═══════════════════════════════════════ -->
+    <footer class="footer">
+      <span>Developed by ElOs | 4Accounting System © 2025</span>
+      <span>نسخة محسّنة • واجهة حديثة</span>
+    </footer>
+  </body>
+</html>

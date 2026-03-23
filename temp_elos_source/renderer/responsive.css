@@ -1,0 +1,253 @@
+/* ═══════════════════════════════════════════════════════════════
+   📱 ELOS SYSTEM - RESPONSIVE STYLES
+   للتوافق مع جميع أحجام الشاشات
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════
+   شاشات متوسطة (1366px وأقل) - 17 بوصة
+   ═══════════════════════════════════════ */
+@media screen and (max-width: 1366px) {
+  :root {
+    font-size: 13px !important;
+  }
+
+  /* Header */
+  .hdr, header {
+    padding: 8px 16px !important;
+  }
+
+  /* Search */
+  .search-group input,
+  input[type="search"],
+  input[type="text"] {
+    font-size: 13px;
+  }
+
+  /* Cards */
+  .card, .panel, .kpi-card {
+    padding: 12px 14px;
+  }
+
+  /* Tables */
+  table th, table td {
+    padding: 8px 10px;
+    font-size: 12px;
+  }
+
+  /* Buttons */
+  .btn, button {
+    padding: 8px 14px;
+    font-size: 12px;
+  }
+
+  /* Modals */
+  .modal-container, .modal-content {
+    max-width: 90vw;
+    max-height: 85vh;
+  }
+}
+
+/* ═══════════════════════════════════════
+   شاشات صغيرة (1280px وأقل) - 15 بوصة
+   ═══════════════════════════════════════ */
+@media screen and (max-width: 1280px) {
+  :root {
+    font-size: 12px !important;
+  }
+
+  /* Header */
+  .hdr, header {
+    padding: 6px 12px !important;
+  }
+
+  /* Cards */
+  .card, .panel, .kpi-card {
+    padding: 10px 12px;
+  }
+
+  /* Tables */
+  table th, table td {
+    padding: 6px 8px;
+    font-size: 11px;
+  }
+
+  /* Buttons */
+  .btn, button {
+    padding: 6px 12px;
+    font-size: 11px;
+  }
+
+  /* Sidebar */
+  .sidebar, .cart-sidebar {
+    width: 280px !important;
+    min-width: 260px !important;
+  }
+}
+
+/* ═══════════════════════════════════════
+   شاشات صغيرة جداً (1024px وأقل)
+   ═══════════════════════════════════════ */
+@media screen and (max-width: 1024px) {
+  :root {
+    font-size: 11px !important;
+  }
+
+  /* Container */
+  .main-content, .content-wrapper, main {
+    gap: 8px;
+    padding: 8px;
+  }
+
+  /* Grid */
+  .grid, .products-grid {
+    gap: 6px;
+  }
+
+  /* Cards */
+  .card, .panel, .kpi-card {
+    padding: 8px 10px;
+  }
+
+  /* Tables */
+  table th, table td {
+    padding: 5px 6px;
+    font-size: 10px;
+  }
+
+  /* Buttons */
+  .btn, button {
+    padding: 5px 10px;
+    font-size: 10px;
+  }
+
+  /* Sidebar */
+  .sidebar, .cart-sidebar {
+    width: 260px !important;
+    min-width: 240px !important;
+  }
+
+  /* Hide non-essential elements */
+  .hide-on-small {
+    display: none !important;
+  }
+}
+
+/* ═══════════════════════════════════════
+   تحسينات عامة للتوافق
+   ═══════════════════════════════════════ */
+
+/* منع overflow أفقي */
+body {
+  overflow-x: hidden;
+}
+
+/* ═══════════════════════════════════════
+   🔧 Fix: إصلاح مشكلة التصغير/التكبير
+   ═══════════════════════════════════════ */
+html {
+  /* منع تغيير الـ zoom من CSS */
+  zoom: 1 !important;
+  -webkit-text-size-adjust: 100%;
+}
+
+/* تثبيت عرض الجداول */
+/* Note: Tables/containers with .allow-x class are excluded to allow horizontal scrolling */
+.table-wrapper:not(.allow-x), .table-container:not(.allow-x) {
+  width: 100%;
+  max-width: 100%;
+  overflow-y: auto;
+}
+
+.tbl:not(.allow-x), table:not(.allow-x) {
+  width: 100% !important;
+  min-width: 100% !important;
+}
+
+/* Force accessories table to fill container */
+#accessoriesTable {
+  width: 100% !important;
+  min-width: 100% !important;
+  table-layout: auto !important;
+}
+
+/* تحسين الـ main grid */
+.main {
+  width: 100%;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.content-area {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* تحسين scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+/* جعل الصور responsive */
+img {
+  max-width: 100%;
+  height: auto;
+}
+
+/* جعل الجداول responsive */
+.table-responsive {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Text truncation */
+.text-truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Flexible containers */
+.flex-wrap {
+  flex-wrap: wrap !important;
+}
+
+/* ═══════════════════════════════════════
+   مؤشر حجم الشاشة (للتطوير فقط)
+   ═══════════════════════════════════════ */
+.screen-size-indicator {
+  position: fixed;
+  bottom: 5px;
+  left: 5px;
+  background: rgba(0,0,0,0.7);
+  color: #fff;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  z-index: 99999;
+  display: none; /* اجعله visible للتطوير */
+}
+
+.screen-size-indicator::after {
+  content: 'XL (1920+)';
+}
+
+@media (max-width: 1366px) {
+  .screen-size-indicator::after {
+    content: 'L (1366)';
+  }
+}
+
+@media (max-width: 1280px) {
+  .screen-size-indicator::after {
+    content: 'M (1280)';
+  }
+}
+
+@media (max-width: 1024px) {
+  .screen-size-indicator::after {
+    content: 'S (1024)';
+  }
+}

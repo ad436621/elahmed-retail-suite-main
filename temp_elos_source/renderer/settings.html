@@ -1,0 +1,3014 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>الإعدادات • ELOS System</title>
+  <script>(function(){var p=new URLSearchParams(location.search),t=p.get('theme')||localStorage.getItem('elos_theme')||localStorage.getItem('elos-theme')||'dark',h=document.documentElement;h.setAttribute('data-theme',t==='light'?'light':'dark');})();</script>
+  <script src="session-inject.js"></script>
+  <!-- 📱 SPA Mode Detection -->
+  <script src="spa-mode.js"></script>
+  <!-- 🔊 Shared Sound & Toast System -->
+  <script src="shared.js"></script>
+  <!-- 🌙 Theme Sync -->
+  <script src="theme-sync.js"></script>
+  <!-- 🔤 Font Scale Manager (apply font scale early) -->
+  <script src="js/font-scale-manager.js"></script>
+  <!-- 🎨 Design System Tokens (theme colors - MUST BE FIRST) -->
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/tokens-alias.css">
+  <!-- 🎨 Design System (component styles) -->
+  <link rel="stylesheet" href="styles/design-system.css">
+  <!-- 📏 Font Sizes - تحسين أحجام الخطوط -->
+  <link rel="stylesheet" href="styles/font-sizes.css">
+  <!-- 🪟 نوافذ تأكيد/تحذير بتصميم البرنامج -->
+  <script src="js/modal-dialogs.js"></script>
+
+  <style>
+    /* Color variables removed - use tokens.css */
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg-primary); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, var(--accent) 0%, #1d4ed8 100%); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg, #60a5fa 0%, var(--accent) 100%); }
+    * { scrollbar-width: thin; scrollbar-color: var(--accent) var(--bg-primary); }
+
+    body { 
+      margin: 0; 
+      background: var(--bg-primary); 
+      color: var(--text-primary); 
+      font-family: system-ui, "Cairo", sans-serif; 
+      min-height: 100vh;
+      padding-bottom: 50px;
+    }
+
+    /* ═══════════════════════════════════════
+       📱 HEADER
+       ═══════════════════════════════════════ */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 10px 24px;
+      background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      flex-wrap: wrap;
+    }
+
+    .logo {
+      width: 36px;
+      height: 36px;
+      color: #ffffff;
+      filter: drop-shadow(0 2px 6px rgba(255, 255, 255, 0.15));
+    }
+
+    .brand-container { display: flex; flex-direction: column; gap: 2px; }
+    .brand { font-weight: 900; font-size: 24px; color: #d1d5db; letter-spacing: 3px; }
+    .page-subtitle { font-size: 11px; color: var(--text-secondary); }
+
+    .btn-back {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text-primary);
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+    }
+    .btn-back:hover { background: var(--accent); border-color: var(--accent); transform: translateY(-2px); }
+
+    .spacer { flex: 1; }
+
+    /* Header Cards */
+    .header-cards { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    .header-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 14px;
+      background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      min-width: 85px;
+      transition: all 0.3s ease;
+    }
+    .header-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(59,130,246,0.3); border-color: var(--accent); }
+    .header-card.cyan { border-top: 2px solid var(--cyan); }
+    .header-card.green { border-top: 2px solid var(--success); }
+    .header-card.purple { border-top: 2px solid var(--purple); }
+
+    .header-card-icon { font-size: 18px; }
+    .header-card-value { font-size: 14px; font-weight: 900; color: var(--text-primary); font-family: 'Courier New', monospace; }
+    .header-card-label { font-size: 9px; color: var(--text-secondary); }
+
+    /* Clock */
+    .header-clock {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 16px;
+      background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+    .clock-time { font-size: 16px; font-weight: 900; color: var(--accent); font-family: 'Courier New', monospace; direction: ltr; }
+    .clock-date { font-size: 9px; color: var(--text-secondary); }
+
+    /* ═══════════════════════════════════════
+       📊 CONTAINER
+       ═══════════════════════════════════════ */
+    .container { max-width: 1200px; margin: 0 auto; padding: 20px 24px; }
+
+    /* ═══════════════════════════════════════
+       📑 TABS
+       ═══════════════════════════════════════ */
+    .tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 8px;
+    }
+
+    .tab {
+      padding: 10px 18px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 10px 10px 0 0;
+      color: var(--text-secondary);
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .tab:hover { border-color: rgba(59,130,246,0.4); color: var(--accent); }
+    .tab.active {
+      background: linear-gradient(135deg, var(--accent) 0%, #2563eb 100%);
+      color: white;
+      border-color: var(--accent);
+    }
+
+    /* ═══════════════════════════════════════
+       📦 PANELS
+       ═══════════════════════════════════════ */
+    .panel { display: none; animation: fadeIn 0.3s ease; }
+    .panel.active { display: block; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ═══════════════════════════════════════
+       📝 SETTINGS SECTIONS
+       ═══════════════════════════════════════ */
+    .settings-grid { display: grid; gap: 20px; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); }
+
+    .settings-section {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+      overflow: hidden;
+    }
+
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--border);
+    }
+
+    .section-icon {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, rgba(59,130,246,0.2) 0%, rgba(59,130,246,0.1) 100%);
+      border: 1px solid rgba(59,130,246,0.3);
+      border-radius: 10px;
+      font-size: 20px;
+    }
+
+    .section-title { font-size: 16px; font-weight: 700; }
+    .section-desc { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+
+    /* ═══════════════════════════════════════
+       📝 FORMS
+       ═══════════════════════════════════════ */
+    .form-group { margin-bottom: 16px; }
+
+    .form-label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .form-input, .form-select {
+      width: 100%;
+      padding: 10px 14px;
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 14px;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+    .form-input:focus, .form-select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+    }
+
+    .form-hint { font-size: 11px; color: var(--text-secondary); margin-top: 4px; display: block; }
+
+    /* Toggle Switch */
+    .toggle-group {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 12px;
+      transition: all 0.2s ease;
+    }
+    .toggle-group:hover { border-color: rgba(59,130,246,0.3); background: rgba(59,130,246,0.05); }
+
+    .toggle-label { font-size: 14px; font-weight: 600; }
+    .toggle-desc { font-size: 11px; color: var(--text-secondary); margin-top: 2px; }
+
+    .toggle-switch { position: relative; width: 48px; height: 24px; flex-shrink: 0; display: inline-block; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .toggle-slider {
+      position: absolute;
+      cursor: pointer;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: var(--border);
+      border-radius: 24px;
+      transition: 0.3s;
+    }
+    .toggle-slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 3px;
+      bottom: 3px;
+      background: white;
+      border-radius: 50%;
+      transition: 0.3s;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    input:checked + .toggle-slider { background: var(--accent); }
+    input:checked + .toggle-slider:before { transform: translateX(24px); }
+
+    /* Toggle داخل form-group */
+    .form-group.toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px;
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      margin-bottom: 12px;
+    }
+    .form-group.toggle-row .toggle-content {
+      flex: 1;
+    }
+    .form-group.toggle-row .form-label {
+      margin-bottom: 2px;
+      display: block;
+    }
+    .form-group.toggle-row .form-hint {
+      margin-top: 2px;
+    }
+
+    /* ═══════════════════════════════════════
+       🔘 BUTTONS
+       ═══════════════════════════════════════ */
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: inherit;
+    }
+
+    .btn-primary { background: linear-gradient(135deg, var(--accent) 0%, #2563eb 100%); color: white; }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(59,130,246,0.4); }
+
+    .btn-success { background: linear-gradient(135deg, var(--success) 0%, #059669 100%); color: white; }
+    .btn-success:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(16,185,129,0.4); }
+
+    .btn-danger { background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%); color: white; }
+    .btn-warning { background: linear-gradient(135deg, var(--warning) 0%, #d97706 100%); color: white; }
+
+    .btn-secondary {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+    }
+
+    .btn-full { width: 100%; justify-content: center; }
+
+    .action-buttons { display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
+
+    /* Info Box */
+    .info-box {
+      background: rgba(59,130,246,0.1);
+      border: 1px solid rgba(59,130,246,0.3);
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+    }
+    .info-box.warning { background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.3); }
+    .info-box.danger { background: rgba(239,68,68,0.1); border-color: rgba(239,68,68,0.3); }
+    .info-box-title { font-size: 13px; font-weight: 700; color: var(--accent); margin-bottom: 4px; }
+    .info-box.warning .info-box-title { color: var(--warning); }
+    .info-box.danger .info-box-title { color: var(--danger); }
+    .info-box-text { font-size: 12px; color: var(--text-secondary); }
+
+    /* Stats Row */
+    .stats-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 20px; }
+
+    .stat-item {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .stat-icon {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(135deg, rgba(59,130,246,0.2) 0%, rgba(59,130,246,0.1) 100%);
+      border-radius: 10px;
+      font-size: 18px;
+    }
+    .stat-label { font-size: 11px; color: var(--text-secondary); margin-bottom: 4px; }
+    .stat-value { font-size: 16px; font-weight: 800; }
+
+    /* Logo Preview */
+    .logo-preview {
+      width: 80px;
+      height: 80px;
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-tertiary);
+      overflow: hidden;
+    }
+    .logo-preview img { width: 100%; height: 100%; object-fit: contain; }
+
+    /* ═══════════════════════════════════════
+       🔔 TOAST
+       ═══════════════════════════════════════ */
+    .toast {
+      position: fixed;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 12px 24px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+      font-size: 14px;
+      z-index: 2000;
+      animation: toastIn 0.3s ease;
+    }
+    .toast.success { background: var(--success); color: white; }
+    .toast.error { background: var(--danger); color: white; }
+    .toast.warning { background: var(--warning); color: white; }
+    .toast.info { background: var(--accent); color: white; }
+
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+      to { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+
+    /* ═══════════════════════════════════════
+       🦶 FOOTER
+       ═══════════════════════════════════════ */
+    footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 24px;
+      background: var(--card);
+      border-top: 1px solid var(--line);
+      font-size: 10px;
+      color: var(--muted);
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 50;
+    }
+
+    /* ═══════════════════════════════════════
+       🪟 MODAL
+       ═══════════════════════════════════════ */
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+
+    .modal-content {
+      background: var(--bg-secondary);
+      border-radius: 12px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+      width: 100%;
+      max-width: 600px;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .modal-header h3 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 28px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 0;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+
+    .modal-close:hover {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+    }
+
+    .modal-body {
+      padding: 20px;
+    }
+
+    .form-textarea {
+      width: 100%;
+      padding: 10px 14px;
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 14px;
+      font-family: inherit;
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .form-textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+    }
+
+    /* ═══════════════════════════════════════
+       📱 RESPONSIVE
+       ═══════════════════════════════════════ */
+    @media (max-width: 768px) {
+      .header { padding: 10px 16px; }
+      .container { padding: 16px; }
+      .header-cards { display: none; }
+      .settings-grid { grid-template-columns: 1fr; }
+      .font-size-rectangle { grid-template-columns: 1fr !important; }
+      .tabs { overflow-x: auto; flex-wrap: nowrap; }
+      .tab { white-space: nowrap; }
+      .modal-content { margin: 10px; max-width: calc(100% - 20px); }
+    }
+  </style>
+  <link rel="stylesheet" href="responsive.css">
+</head>
+<body>
+  <!-- ═══════════════════════════════════════
+       📱 HEADER
+       ═══════════════════════════════════════ -->
+  <header class="header">
+    <svg class="logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+      <path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>
+    </svg>
+
+    <div class="brand-container">
+      <span class="brand">ELOS SYSTEM</span>
+      <span class="page-subtitle">⚙️ إعدادات النظام</span>
+    </div>
+
+    <a href="index.html" class="btn-back">← الرئيسية</a>
+
+    <div class="spacer"></div>
+
+    <div class="header-cards">
+      <div class="header-card cyan">
+        <span class="header-card-icon">💾</span>
+        <span class="header-card-value" id="statDbSize">0 MB</span>
+        <span class="header-card-label">حجم البيانات</span>
+      </div>
+      <div class="header-card green">
+        <span class="header-card-icon">📦</span>
+        <span class="header-card-value" id="statBackup">--</span>
+        <span class="header-card-label">آخر نسخة</span>
+      </div>
+      <div class="header-card purple">
+        <span class="header-card-icon">⚙️</span>
+        <span class="header-card-value">V 2.0</span>
+        <span class="header-card-label">الإصدار</span>
+      </div>
+    </div>
+
+    <div class="header-clock">
+      <span class="clock-time" id="headerTime">00:00:00</span>
+      <span class="clock-date" id="headerDate">--</span>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════════════════════
+       📊 MAIN CONTENT
+       ═══════════════════════════════════════ -->
+  <div class="container">
+    <!-- Tabs -->
+    <div class="tabs">
+      <div class="tab active" data-tab="general" onclick="switchTab('general')">🏢 الإعدادات العامة</div>
+      <div class="tab" data-tab="system" onclick="switchTab('system')">⚙️ تفضيلات النظام</div>
+      <div class="tab" data-tab="notifications" onclick="switchTab('notifications')">🔔 الإشعارات</div>
+      <div class="tab" data-tab="backup" onclick="switchTab('backup')">📦 النسخ الاحتياطي</div>
+      <div class="tab" data-tab="wallets" onclick="switchTab('wallets')">💳 إدارة المحافظ</div>
+      <div class="tab" data-tab="invoices" onclick="switchTab('invoices')">🧾 إعدادات الفواتير</div>
+      <div class="tab" data-tab="network" onclick="switchTab('network')">🌐 الشبكة</div>
+      <div class="tab" data-tab="danger" onclick="switchTab('danger')">⚠️ المنطقة الخطرة</div>
+      <div class="tab" data-tab="about" onclick="switchTab('about')">ℹ️ حول البرنامج</div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         🏢 GENERAL SETTINGS PANEL
+         ═══════════════════════════════════════ -->
+    <div id="generalPanel" class="panel active">
+      <div class="settings-grid">
+        <!-- Company Info -->
+        <div class="settings-section">
+          <div class="section-header">
+            <div class="section-icon">🏢</div>
+            <div>
+              <div class="section-title">معلومات الشركة</div>
+              <div class="section-desc">الاسم والشعار</div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">اسم الشركة</label>
+            <input type="text" id="companyName" class="form-input" placeholder="أدخل اسم الشركة">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">شعار الشركة (Logo)</label>
+            <div style="display: flex; gap: 12px; align-items: flex-start;">
+              <div style="flex: 1;">
+                <input type="file" id="companyLogoFile" class="form-input" accept="image/*" style="padding: 8px;">
+                <span class="form-hint">PNG أو JPG (الحجم الأقصى: 2MB)</span>
+              </div>
+              <div class="logo-preview" id="logoPreview">
+                <span style="font-size: 32px; opacity: 0.3;">🖼️</span>
+              </div>
+            </div>
+            <input type="hidden" id="companyLogo">
+          </div>
+
+          <div class="action-buttons">
+            <button class="btn btn-success" onclick="saveGeneralSettings()">💾 حفظ</button>
+            <button class="btn btn-secondary" onclick="resetLogo()">🔄 إزالة الشعار</button>
+          </div>
+        </div>
+
+        <!-- Regional Settings -->
+        <div class="settings-section">
+          <div class="section-header">
+            <div class="section-icon">🌍</div>
+            <div>
+              <div class="section-title">الإعدادات الإقليمية</div>
+              <div class="section-desc">العملة والتاريخ</div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">العملة</label>
+            <select id="currency" class="form-select">
+              <option value="EGP">🇪🇬 جنيه مصري (EGP)</option>
+              <option value="USD">🇺🇸 دولار أمريكي (USD)</option>
+              <option value="EUR">🇪🇺 يورو (EUR)</option>
+              <option value="SAR">🇸🇦 ريال سعودي (SAR)</option>
+              <option value="AED">🇦🇪 درهم إماراتي (AED)</option>
+              <option value="KWD">🇰🇼 دينار كويتي (KWD)</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">تنسيق التاريخ</label>
+            <select id="dateFormat" class="form-select">
+              <option value="DD/MM/YYYY">DD/MM/YYYY (31/12/2025)</option>
+              <option value="MM/DD/YYYY">MM/DD/YYYY (12/31/2025)</option>
+              <option value="YYYY-MM-DD">YYYY-MM-DD (2025-12-31)</option>
+            </select>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         ⚙️ SYSTEM PREFERENCES PANEL
+         ═══════════════════════════════════════ -->
+    <div id="systemPanel" class="panel">
+      <div class="settings-grid">
+        <!-- 🖨️ إعدادات الطابعة (أولاً مكان خيارات النظام) -->
+        <div class="settings-section">
+          <div class="section-header">
+            <div class="section-icon">🖨️</div>
+            <div>
+              <div class="section-title">إعدادات الطابعة الحرارية</div>
+              <div class="section-desc">تخصيص طباعة الفواتير</div>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label">عرض الورقة</label>
+              <select id="printerPaperWidth" class="form-input">
+                <option value="80">80mm (قياسي)</option>
+                <option value="58">58mm (صغير)</option>
+              </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label class="form-label">حجم الخط</label>
+              <select id="printerFontSize" class="form-input">
+                <option value="small">صغير</option>
+                <option value="normal" selected>متوسط</option>
+                <option value="large">كبير</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">رقم الهاتف (يظهر على الفاتورة)</label>
+            <input type="tel" id="companyPhone" class="form-input" placeholder="01xxxxxxxxx">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">العنوان (يظهر على الفاتورة)</label>
+            <input type="text" id="companyAddress" class="form-input" placeholder="المحل - الشارع - المدينة">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">رسالة نهاية الفاتورة</label>
+            <input type="text" id="printerFooterMessage" class="form-input" value="شكراً لتعاملكم معنا" placeholder="شكراً لتعاملكم معنا">
+          </div>
+
+          <div class="toggle-group">
+            <div>
+              <div class="toggle-label">إظهار تفاصيل الأصناف</div>
+              <div class="toggle-desc">عرض اللون، IMEI، الملحقات في الفاتورة</div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="printerShowDetails" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <button class="btn btn-secondary btn-full" onclick="testPrint()" style="margin-top: 12px;">
+            🖨️ طباعة تجريبية
+          </button>
+        </div>
+
+        <!-- 📦 إعدادات المخزون -->
+        <div class="settings-section">
+          <div class="section-header">
+            <div class="section-icon">📦</div>
+            <div>
+              <div class="section-title">إعدادات المخزون</div>
+              <div class="section-desc">تنبيهات وحدود البيع</div>
+            </div>
+          </div>
+
+          <div class="toggle-group">
+            <div>
+              <div class="toggle-label">تنبيه المخزون المنخفض</div>
+              <div class="toggle-desc">إشعار عند انخفاض المخزون عن الحد</div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="lowStockAlert" checked onchange="autoSaveInventorySettings()">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">حد تنبيه المخزون</label>
+            <input type="number" id="stockThreshold" class="form-input" value="10" min="0" onchange="autoSaveInventorySettings()">
+            <span class="form-hint">سيتم التنبيه عندما يقل المخزون عن هذا الحد</span>
+          </div>
+
+          <div class="toggle-group">
+            <div>
+              <div class="toggle-label">منع البيع بدون مخزون</div>
+              <div class="toggle-desc">لا يمكن بيع صنف كميته صفر</div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="preventNegativeStock" checked onchange="autoSaveInventorySettings()">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 🔤 حجم الخط - مستطيل عريض تحت المربعين -->
+        <div class="settings-section" style="grid-column: 1 / -1; max-width: 100%;">
+          <div class="section-header">
+            <div class="section-icon">🔤</div>
+            <div>
+              <div class="section-title">حجم الخط</div>
+              <div class="section-desc">تكبير أو تصغير خط البرنامج بالكامل • Ctrl + (+) تكبير | Ctrl + (-) تصغير | Ctrl + 0 افتراضي</div>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 2fr 1fr; gap: 24px; align-items: center; flex-wrap: wrap;" class="font-size-rectangle">
+            <!-- الحجم الحالي -->
+            <div style="text-align: center; padding: 24px; background: var(--bg-tertiary); border-radius: 12px; min-height: 100px;">
+              <div style="font-size: 13px; color: var(--text-secondary); margin-bottom: 8px;">الحجم الحالي</div>
+              <div id="fontScaleDisplay" style="font-size: 42px; font-weight: 900; color: var(--accent); line-height: 1.2;">100%</div>
+              <div id="fontScaleLabel" style="font-size: 14px; color: var(--text-secondary); margin-top: 4px;">عادي</div>
+            </div>
+
+            <!-- السلايدر + أزرار التحكم -->
+            <div>
+              <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 8px;">
+                <button id="fontScaleDecrease" class="btn btn-secondary" style="padding: 12px 16px; min-width: 48px; font-size: 20px; font-weight: bold;" title="تصغير">−</button>
+                <input type="range" id="fontScaleSlider" min="0.8" max="1.4" step="0.05" value="1.0" style="flex: 1; height: 12px; cursor: pointer; accent-color: var(--accent);">
+                <button id="fontScaleIncrease" class="btn btn-secondary" style="padding: 12px 16px; min-width: 48px; font-size: 20px; font-weight: bold;" title="تكبير">+</button>
+              </div>
+              <div style="display: flex; justify-content: space-between; font-size: 12px; color: var(--text-secondary);"> <span>80%</span> <span>100%</span> <span>140%</span> </div>
+              <button id="fontScaleReset" class="btn btn-secondary" style="margin-top: 12px; width: 100%;">
+                إعادة تعيين للحجم الافتراضي
+              </button>
+            </div>
+
+            <!-- أحجام مسبقة -->
+            <div>
+              <div style="font-size: 13px; font-weight: 600; color: var(--text-secondary); margin-bottom: 10px;">أحجام مسبقة</div>
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <button data-font-scale-preset="small" class="btn btn-secondary" style="padding: 10px 14px; text-align: right;">صغير 85%</button>
+                <button data-font-scale-preset="normal" class="btn btn-secondary" style="padding: 10px 14px; text-align: right;">عادي 100%</button>
+                <button data-font-scale-preset="medium" class="btn btn-secondary" style="padding: 10px 14px; text-align: right;">متوسط 115%</button>
+                <button data-font-scale-preset="large" class="btn btn-secondary" style="padding: 10px 14px; text-align: right;">كبير 130%</button>
+                <button data-font-scale-preset="xlarge" class="btn btn-secondary" style="padding: 10px 14px; text-align: right;">كبير جداً 140%</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- معاينة النص - على عرض كامل تحت المستطيل -->
+          <div style="margin-top: 20px; padding: 20px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 10px;">
+            <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 10px;">معاينة النص</div>
+            <div style="font-size: calc(16px * var(--font-scale, 1)); line-height: 1.6;">
+              هذا نص تجريبي لمعاينة حجم الخط. يمكنك رؤية التغييرات مباشرة هنا.
+            </div>
+            <div style="font-size: calc(14px * var(--font-scale, 1)); color: var(--text-secondary); margin-top: 8px;">
+              This is a sample text to preview the font size.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         🔔 NOTIFICATIONS PANEL
+         ═══════════════════════════════════════ -->
+    <div id="notificationsPanel" class="panel">
+      <div class="settings-grid">
+        <div class="settings-section">
+          <div class="section-header">
+            <div class="section-icon">🔔</div>
+            <div>
+              <div class="section-title">إعدادات الإشعارات</div>
+              <div class="section-desc">التحكم في التنبيهات</div>
+            </div>
+          </div>
+
+          <div class="toggle-group">
+            <div>
+              <div class="toggle-label">تفعيل الإشعارات</div>
+              <div class="toggle-desc">إظهار إشعارات النظام</div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="notifications" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="toggle-group">
+            <div>
+              <div class="toggle-label">الأصوات</div>
+              <div class="toggle-desc">تشغيل أصوات التنبيهات</div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="sounds" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="toggle-group">
+            <div>
+              <div class="toggle-label">تنبيهات التذكيرات</div>
+              <div class="toggle-desc">إشعارات التذكيرات والمهام</div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="reminderNotif" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="toggle-group">
+            <div>
+              <div class="toggle-label">تنبيهات المبيعات</div>
+              <div class="toggle-desc">إشعار عند إتمام عملية بيع</div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="salesNotif" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="toggle-group">
+            <div>
+              <div class="toggle-label">تنبيهات المخزون</div>
+              <div class="toggle-desc">إشعار المخزون المنخفض</div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="stockNotif" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         📦 BACKUP PANEL
+         ═══════════════════════════════════════ -->
+    <div id="backupPanel" class="panel">
+      <div class="settings-grid" style="grid-template-columns: 1fr;">
+        <div class="settings-section">
+          <div class="section-header">
+            <div class="section-icon">📦</div>
+            <div>
+              <div class="section-title">النسخ الاحتياطي</div>
+              <div class="section-desc">حماية بياناتك — النسخة تشمل كل محتويات قاعدة البيانات</div>
+            </div>
+          </div>
+
+          <div class="info-box" style="margin-bottom: 20px; background: rgba(59, 130, 246, 0.08); border-color: rgba(59, 130, 246, 0.3);">
+            <div class="info-box-title" style="color: var(--accent);">ماذا تُضمّن النسخة الاحتياطية؟</div>
+            <div class="info-box-text" style="line-height: 1.7;">
+              النسخة الاحتياطية هي نسخة كاملة من قاعدة البيانات، وتشمل: <strong>المخازن والأجهزة، الخزنة والمحافظ، العملاء والموردين والشركاء، المبيعات والمشتريات والفواتير، الصيانة وقطع الغيار، الإعدادات والمستخدمين وسجل التدقيق</strong>. يمكنك حفظها في المكان الذي تختاره أو استخدام المسار الافتراضي.
+            </div>
+          </div>
+
+          <div class="stats-row">
+            <div class="stat-item">
+              <div class="stat-icon">📅</div>
+              <div>
+                <div class="stat-label">آخر نسخة احتياطية</div>
+                <div class="stat-value" id="lastBackupDate">لم يتم بعد</div>
+              </div>
+            </div>
+            <div class="stat-item">
+              <div class="stat-icon">💾</div>
+              <div>
+                <div class="stat-label">حجم قاعدة البيانات</div>
+                <div class="stat-value" id="dbSize">0 MB</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="toggle-group">
+            <div>
+              <div class="toggle-label">النسخ الاحتياطي التلقائي</div>
+              <div class="toggle-desc">نسخ احتياطي يومي تلقائي للبيانات</div>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="autoBackup">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="action-buttons" style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <button class="btn btn-success btn-full" id="createBackupBtn" onclick="createBackup()" style="flex: 1; min-width: 200px;">
+              📦 إنشاء نسخة احتياطية الآن
+            </button>
+            <button class="btn btn-secondary btn-full" onclick="restoreBackup()" style="flex: 1; min-width: 200px;">
+              📥 استعادة نسخة احتياطية
+            </button>
+          </div>
+
+          <div id="backupResultBox" style="display: none; margin-top: 16px; padding: 16px; background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 10px;">
+            <div style="font-weight: 700; color: var(--success); margin-bottom: 8px;">✅ تم إنشاء النسخة الاحتياطية</div>
+            <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">تم الحفظ في:</div>
+            <div id="backupResultPath" style="font-size: 13px; word-break: break-all; font-family: monospace; margin-bottom: 12px;"></div>
+            <button type="button" class="btn btn-secondary btn-sm" id="copyBackupPathBtn">📋 نسخ المسار</button>
+          </div>
+
+          <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--border);">
+            <div class="section-header" style="margin-bottom: 12px;">
+              <div class="section-icon">📋</div>
+              <div>
+                <div class="section-title">سجل آخر النسخ الاحتياطية</div>
+                <div class="section-desc">من أنشأ النسخة، متى، وأين تم الحفظ</div>
+              </div>
+            </div>
+            <div id="backupHistoryList" style="min-height: 80px;">
+              <div style="color: var(--text-secondary); font-size: 13px;">جاري التحميل...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         💳 WALLETS MANAGEMENT PANEL
+         ═══════════════════════════════════════ -->
+    <div id="walletsPanel" class="panel">
+      <!-- صف واحد: المحافظ الإلكترونية | الحسابات البنكية جنب بعض -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px;">
+        <!-- المحافظ الإلكترونية فقط (بدون كاش سائل أو حساب بنكي افتراضي) -->
+        <div class="settings-section">
+          <div class="section-header">
+            <div class="section-icon">💳</div>
+            <div>
+              <div class="section-title">المحافظ الإلكترونية</div>
+              <div class="section-desc">فودافون كاش، اتصالات كاش، أورنج، وي باي، وغيرها</div>
+            </div>
+          </div>
+          <div class="action-buttons">
+            <button class="btn btn-primary btn-full" onclick="openWalletModal()">
+              ➕ إضافة محفظة إلكترونية
+            </button>
+          </div>
+          <div id="walletsList" style="margin-top: 20px;">
+            <!-- قائمة المحافظ الإلكترونية فقط -->
+          </div>
+        </div>
+
+        <!-- إدارة الحسابات البنكية -->
+        <div class="settings-section">
+          <div class="section-header">
+            <div class="section-icon">🏦</div>
+            <div>
+              <div class="section-title">الحسابات البنكية</div>
+              <div class="section-desc">إدارة الحسابات البنكية (يظهر الحساب الافتراضي إن وُجد)</div>
+            </div>
+          </div>
+          <div class="action-buttons">
+            <button class="btn btn-primary btn-full" onclick="openBankAccountModal()">
+              ➕ إضافة حساب بنكي جديد
+            </button>
+          </div>
+          <div id="bankAccountsList" style="margin-top: 20px;">
+            <!-- قائمة الحسابات البنكية -->
+          </div>
+        </div>
+      </div>
+
+      <!-- إعدادات التحويلات: مستطيل بالعرض تحت المربعين -->
+      <div class="settings-section" style="width: 100%;">
+        <div class="section-header">
+          <div class="section-icon">💱</div>
+          <div>
+            <div class="section-title">إعدادات التحويلات</div>
+            <div class="section-desc">عمولات خدمات تحويل الأموال (فودافون كاش، اتصالات كاش، إلخ)</div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">طريقة حساب العمولة</label>
+          <select class="form-select" id="transferCommissionType">
+            <option value="per_1000">لكل 1000 ج.م</option>
+            <option value="percentage">نسبة مئوية</option>
+            <option value="fixed">مبلغ ثابت</option>
+          </select>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 12px;">
+          <div class="form-group">
+            <label class="form-label">📱 فودافون كاش</label>
+            <input type="number" class="form-input" id="transferRate_vodafone_cash" value="10" min="0" step="0.5">
+          </div>
+          <div class="form-group">
+            <label class="form-label">📱 اتصالات كاش</label>
+            <input type="number" class="form-input" id="transferRate_etisalat_cash" value="10" min="0" step="0.5">
+          </div>
+          <div class="form-group">
+            <label class="form-label">📱 اورنج كاش</label>
+            <input type="number" class="form-input" id="transferRate_orange_cash" value="10" min="0" step="0.5">
+          </div>
+          <div class="form-group">
+            <label class="form-label">📱 وي باي</label>
+            <input type="number" class="form-input" id="transferRate_we_pay" value="10" min="0" step="0.5">
+          </div>
+          <div class="form-group">
+            <label class="form-label">🏦 انستاباي</label>
+            <input type="number" class="form-input" id="transferRate_instapay" value="5" min="0" step="0.5">
+          </div>
+          <div class="form-group">
+            <label class="form-label">💱 أخرى</label>
+            <input type="number" class="form-input" id="transferRate_other" value="10" min="0" step="0.5">
+          </div>
+        </div>
+        <div class="action-buttons">
+          <button class="btn btn-success" onclick="saveTransferSettings()">💾 حفظ إعدادات التحويلات</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         🧾 INVOICE SETTINGS PANEL
+         ═══════════════════════════════════════ -->
+    <div id="invoicesPanel" class="panel">
+      <div class="settings-grid">
+        <!-- إعدادات أرقام الفواتير -->
+        <div class="settings-section" style="grid-column: span 2;">
+          <div class="section-header">
+            <div class="section-icon" style="background: rgba(59,130,246,0.2); border-color: rgba(59,130,246,0.3);">🔢</div>
+            <div>
+              <div class="section-title">إعدادات أرقام الفواتير</div>
+              <div class="section-desc">تخصيص Prefix و Padding لكل نوع فاتورة</div>
+            </div>
+          </div>
+
+          <div id="invoiceCountersList">
+            <!-- سيتم تحميلها ديناميكياً -->
+            <div style="text-align: center; padding: 40px; color: var(--text-secondary);">
+              <div class="spinner" style="margin: 0 auto 16px;"></div>
+              جاري التحميل...
+            </div>
+          </div>
+        </div>
+
+        <!-- إعدادات قالب الفاتورة -->
+        <div class="settings-section">
+          <div class="section-header">
+            <div class="section-icon" style="background: rgba(139,92,246,0.2); border-color: rgba(139,92,246,0.3);">📄</div>
+            <div>
+              <div class="section-title">إعدادات قالب الفاتورة</div>
+              <div class="section-desc">تخصيص شكل الفاتورة</div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">رسالة نهاية الفاتورة</label>
+            <input type="text" id="invoiceFooterMessage" class="form-input" value="شكراً لتعاملكم معنا" placeholder="شكراً لتعاملكم معنا">
+            <span class="form-hint">ستظهر هذه الرسالة في نهاية كل فاتورة</span>
+          </div>
+
+          <div class="form-group toggle-row">
+            <div class="toggle-content">
+              <label class="form-label">إظهار تاريخ الفاتورة</label>
+              <span class="form-hint">عرض تاريخ ووقت إصدار الفاتورة</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="invoiceShowDate" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="form-group toggle-row">
+            <div class="toggle-content">
+              <label class="form-label">إظهار رقم الفاتورة</label>
+              <span class="form-hint">عرض رقم الفاتورة على الفاتورة</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="invoiceShowNumber" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="form-group toggle-row">
+            <div class="toggle-content">
+              <label class="form-label">إظهار تفاصيل العميل</label>
+              <span class="form-hint">عرض اسم ورقم هاتف العميل</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="invoiceShowClient" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <div class="form-group toggle-row">
+            <div class="toggle-content">
+              <label class="form-label">إظهار طريقة الدفع</label>
+              <span class="form-hint">عرض طريقة الدفع على الفاتورة</span>
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="invoiceShowPayment" checked>
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+
+          <!-- زر حفظ إعدادات قالب الفاتورة -->
+          <div style="margin-top: 20px;">
+            <button
+              class="btn btn-success btn-full"
+              onclick="saveInvoiceTemplateSettings()"
+              style="
+                width: 100%;
+                padding: 14px 20px;
+                font-size: 14px;
+                font-weight: 700;
+                background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+                color: #ffffff !important;
+                border: none;
+                border-radius: 10px;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+              "
+              onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 16px rgba(16, 185, 129, 0.4)';"
+              onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 12px rgba(16, 185, 129, 0.3)';"
+            >
+              💾 حفظ إعدادات قالب الفاتورة
+            </button>
+          </div>
+        </div>
+
+        <!-- معاينة رقم الفاتورة -->
+        <div class="settings-section">
+          <div class="section-header">
+            <div class="section-icon" style="background: rgba(16,185,129,0.2); border-color: rgba(16,185,129,0.3);">👁️</div>
+            <div>
+              <div class="section-title">معاينة أرقام الفواتير</div>
+              <div class="section-desc">عرض رقم الفاتورة القادم لكل نوع</div>
+            </div>
+          </div>
+
+          <div id="invoicePreviewList">
+            <!-- سيتم تحميلها ديناميكياً -->
+            <div style="text-align: center; padding: 20px; color: var(--text-secondary);">
+              جاري التحميل...
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         🌐 NETWORK SETTINGS PANEL
+         ═══════════════════════════════════════ -->
+    <div id="networkPanel" class="panel">
+      <div class="settings-grid">
+        <!-- حالة الشبكة الحالية -->
+        <div class="settings-section">
+          <div class="section-header">
+            <div class="section-icon" style="background: rgba(16,185,129,0.2); border-color: rgba(16,185,129,0.3);">🌐</div>
+            <div>
+              <div class="section-title">حالة الشبكة</div>
+              <div class="section-desc">الوضع الحالي للاتصال بالشبكة</div>
+            </div>
+          </div>
+
+          <div id="networkStatus" style="padding: 20px;">
+            <div style="text-align: center; color: var(--text-secondary);">
+              <div class="spinner" style="margin: 0 auto 16px;"></div>
+              جاري التحميل...
+            </div>
+          </div>
+        </div>
+
+        <!-- إعدادات الشبكة -->
+        <div class="settings-section">
+          <div class="section-header">
+            <div class="section-icon" style="background: rgba(59,130,246,0.2); border-color: rgba(59,130,246,0.3);">⚙️</div>
+            <div>
+              <div class="section-title">إعداد الشبكة</div>
+              <div class="section-desc">تكوين اتصال الشبكة المحلية</div>
+            </div>
+          </div>
+
+          <div class="info-box info" style="margin-bottom: 20px;">
+            <div class="info-box-title">ℹ️ ربط أجهزة متعددة</div>
+            <div class="info-box-text">يمكنك ربط أجهزة متعددة بنفس قاعدة البيانات عبر الشبكة المحلية. اختر "سيرفر" للجهاز الرئيسي و"عميل" للأجهزة الفرعية.</div>
+          </div>
+
+          <div class="action-buttons" style="flex-direction: column; gap: 15px;">
+            <button class="btn btn-primary btn-full" onclick="openNetworkSetup()" style="background: linear-gradient(135deg, #10b981, #059669);">
+              🌐 فتح إعداد الشبكة
+            </button>
+            <button class="btn btn-secondary btn-full" onclick="testNetworkConnection()">
+              🔌 اختبار الاتصال
+            </button>
+          </div>
+        </div>
+
+        <!-- معلومات إضافية -->
+        <div class="settings-section" style="grid-column: span 2;">
+          <div class="section-header">
+            <div class="section-icon" style="background: rgba(139,92,246,0.2); border-color: rgba(139,92,246,0.3);">📡</div>
+            <div>
+              <div class="section-title">عناوين IP المحلية</div>
+              <div class="section-desc">العناوين المتاحة للاتصال من الأجهزة الأخرى</div>
+            </div>
+          </div>
+
+          <div id="localIPsList" style="padding: 10px;">
+            <div style="text-align: center; color: var(--text-secondary);">جاري التحميل...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         ⚠️ DANGER ZONE PANEL
+         ═══════════════════════════════════════ -->
+    <div id="dangerPanel" class="panel">
+      <div class="settings-section" style="max-width: 600px;">
+        <div class="section-header">
+          <div class="section-icon" style="background: rgba(239,68,68,0.2); border-color: rgba(239,68,68,0.3);">⚠️</div>
+          <div>
+            <div class="section-title" style="color: var(--danger);">المنطقة الخطرة</div>
+            <div class="section-desc">إجراءات لا يمكن التراجع عنها</div>
+          </div>
+        </div>
+
+        <div class="info-box danger">
+          <div class="info-box-title">⚠️ تحذير هام</div>
+          <div class="info-box-text">العمليات التالية لا يمكن التراجع عنها. تأكد من إنشاء نسخة احتياطية قبل المتابعة.</div>
+        </div>
+
+        <div class="action-buttons" style="flex-direction: column;">
+          <button class="btn btn-warning btn-full" onclick="clearCache()">
+            🗑️ مسح الذاكرة المؤقتة
+          </button>
+          <button class="btn btn-danger btn-full" onclick="resetSettings()">
+            🔄 إعادة تعيين الإعدادات
+          </button>
+          <button class="btn btn-danger btn-full" onclick="clearAllData()">
+            💀 حذف جميع البيانات
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         ℹ️ ABOUT PANEL
+         ═══════════════════════════════════════ -->
+    <div id="aboutPanel" class="panel">
+      <div class="settings-grid">
+        <!-- معلومات البرنامج -->
+        <div class="settings-section">
+          <div class="section-header">
+            <div class="section-icon" style="background: linear-gradient(135deg, rgba(59,130,246,0.2), rgba(139,92,246,0.2)); border-color: rgba(139,92,246,0.3);">
+              <img src="assets/logo.ico" alt="ELOS Logo" style="width: 32px; height: 32px; object-fit: contain;">
+            </div>
+            <div>
+              <div class="section-title">ElOs System</div>
+              <div class="section-desc">نظام إدارة محلات الموبايلات والإكسسوارات</div>
+            </div>
+          </div>
+
+          <div style="text-align: center; padding: 20px;">
+            <div style="margin-bottom: 16px;">
+              <img src="assets/logo.ico" alt="ELOS Logo" style="width: 80px; height: 80px; object-fit: contain; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.1));">
+            </div>
+            <div style="font-size: 28px; font-weight: 900; background: linear-gradient(135deg, var(--accent), var(--purple)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 8px;">ElOs System</div>
+            <div style="font-size: 18px; color: var(--accent); font-weight: 600; margin-bottom: 4px;">Mobile Suite</div>
+            <div style="font-size: 14px; color: var(--text-secondary); margin-bottom: 8px;">Smart Accounting for Mobile Businesses</div>
+            <div style="font-size: 20px; font-weight: 800; color: var(--accent); margin-top: 12px;" id="aboutVersion">V 2.0</div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px;">
+            <div style="background: var(--bg-tertiary); padding: 12px; border-radius: 10px; text-align: center;">
+              <div style="font-size: 11px; color: var(--text-secondary);">تاريخ الإصدار</div>
+              <div style="font-size: 14px; font-weight: 700;">فبراير 2026</div>
+            </div>
+            <div style="background: var(--bg-tertiary); padding: 12px; border-radius: 10px; text-align: center;">
+              <div style="font-size: 11px; color: var(--text-secondary);">نوع الترخيص</div>
+              <div style="font-size: 14px; font-weight: 700; color: var(--success);" id="licenseType">تجاري</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- الدعم الفني -->
+        <div class="settings-section">
+          <div class="section-header">
+            <div class="section-icon" style="background: rgba(16,185,129,0.2); border-color: rgba(16,185,129,0.3);">🛠️</div>
+            <div>
+              <div class="section-title">الدعم الفني</div>
+              <div class="section-desc">تواصل معنا للمساعدة</div>
+            </div>
+          </div>
+
+          <a href="https://wa.me/201550320914" target="_blank" style="text-decoration: none; display: block;">
+            <div class="info-box" style="background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.3); cursor: pointer; transition: all 0.2s ease;" onmouseover="this.style.background='rgba(16,185,129,0.15)'; this.style.borderColor='rgba(16,185,129,0.5)'; this.style.transform='translateY(-2px)';" onmouseout="this.style.background='rgba(16,185,129,0.1)'; this.style.borderColor='rgba(16,185,129,0.3)'; this.style.transform='translateY(0)';">
+              <div class="info-box-title" style="color: var(--success); display: flex; align-items: center; gap: 8px;">
+                <span>💬</span>
+                <span>واتساب الدعم الفني</span>
+              </div>
+              <div class="info-box-text" style="font-size: 18px; font-weight: 700; direction: ltr; text-align: right; color: var(--text-primary); display: flex; align-items: center; justify-content: space-between; margin-top: 8px;">
+                <span>+20 1550320914</span>
+                <span style="font-size: 24px;">📱</span>
+              </div>
+              <div style="font-size: 12px; color: var(--text-secondary); margin-top: 4px; text-align: right;">
+                اضغط للفتح في واتساب
+              </div>
+            </div>
+          </a>
+
+          <div class="info-box" style="background: rgba(139,92,246,0.1); border-color: rgba(139,92,246,0.3);">
+            <div class="info-box-title" style="color: var(--purple);">🌐 الموقع الإلكتروني</div>
+            <div class="info-box-text" style="font-size: 14px;">www.elos-system.com</div>
+          </div>
+
+          <div style="margin-top: 16px; padding: 16px; background: var(--bg-tertiary); border-radius: 10px; text-align: center;">
+            <div style="font-size: 12px; color: var(--text-secondary); margin-bottom: 8px;">ساعات العمل</div>
+            <div style="font-size: 14px; font-weight: 600;">السبت - الخميس: 9 صباحاً - 9 مساءً</div>
+          </div>
+        </div>
+
+        <!-- معلومات الترخيص -->
+        <div class="settings-section" style="grid-column: span 2;">
+          <div class="section-header">
+            <div class="section-icon" style="background: rgba(245,158,11,0.2); border-color: rgba(245,158,11,0.3);">🔑</div>
+            <div>
+              <div class="section-title">معلومات الترخيص</div>
+              <div class="section-desc">تفاصيل ترخيص النظام</div>
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px;">
+            <div style="background: var(--bg-tertiary); padding: 16px; border-radius: 10px;">
+              <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 4px;">رقم الترخيص</div>
+              <div style="font-size: 14px; font-weight: 700; font-family: monospace;" id="licenseKey">---</div>
+            </div>
+            <div style="background: var(--bg-tertiary); padding: 16px; border-radius: 10px;">
+              <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 4px;">اسم المنشأة</div>
+              <div style="font-size: 14px; font-weight: 700;" id="licenseName">---</div>
+            </div>
+            <div style="background: var(--bg-tertiary); padding: 16px; border-radius: 10px;">
+              <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 4px;">تاريخ التفعيل</div>
+              <div style="font-size: 14px; font-weight: 700;" id="licenseActivation">---</div>
+            </div>
+            <div style="background: var(--bg-tertiary); padding: 16px; border-radius: 10px;">
+              <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 4px;">تاريخ الانتهاء</div>
+              <div style="font-size: 14px; font-weight: 700;" id="licenseExpiry">---</div>
+            </div>
+          </div>
+
+          <div style="margin-top: 20px; padding: 16px; background: linear-gradient(135deg, rgba(59,130,246,0.1), rgba(139,92,246,0.1)); border: 1px solid rgba(59,130,246,0.2); border-radius: 12px; text-align: center;">
+            <div style="font-size: 12px; color: var(--text-secondary);">حالة الترخيص</div>
+            <div style="font-size: 18px; font-weight: 800; color: var(--success); margin-top: 4px;" id="licenseStatus">✅ مفعّل</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       💳 WALLET MODAL
+       ═══════════════════════════════════════ -->
+  <div id="walletModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3 id="walletModalTitle">إضافة محفظة جديدة</h3>
+        <button class="modal-close" onclick="closeWalletModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <form id="walletForm" onsubmit="saveWallet(event)">
+          <input type="hidden" id="walletId">
+          <input type="hidden" id="walletType" value="mobile_wallet">
+
+          <div class="form-group">
+            <label class="form-label">اسم المحفظة <span style="color: var(--danger);">*</span></label>
+            <input type="text" id="walletName" class="form-input" placeholder="مثال: فودافون كاش - أحمد" required>
+          </div>
+
+          <div class="form-group" id="walletProviderGroup" style="display: none;">
+            <label class="form-label">مزود الخدمة</label>
+            <select id="walletProvider" class="form-input">
+              <option value="">-- اختر المزود --</option>
+              <option value="vodafone_cash">فودافون كاش</option>
+              <option value="orange_money">أورنج ماني</option>
+              <option value="etisalat_cash">اتصالات كاش</option>
+              <option value="we_pay">وي باي</option>
+              <option value="other">أخرى</option>
+            </select>
+          </div>
+
+          <div class="form-group" id="walletPhoneGroup" style="display: none;">
+            <label class="form-label">رقم المحفظة / الهاتف <span style="color: var(--danger);">*</span></label>
+            <input type="text" id="walletPhone" class="form-input" placeholder="01xxxxxxxxx" required maxlength="20">
+          </div>
+
+          <div class="form-group" id="bankNameGroup" style="display: none;">
+            <label class="form-label">اسم البنك <span style="color: var(--danger);">*</span></label>
+            <input type="text" id="bankName" class="form-input" placeholder="مثال: البنك الأهلي المصري">
+          </div>
+
+          <div class="form-group" id="accountNumberGroup" style="display: none;">
+            <label class="form-label">رقم الحساب</label>
+            <input type="text" id="accountNumber" class="form-input" placeholder="رقم الحساب البنكي">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">ملاحظات</label>
+            <textarea id="walletNotes" class="form-textarea" rows="3" placeholder="ملاحظات إضافية (اختياري)"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="toggle-group">
+              <input type="checkbox" id="walletIsDefault">
+              <span>تعيين كمحفظة افتراضية لهذا النوع</span>
+            </label>
+          </div>
+
+          <div class="form-group">
+            <label class="toggle-group">
+              <input type="checkbox" id="walletIsActive" checked>
+              <span>المحفظة نشطة</span>
+            </label>
+          </div>
+
+          <div class="action-buttons">
+            <button type="submit" class="btn btn-success">💾 حفظ</button>
+            <button type="button" class="btn btn-secondary" onclick="closeWalletModal()">إلغاء</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       🏦 BANK ACCOUNT MODAL
+       ═══════════════════════════════════════ -->
+  <div id="bankAccountModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 500px;">
+      <div class="modal-header">
+        <h3 id="bankAccountModalTitle">إضافة حساب بنكي جديد</h3>
+        <button class="modal-close" onclick="closeBankAccountModal()">×</button>
+      </div>
+      <div class="modal-body">
+        <form id="bankAccountForm" onsubmit="saveBankAccount(event)">
+          <input type="hidden" id="bankAccountId">
+          
+          <div class="form-group">
+            <label class="form-label">اسم البنك <span style="color: var(--danger);">*</span></label>
+            <input type="text" id="bankAccountBankName" class="form-input" placeholder="مثال: البنك الأهلي المصري" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">رقم الحساب <span style="color: var(--danger);">*</span></label>
+            <input type="text" id="bankAccountNumber" class="form-input" placeholder="رقم الحساب البنكي" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">اسم صاحب الحساب</label>
+            <input type="text" id="bankAccountName" class="form-input" placeholder="اسم صاحب الحساب">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">اسم الفرع</label>
+            <input type="text" id="bankAccountBranch" class="form-input" placeholder="اسم الفرع">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">IBAN (إن وجد)</label>
+            <input type="text" id="bankAccountIban" class="form-input" placeholder="EGXX XXXX XXXX XXXX XXXX XXXX">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">ملاحظات</label>
+            <textarea id="bankAccountNotes" class="form-textarea" rows="3" placeholder="ملاحظات إضافية (اختياري)"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="toggle-group">
+              <input type="checkbox" id="bankAccountIsDefault">
+              <span>تعيين كحساب افتراضي</span>
+            </label>
+          </div>
+
+          <div class="form-group">
+            <label class="toggle-group">
+              <input type="checkbox" id="bankAccountIsActive" checked>
+              <span>الحساب نشط</span>
+            </label>
+          </div>
+
+          <div class="action-buttons">
+            <button type="submit" class="btn btn-success">💾 حفظ</button>
+            <button type="button" class="btn btn-secondary" onclick="closeBankAccountModal()">إلغاء</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       🦶 FOOTER
+       ═══════════════════════════════════════ -->
+  <footer>
+    <span>Developed by ElOs | 4Accounting System © 2025</span>
+    <span>الإعدادات V 2.0 • نظام التخصيص والتحكم</span>
+  </footer>
+
+  <script src="./utils.js"></script>
+  <script>
+    // ═══════════════════════════════════════════════════════════════
+    // ⚙️ ELOS SETTINGS SYSTEM v2.0
+    // ═══════════════════════════════════════════════════════════════
+
+    let currentTab = 'general';
+
+    // ═══════════════════════════════════════════════════════════════
+    // ⏰ HEADER CLOCK
+    // ═══════════════════════════════════════════════════════════════
+    function initHeaderClock() {
+      const updateClock = () => {
+        const now = new Date();
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const seconds = String(now.getSeconds()).padStart(2, '0');
+        document.getElementById('headerTime').textContent = `${hours}:${minutes}:${seconds}`;
+        
+        const days = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+        const dayName = days[now.getDay()];
+        const day = now.getDate();
+        const month = now.getMonth() + 1;
+        const year = now.getFullYear();
+        document.getElementById('headerDate').textContent = `${dayName} ${day}/${month}/${year}`;
+      };
+      
+      updateClock();
+      setInterval(updateClock, 1000);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // 🎯 TAB SWITCHING
+    // ═══════════════════════════════════════════════════════════════
+    function switchTab(tabName) {
+      // Load wallets and bank accounts when wallets tab is opened
+      if (tabName === 'wallets') {
+        loadWallets();
+        loadBankAccounts();
+      }
+      // Load invoice settings when invoices tab is opened
+      if (tabName === 'invoices') {
+        loadInvoiceSettings();
+      }
+      // Load network settings when network tab is opened
+      if (tabName === 'network') {
+        loadNetworkSettings();
+      }
+      if (tabName === 'backup') {
+        loadBackupHistory();
+      }
+      currentTab = tabName;
+      
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.toggle('active', tab.dataset.tab === tabName);
+      });
+      
+      document.querySelectorAll('.panel').forEach(panel => {
+        panel.classList.remove('active');
+      });
+      
+      document.getElementById(tabName + 'Panel').classList.add('active');
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // 💾 SAVE SETTINGS
+    // ═══════════════════════════════════════════════════════════════
+    async function saveGeneralSettings() {
+      await saveAllSettings();
+      showToast('تم حفظ الإعدادات العامة', 'success');
+    }
+
+    // ✅ حفظ تلقائي لإعدادات المخزون عند تغيير أي toggle أو قيمة
+    async function autoSaveInventorySettings() {
+      await saveAllSettings();
+      showToast('✅ تم حفظ إعدادات المخزون', 'success');
+    }
+
+    async function saveAllSettings() {
+      const settings = {
+        // General
+        companyName: document.getElementById('companyName').value,
+        companyLogo: document.getElementById('companyLogo').value,
+        currency: document.getElementById('currency').value,
+        dateFormat: document.getElementById('dateFormat').value,
+
+        // System
+        lowStockAlert: document.getElementById('lowStockAlert').checked,
+        stockThreshold: document.getElementById('stockThreshold').value,
+        preventNegativeStock: document.getElementById('preventNegativeStock').checked,
+
+        // 🖨️ Printer Settings
+        printerPaperWidth: document.getElementById('printerPaperWidth')?.value || '80',
+        printerFontSize: document.getElementById('printerFontSize')?.value || 'normal',
+        companyPhone: document.getElementById('companyPhone')?.value || '',
+        companyAddress: document.getElementById('companyAddress')?.value || '',
+        printerFooterMessage: document.getElementById('printerFooterMessage')?.value || 'شكراً لتعاملكم معنا',
+        printerShowDetails: document.getElementById('printerShowDetails')?.checked !== false,
+
+        // Notifications
+        notifications: document.getElementById('notifications').checked,
+        sounds: document.getElementById('sounds').checked,
+        reminderNotif: document.getElementById('reminderNotif').checked,
+        salesNotif: document.getElementById('salesNotif').checked,
+        stockNotif: document.getElementById('stockNotif').checked,
+
+        // Backup
+        autoBackup: document.getElementById('autoBackup').checked,
+
+        // 🧾 Invoice Template Settings
+        invoiceFooterMessage: document.getElementById('invoiceFooterMessage')?.value || 'شكراً لتعاملكم معنا',
+        invoiceShowDate: document.getElementById('invoiceShowDate')?.checked !== false,
+        invoiceShowNumber: document.getElementById('invoiceShowNumber')?.checked !== false,
+        invoiceShowClient: document.getElementById('invoiceShowClient')?.checked !== false,
+        invoiceShowPayment: document.getElementById('invoiceShowPayment')?.checked !== false
+      };
+
+      // ✅ حفظ في localStorage (للوصول السريع)
+      localStorage.setItem('appSettings', JSON.stringify(settings));
+      updateHeaderWithSettings(settings);
+
+      // ✅ حفظ في قاعدة البيانات عبر API
+      try {
+        const res = await fetch('elos-db://settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(settings)
+        });
+
+        if (!res.ok) {
+          const errorText = await res.text();
+          console.warn('[SETTINGS] Failed to save to database:', errorText);
+          // لا نوقف العملية، فقط ننبه
+        } else {
+          const data = await res.json();
+          console.log('[SETTINGS] Saved to database:', data);
+        }
+      } catch (error) {
+        console.error('[SETTINGS] Error saving to database:', error);
+        // لا نوقف العملية، فقط ننبه
+      }
+
+      // ✅ تحديث شريط الـ SPA فوراً (الاسم واللوجو) بدون إعادة تشغيل
+      try {
+        if (window.parent !== window && typeof window.parent.refreshCompanyInfo === 'function') {
+          window.parent.refreshCompanyInfo();
+        }
+      } catch (e) {
+        console.warn('[SETTINGS] Could not refresh parent company info:', e);
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // 📥 LOAD SETTINGS
+    // ═══════════════════════════════════════════════════════════════
+    async function loadSettings() {
+      // ✅ محاولة جلب الإعدادات من قاعدة البيانات أولاً
+      let settings = {};
+      try {
+        const res = await fetch('elos-db://settings');
+        if (res.ok) {
+          const dbSettings = await res.json();
+          // دمج الإعدادات من قاعدة البيانات
+          settings = { ...settings, ...dbSettings };
+          // حفظ في localStorage للوصول السريع
+          localStorage.setItem('appSettings', JSON.stringify(settings));
+        }
+      } catch (error) {
+        console.warn('[SETTINGS] Could not load from database, using localStorage:', error);
+      }
+
+      // ✅ إذا لم توجد إعدادات في قاعدة البيانات، استخدم localStorage
+      if (Object.keys(settings).length === 0) {
+        const saved = localStorage.getItem('appSettings');
+        if (saved) {
+          settings = JSON.parse(saved);
+        } else {
+          return; // لا توجد إعدادات
+        }
+      }
+      
+      // General
+      if (settings.companyName) document.getElementById('companyName').value = settings.companyName;
+      if (settings.companyLogo) {
+        document.getElementById('companyLogo').value = settings.companyLogo;
+        document.getElementById('logoPreview').innerHTML = `<img src="${settings.companyLogo}">`;
+      }
+      if (settings.currency) document.getElementById('currency').value = settings.currency;
+      if (settings.dateFormat) document.getElementById('dateFormat').value = settings.dateFormat;
+
+      // System (المخزون فقط)
+      document.getElementById('lowStockAlert').checked = settings.lowStockAlert !== false;
+      if (settings.stockThreshold) document.getElementById('stockThreshold').value = settings.stockThreshold;
+      document.getElementById('preventNegativeStock').checked = settings.preventNegativeStock !== false;
+
+      // 🖨️ Printer Settings
+      if (document.getElementById('printerPaperWidth')) {
+        document.getElementById('printerPaperWidth').value = settings.printerPaperWidth || '80';
+      }
+      if (document.getElementById('printerFontSize')) {
+        document.getElementById('printerFontSize').value = settings.printerFontSize || 'normal';
+      }
+      if (document.getElementById('companyPhone')) {
+        document.getElementById('companyPhone').value = settings.companyPhone || '';
+      }
+      if (document.getElementById('companyAddress')) {
+        document.getElementById('companyAddress').value = settings.companyAddress || '';
+      }
+      if (document.getElementById('printerFooterMessage')) {
+        document.getElementById('printerFooterMessage').value = settings.printerFooterMessage || 'شكراً لتعاملكم معنا';
+      }
+      if (document.getElementById('printerShowDetails')) {
+        document.getElementById('printerShowDetails').checked = settings.printerShowDetails !== false;
+      }
+
+      // Notifications
+      document.getElementById('notifications').checked = settings.notifications !== false;
+      document.getElementById('sounds').checked = settings.sounds !== false;
+      document.getElementById('reminderNotif').checked = settings.reminderNotif !== false;
+      document.getElementById('salesNotif').checked = settings.salesNotif !== false;
+      document.getElementById('stockNotif').checked = settings.stockNotif !== false;
+      
+      // Backup
+      document.getElementById('autoBackup').checked = settings.autoBackup || false;
+
+      // 🧾 Invoice Template Settings
+      if (document.getElementById('invoiceFooterMessage')) {
+        document.getElementById('invoiceFooterMessage').value = settings.invoiceFooterMessage || 'شكراً لتعاملكم معنا';
+      }
+      if (document.getElementById('invoiceShowDate')) {
+        document.getElementById('invoiceShowDate').checked = settings.invoiceShowDate !== false;
+      }
+      if (document.getElementById('invoiceShowNumber')) {
+        document.getElementById('invoiceShowNumber').checked = settings.invoiceShowNumber !== false;
+      }
+      if (document.getElementById('invoiceShowClient')) {
+        document.getElementById('invoiceShowClient').checked = settings.invoiceShowClient !== false;
+      }
+      if (document.getElementById('invoiceShowPayment')) {
+        document.getElementById('invoiceShowPayment').checked = settings.invoiceShowPayment !== false;
+      }
+      
+      // 💱 Transfer Settings
+      loadTransferSettings();
+
+      updateHeaderWithSettings(settings);
+      updateBackupStatus();
+    }
+
+    // 💱 Load transfer settings from DB
+    async function loadTransferSettings() {
+      try {
+        const res = await fetch('elos-db://settings');
+        if (!res.ok) return;
+        const data = await res.json();
+        // data can be object with keys
+        const s = data || {};
+
+        const typeEl = document.getElementById('transferCommissionType');
+        if (typeEl && s.transferCommissionType) typeEl.value = s.transferCommissionType;
+
+        const types = ['vodafone_cash', 'etisalat_cash', 'orange_cash', 'we_pay', 'instapay', 'other'];
+        types.forEach(t => {
+          const el = document.getElementById('transferRate_' + t);
+          const key = 'transferCommissionRate_' + t;
+          if (el && s[key] !== undefined) el.value = s[key];
+        });
+      } catch (e) {
+        console.warn('[SETTINGS] Error loading transfer settings:', e);
+      }
+    }
+
+    // 💱 Save transfer settings
+    async function saveTransferSettings() {
+      try {
+        const commType = document.getElementById('transferCommissionType')?.value || 'per_1000';
+        const types = ['vodafone_cash', 'etisalat_cash', 'orange_cash', 'we_pay', 'instapay', 'other'];
+
+        const settings = {
+          transferCommissionType: commType
+        };
+
+        types.forEach(t => {
+          const el = document.getElementById('transferRate_' + t);
+          if (el) settings['transferCommissionRate_' + t] = el.value;
+        });
+
+        const res = await fetch('elos-db://settings', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(settings)
+        });
+
+        if (!res.ok) throw new Error(await res.text());
+
+        showToast('تم حفظ إعدادات التحويلات بنجاح', 'success');
+      } catch (e) {
+        console.error('[SETTINGS] Error saving transfer settings:', e);
+        showToast('فشل حفظ إعدادات التحويلات: ' + e.message, 'error');
+      }
+    }
+
+    function updateHeaderWithSettings(settings) {
+      const brandEl = document.querySelector('.brand');
+      const logoEl = document.querySelector('.logo');
+      
+      if (settings.companyName && brandEl) {
+        brandEl.textContent = settings.companyName;
+        if (/[؀-ۿ]/.test(settings.companyName)) {
+          brandEl.style.fontFamily = '"Tajawal", "Cairo", sans-serif';
+          brandEl.style.letterSpacing = '0';
+        }
+      }
+      
+      if (settings.companyLogo && logoEl) {
+        const img = document.createElement('img');
+        img.src = settings.companyLogo;
+        img.style.cssText = 'width:40px;height:40px;object-fit:contain;border-radius:8px;';
+        logoEl.replaceWith(img);
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // 🖼️ LOGO UPLOAD
+    // ═══════════════════════════════════════════════════════════════
+    document.getElementById('companyLogoFile')?.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      
+      if (!file.type.startsWith('image/')) {
+        showToast('يرجى اختيار صورة فقط', 'error');
+        return;
+      }
+      
+      if (file.size > 2 * 1024 * 1024) {
+        showToast('حجم الصورة كبير جداً (الحد 2MB)', 'error');
+        return;
+      }
+      
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const base64 = event.target.result;
+        document.getElementById('companyLogo').value = base64;
+        document.getElementById('logoPreview').innerHTML = `<img src="${base64}">`;
+        showToast('تم رفع الشعار بنجاح', 'success');
+      };
+      reader.readAsDataURL(file);
+    });
+
+    function resetLogo() {
+      document.getElementById('companyLogo').value = '';
+      document.getElementById('companyLogoFile').value = '';
+      document.getElementById('logoPreview').innerHTML = '<span style="font-size: 32px; opacity: 0.3;">🖼️</span>';
+      showToast('تم إزالة الشعار', 'success');
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // 📦 BACKUP FUNCTIONS
+    // ═══════════════════════════════════════════════════════════════
+    function getAuthBridge() {
+      return window.authBridge || (window.parent && window.parent.authBridge) || null;
+    }
+    async function createBackup() {
+      const btn = document.getElementById('createBackupBtn');
+      if (btn) btn.disabled = true;
+      const resultBox = document.getElementById('backupResultBox');
+      if (resultBox) resultBox.style.display = 'none';
+
+      let customPath = null;
+      const authBridge = getAuthBridge();
+      if (authBridge && typeof authBridge.showBackupSaveDialog === 'function') {
+        try {
+          const d = await authBridge.showBackupSaveDialog();
+          if (d.canceled) {
+            showToast('تم الإلغاء', 'info');
+            if (btn) btn.disabled = false;
+            return;
+          }
+          if (d.filePath) customPath = d.filePath;
+        } catch (e) {
+          console.warn('[BACKUP] Save dialog not available:', e);
+        }
+      }
+
+      showToast('جاري إنشاء النسخة الاحتياطية...', 'info');
+
+      try {
+        const options = { method: 'POST', headers: { 'Content-Type': 'application/json' } };
+        if (customPath) options.body = JSON.stringify({ customPath });
+        const res = await fetch('elos-db://create-backup', options);
+        const data = await res.json();
+
+        if (data.success) {
+          showToast('تم إنشاء النسخة الاحتياطية بنجاح ✅', 'success');
+          localStorage.setItem('lastBackup', new Date().toISOString());
+          await updateBackupStatus();
+          const pathForDisplay = data.pathForDisplay || data.file || '';
+          const pathEl = document.getElementById('backupResultPath');
+          const copyBtn = document.getElementById('copyBackupPathBtn');
+          if (pathEl) pathEl.textContent = pathForDisplay;
+          if (resultBox) resultBox.style.display = 'block';
+          if (copyBtn) {
+            copyBtn.onclick = () => {
+              if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(pathForDisplay).then(() => showToast('تم نسخ المسار', 'success')).catch(() => {});
+              }
+            };
+          }
+          loadBackupHistory();
+        } else {
+          showToast('فشل إنشاء النسخة: ' + (data.error || 'خطأ غير معروف'), 'error');
+        }
+      } catch (error) {
+        console.error('[BACKUP] Error:', error);
+        showToast('خطأ في إنشاء النسخة الاحتياطية', 'error');
+      }
+      if (btn) btn.disabled = false;
+    }
+
+    async function restoreBackup() {
+      const ok = await showConfirm('استعادة النسخة الاحتياطية ستستبدل قاعدة البيانات الحالية بكل البيانات الموجودة في الملف المختار.\n\nهل تريد المتابعة؟', 'استعادة نسخة احتياطية');
+      if (!ok) return;
+      const authBridge = getAuthBridge();
+      if (!authBridge || typeof authBridge.showRestoreBackupDialog !== 'function') {
+        showToast('الاستعادة غير متاحة من هذه الواجهة.', 'error');
+        return;
+      }
+      try {
+        const result = await authBridge.showRestoreBackupDialog();
+        if (result.canceled) {
+          showToast('تم الإلغاء', 'info');
+          return;
+        }
+        if (!result.success) {
+          showToast(result.error || 'فشلت الاستعادة', 'error');
+          return;
+        }
+        showToast('جاري إعادة تشغيل البرنامج لاستكمال الاستعادة...', 'info');
+      } catch (e) {
+        console.error('[RESTORE]', e);
+        showToast('خطأ أثناء الاستعادة: ' + (e.message || 'خطأ غير معروف'), 'error');
+      }
+    }
+
+    async function loadBackupHistory() {
+      const container = document.getElementById('backupHistoryList');
+      if (!container) return;
+      try {
+        const res = await fetch('elos-db://backup-history');
+        const data = await res.json();
+        if (data.success && Array.isArray(data.history) && data.history.length > 0) {
+          container.innerHTML = data.history.map((h, i) => `
+            <div style="display: flex; align-items: center; gap: 12px; padding: 10px 12px; background: var(--bg-primary); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px;">
+              <span style="font-weight: 700; color: var(--accent); min-width: 24px;">#${i + 1}</span>
+              <span style="font-size: 13px; color: var(--text-secondary);">${h.date || '-'}</span>
+              <span style="font-weight: 600;">${h.username || 'نظام'}</span>
+              <span style="font-size: 12px; color: var(--text-muted); word-break: break-all; flex: 1;" title="${(h.file || '').replace(/"/g, '&quot;')}">${h.file ? (h.file.length > 50 ? '...' + h.file.slice(-47) : h.file) : '-'}</span>
+            </div>
+          `).join('');
+        } else {
+          container.innerHTML = '<div style="color: var(--text-secondary); font-size: 13px;">لا يوجد سجل نسخ احتياطية بعد.</div>';
+        }
+      } catch (e) {
+        container.innerHTML = '<div style="color: var(--text-secondary); font-size: 13px;">تعذر تحميل السجل.</div>';
+      }
+    }
+
+    async function updateBackupStatus() {
+      try {
+        // جلب المعلومات الحقيقية من السيرفر
+        const res = await fetch('elos-db://system-info');
+        const data = await res.json();
+
+        // تحديث حجم قاعدة البيانات
+        document.getElementById('statDbSize').textContent = data.dbSize;
+        document.getElementById('dbSize').textContent = data.dbSize;
+
+        // تحديث معلومات الباكب
+        if (data.lastBackup) {
+          const date = new Date(data.lastBackup);
+          const now = new Date();
+          const diff = now - date;
+          const hours = Math.floor(diff / 3600000);
+
+          let statusText, fullText;
+          if (hours < 1) {
+            statusText = 'الآن';
+            fullText = 'منذ دقائق';
+          } else if (hours < 24) {
+            statusText = `${hours}س`;
+            fullText = `منذ ${hours} ساعة`;
+          } else {
+            const days = Math.floor(hours / 24);
+            statusText = `${days}ي`;
+            fullText = `منذ ${days} يوم`;
+          }
+
+          document.getElementById('statBackup').textContent = statusText;
+          document.getElementById('lastBackupDate').textContent = fullText + ` (${data.backupCount} نسخة)`;
+        } else {
+          document.getElementById('statBackup').textContent = '--';
+          document.getElementById('lastBackupDate').textContent = 'لم يتم بعد';
+        }
+
+      } catch (error) {
+        console.warn('[SETTINGS] Could not fetch system info:', error);
+        // Fallback للقيم المحلية
+        const lastBackup = localStorage.getItem('lastBackup');
+        if (lastBackup) {
+          const date = new Date(lastBackup);
+          const now = new Date();
+          const diff = now - date;
+          const hours = Math.floor(diff / 3600000);
+
+          let statusText = hours < 1 ? 'الآن' : hours < 24 ? `${hours}س` : `${Math.floor(hours / 24)}ي`;
+          document.getElementById('statBackup').textContent = statusText;
+        }
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // 🖨️ TEST PRINT
+    // ═══════════════════════════════════════════════════════════════
+    function testPrint() {
+      // حفظ الإعدادات أولاً
+      saveAllSettings();
+
+      const settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
+      const paperWidth = settings.printerPaperWidth === '58' ? '48mm' : '72mm';
+
+      const fontSizes = {
+        small: { header: '12px', normal: '9px', small: '8px' },
+        normal: { header: '14px', normal: '10px', small: '9px' },
+        large: { header: '16px', normal: '11px', small: '10px' }
+      };
+      const fonts = fontSizes[settings.printerFontSize] || fontSizes.normal;
+
+      const printWindow = window.open('', '_blank', 'width=400,height=500');
+
+      if (!printWindow) {
+        showToast('يرجى السماح بالنوافذ المنبثقة للطباعة', 'error');
+        return;
+      }
+
+      printWindow.document.write(`
+        <!DOCTYPE html>
+        <html dir="rtl" lang="ar">
+        <head>
+          <meta charset="UTF-8">
+          <title>طباعة تجريبية</title>
+          <style>
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            @page { size: ${settings.printerPaperWidth || '80'}mm auto; margin: 0; }
+            body {
+              font-family: 'Arial', 'Tahoma', sans-serif;
+              width: ${paperWidth};
+              max-width: ${paperWidth};
+              margin: 0 auto;
+              padding: 4mm;
+              background: #fff;
+              color: #000;
+              font-size: ${fonts.normal};
+              line-height: 1.4;
+            }
+            .header { text-align: center; padding-bottom: 8px; border-bottom: 1px dashed #000; margin-bottom: 8px; }
+            .shop-name { font-size: ${fonts.header}; font-weight: bold; margin-bottom: 4px; }
+            .shop-info { font-size: ${fonts.small}; color: #333; }
+            .test-box { border: 1px dashed #666; padding: 10px; margin: 10px 0; text-align: center; }
+            .footer { text-align: center; padding-top: 8px; border-top: 1px dashed #000; margin-top: 8px; font-size: ${fonts.small}; }
+            .info-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: ${fonts.normal}; }
+            @media print { .no-print { display: none !important; } }
+            @media screen {
+              body { margin: 20px auto; box-shadow: 0 0 10px rgba(0,0,0,0.1); padding: 15px; }
+              .print-btn { position: fixed; top: 10px; left: 10px; padding: 10px 20px; background: #2563eb; color: white; border: none; border-radius: 4px; cursor: pointer; }
+            }
+          </style>
+        </head>
+        <body>
+          <button class="print-btn no-print" onclick="window.print()">🖨️ طباعة</button>
+
+          <div class="header">
+            <div class="shop-name">${settings.companyName || 'ELOS'}</div>
+            ${settings.companyPhone ? `<div class="shop-info">📞 ${settings.companyPhone}</div>` : ''}
+            ${settings.companyAddress ? `<div class="shop-info">📍 ${settings.companyAddress}</div>` : ''}
+          </div>
+
+          <div class="test-box">
+            ═══ طباعة تجريبية ═══<br>
+            TEST PRINT<br>
+            <small>${new Date().toLocaleString('ar-EG')}</small>
+          </div>
+
+          <div class="info-row">
+            <span>عرض الورقة:</span>
+            <span>${settings.printerPaperWidth || '80'}mm</span>
+          </div>
+          <div class="info-row">
+            <span>حجم الخط:</span>
+            <span>${settings.printerFontSize === 'small' ? 'صغير' : settings.printerFontSize === 'large' ? 'كبير' : 'متوسط'}</span>
+          </div>
+          <div class="info-row">
+            <span>إظهار التفاصيل:</span>
+            <span>${settings.printerShowDetails !== false ? 'نعم' : 'لا'}</span>
+          </div>
+
+          <div class="footer">
+            ${settings.printerFooterMessage || 'شكراً لتعاملكم معنا'}
+          </div>
+
+          <scr` + `ipt>
+            window.onafterprint = function() {
+              setTimeout(function() { window.close(); }, 500);
+            };
+          </scr` + `ipt>
+        </body>
+        </html>
+      `);
+
+      printWindow.document.close();
+      showToast('تم فتح نافذة الطباعة التجريبية', 'success');
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // 🗑️ DANGER ZONE
+    // ═══════════════════════════════════════════════════════════════
+    async function clearCache() {
+      const ok = await showConfirm('هل أنت متأكد من مسح الذاكرة المؤقتة؟', 'مسح الذاكرة المؤقتة');
+      if (!ok) return;
+      showToast('تم مسح الذاكرة المؤقتة', 'success');
+    }
+
+    async function resetSettings() {
+      const ok = await showConfirm('هل أنت متأكد من إعادة تعيين جميع الإعدادات؟', 'إعادة تعيين الإعدادات', { confirmText: 'نعم، إعادة التعيين' });
+      if (!ok) return;
+      localStorage.removeItem('appSettings');
+      location.reload();
+    }
+
+    async function clearAllData() {
+      const ok1 = await showConfirm('تحذير خطير!\n\nهل أنت متأكد من حذف جميع البيانات؟\nلن تتمكن من استرجاعها!', 'حذف جميع البيانات', { danger: true, confirmText: 'نعم، احذف الكل' });
+      if (!ok1) return;
+      const ok2 = await showConfirm('تأكيد نهائي!\n\nاضغط موافق للمتابعة.', 'تأكيد نهائي', { danger: true });
+      if (!ok2) return;
+      showToast('جاري حذف جميع البيانات...', 'warning');
+      
+      setTimeout(() => {
+        localStorage.clear();
+        showToast('تم حذف جميع البيانات', 'success');
+        setTimeout(() => location.href = './index.html', 2000);
+      }, 1500);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // 🔔 TOAST
+    // ═══════════════════════════════════════════════════════════════
+    function showToast(message, type = 'success') {
+      document.querySelectorAll('.toast').forEach(t => t.remove());
+      
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.innerHTML = `<span>${type === 'success' ? '✓' : type === 'error' ? '✕' : type === 'warning' ? '⚠' : 'ℹ'}</span> ${message}`;
+      document.body.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.style.animation = 'toastIn 0.3s reverse';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // 🔑 LICENSE INFO
+    // ═══════════════════════════════════════════════════════════════
+    async function loadLicenseInfo() {
+      try {
+        const res = await fetch('elos-db://license/status');
+        const data = await res.json();
+
+        if (data.valid) {
+          document.getElementById('licenseStatus').innerHTML = '✅ مفعّل';
+          document.getElementById('licenseStatus').style.color = 'var(--success)';
+          document.getElementById('licenseType').textContent = data.type || 'تجاري';
+
+          if (data.key) {
+            document.getElementById('licenseKey').textContent = data.key;
+          }
+          if (data.businessName) {
+            document.getElementById('licenseName').textContent = data.businessName;
+          } else {
+            document.getElementById('licenseName').textContent = '---';
+          }
+          if (data.activationDate) {
+            document.getElementById('licenseActivation').textContent = new Date(data.activationDate).toLocaleDateString('ar-EG');
+          } else {
+            document.getElementById('licenseActivation').textContent = '---';
+          }
+          // تاريخ الانتهاء - قد يكون "مدى الحياة" أو تاريخ فعلي
+          if (data.expiryDate) {
+            if (data.expiryDate === 'مدى الحياة' || data.isLifetime) {
+              document.getElementById('licenseExpiry').textContent = '♾️ مدى الحياة';
+              document.getElementById('licenseExpiry').style.color = 'var(--success)';
+            } else {
+              document.getElementById('licenseExpiry').textContent = new Date(data.expiryDate).toLocaleDateString('ar-EG');
+            }
+          } else {
+            document.getElementById('licenseExpiry').textContent = '---';
+          }
+        } else {
+          document.getElementById('licenseStatus').innerHTML = '⚠️ غير مفعّل';
+          document.getElementById('licenseStatus').style.color = 'var(--warning)';
+        }
+      } catch (error) {
+        console.warn('[LICENSE] Could not fetch license info:', error);
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // 💳 WALLETS MANAGEMENT
+    // ═══════════════════════════════════════════════════════════════
+    async function loadWallets() {
+      try {
+        const res = await fetch('elos-db://payment-wallets?active_only=false');
+        if (!res.ok) throw new Error(await res.text());
+        const allWallets = await res.json();
+        // عرض المحافظ الإلكترونية فقط (لا كاش سائل ولا حساب بنكي افتراضي)
+        const wallets = allWallets.filter(w => w.type === 'mobile_wallet');
+        
+        const listEl = document.getElementById('walletsList');
+        if (!listEl) return;
+        
+        if (wallets.length === 0) {
+          listEl.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--text-secondary);">لا توجد محافظ إلكترونية. اضغط «إضافة محفظة إلكترونية» لإنشاء أول محفظة.</div>';
+          return;
+        }
+        
+        listEl.innerHTML = wallets.map(w => `
+          <div style="background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+              <div>
+                <div style="font-weight: 700; font-size: 14px; margin-bottom: 4px;">${w.name}</div>
+                <div style="font-size: 12px; color: var(--text-secondary);">
+                  ${w.provider ? String(w.provider).replace(/_/g, ' ') : 'محفظة إلكترونية'}${w.phone_number ? ' • ' + w.phone_number : ''}
+                </div>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                ${w.is_default ? '<span style="background: var(--success); color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px;">افتراضي</span>' : ''}
+                ${!w.is_active ? '<span style="background: var(--danger); color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px;">معطل</span>' : ''}
+              </div>
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 12px;">
+              <button class="btn btn-secondary" style="flex: 1; font-size: 12px; padding: 8px;" onclick="editWallet(${w.id})">✏️ تعديل</button>
+              <button class="btn btn-danger" style="flex: 1; font-size: 12px; padding: 8px;" onclick="deleteWallet(${w.id})">🗑️ حذف</button>
+            </div>
+          </div>
+        `).join('');
+      } catch (error) {
+        console.error('[WALLETS] Load error:', error);
+        showToast('فشل تحميل المحافظ', 'error');
+      }
+    }
+
+    async function loadBankAccounts() {
+      try {
+        // ✅ مزامنة المحافظ للحسابات البنكية أولاً (إنشاء محافظ للحسابات التي ليس لها محافظ)
+        try {
+          await fetch('elos-db://bank-accounts/sync-wallets', { method: 'POST' });
+        } catch (syncErr) {
+          console.warn('[BANK-ACCOUNTS] Sync error (non-critical):', syncErr);
+        }
+
+        const listEl = document.getElementById('bankAccountsList');
+        if (!listEl) return;
+
+        // المحفظة الأساسية للحسابات البنكية (افتراضي) — تظهر دائماً ولا تختفي
+        let defaultBankHtml = '';
+        try {
+          const wRes = await fetch('elos-db://payment-wallets?active_only=false');
+          if (wRes.ok) {
+            const allW = await wRes.json();
+            const defaultBank = allW.find(w => w.type === 'bank' && w.is_default);
+            if (defaultBank) {
+              defaultBankHtml = `
+                <div style="background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 12px;">
+                  <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+                    <div>
+                      <div style="font-weight: 700; font-size: 14px;">${defaultBank.name}</div>
+                      <div style="font-size: 12px; color: var(--text-secondary);">المحفظة الأساسية للحسابات البنكية</div>
+                    </div>
+                    <span style="background: var(--success); color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px;">افتراضي</span>
+                  </div>
+                  <div style="font-size: 12px; color: var(--text-muted);">تُستخدم في النظام تلقائياً عند اختيار الدفع بالبنك. لا يمكن حذفها.</div>
+                </div>`;
+            }
+          }
+        } catch (e) { /* ignore */ }
+
+        const res = await fetch('elos-db://bank-accounts?active_only=false');
+        if (!res.ok) throw new Error(await res.text());
+        const accounts = await res.json();
+        
+        const accountsHtml = accounts.length === 0
+          ? '<div style="text-align: center; padding: 24px; color: var(--text-secondary); font-size: 13px;">لا توجد حسابات بنكية مضافة. استخدم الزر أعلاه لإضافة حساب.</div>'
+          : accounts.map(a => `
+          <div style="background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
+              <div>
+                <div style="font-weight: 700; font-size: 14px; margin-bottom: 4px;">${a.bank_name}</div>
+                <div style="font-size: 12px; color: var(--text-secondary);">
+                  ${a.account_number}
+                  ${a.account_name ? ` • ${a.account_name}` : ''}
+                  ${a.branch_name ? ` • ${a.branch_name}` : ''}
+                </div>
+              </div>
+              <div style="display: flex; gap: 8px;">
+                ${a.is_default ? '<span style="background: var(--success); color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px;">افتراضي</span>' : ''}
+                ${!a.is_active ? '<span style="background: var(--danger); color: white; padding: 4px 8px; border-radius: 4px; font-size: 11px;">معطل</span>' : ''}
+              </div>
+            </div>
+            <div style="display: flex; gap: 8px; margin-top: 12px;">
+              <button class="btn btn-secondary" style="flex: 1; font-size: 12px; padding: 8px;" onclick="editBankAccount(${a.id})">✏️ تعديل</button>
+              <button class="btn btn-danger" style="flex: 1; font-size: 12px; padding: 8px;" onclick="deleteBankAccount(${a.id})">🗑️ حذف</button>
+            </div>
+          </div>
+        `).join('');
+
+        listEl.innerHTML = defaultBankHtml + accountsHtml;
+      } catch (error) {
+        console.error('[BANK-ACCOUNTS] Load error:', error);
+        showToast('فشل تحميل الحسابات البنكية', 'error');
+      }
+    }
+
+    async function openWalletModal(walletId = null) {
+      const modal = document.getElementById('walletModal');
+      const form = document.getElementById('walletForm');
+      const title = document.getElementById('walletModalTitle');
+      
+      // Reset form
+      form.reset();
+      document.getElementById('walletId').value = '';
+      document.getElementById('walletType').value = 'mobile_wallet';
+      document.getElementById('walletIsActive').checked = true;
+      document.getElementById('walletIsDefault').checked = false;
+      
+      // Hide all conditional fields
+      document.getElementById('walletProviderGroup').style.display = 'none';
+      document.getElementById('walletPhoneGroup').style.display = 'none';
+      document.getElementById('bankNameGroup').style.display = 'none';
+      document.getElementById('accountNumberGroup').style.display = 'none';
+      
+      if (walletId) {
+        // Edit mode
+        title.textContent = 'تعديل المحفظة';
+        try {
+          const res = await fetch(`elos-db://payment-wallets/${walletId}`);
+          if (!res.ok) throw new Error(await res.text());
+          const wallet = await res.json();
+          
+          document.getElementById('walletId').value = wallet.id;
+          document.getElementById('walletType').value = wallet.type || 'mobile_wallet';
+          document.getElementById('walletName').value = wallet.name || '';
+          document.getElementById('walletProvider').value = wallet.provider || '';
+          document.getElementById('walletPhone').value = wallet.phone_number || '';
+          document.getElementById('bankName').value = wallet.bank_name || '';
+          document.getElementById('accountNumber').value = wallet.account_number || '';
+          document.getElementById('walletNotes').value = wallet.notes || '';
+          document.getElementById('walletIsDefault').checked = wallet.is_default || false;
+          document.getElementById('walletIsActive').checked = wallet.is_active !== false;
+          
+          updateWalletFormFields();
+        } catch (error) {
+          showToast('فشل تحميل بيانات المحفظة: ' + error.message, 'error');
+          return;
+        }
+      } else {
+        // Add mode (نوع افتراضي: محفظة إلكترونية — نُظهر حقول المزود ورقم المحفظة)
+        title.textContent = 'إضافة محفظة إلكترونية';
+        updateWalletFormFields();
+      }
+      
+      modal.style.display = 'flex';
+    }
+
+    function closeWalletModal() {
+      document.getElementById('walletModal').style.display = 'none';
+    }
+
+    function updateWalletFormFields() {
+      const walletType = document.getElementById('walletType').value;
+      
+      // Hide all fields first
+      document.getElementById('walletProviderGroup').style.display = 'none';
+      document.getElementById('walletPhoneGroup').style.display = 'none';
+      document.getElementById('bankNameGroup').style.display = 'none';
+      document.getElementById('accountNumberGroup').style.display = 'none';
+      
+      if (walletType === 'mobile_wallet') {
+        document.getElementById('walletProviderGroup').style.display = 'block';
+        document.getElementById('walletPhoneGroup').style.display = 'block';
+      } else if (walletType === 'bank') {
+        document.getElementById('bankNameGroup').style.display = 'block';
+        document.getElementById('accountNumberGroup').style.display = 'block';
+      }
+    }
+
+    async function saveWallet(event) {
+      event.preventDefault();
+      
+      const walletId = document.getElementById('walletId').value;
+      const walletType = document.getElementById('walletType').value;
+      const walletName = document.getElementById('walletName').value.trim();
+      const phoneNumber = document.getElementById('walletPhone').value.trim();
+      
+      if (!walletType || !walletName) {
+        showToast('الرجاء إدخال جميع الحقول المطلوبة', 'error');
+        return;
+      }
+      if (walletType === 'mobile_wallet' && !phoneNumber) {
+        showToast('رقم المحفظة / الهاتف إلزامي للمحفظة الإلكترونية', 'error');
+        return;
+      }
+      
+      const walletData = {
+        type: walletType,
+        name: walletName,
+        provider: document.getElementById('walletProvider').value || null,
+        phone_number: phoneNumber || null,
+        bank_name: document.getElementById('bankName').value.trim() || null,
+        account_number: document.getElementById('accountNumber').value.trim() || null,
+        notes: document.getElementById('walletNotes').value.trim() || null,
+        is_default: document.getElementById('walletIsDefault').checked,
+        is_active: document.getElementById('walletIsActive').checked
+      };
+      
+      try {
+        const url = walletId 
+          ? `elos-db://payment-wallets/${walletId}`
+          : 'elos-db://payment-wallets';
+        const method = walletId ? 'PUT' : 'POST';
+        
+        const res = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(walletData)
+        });
+        
+        if (!res.ok) throw new Error(await res.text());
+        
+        showToast(walletId ? 'تم تحديث المحفظة بنجاح' : 'تم إضافة المحفظة بنجاح', 'success');
+        closeWalletModal();
+        loadWallets();
+      } catch (error) {
+        showToast('فشل حفظ المحفظة: ' + error.message, 'error');
+      }
+    }
+
+    function editWallet(walletId) {
+      openWalletModal(walletId);
+    }
+
+    async function deleteWallet(walletId) {
+      const ok = await showConfirm('هل أنت متأكد من حذف هذه المحفظة؟', 'حذف المحفظة', { danger: true });
+      if (!ok) return;
+      
+      try {
+        const res = await fetch(`elos-db://payment-wallets/${walletId}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error(await res.text());
+        showToast('تم حذف المحفظة بنجاح', 'success');
+        loadWallets();
+      } catch (error) {
+        showToast('فشل حذف المحفظة: ' + error.message, 'error');
+      }
+    }
+
+    async function openBankAccountModal(accountId = null) {
+      const modal = document.getElementById('bankAccountModal');
+      const form = document.getElementById('bankAccountForm');
+      const title = document.getElementById('bankAccountModalTitle');
+      
+      // Reset form
+      form.reset();
+      document.getElementById('bankAccountId').value = '';
+      document.getElementById('bankAccountIsActive').checked = true;
+      document.getElementById('bankAccountIsDefault').checked = false;
+      
+      if (accountId) {
+        // Edit mode
+        title.textContent = 'تعديل الحساب البنكي';
+        try {
+          const res = await fetch(`elos-db://bank-accounts/${accountId}`);
+          if (!res.ok) throw new Error(await res.text());
+          const account = await res.json();
+          
+          document.getElementById('bankAccountId').value = account.id;
+          document.getElementById('bankAccountBankName').value = account.bank_name || '';
+          document.getElementById('bankAccountNumber').value = account.account_number || '';
+          document.getElementById('bankAccountName').value = account.account_name || '';
+          document.getElementById('bankAccountBranch').value = account.branch_name || '';
+          document.getElementById('bankAccountIban').value = account.iban || '';
+          document.getElementById('bankAccountNotes').value = account.notes || '';
+          document.getElementById('bankAccountIsDefault').checked = account.is_default || false;
+          document.getElementById('bankAccountIsActive').checked = account.is_active !== false;
+        } catch (error) {
+          showToast('فشل تحميل بيانات الحساب: ' + error.message, 'error');
+          return;
+        }
+      } else {
+        // Add mode
+        title.textContent = 'إضافة حساب بنكي جديد';
+      }
+      
+      modal.style.display = 'flex';
+    }
+
+    function closeBankAccountModal() {
+      document.getElementById('bankAccountModal').style.display = 'none';
+    }
+
+    async function saveBankAccount(event) {
+      event.preventDefault();
+      
+      const accountId = document.getElementById('bankAccountId').value;
+      const bankName = document.getElementById('bankAccountBankName').value.trim();
+      const accountNumber = document.getElementById('bankAccountNumber').value.trim();
+      
+      if (!bankName || !accountNumber) {
+        showToast('الرجاء إدخال جميع الحقول المطلوبة', 'error');
+        return;
+      }
+      
+      const accountData = {
+        bank_name: bankName,
+        account_number: accountNumber,
+        account_name: document.getElementById('bankAccountName').value.trim() || null,
+        branch_name: document.getElementById('bankAccountBranch').value.trim() || null,
+        iban: document.getElementById('bankAccountIban').value.trim() || null,
+        notes: document.getElementById('bankAccountNotes').value.trim() || null,
+        is_default: document.getElementById('bankAccountIsDefault').checked,
+        is_active: document.getElementById('bankAccountIsActive').checked
+      };
+      
+      try {
+        const url = accountId 
+          ? `elos-db://bank-accounts/${accountId}`
+          : 'elos-db://bank-accounts';
+        const method = accountId ? 'PUT' : 'POST';
+        
+        const res = await fetch(url, {
+          method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(accountData)
+        });
+        
+        if (!res.ok) throw new Error(await res.text());
+        
+        showToast(accountId ? 'تم تحديث الحساب البنكي بنجاح' : 'تم إضافة الحساب البنكي بنجاح', 'success');
+        closeBankAccountModal();
+        loadBankAccounts();
+      } catch (error) {
+        showToast('فشل حفظ الحساب البنكي: ' + error.message, 'error');
+      }
+    }
+
+    function editBankAccount(accountId) {
+      openBankAccountModal(accountId);
+    }
+    
+    // Close modals on backdrop click
+    document.getElementById('walletModal')?.addEventListener('click', function(e) {
+      if (e.target === this) closeWalletModal();
+    });
+    
+    document.getElementById('bankAccountModal')?.addEventListener('click', function(e) {
+      if (e.target === this) closeBankAccountModal();
+    });
+
+    async function deleteBankAccount(accountId) {
+      const ok = await showConfirm('هل أنت متأكد من حذف هذا الحساب البنكي؟', 'حذف الحساب البنكي', { danger: true });
+      if (!ok) return;
+      
+      try {
+        const res = await fetch(`elos-db://bank-accounts/${accountId}`, { method: 'DELETE' });
+        if (!res.ok) throw new Error(await res.text());
+        showToast('تم حذف الحساب البنكي بنجاح', 'success');
+        loadBankAccounts();
+      } catch (error) {
+        showToast('فشل حذف الحساب البنكي: ' + error.message, 'error');
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // 🧾 INVOICE SETTINGS FUNCTIONS
+    // ═══════════════════════════════════════════════════════════════
+    async function loadInvoiceSettings() {
+      try {
+        // ✅ تحميل إعدادات قالب الفاتورة من localStorage
+        const saved = localStorage.getItem('appSettings');
+        if (saved) {
+          const settings = JSON.parse(saved);
+          if (document.getElementById('invoiceFooterMessage')) {
+            document.getElementById('invoiceFooterMessage').value = settings.invoiceFooterMessage || 'شكراً لتعاملكم معنا';
+          }
+          if (document.getElementById('invoiceShowDate')) {
+            document.getElementById('invoiceShowDate').checked = settings.invoiceShowDate !== false;
+          }
+          if (document.getElementById('invoiceShowNumber')) {
+            document.getElementById('invoiceShowNumber').checked = settings.invoiceShowNumber !== false;
+          }
+          if (document.getElementById('invoiceShowClient')) {
+            document.getElementById('invoiceShowClient').checked = settings.invoiceShowClient !== false;
+          }
+          if (document.getElementById('invoiceShowPayment')) {
+            document.getElementById('invoiceShowPayment').checked = settings.invoiceShowPayment !== false;
+          }
+        }
+
+        // ✅ جلب عدادات الفواتير
+        const res = await fetch('elos-db://invoice-counters');
+        if (!res.ok) throw new Error(await res.text());
+        const counters = await res.json();
+
+        // أسماء أنواع الفواتير بالعربية
+        const typeNames = {
+          'sale': 'مبيعات الأجهزة',
+          'accessory_sale': 'مبيعات الإكسسوارات',
+          'purchase': 'مشتريات',
+          'return': 'مرتجعات',
+          'repair': 'إصلاحات'
+        };
+
+        // عرض قائمة العدادات
+        const countersList = document.getElementById('invoiceCountersList');
+        if (countersList) {
+          countersList.innerHTML = counters.map(counter => {
+            const nextNumber = (counter.last_number || 0) + 1;
+            const formattedNext = String(nextNumber).padStart(counter.padding || 6, '0');
+            const nextInvoiceNumber = `${counter.prefix}${formattedNext}`;
+
+            return `
+              <div style="background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-bottom: 12px;">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
+                  <div>
+                    <div style="font-weight: 700; font-size: 14px; margin-bottom: 4px;">${typeNames[counter.type] || counter.type}</div>
+                    <div style="font-size: 12px; color: var(--text-secondary);">
+                      النوع: <code>${counter.type}</code> • آخر رقم: ${counter.last_number || 0}
+                    </div>
+                  </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 12px; margin-bottom: 12px;">
+                  <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label" style="font-size: 12px;">Prefix (البادئة)</label>
+                    <input type="text" 
+                           id="counterPrefix_${counter.type}" 
+                           class="form-input" 
+                           value="${counter.prefix || ''}" 
+                           placeholder="مثال: SAL-"
+                           style="font-family: monospace;">
+                  </div>
+                  <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label" style="font-size: 12px;">Padding (عدد الأرقام)</label>
+                    <input type="number" 
+                           id="counterPadding_${counter.type}" 
+                           class="form-input" 
+                           value="${counter.padding || 6}" 
+                           min="3" 
+                           max="10">
+                  </div>
+                </div>
+
+                <div style="background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.2); border-radius: 8px; padding: 12px; margin-bottom: 12px;">
+                  <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 4px;">رقم الفاتورة القادم</div>
+                  <div style="font-size: 16px; font-weight: 700; font-family: monospace; color: var(--accent);">${nextInvoiceNumber}</div>
+                </div>
+
+                <div class="action-buttons">
+                  <button class="btn btn-success" style="flex: 1; font-size: 12px; padding: 8px;" onclick="saveInvoiceCounter('${counter.type}')">
+                    💾 حفظ
+                  </button>
+                  <button class="btn btn-secondary" style="flex: 1; font-size: 12px; padding: 8px;" onclick="resetInvoiceCounter('${counter.type}')">
+                    🔄 إعادة تعيين
+                  </button>
+                </div>
+              </div>
+            `;
+          }).join('') || '<div style="text-align: center; padding: 40px; color: var(--text-secondary);">لا توجد عدادات</div>';
+        }
+
+        // عرض معاينة أرقام الفواتير
+        const previewList = document.getElementById('invoicePreviewList');
+        if (previewList) {
+          previewList.innerHTML = counters.map(counter => {
+            const nextNumber = (counter.last_number || 0) + 1;
+            const formattedNext = String(nextNumber).padStart(counter.padding || 6, '0');
+            const nextInvoiceNumber = `${counter.prefix}${formattedNext}`;
+
+            return `
+              <div style="background: var(--bg-tertiary); border: 1px solid var(--border); border-radius: 8px; padding: 12px; margin-bottom: 8px;">
+                <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 4px;">${typeNames[counter.type] || counter.type}</div>
+                <div style="font-size: 14px; font-weight: 700; font-family: monospace; color: var(--accent);">${nextInvoiceNumber}</div>
+              </div>
+            `;
+          }).join('') || '<div style="text-align: center; padding: 20px; color: var(--text-secondary);">لا توجد بيانات</div>';
+        }
+
+      } catch (error) {
+        console.error('[INVOICE-SETTINGS] Error loading:', error);
+        showToast('فشل تحميل إعدادات الفواتير', 'error');
+      }
+    }
+
+    async function saveInvoiceCounter(type) {
+      try {
+        const prefix = document.getElementById(`counterPrefix_${type}`).value.trim();
+        const padding = parseInt(document.getElementById(`counterPadding_${type}`).value) || 6;
+
+        if (!prefix) {
+          showToast('الرجاء إدخال Prefix', 'error');
+          return;
+        }
+
+        if (padding < 3 || padding > 10) {
+          showToast('Padding يجب أن يكون بين 3 و 10', 'error');
+          return;
+        }
+
+        const res = await fetch(`elos-db://invoice-counters/${type}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prefix, padding })
+        });
+
+        if (!res.ok) throw new Error(await res.text());
+
+        showToast('تم حفظ الإعدادات بنجاح ✅', 'success');
+        await loadInvoiceSettings(); // إعادة تحميل للعرض
+      } catch (error) {
+        console.error('[INVOICE-SETTINGS] Error saving:', error);
+        showToast('فشل حفظ الإعدادات: ' + error.message, 'error');
+      }
+    }
+
+    async function resetInvoiceCounter(type) {
+      const ok = await showConfirm('هل أنت متأكد من إعادة تعيين عداد الفواتير؟ سيتم ضبط آخر رقم إلى 0.', 'إعادة تعيين العداد', { confirmText: 'نعم، إعادة التعيين' });
+      if (!ok) return;
+
+      try {
+        const res = await fetch(`elos-db://invoice-counters/${type}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ last_number: 0 })
+        });
+
+        if (!res.ok) throw new Error(await res.text());
+
+        showToast('تم إعادة تعيين العداد بنجاح ✅', 'success');
+        await loadInvoiceSettings(); // إعادة تحميل للعرض
+      } catch (error) {
+        console.error('[INVOICE-SETTINGS] Error resetting:', error);
+        showToast('فشل إعادة التعيين: ' + error.message, 'error');
+      }
+    }
+
+    async function saveInvoiceTemplateSettings() {
+      await saveAllSettings();
+      showToast('تم حفظ إعدادات قالب الفاتورة بنجاح ✅', 'success');
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // 🌐 NETWORK SETTINGS
+    // ═══════════════════════════════════════════════════════════════
+
+    async function loadNetworkSettings() {
+      try {
+        // جلب حالة الشبكة
+        const configRes = await fetch('elos-db://api/network/current-config');
+        const config = await configRes.json();
+
+        // عرض حالة الشبكة
+        const statusDiv = document.getElementById('networkStatus');
+        let modeText = 'مستقل';
+        let modeIcon = '📱';
+        let modeColor = '#8b5cf6';
+
+        if (config.isNetworkMode) {
+          modeText = 'سيرفر (جهاز رئيسي)';
+          modeIcon = '🖥️';
+          modeColor = '#10b981';
+        } else if (config.clientMode) {
+          modeText = 'عميل (جهاز فرعي)';
+          modeIcon = '💻';
+          modeColor = '#3b82f6';
+        }
+
+        statusDiv.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 15px; padding: 15px; background: rgba(0,0,0,0.2); border-radius: 10px;">
+            <span style="font-size: 2.5rem;">${modeIcon}</span>
+            <div>
+              <div style="font-size: 1.2rem; font-weight: bold; color: ${modeColor};">${modeText}</div>
+              <div style="color: var(--text-secondary); font-size: 0.9rem; margin-top: 5px;">
+                المنفذ: ${config.port || 48572}
+                ${config.serverIP ? ` | السيرفر: ${config.serverIP}` : ''}
+              </div>
+            </div>
+          </div>
+        `;
+
+        // جلب عناوين IP
+        const ipsRes = await fetch('elos-db://api/network/local-ips');
+        const ipsData = await ipsRes.json();
+
+        const ipsList = document.getElementById('localIPsList');
+        if (ipsData.ips && ipsData.ips.length > 0) {
+          ipsList.innerHTML = `
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 10px;">
+              ${ipsData.ips.map(ip => `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 15px; background: rgba(0,0,0,0.2); border-radius: 8px; border: 1px solid var(--border);">
+                  <div>
+                    <span style="font-family: monospace; font-size: 1rem; color: var(--text-primary);">${ip.address}:${config.port || 48572}</span>
+                    <span style="color: var(--text-secondary); font-size: 0.8rem; margin-right: 10px;">(${ip.name})</span>
+                  </div>
+                  <button onclick="copyToClipboard('${ip.address}:${config.port || 48572}')" class="btn btn-secondary" style="padding: 5px 12px; font-size: 0.8rem;">📋 نسخ</button>
+                </div>
+              `).join('')}
+            </div>
+          `;
+        } else {
+          ipsList.innerHTML = '<div style="text-align: center; color: var(--text-secondary);">لم يتم العثور على عناوين IP</div>';
+        }
+
+      } catch (error) {
+        console.error('[NETWORK] Error loading settings:', error);
+        document.getElementById('networkStatus').innerHTML = `
+          <div style="text-align: center; color: var(--danger);">
+            خطأ في تحميل إعدادات الشبكة
+          </div>
+        `;
+      }
+    }
+
+    function openNetworkSetup() {
+      window.location.href = 'network-setup.html';
+    }
+
+    async function testNetworkConnection() {
+      try {
+        const configRes = await fetch('elos-db://api/network/current-config');
+        const config = await configRes.json();
+
+        if (config.clientMode && config.serverIP) {
+          // اختبار الاتصال بالسيرفر
+          showToast('جاري اختبار الاتصال...', 'info');
+
+          const testRes = await fetch(`elos-db://api/network/test-connection?ip=${config.serverIP}&port=${config.port || 48572}`);
+          const testData = await testRes.json();
+
+          if (testData.success) {
+            showToast(`تم الاتصال بنجاح بـ ${testData.serverName} ✅`, 'success');
+          } else {
+            showToast(`فشل الاتصال: ${testData.error}`, 'error');
+          }
+        } else {
+          // اختبار ping محلي
+          const pingRes = await fetch('elos-db://api/network/ping');
+          const pingData = await pingRes.json();
+
+          if (pingData.success) {
+            showToast(`السيرفر المحلي يعمل ✅`, 'success');
+          }
+        }
+      } catch (error) {
+        console.error('[NETWORK] Connection test error:', error);
+        showToast('فشل اختبار الاتصال: ' + error.message, 'error');
+      }
+    }
+
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('تم نسخ العنوان: ' + text, 'success');
+      }).catch(() => {
+        // Fallback
+        const input = document.createElement('input');
+        input.value = text;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+        showToast('تم نسخ العنوان: ' + text, 'success');
+      });
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // 🚀 INITIALIZATION
+    // ═══════════════════════════════════════════════════════════════
+    (function init() {
+      console.log('⚙️ ELOS Settings System V 2.0 - Initializing...');
+
+      initHeaderClock();
+      loadSettings();
+      updateBackupStatus();
+      loadLicenseInfo();
+      
+      // Load wallets and bank accounts if wallets tab is active
+      if (document.getElementById('walletsPanel')) {
+        loadWallets();
+        loadBankAccounts();
+      }
+      
+      // Keyboard shortcuts
+      document.addEventListener('keydown', (e) => {
+        if (e.ctrlKey && e.key === 's') {
+          e.preventDefault();
+          saveAllSettings();
+          showToast('تم حفظ جميع الإعدادات', 'success');
+        }
+      });
+      
+      // Listen for storage changes from other tabs
+      window.addEventListener('storage', (e) => {
+        if (e.key === 'appSettings') {
+          loadSettings();
+        }
+      });
+
+      console.log('✅ ELOS Settings System Ready!');
+    })();
+  </script>
+</body>
+</html>

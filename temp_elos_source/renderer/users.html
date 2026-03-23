@@ -1,0 +1,1250 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>إدارة المستخدمين • ELOS System</title>
+  <script>(function(){var p=new URLSearchParams(location.search),t=p.get('theme')||localStorage.getItem('elos_theme')||localStorage.getItem('elos-theme')||'dark',h=document.documentElement;h.setAttribute('data-theme',t==='light'?'light':'dark');})();</script>
+  <script src="session-inject.js"></script>
+  <!-- 📱 SPA Mode Detection -->
+  <script src="spa-mode.js"></script>
+  <!-- 🔊 Shared Sound & Toast System -->
+  <script src="shared.js"></script>
+  <!-- 🌙 Theme Sync -->
+  <script src="theme-sync.js"></script>
+  <!-- 🔤 Font Scale Manager -->
+  <script src="js/font-scale-manager.js"></script>
+  <!-- 🎨 Design System Tokens (theme colors - MUST BE FIRST) -->
+  <link rel="stylesheet" href="styles/tokens.css">
+  <link rel="stylesheet" href="styles/tokens-alias.css">
+  <!-- 🎨 Design System (component styles) -->
+  <link rel="stylesheet" href="styles/design-system.css">
+  <!-- 🎨 Theme Governance Layer (load LAST to override legacy styles) -->
+  <link rel="stylesheet" href="styles/theme-fixes.css">
+  <!-- 📏 Font Sizes - تحسين أحجام الخطوط -->
+  <link rel="stylesheet" href="styles/font-sizes.css">
+
+  <style>
+    :root {
+      --bg-primary: #0a0e14;
+      --bg-secondary: #151921;
+      --bg-tertiary: #1a1f29;
+      --card: #151921;
+      --text-primary: #e6e8ee;
+      --text-secondary: #8b93a6;
+      --muted: #6b7280;
+      --border: #1e2530;
+      --line: #1e2530;
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --purple: #a855f7;
+      --cyan: #06b6d4;
+      --pink: #ec4899;
+      --orange: #f97316;
+      --radius: 12px;
+      --shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg-primary); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb { background: linear-gradient(180deg, var(--accent) 0%, #1d4ed8 100%); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: linear-gradient(180deg, #60a5fa 0%, var(--accent) 100%); }
+    * { scrollbar-width: thin; scrollbar-color: var(--accent) var(--bg-primary); }
+
+    body { 
+      margin: 0; 
+      background: var(--bg-primary); 
+      color: var(--text-primary); 
+      font-family: system-ui, "Cairo", sans-serif; 
+      min-height: 100vh;
+      padding-bottom: 50px;
+    }
+    a { color: inherit; text-decoration: none; }
+
+    /* ═══════════════════════════════════════
+       📱 HEADER
+       ═══════════════════════════════════════ */
+    .header {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 10px 24px;
+      background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+      border-bottom: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      flex-wrap: wrap;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .logo {
+      width: 36px;
+      height: 36px;
+      color: #ffffff;
+      filter: drop-shadow(0 2px 6px rgba(255, 255, 255, 0.15));
+    }
+
+    .brand-container { display: flex; flex-direction: column; gap: 2px; }
+    .brand {
+      font-weight: 900;
+      font-size: 24px;
+      color: #d1d5db;
+      letter-spacing: 3px;
+    }
+    .page-subtitle { font-size: 11px; color: var(--text-secondary); }
+
+    .btn-back {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text-primary);
+      font-weight: 700;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    .btn-back:hover {
+      background: var(--accent);
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+
+    .spacer { flex: 1; }
+
+    /* Header Cards */
+    .header-cards {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .header-card {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 14px;
+      background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      min-width: 85px;
+      transition: all 0.3s ease;
+    }
+
+    .header-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(59,130,246,0.3);
+      border-color: var(--accent);
+    }
+
+    .header-card.blue { border-top: 2px solid var(--accent); }
+    .header-card.green { border-top: 2px solid var(--success); }
+    .header-card.purple { border-top: 2px solid var(--purple); }
+    .header-card.orange { border-top: 2px solid var(--orange); }
+    .header-card.cyan { border-top: 2px solid var(--cyan); }
+
+    .header-card-icon { font-size: 18px; }
+    .header-card-value {
+      font-size: 16px;
+      font-weight: 900;
+      color: var(--text-primary);
+      font-family: 'Courier New', monospace;
+    }
+    .header-card-label { font-size: 9px; color: var(--text-secondary); }
+
+    /* Clock */
+    .header-clock {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 8px 16px;
+      background: linear-gradient(135deg, var(--bg-tertiary) 0%, var(--bg-secondary) 100%);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+    .clock-time {
+      font-size: 16px;
+      font-weight: 900;
+      color: var(--accent);
+      font-family: 'Courier New', monospace;
+      direction: ltr;
+    }
+    .clock-date { font-size: 9px; color: var(--text-secondary); }
+
+    /* ═══════════════════════════════════════
+       📊 CONTAINER
+       ═══════════════════════════════════════ */
+    .container {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 20px 24px;
+    }
+
+    /* ═══════════════════════════════════════
+       📑 TABS
+       ═══════════════════════════════════════ */
+    .tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 8px;
+    }
+
+    .tab {
+      padding: 10px 18px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 10px 10px 0 0;
+      color: var(--text-secondary);
+      font-weight: 600;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tab:hover { border-color: rgba(59,130,246,0.4); color: var(--accent); }
+    .tab.active {
+      background: linear-gradient(135deg, var(--accent) 0%, #2563eb 100%);
+      color: white;
+      border-color: var(--accent);
+    }
+
+    /* ═══════════════════════════════════════
+       📦 PANELS
+       ═══════════════════════════════════════ */
+    .panel { display: none; animation: fadeIn 0.3s ease; }
+    .panel.active { display: block; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ═══════════════════════════════════════
+       🎯 SECTION HEADER
+       ═══════════════════════════════════════ */
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .section-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    /* ═══════════════════════════════════════
+       🔘 BUTTONS
+       ═══════════════════════════════════════ */
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-family: inherit;
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent) 0%, #2563eb 100%);
+      color: white;
+    }
+    .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(59,130,246,0.4); }
+
+    .btn-success {
+      background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+      color: white;
+    }
+    .btn-success:hover { transform: translateY(-2px); box-shadow: 0 4px 15px rgba(16,185,129,0.4); }
+
+    .btn-purple {
+      background: linear-gradient(135deg, var(--purple) 0%, #7c3aed 100%);
+      color: white;
+    }
+
+    .btn-warning {
+      background: linear-gradient(135deg, var(--warning) 0%, #d97706 100%);
+      color: white;
+    }
+
+    .btn-danger {
+      background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%);
+      color: white;
+    }
+
+    .btn-secondary {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover { border-color: var(--accent); }
+
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+
+    /* ═══════════════════════════════════════
+       📋 TABLE
+       ═══════════════════════════════════════ */
+    .table-wrapper {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+
+    .table-scroll {
+      overflow-x: auto;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 800px;
+    }
+
+    th, td {
+      padding: 12px 14px;
+      text-align: right;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+    }
+
+    th {
+      background: var(--bg-tertiary);
+      font-weight: 700;
+      color: var(--text-secondary);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    tr:hover { background: rgba(59,130,246,0.05); }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-secondary);
+    }
+    .empty-state-icon { font-size: 48px; margin-bottom: 16px; opacity: 0.5; }
+
+    /* ═══════════════════════════════════════
+       🏷️ STATUS BADGES
+       ═══════════════════════════════════════ */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+
+    .badge-active { background: rgba(16,185,129,0.15); color: var(--success); }
+    .badge-inactive { background: rgba(239,68,68,0.15); color: var(--danger); }
+    .badge-admin { background: rgba(168,85,247,0.15); color: var(--purple); }
+    .badge-cashier { background: rgba(59,130,246,0.15); color: var(--accent); }
+    .badge-viewer { background: rgba(107,114,128,0.15); color: var(--muted); }
+    .badge-online { background: rgba(16,185,129,0.15); color: var(--success); }
+    .badge-offline { background: rgba(107,114,128,0.15); color: var(--muted); }
+
+    /* ═══════════════════════════════════════
+       📅 FILTERS
+       ═══════════════════════════════════════ */
+    .filters {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .filter-group label {
+      font-size: 12px;
+      color: var(--text-secondary);
+    }
+
+    .filter-group select,
+    .filter-group input {
+      padding: 8px 12px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 13px;
+    }
+
+    /* ═══════════════════════════════════════
+       🪟 MODAL
+       ═══════════════════════════════════════ */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(4px);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal.active { display: flex; }
+
+    .modal-content {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      width: 100%;
+      max-width: 550px;
+      max-height: 90vh;
+      overflow: hidden;
+      animation: modalIn 0.3s ease;
+    }
+
+    .modal-content.large { max-width: 800px; }
+
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.95) translateY(-20px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-tertiary);
+    }
+
+    .modal-title {
+      font-size: 16px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .close-btn {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: rgba(239,68,68,0.1);
+      color: var(--danger);
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    .close-btn:hover { background: var(--danger); color: white; }
+
+    .modal-body {
+      padding: 20px;
+      overflow-y: auto;
+      max-height: calc(90vh - 140px);
+    }
+
+    .modal-footer {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+      background: var(--bg-tertiary);
+    }
+
+    /* ═══════════════════════════════════════
+       📝 FORMS
+       ═══════════════════════════════════════ */
+    .form-group { margin-bottom: 16px; }
+
+    .form-label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .form-label.required::after {
+      content: ' *';
+      color: var(--danger);
+    }
+
+    .form-input, .form-select, .form-textarea {
+      width: 100%;
+      padding: 10px 14px;
+      background: var(--bg-primary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-size: 14px;
+      font-family: inherit;
+      transition: all 0.2s;
+    }
+
+    .form-input:focus, .form-select:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(59,130,246,0.1);
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+    }
+
+    .form-hint {
+      font-size: 11px;
+      color: var(--text-secondary);
+      margin-top: 4px;
+    }
+
+    /* ═══════════════════════════════════════
+       🔐 PERMISSIONS BOX
+       ═══════════════════════════════════════ */
+    .permissions-box {
+      background: var(--bg-tertiary);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      margin-top: 16px;
+    }
+
+    .permissions-title {
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .permission-group { margin-bottom: 12px; }
+    .permission-group-title {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+    }
+
+    .permission-items {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 8px;
+    }
+
+    .permission-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: var(--bg-primary);
+      border-radius: 6px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .permission-item:hover { background: var(--bg-secondary); }
+    .permission-item input { accent-color: var(--accent); }
+
+    /* ═══════════════════════════════════════
+       📊 ACTIVITY LOG
+       ═══════════════════════════════════════ */
+    .activity-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .activity-item:last-child { border-bottom: none; }
+
+    .activity-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .activity-icon.login { background: rgba(16,185,129,0.15); }
+    .activity-icon.logout { background: rgba(239,68,68,0.15); }
+    .activity-icon.action { background: rgba(59,130,246,0.15); }
+    .activity-icon.error { background: rgba(249,115,22,0.15); }
+
+    .activity-content { flex: 1; }
+    .activity-text { font-size: 13px; margin-bottom: 4px; }
+    .activity-time { font-size: 11px; color: var(--text-secondary); }
+
+    /* ═══════════════════════════════════════
+       👤 USER AVATAR
+       ═══════════════════════════════════════ */
+    .user-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 14px;
+      color: white;
+    }
+
+    .user-avatar.admin { background: linear-gradient(135deg, var(--purple) 0%, #7c3aed 100%); }
+    .user-avatar.cashier { background: linear-gradient(135deg, var(--accent) 0%, #2563eb 100%); }
+    .user-avatar.viewer { background: linear-gradient(135deg, var(--muted) 0%, #4b5563 100%); }
+
+    /* ═══════════════════════════════════════
+       🔔 TOAST
+       ═══════════════════════════════════════ */
+    .toast {
+      position: fixed;
+      top: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 12px 24px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+      font-size: 14px;
+      z-index: 2000;
+      animation: toastIn 0.3s ease;
+    }
+
+    .toast.success { background: var(--success); color: white; }
+    .toast.error { background: var(--danger); color: white; }
+    .toast.warning { background: var(--warning); color: white; }
+
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateX(-50%) translateY(-20px); }
+      to { opacity: 1; transform: translateX(-50%) translateY(0); }
+    }
+
+    /* ═══════════════════════════════════════
+       🦶 FOOTER
+       ═══════════════════════════════════════ */
+    footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 24px;
+      background: var(--card);
+      border-top: 1px solid var(--line);
+      font-size: 10px;
+      color: var(--muted);
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 50;
+    }
+
+    /* ═══════════════════════════════════════
+       📱 RESPONSIVE
+       ═══════════════════════════════════════ */
+    @media (max-width: 768px) {
+      .header { padding: 10px 16px; }
+      .container { padding: 16px; }
+      .header-cards { display: none; }
+      .form-row { grid-template-columns: 1fr; }
+      .tabs { overflow-x: auto; flex-wrap: nowrap; }
+      .tab { white-space: nowrap; }
+    }
+  </style>
+  <link rel="stylesheet" href="responsive.css">
+</head>
+<body data-page="users">
+  <!-- ═══════════════════════════════════════
+       📱 HEADER
+       ═══════════════════════════════════════ -->
+  <header class="header">
+    <svg class="logo" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 2L2 7l10 5 10-5-10-5z"/>
+      <path d="M2 17l10 5 10-5M2 12l10 5 10-5"/>
+    </svg>
+
+    <div class="brand-container">
+      <span class="brand">ELOS SYSTEM</span>
+      <span class="page-subtitle">🔐 إدارة المستخدمين والصلاحيات</span>
+    </div>
+
+    <a href="index.html" class="btn-back">← الرئيسية</a>
+
+    <div class="spacer"></div>
+
+    <div class="header-cards">
+      <div class="header-card blue">
+        <span class="header-card-icon">👥</span>
+        <span class="header-card-value" id="statTotal">0</span>
+        <span class="header-card-label">إجمالي المستخدمين</span>
+      </div>
+      <div class="header-card green">
+        <span class="header-card-icon">✅</span>
+        <span class="header-card-value" id="statActive">0</span>
+        <span class="header-card-label">نشط</span>
+      </div>
+      <div class="header-card purple">
+        <span class="header-card-icon">👑</span>
+        <span class="header-card-value" id="statAdmins">0</span>
+        <span class="header-card-label">المدراء</span>
+      </div>
+      <div class="header-card orange">
+        <span class="header-card-icon">💼</span>
+        <span class="header-card-value" id="statCashiers">0</span>
+        <span class="header-card-label">الكاشير</span>
+      </div>
+      <div class="header-card cyan">
+        <span class="header-card-icon">🟢</span>
+        <span class="header-card-value" id="statOnline">0</span>
+        <span class="header-card-label">متصل الآن</span>
+      </div>
+    </div>
+
+    <div class="header-clock">
+      <span class="clock-time" id="headerTime">00:00:00</span>
+      <span class="clock-date" id="headerDate">--</span>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════════════════════
+       📊 MAIN CONTENT
+       ═══════════════════════════════════════ -->
+  <div class="container">
+    <!-- Tabs -->
+    <div class="tabs">
+      <div class="tab active" data-tab="users" onclick="switchTab('users')">
+        👥 المستخدمين
+      </div>
+      <div class="tab" data-tab="permissions" onclick="switchTab('permissions')">
+        🔐 الصلاحيات
+      </div>
+      <div class="tab" data-tab="activity" onclick="switchTab('activity')">
+        📋 سجل النشاط
+      </div>
+      <div class="tab" data-tab="sessions" onclick="switchTab('sessions')">
+        🖥️ الجلسات النشطة
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         👥 USERS PANEL
+         ═══════════════════════════════════════ -->
+    <div id="usersPanel" class="panel active">
+      <div class="section-header">
+        <h2 class="section-title">👥 قائمة المستخدمين</h2>
+        <div class="section-actions">
+          <button class="btn btn-secondary" onclick="exportUsers()">
+            📥 تصدير
+          </button>
+          <button class="btn btn-primary" onclick="openUserModal()">
+            ➕ إضافة مستخدم
+          </button>
+        </div>
+      </div>
+
+      <div class="filters">
+        <div class="filter-group">
+          <label>البحث:</label>
+          <input type="text" id="searchUser" placeholder="اسم المستخدم..." oninput="filterUsers()">
+        </div>
+        <div class="filter-group">
+          <label>الصلاحية:</label>
+          <select id="filterRole" onchange="filterUsers()">
+            <option value="">الكل</option>
+            <option value="admin">مدير</option>
+            <option value="cashier">كاشير</option>
+            <option value="viewer">مشاهد</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>الحالة:</label>
+          <select id="filterStatus" onchange="filterUsers()">
+            <option value="">الكل</option>
+            <option value="active">نشط</option>
+            <option value="inactive">معطل</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>المستخدم</th>
+                <th>اسم المستخدم</th>
+                <th>الصلاحية</th>
+                <th>الحالة</th>
+                <th>آخر دخول</th>
+                <th>تاريخ الإنشاء</th>
+                <th>إجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="usersBody">
+              <tr>
+                <td colspan="8" class="empty-state">
+                  <div class="empty-state-icon">👥</div>
+                  <div>جاري التحميل...</div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         🔐 PERMISSIONS PANEL
+         ═══════════════════════════════════════ -->
+    <div id="permissionsPanel" class="panel">
+      <div class="section-header">
+        <h2 class="section-title">🔐 إدارة الصلاحيات</h2>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px">
+        <!-- Admin Role -->
+        <div class="table-wrapper" style="padding:20px">
+          <h3 style="margin-bottom:16px;display:flex;align-items:center;gap:8px">
+            <span class="badge badge-admin">👑 مدير (Admin)</span>
+          </h3>
+          <div style="font-size:13px;color:var(--text-secondary);line-height:1.8">
+            <p>✅ صلاحيات كاملة على النظام</p>
+            <p>✅ إدارة المستخدمين والصلاحيات</p>
+            <p>✅ الوصول لجميع التقارير</p>
+            <p>✅ تعديل إعدادات النظام</p>
+            <p>✅ حذف البيانات</p>
+            <p>✅ تصدير واستيراد البيانات</p>
+          </div>
+        </div>
+
+        <!-- Cashier Role -->
+        <div class="table-wrapper" style="padding:20px">
+          <h3 style="margin-bottom:16px;display:flex;align-items:center;gap:8px">
+            <span class="badge badge-cashier">💼 كاشير (Cashier)</span>
+          </h3>
+          <div style="font-size:13px;color:var(--text-secondary);line-height:1.8">
+            <p>✅ نقطة البيع والمبيعات</p>
+            <p>✅ إدارة العملاء والموردين</p>
+            <p>✅ إضافة وتعديل المنتجات</p>
+            <p>✅ عرض التقارير الأساسية</p>
+            <p>❌ حذف البيانات</p>
+            <p>❌ إدارة المستخدمين</p>
+          </div>
+        </div>
+
+        <!-- Viewer Role -->
+        <div class="table-wrapper" style="padding:20px">
+          <h3 style="margin-bottom:16px;display:flex;align-items:center;gap:8px">
+            <span class="badge badge-viewer">👁️ مشاهد (Viewer)</span>
+          </h3>
+          <div style="font-size:13px;color:var(--text-secondary);line-height:1.8">
+            <p>✅ عرض لوحة التحكم</p>
+            <p>✅ عرض المنتجات والمخزون</p>
+            <p>✅ عرض التقارير</p>
+            <p>❌ إضافة أو تعديل بيانات</p>
+            <p>❌ نقطة البيع</p>
+            <p>❌ أي صلاحيات كتابة</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         📋 ACTIVITY PANEL
+         ═══════════════════════════════════════ -->
+    <div id="activityPanel" class="panel">
+      <div class="section-header">
+        <h2 class="section-title">📋 سجل النشاط</h2>
+        <div class="section-actions">
+          <button class="btn btn-secondary" onclick="loadActivity()">
+            🔄 تحديث
+          </button>
+        </div>
+      </div>
+
+      <div class="filters">
+        <div class="filter-group">
+          <label>المستخدم:</label>
+          <select id="filterActivityUser" onchange="filterActivity()">
+            <option value="">الكل</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>النوع:</label>
+          <select id="filterActivityType" onchange="filterActivity()">
+            <option value="">الكل</option>
+            <option value="login">تسجيل دخول</option>
+            <option value="logout">تسجيل خروج</option>
+            <option value="create">إنشاء</option>
+            <option value="update">تعديل</option>
+            <option value="delete">حذف</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>من:</label>
+          <input type="date" id="filterActivityFrom" onchange="filterActivity()">
+        </div>
+        <div class="filter-group">
+          <label>إلى:</label>
+          <input type="date" id="filterActivityTo" onchange="filterActivity()">
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <div class="table-scroll" id="activityList" style="max-height:600px">
+          <div class="empty-state">
+            <div class="empty-state-icon">📋</div>
+            <div>جاري التحميل...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════
+         🖥️ SESSIONS PANEL
+         ═══════════════════════════════════════ -->
+    <div id="sessionsPanel" class="panel">
+      <div class="section-header">
+        <h2 class="section-title">🖥️ الجلسات النشطة</h2>
+        <div class="section-actions">
+          <button class="btn btn-danger" onclick="terminateAllSessions()">
+            ⛔ إنهاء جميع الجلسات
+          </button>
+          <button class="btn btn-secondary" onclick="loadSessions()">
+            🔄 تحديث
+          </button>
+        </div>
+      </div>
+
+      <div class="table-wrapper">
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>المستخدم</th>
+                <th>الصلاحية</th>
+                <th>آخر نشاط</th>
+                <th>وقت الجلسة</th>
+                <th>الحالة</th>
+                <th>إجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="sessionsBody">
+              <tr>
+                <td colspan="6" class="empty-state">
+                  <div class="empty-state-icon">🖥️</div>
+                  <div>لا توجد جلسات نشطة</div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       🦶 FOOTER
+       ═══════════════════════════════════════ -->
+  <footer>
+    <span>Developed by ElOs | 4Accounting System © 2025</span>
+    <span>المستخدمين v2.0 • نظام إدارة الصلاحيات</span>
+  </footer>
+
+  <!-- ═══════════════════════════════════════
+       🪟 USER MODAL
+       ═══════════════════════════════════════ -->
+  <div id="userModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 class="modal-title">👤 <span id="userModalTitle">إضافة مستخدم جديد</span></h3>
+        <button class="close-btn" onclick="closeUserModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="userForm" onsubmit="handleUserSubmit(event)">
+          <input type="hidden" id="userId">
+          
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label required">اسم المستخدم</label>
+              <input type="text" id="username" class="form-input" required placeholder="مثال: ahmed">
+              <div class="form-hint">يستخدم لتسجيل الدخول</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">الاسم المعروض</label>
+              <input type="text" id="displayName" class="form-input" placeholder="مثال: أحمد محمد">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" id="passwordLabel">كلمة المرور</label>
+            <div style="display:flex;gap:10px">
+              <input type="password" id="password" class="form-input" placeholder="أدخل كلمة المرور">
+              <button type="button" class="btn btn-secondary" onclick="generatePassword()" style="white-space:nowrap">
+                🎲 توليد
+              </button>
+            </div>
+            <div class="form-hint" id="passwordHint">6 أحرف على الأقل</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label required">الصلاحية</label>
+            <select id="role" class="form-select">
+              <option value="admin">👑 مدير (Admin) - صلاحيات كاملة</option>
+              <option value="cashier" selected>💼 كاشير (Cashier) - قراءة وكتابة</option>
+              <option value="viewer">👁️ مشاهد (Viewer) - قراءة فقط</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">الحالة</label>
+            <select id="userStatus" class="form-select">
+              <option value="1">✅ نشط</option>
+              <option value="0">❌ معطل</option>
+            </select>
+          </div>
+
+          <div class="modal-footer" style="margin: -20px; margin-top: 20px; padding: 16px 20px; background: var(--bg-tertiary); border-top: 1px solid var(--border);">
+            <button type="button" class="btn btn-secondary" onclick="closeUserModal()">إلغاء</button>
+            <button type="submit" class="btn btn-primary">💾 حفظ</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       🪟 DELETE MODAL
+       ═══════════════════════════════════════ -->
+  <div id="deleteModal" class="modal">
+    <div class="modal-content" style="max-width:400px">
+      <div class="modal-header">
+        <h3 class="modal-title">🗑️ تأكيد الحذف</h3>
+        <button class="close-btn" onclick="closeDeleteModal()">&times;</button>
+      </div>
+      <div class="modal-body" style="text-align:center">
+        <div style="font-size:48px;margin-bottom:16px">⚠️</div>
+        <p style="margin-bottom:8px">هل أنت متأكد من حذف هذا المستخدم؟</p>
+        <p style="font-size:12px;color:var(--danger)">لا يمكن التراجع عن هذا الإجراء</p>
+        <input type="hidden" id="deleteUserId">
+      </div>
+      <div class="modal-footer" style="justify-content:center">
+        <button class="btn btn-secondary" onclick="closeDeleteModal()">إلغاء</button>
+        <button class="btn btn-danger" onclick="confirmDelete()">🗑️ نعم، احذف</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════
+       🪟 RESET PASSWORD MODAL
+       ═══════════════════════════════════════ -->
+  <div id="resetPasswordModal" class="modal">
+    <div class="modal-content" style="max-width:450px">
+      <div class="modal-header">
+        <h3 class="modal-title">🔑 إعادة تعيين كلمة المرور</h3>
+        <button class="close-btn" onclick="closeResetModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="margin-bottom:16px;color:var(--text-secondary)">أدخل كلمة المرور الجديدة للمستخدم</p>
+
+        <div class="form-group">
+          <label class="form-label">كلمة المرور الجديدة <span style="color:var(--danger)">*</span></label>
+          <div style="position:relative">
+            <input type="password" id="newPasswordInput" class="form-input" placeholder="أدخل كلمة المرور الجديدة" minlength="6" required>
+            <button type="button" onclick="toggleResetPasswordVisibility()" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-secondary);cursor:pointer;padding:4px;">
+              <svg id="resetEyeIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+          <div style="font-size:11px;color:var(--text-secondary);margin-top:4px">6 أحرف على الأقل</div>
+        </div>
+
+        <div class="form-group" style="margin-top:12px">
+          <label class="form-label">تأكيد كلمة المرور <span style="color:var(--danger)">*</span></label>
+          <input type="password" id="confirmPasswordInput" class="form-input" placeholder="أعد إدخال كلمة المرور" minlength="6" required>
+        </div>
+
+        <input type="hidden" id="resetUserId">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeResetModal()">إلغاء</button>
+        <button class="btn btn-warning" id="resetPasswordBtn" onclick="confirmResetPassword()">🔑 حفظ كلمة المرور</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="api.js"></script>
+  <script src="users-manager.js"></script>
+
+  <!-- Company Logo Script -->
+  <script>
+    // ═════════════════════════════════════
+    // 🔄 Fetch Interceptor - Convert elos-db:// to http:// + CLIENT MODE
+    // ═════════════════════════════════════
+    (function() {
+      // 🔗 DYNAMIC CLIENT MODE DETECTION (يتم قراءتها في كل request)
+      function getBaseURL() {
+        const isClientMode = localStorage.getItem('elos_mode') === 'client';
+        const serverIP = localStorage.getItem('elos_server_ip');
+        const serverPort = localStorage.getItem('elos_server_port') || '48572';
+
+        if (isClientMode && serverIP) {
+          return `http://${serverIP}:${serverPort}`;
+        }
+        return 'http://127.0.0.1:48572';
+      }
+
+      function isClientModeActive() {
+        return localStorage.getItem('elos_mode') === 'client' && localStorage.getItem('elos_server_ip');
+      }
+
+      const originalFetch = window.fetch;
+      window.fetch = function(url, options) {
+        const baseURL = getBaseURL();
+        const isClientMode = isClientModeActive();
+
+        if (typeof url === 'string' && url.startsWith('elos-db://')) {
+          url = url.replace('elos-db://', baseURL + '/');
+        } else if (isClientMode && typeof url === 'string' && url.includes('http://127.0.0.1:48572')) {
+          url = url.replace('http://127.0.0.1:48572', baseURL);
+        }
+
+        // Auto-add x-session-id header if available
+        const sessionId = localStorage.getItem('sessionId');
+        if (sessionId && (url.includes(baseURL) || url.includes('127.0.0.1:48572'))) {
+          options = options || {};
+          options.headers = options.headers || {};
+
+          if (options.headers instanceof Headers) {
+            const plainHeaders = {};
+            options.headers.forEach((value, key) => {
+              plainHeaders[key] = value;
+            });
+            options.headers = plainHeaders;
+          }
+
+          if (!options.headers['x-session-id']) {
+            options.headers['x-session-id'] = sessionId;
+          }
+        }
+
+        return originalFetch.call(this, url, options);
+      };
+      console.log('[FETCH-INTERCEPTOR] ✅ Installed');
+    })();
+    
+    (function() {
+      let companyName = 'ELOS SYSTEM';
+      let companyLogo = null;
+
+      async function loadCompanyData() {
+        try {
+          const saved = localStorage.getItem('appSettings');
+          if (saved) {
+            const settings = JSON.parse(saved);
+            if (settings.companyName) companyName = settings.companyName;
+            if (settings.companyLogo) companyLogo = settings.companyLogo;
+            updateHeaderLogo();
+          }
+        } catch (error) {
+          console.warn('[HEADER] Failed to load company data:', error);
+        }
+      }
+
+      function isArabic(text) { return /[؀-ۿ]/.test(text); }
+
+      function updateHeaderLogo() {
+        const logoSvg = document.querySelector('.logo');
+        const companyNameEl = document.querySelector('.brand');
+
+        if (logoSvg && companyLogo) {
+          const img = document.createElement('img');
+          img.src = companyLogo;
+          img.alt = companyName;
+          img.className = logoSvg.className;
+          img.style.width = '40px';
+          img.style.height = '40px';
+          img.style.objectFit = 'contain';
+          img.style.borderRadius = '8px';
+          logoSvg.replaceWith(img);
+        }
+
+        if (companyNameEl) {
+          companyNameEl.textContent = companyName;
+          if (isArabic(companyName)) {
+            companyNameEl.style.fontFamily = '"Tajawal", "Cairo", sans-serif';
+            companyNameEl.style.letterSpacing = '0';
+          }
+        }
+      }
+
+      window.addEventListener('storage', (e) => {
+        if (e.key === 'appSettings') loadCompanyData();
+      });
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', loadCompanyData);
+      } else {
+        loadCompanyData();
+      }
+    })();
+  </script>
+</body>
+</html>

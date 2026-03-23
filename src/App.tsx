@@ -9,6 +9,7 @@ import { executeAutoBackupIfDue } from '@/data/backupData';
 import { preloadDashboardData } from '@/hooks/useFastData';
 import { migrateLegacyDataToBatches } from '@/domain/batchMigration';
 import { migrateUsedMerge } from "@/domain/migrationUsedMerge";
+import { syncRepairsToLegacy } from "@/data/repairsData";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
@@ -30,6 +31,7 @@ const MobilesInventory = lazy(() => import("@/pages/MobilesInventory"));
 const ComputersInventory = lazy(() => import("@/pages/ComputersInventory"));
 const DevicesInventory = lazy(() => import("@/pages/DevicesInventory"));
 const Maintenance = lazy(() => import("@/pages/Maintenance"));
+const RepairPartsPage = lazy(() => import("@/pages/RepairPartsPage"));
 const Installments = lazy(() => import("@/pages/Installments"));
 const Expenses = lazy(() => import("@/pages/Expenses"));
 const UsersManagement = lazy(() => import("@/pages/UsersManagement"));
@@ -140,6 +142,10 @@ function DataMigrationRunner(): React.ReactElement | null {
     try {
       migrateUsedMerge();
     } catch (e) { console.error(e) }
+
+    try {
+      syncRepairsToLegacy();
+    } catch (e) { console.error(e) }
   }, [isAuthenticated]);
 
   return null;
@@ -173,6 +179,7 @@ const AppRoutes = () => (
         <Route path="/used-inventory" element={<PermGuard perm="used"><UsedInventory /></PermGuard>} />
         {/* Services */}
         <Route path="/maintenance" element={<PermGuard perm="maintenance"><Maintenance /></PermGuard>} />
+        <Route path="/maintenance/parts" element={<PermGuard perm="maintenance"><RepairPartsPage /></PermGuard>} />
         <Route path="/installments" element={<PermGuard perm="installments"><Installments /></PermGuard>} />
         <Route path="/expenses" element={<PermGuard perm="expenses"><Expenses /></PermGuard>} />
         <Route path="/damaged" element={<PermGuard perm="damaged"><DamagedItemsPage /></PermGuard>} />
@@ -217,7 +224,7 @@ const App = () => (
               <TooltipProvider>
                 <Toaster />
                 <Sonner />
-                <BrowserRouter>
+                <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
                   <AutoBackupRunner />
                   <DataMigrationRunner />
                   <AppRoutes />

@@ -1,0 +1,11 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   ELOS Accounting System - Dark Theme
+   Version: 3.0
+   Description: Dark mode component overrides only
+   NOTE: Color variables are defined in tokens.css - this file is for component-specific overrides only
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* This file is kept for backward compatibility but should be empty
+   All theme colors are now defined in tokens.css
+   Component styles are in design-system.css
+*/

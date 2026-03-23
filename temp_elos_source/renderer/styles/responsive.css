@@ -1,0 +1,327 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   ELOS Responsive Styles
+   Version: 1.0
+   Description: Responsive breakpoints and scaling for small windows
+   Load after main CSS but before theme-fixes.css
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════
+   📐 RESPONSIVE BREAKPOINTS
+   ═══════════════════════════════════════ */
+
+/* Base: >= 1200px - Current layout (no changes) */
+
+/* Medium: 992px - 1199px - Tighten spacing slightly */
+@media (max-width: 1199px) {
+  :root {
+    --sidebar-width: clamp(240px, 20vw, 260px);
+  }
+
+  .main-content {
+    padding: clamp(12px, 1.5vw, 20px);
+  }
+
+  .top-header {
+    padding: 0 clamp(12px, 1.5vw, 24px);
+  }
+
+  table th,
+  table td {
+    padding: clamp(8px, 1vw, 12px) clamp(10px, 1.2vw, 14px);
+    font-size: 14px; /* Fixed minimum 14px enforced */
+  }
+}
+
+/* Small: 768px - 991px - Compact layout, stack panels */
+@media (max-width: 991px) {
+  :root {
+    --sidebar-width: 220px;
+  }
+
+  /* Sidebar overlay on small screens */
+  .sidebar {
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .main-content {
+    margin-right: 0 !important;
+    width: 100%;
+  }
+
+  /* Reduce table padding - but maintain minimum readable font size */
+  table th,
+  table td {
+    padding: 8px 10px;
+    font-size: 14px; /* Minimum 14px enforced (was 12px) */
+  }
+
+  /* Make wide tables scrollable */
+  .table-wrapper,
+  .table-scroll {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table {
+    min-width: max-content;
+  }
+
+  /* Compact header */
+  .top-header {
+    padding: 0 12px;
+    flex-wrap: wrap;
+  }
+
+  .page-title h1 {
+    font-size: clamp(16px, 2vw, 20px);
+  }
+
+  /* Cards/grids use responsive grid */
+  .grid,
+  .card-grid {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important;
+    gap: clamp(10px, 1.5vw, 16px);
+  }
+}
+
+/* Extra Small: < 768px - Single column, full overlay sidebar */
+@media (max-width: 767px) {
+  :root {
+    --sidebar-width: 260px;
+  }
+
+  .sidebar {
+    transform: translateX(100%);
+    box-shadow: -4px 0 24px rgba(0, 0, 0, 0.3);
+  }
+
+  .main-content {
+    margin-right: 0 !important;
+    padding: 10px;
+  }
+
+  .top-header {
+    padding: 0 10px;
+    height: auto;
+    min-height: 50px;
+  }
+
+  .page-title {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .page-title h1 {
+    font-size: 16px;
+  }
+
+  /* Buttons wrap */
+  .header-actions,
+  .section-actions,
+  .filters {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  /* Table becomes very compact - but maintain minimum readable font size */
+  table th,
+  table td {
+    padding: 6px 8px;
+    font-size: 14px; /* Minimum 14px enforced (was 11px) */
+  }
+
+  /* Full width cards on mobile */
+  .card,
+  .panel,
+  .table-wrapper {
+    width: 100%;
+    margin: 0;
+  }
+
+  /* Single column grid */
+  .grid,
+  .card-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Ensure no fixed widths break layout */
+  .container,
+  .wrapper {
+    max-width: 100%;
+    min-width: 0;
+  }
+}
+
+/* ═══════════════════════════════════════
+   🎯 FIXED WIDTHS → RESPONSIVE
+   ═══════════════════════════════════════ */
+
+/* Prevent fixed widths from causing overflow */
+* {
+  max-width: 100%;
+}
+
+/* Allow flex items to shrink - CRITICAL for responsive layout */
+.flex,
+.d-flex,
+[class*="flex"],
+.flex-container,
+.container,
+.wrapper,
+.main-content,
+.app-container {
+  min-width: 0; /* Allow flex items to shrink below content width */
+}
+
+/* Tables should scroll, not clip */
+.table-container,
+.table-wrapper,
+.dataTables_wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Ensure cards can shrink */
+.card,
+.panel,
+.box {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+/* ═══════════════════════════════════════
+   📱 RESPONSIVE TYPOGRAPHY
+   ═══════════════════════════════════════ */
+
+/* Use clamp for responsive font sizes - headings only (body text uses fixed minimum) */
+h1 { font-size: clamp(20px, 2.5vw, 24px); }
+h2 { font-size: clamp(18px, 2vw, 22px); }
+h3 { font-size: clamp(16px, 1.8vw, 20px); }
+h4 { font-size: clamp(14px, 1.5vw, 18px); }
+
+/* Body text should NOT shrink below 16px */
+body,
+p,
+div,
+span,
+input,
+select,
+textarea,
+button {
+  font-size: inherit; /* Inherits from body (16px minimum) */
+}
+
+/* Responsive padding/margins */
+.p-1 { padding: clamp(4px, 0.5vw, 8px); }
+.p-2 { padding: clamp(8px, 1vw, 12px); }
+.p-3 { padding: clamp(12px, 1.5vw, 16px); }
+.p-4 { padding: clamp(16px, 2vw, 24px); }
+
+/* ═══════════════════════════════════════
+   🎨 SPA SHELL RESPONSIVE
+   ═══════════════════════════════════════ */
+
+/* App container adjusts to viewport */
+.app-container {
+  min-width: 0;
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+/* Sidebar collapse behavior */
+@media (max-width: 991px) {
+  .sidebar {
+    position: fixed;
+    top: 44px; /* Account for title bar */
+    height: calc(100vh - 44px);
+    z-index: 1000;
+  }
+
+  /* Overlay when sidebar is open */
+  body.sidebar-open::before {
+    content: '';
+    position: fixed;
+    top: 44px;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+  }
+}
+
+/* Main content area never shrinks too small */
+.main-content {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+/* Page container (for iframes) */
+#page-container {
+  min-width: 0;
+  overflow: hidden;
+}
+
+/* ═══════════════════════════════════════
+   📋 RESPONSIVE TABLES
+   ═══════════════════════════════════════ */
+
+/* Ensure tables scroll horizontally when needed */
+.table-wrapper,
+.table-scroll {
+  width: 100%;
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  min-width: min-content;
+}
+
+/* Responsive table padding */
+@media (max-width: 991px) {
+  table th,
+  table td {
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 767px) {
+  /* Allow wrapping on very small screens for better readability */
+  table th,
+  table td {
+    white-space: normal;
+    word-break: break-word;
+  }
+}
+
+/* ═══════════════════════════════════════
+   🔘 RESPONSIVE BUTTONS
+   ═══════════════════════════════════════ */
+
+/* Buttons should wrap and not overflow */
+.btn-group,
+.action-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: clamp(6px, 0.8vw, 10px);
+}
+
+.btn {
+  min-width: auto;
+  flex: 0 1 auto;
+}
+
+@media (max-width: 767px) {
+  .btn {
+    padding: clamp(6px, 1vw, 10px) clamp(12px, 2vw, 20px);
+    font-size: clamp(14px, 1.3vw, 13px); /* Minimum 14px enforced (was 11px) */
+  }
+}
+
