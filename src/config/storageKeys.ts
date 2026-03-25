@@ -64,6 +64,7 @@ export const STORAGE_KEYS = {
     // ─── Sales & Finance ────────────────────────────────────────
     INVOICE_COUNTER: 'gx_invoice_counter',
     RETURNS: 'gx_returns_v2',
+    STOCK_MOVEMENTS: 'gx_stock_movements',
     EXPENSES: 'gx_expenses',
     OTHER_REVENUE: 'gx_other_revenue',
     INSTALLMENTS: 'gx_installments_v2',

@@ -10,7 +10,7 @@ import { DamagedItem, DamagedItemCategory } from '@/domain/types';
 import { getDamagedItems, addDamagedItem, updateDamagedItem, deleteDamagedItem } from '@/data/damagedData';
 import { getAllInventoryProducts, updateProductQuantity } from '@/repositories/productRepository';
 import { saveMovements } from '@/repositories/stockRepository';
-import { validateStock } from '@/domain/stock';
+import { createStockMovement, validateStock } from '@/domain/stock';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePagination, PaginationBar } from '@/hooks/usePagination';
@@ -71,16 +71,51 @@ export default function DamagedItemsPage() {
     const [categoryFilter, setCategoryFilter] = useState<DamagedItemCategory | 'all'>('all');
     const [deleteTarget, setDeleteTarget] = useState<DamagedItem | null>(null);
 
-    const inventory = useMemo(() => getAllInventoryProducts(), [showForm]);
+    const inventory = getAllInventoryProducts();
 
     // ✅ FIX: refresh actually reloads from localStorage
     const refresh = useCallback(() => setItems(getDamagedItems()), []);
 
-    // ── Stats ────────────────────────────────────────────────
-    const now = new Date();
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const planInventoryAdjustments = useCallback((changes: Array<{ productId: string; quantityChange: number; reason: string }>) => {
+        const inventoryById = new Map(getAllInventoryProducts().map((product) => [product.id, product]));
+        const workingQuantities = new Map(
+            Array.from(inventoryById.entries()).map(([productId, product]) => [productId, product.quantity])
+        );
 
+        return changes.reduce<ReturnType<typeof createStockMovement>[]>((movements, change) => {
+            if (!change.productId || change.quantityChange === 0) return movements;
+
+            const product = inventoryById.get(change.productId);
+            if (!product) {
+                throw new Error(`المنتج "${change.productId}" لم يعد موجودًا في المخزون`);
+            }
+
+            const previousQuantity = workingQuantities.get(change.productId) ?? product.quantity;
+            if (change.quantityChange < 0) {
+                validateStock({ ...product, quantity: previousQuantity }, Math.abs(change.quantityChange));
+            }
+
+            const movement = createStockMovement(
+                product.id,
+                'manual_adjustment',
+                change.quantityChange,
+                previousQuantity,
+                change.reason,
+                user?.id || 'system',
+                null,
+                product.warehouseId
+            );
+
+            workingQuantities.set(change.productId, movement.newQuantity);
+            movements.push(movement);
+            return movements;
+        }, []);
+    }, [user?.id]);
+
+    // ── Stats ────────────────────────────────────────────────
     const stats = useMemo(() => {
+        const now = new Date();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
         const totalLoss = items.reduce((s, i) => s + i.totalLoss, 0);
         const monthLoss = items
             .filter(i => new Date(i.date) >= startOfMonth)
@@ -116,41 +151,70 @@ export default function DamagedItemsPage() {
             return;
         }
 
-        const selectedProduct = inventory.find(p => p.id === form.productId);
-        if (!editId && selectedProduct) {
-            try { validateStock(selectedProduct, form.quantity); }
-            catch (err: unknown) {
-                const msg = err instanceof Error ? err.message : 'الكمية المطلوبة غير متوفرة';
-                toast({ title: 'خطأ في المخزون', description: msg, variant: 'destructive' });
-                return;
-            }
-        }
-
         const totalLoss = form.quantity * form.costPrice;
+        const movementReason = form.reason || 'بدون سبب';
 
-        if (editId) {
-            updateDamagedItem(editId, { ...form, totalLoss });
-            toast({ title: '✅ تم التعديل' });
-        } else {
-            const newItem = { ...form, totalLoss, addedBy: user?.fullName || 'غير معروف' };
-            addDamagedItem(newItem);
+        try {
+            if (editId) {
+                const previousItem = items.find((item) => item.id === editId);
+                if (!previousItem) {
+                    toast({ title: 'خطأ', description: 'تعذر العثور على سجل الهالك المطلوب', variant: 'destructive' });
+                    return;
+                }
 
-            if (selectedProduct) {
-                updateProductQuantity(selectedProduct.id, selectedProduct.quantity - form.quantity);
-                saveMovements([{
-                    id: crypto.randomUUID(),
-                    productId: selectedProduct.id,
-                    type: 'manual_adjustment',
+                const stockChanges: Array<{ productId: string; quantityChange: number; reason: string }> = [];
+
+                if (previousItem.productId && previousItem.productId === form.productId) {
+                    const delta = previousItem.quantity - form.quantity;
+                    if (delta !== 0) {
+                        stockChanges.push({
+                            productId: previousItem.productId,
+                            quantityChange: delta,
+                            reason: `تعديل سجل هالك: ${movementReason}`,
+                        });
+                    }
+                } else {
+                    if (previousItem.productId) {
+                        stockChanges.push({
+                            productId: previousItem.productId,
+                            quantityChange: previousItem.quantity,
+                            reason: `إلغاء ربط هالك سابق: ${previousItem.reason || 'بدون سبب'}`,
+                        });
+                    }
+
+                    if (form.productId) {
+                        stockChanges.push({
+                            productId: form.productId,
+                            quantityChange: -form.quantity,
+                            reason: `تعديل سجل هالك: ${movementReason}`,
+                        });
+                    }
+                }
+
+                const movements = planInventoryAdjustments(stockChanges);
+                movements.forEach((movement) => updateProductQuantity(movement.productId, movement.newQuantity));
+                if (movements.length > 0) saveMovements(movements);
+
+                updateDamagedItem(editId, { ...form, totalLoss });
+                toast({ title: '✅ تم التعديل' });
+            } else {
+                const newItem = { ...form, totalLoss, addedBy: user?.fullName || 'غير معروف' };
+                const movements = planInventoryAdjustments(form.productId ? [{
+                    productId: form.productId,
                     quantityChange: -form.quantity,
-                    previousQuantity: selectedProduct.quantity,
-                    newQuantity: selectedProduct.quantity - form.quantity,
-                    reason: `تسجيل هالك: ${form.reason || 'بدون سبب'}`,
-                    referenceId: null,
-                    userId: user?.id || 'system',
-                    timestamp: new Date().toISOString(),
-                }]);
+                    reason: `تسجيل هالك: ${movementReason}`,
+                }] : []);
+
+                movements.forEach((movement) => updateProductQuantity(movement.productId, movement.newQuantity));
+                if (movements.length > 0) saveMovements(movements);
+
+                addDamagedItem(newItem);
+                toast({ title: '✅ تمت الإضافة', description: `${form.productName} — تم خصم ${form.quantity} قطعة من المخزون` });
             }
-            toast({ title: '✅ تمت الإضافة', description: `${form.productName} — تم خصم ${form.quantity} قطعة من المخزون` });
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : 'حدث خطأ أثناء تسوية المخزون';
+            toast({ title: 'خطأ في المخزون', description: msg, variant: 'destructive' });
+            return;
         }
 
         setForm(emptyForm);
@@ -172,10 +236,25 @@ export default function DamagedItemsPage() {
     // ✅ FIX: confirm delete with state
     const confirmDelete = () => {
         if (!deleteTarget) return;
-        deleteDamagedItem(deleteTarget.id);
-        toast({ title: '🗑️ تم الحذف', description: deleteTarget.productName });
-        setDeleteTarget(null);
-        refresh();
+
+        try {
+            const movements = planInventoryAdjustments(deleteTarget.productId ? [{
+                productId: deleteTarget.productId,
+                quantityChange: deleteTarget.quantity,
+                reason: `حذف سجل هالك: ${deleteTarget.reason || 'بدون سبب'}`,
+            }] : []);
+
+            movements.forEach((movement) => updateProductQuantity(movement.productId, movement.newQuantity));
+            if (movements.length > 0) saveMovements(movements);
+
+            deleteDamagedItem(deleteTarget.id);
+            toast({ title: '🗑️ تم الحذف', description: deleteTarget.productName });
+            setDeleteTarget(null);
+            refresh();
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : 'تعذر إعادة الكمية إلى المخزون';
+            toast({ title: 'خطأ في المخزون', description: msg, variant: 'destructive' });
+        }
     };
 
     // ── Render ───────────────────────────────────────────────

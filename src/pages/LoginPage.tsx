@@ -125,13 +125,18 @@ const LoginPage = () => {
     if (!findUserByUsername(fpUsername)) { setFpError('اسم المستخدم غير موجود'); return; }
     setFpStep(2);
   };
-  const handleFpStep2 = (e: React.FormEvent) => {
+  const handleFpStep2 = async (e: React.FormEvent) => {
     e.preventDefault(); setFpError('');
     if (!verifyRecoveryCode(fpCode)) { setFpError('كود الاسترداد غير صحيح. تواصل مع صاحب النظام'); return; }
     if (fpPass.length < 4) { setFpError('كلمة المرور 4 أحرف على الأقل'); return; }
     if (fpPass !== fpConfirm) { setFpError('كلمتا المرور غير متطابقتين'); return; }
-    if (!changePassword(fpUsername, fpPass)) { setFpError('حدث خطأ أثناء التغيير'); return; }
-    setScreen('done');
+    try {
+      const changed = await changePassword(fpUsername, fpPass);
+      if (!changed) { setFpError('حدث خطأ أثناء التغيير'); return; }
+      setScreen('done');
+    } catch {
+      setFpError('حدث خطأ أثناء التغيير');
+    }
   };
   const goLogin = () => { setScreen('login'); setFpStep(1); setFpError(''); setFpUsername(''); setFpCode(''); setFpPass(''); setFpConfirm(''); };
 

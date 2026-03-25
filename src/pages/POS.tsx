@@ -88,6 +88,7 @@ export default function POS() {
   const [conditionFilter, setConditionFilter] = useState<ConditionFilter>('all');
   const [showHeld, setShowHeld] = useState(false);
   const [now, setNow] = useState(new Date());
+  const [refreshKey, setRefreshKey] = useState(0);
 
   // Checkout trigger ref (injected by CheckoutSidebar via callback)
   const checkoutTriggerRef = useRef<(() => void) | null>(null);
@@ -105,6 +106,22 @@ export default function POS() {
   useEffect(() => {
     const t = setInterval(() => setNow(new Date()), 60_000);
     return () => clearInterval(t);
+  }, []);
+
+  useEffect(() => {
+    const handleStorage = (e: StorageEvent | CustomEvent) => {
+      const key = 'key' in e ? e.key : (e as CustomEvent).detail?.key;
+      if (key && (key.startsWith('gx_') || key.startsWith('elahmed_'))) {
+        setRefreshKey((current) => current + 1);
+      }
+    };
+
+    window.addEventListener('storage', handleStorage as EventListener);
+    window.addEventListener('local-storage', handleStorage as EventListener);
+    return () => {
+      window.removeEventListener('storage', handleStorage as EventListener);
+      window.removeEventListener('local-storage', handleStorage as EventListener);
+    };
   }, []);
 
   // Reset chip/subMode/condition when tab changes
@@ -270,11 +287,10 @@ export default function POS() {
     };
     window.addEventListener('keydown', fn);
     return () => window.removeEventListener('keydown', fn);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cart, holdInvoice, applyInvoiceDiscount, addToCart, updateCartItemQty, removeFromCart, toggleTheme, navigate, toast, searchTerm]);
 
   // ── Products ────────────────────────────────────────────────
-  const allProducts = useMemo(() => getAllInventoryProducts(), []);
+  const allProducts = getAllInventoryProducts();
   const mobileCategories = useMemo(() => getCategoriesBySection('mobile'), []);
   const deviceCategories = useMemo(() => getCategoriesBySection('device'), []);
 

@@ -3,7 +3,8 @@
 // Orchestrates sale flow: validation → stock → audit → record
 // ============================================================
 
-import { CartItem, PaymentMethod, Sale, StockMovement } from '@/domain/types';
+import { restoreBatchQty } from '@/data/batchesData';
+import { CartItem, PaymentMethod, Product, Sale, StockMovement } from '@/domain/types';
 import { buildSaleRecord, calcCartTotals } from '@/domain/sale';
 import { validateStock, createStockMovement } from '@/domain/stock';
 import { createAuditEntry, createVoidAudit } from '@/domain/audit';
@@ -122,22 +123,52 @@ export function processSale(
 export function voidSale(
   sale: Sale,
   reason: string,
-  userId: string
-): { voidedSale: Sale; auditEntry: ReturnType<typeof createVoidAudit> } {
+  userId: string,
+  currentProducts: Record<string, Product | undefined>
+): {
+  voidedSale: Sale;
+  auditEntry: ReturnType<typeof createVoidAudit>;
+  stockMovements: StockMovement[];
+} {
   if (sale.voidedAt) {
     throw new Error('Sale is already voided');
+  }
+  if (!reason.trim()) {
+    throw new Error('Void reason is required');
   }
 
   const voidedSale: Sale = {
     ...sale,
     voidedAt: new Date().toISOString(),
-    voidReason: reason,
+    voidReason: reason.trim(),
     voidedBy: userId,
   };
 
+  const stockMovements = sale.items.map((item) => {
+    const currentProduct = currentProducts[item.productId];
+    if (!currentProduct) {
+      throw new Error(`Cannot void sale because product "${item.name}" is no longer available in inventory`);
+    }
+
+    if (item.batches?.length) {
+      item.batches.forEach((batch) => restoreBatchQty(batch.batchId, batch.qtyFromBatch));
+    }
+
+    return createStockMovement(
+      item.productId,
+      'return',
+      item.qty,
+      currentProduct.quantity,
+      `Void sale ${sale.invoiceNumber}: ${reason.trim()}`,
+      userId,
+      sale.id,
+      currentProduct.warehouseId ?? item.warehouseId
+    );
+  });
+
   const auditEntry = createVoidAudit(userId, sale.id, reason);
 
-  return { voidedSale, auditEntry };
+  return { voidedSale, auditEntry, stockMovements };
 }
 
 /** Get cart totals — delegates to pure domain function */

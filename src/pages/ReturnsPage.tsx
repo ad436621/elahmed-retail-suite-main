@@ -1,45 +1,33 @@
 import { useState } from 'react';
 import { Search, X, RotateCcw, Check, AlertCircle } from 'lucide-react';
 import { Sale } from '@/domain/types';
-import { getActiveSales } from '@/repositories/saleRepository';
-import { useToast } from '@/hooks/use-toast';
-import { getMobiles, saveMobiles } from '@/data/mobilesData';
-import { getDevices, saveDevices } from '@/data/devicesData';
-import { getComputers, saveComputers } from '@/data/computersData';
-import { getCars, saveCars } from '@/data/carsData';
 import { restoreBatchQty } from '@/data/batchesData';
+import { getReturnedQuantitiesBySaleId, addReturnRecord } from '@/data/returnsData';
+import { processReturn } from '@/domain/returns';
+import { saveAuditEntries } from '@/repositories/auditRepository';
+import { getAllInventoryProducts, updateProductQuantity } from '@/repositories/productRepository';
+import { getActiveSales } from '@/repositories/saleRepository';
+import { saveMovements } from '@/repositories/stockRepository';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 import { BatchSaleResult } from '@/domain/types';
 
 interface ReturnedItem {
   productId: string;
   name: string;
-  qty: number;
+  soldQty: number;
+  availableQty: number;
   price: number;
   returnQty: number;
   reason: string;
   batches?: BatchSaleResult['batches']; // Stored original batches to restore
 }
 
-const RETURNS_KEY = 'gx_returns_v2';
-
-function saveReturn(data: object) {
-  try {
-    const existing = JSON.parse(localStorage.getItem(RETURNS_KEY) || '[]');
-    const id = crypto.randomUUID();
-    const count = existing.length + 1;
-    localStorage.setItem(RETURNS_KEY, JSON.stringify([...existing, {
-      ...data,
-      id,
-      returnNumber: `RET-${count.toString().padStart(4, '0')}`,
-      createdAt: new Date().toISOString(),
-    }]));
-  } catch { /* ignore */ }
-}
-
 const IC = "w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all";
 
 export default function ReturnsPage() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const [invoiceSearch, setInvoiceSearch] = useState('');
   const [foundSale, setFoundSale] = useState<Sale | null>(null);
   const [returnItems, setReturnItems] = useState<ReturnedItem[]>([]);
@@ -56,16 +44,30 @@ export default function ReturnsPage() {
       s.id === invoiceSearch.trim()
     );
     if (sale) {
+      const returnedQuantities = getReturnedQuantitiesBySaleId(sale.id);
+      const mappedItems = sale.items.map(item => {
+        const alreadyReturned = returnedQuantities[item.productId] ?? 0;
+        return {
+          productId: item.productId,
+          name: item.name,
+          soldQty: item.qty,
+          availableQty: Math.max(0, item.qty - alreadyReturned),
+          price: item.price,
+          returnQty: 0,
+          reason: '',
+          batches: item.batches,
+        };
+      });
+
       setFoundSale(sale);
-      setReturnItems(sale.items.map(item => ({
-        productId: item.productId,
-        name: item.name,
-        qty: item.qty,
-        price: item.price,
-        returnQty: 0,
-        reason: '',
-        batches: item.batches,
-      })));
+      setReturnItems(mappedItems);
+
+      if (mappedItems.every((item) => item.availableQty === 0)) {
+        toast({
+          title: 'الفاتورة مسترجعة بالكامل',
+          description: 'تم استرجاع كل الكميات في هذه الفاتورة من قبل',
+        });
+      }
     } else {
       setNotFound(true);
     }
@@ -81,57 +83,46 @@ export default function ReturnsPage() {
       toast({ title: 'خطأ', description: 'حدد كمية مرتجعة لمنتج واحد على الأقل', variant: 'destructive' });
       return;
     }
+
+    if (!foundSale) {
+      toast({ title: 'خطأ', description: 'لم يتم العثور على الفاتورة', variant: 'destructive' });
+      return;
+    }
+
+    const returnedQuantities = getReturnedQuantitiesBySaleId(foundSale.id);
+    const inventoryProducts = getAllInventoryProducts();
+    const inventoryById = Object.fromEntries(inventoryProducts.map((product) => [product.id, product]));
+    const currentProductQuantities = Object.fromEntries(inventoryProducts.map((product) => [product.id, product.quantity]));
+
     for (const item of itemsToReturn) {
-      if (item.returnQty > item.qty) {
-        toast({ title: 'خطأ', description: `كمية ${item.name} المرتجعة أكبر من المباعة`, variant: 'destructive' });
+      const soldQty = foundSale.items.find((saleItem) => saleItem.productId === item.productId)?.qty ?? 0;
+      const remainingQty = Math.max(0, soldQty - (returnedQuantities[item.productId] ?? 0));
+      if (item.returnQty > remainingQty) {
+        toast({ title: 'خطأ', description: `كمية ${item.name} المتاحة للإرجاع هي ${remainingQty} فقط`, variant: 'destructive' });
+        return;
+      }
+      if (!inventoryById[item.productId]) {
+        toast({ title: 'خطأ', description: `المنتج "${item.name}" لم يعد موجودًا في المخزون`, variant: 'destructive' });
         return;
       }
     }
 
-    const totalRefund = itemsToReturn.reduce((s, i) => s + i.returnQty * i.price, 0);
+    const reason = itemsToReturn
+      .map((item) => item.reason.trim() ? `${item.name}: ${item.reason.trim()}` : item.name)
+      .join(' | ') || 'مرتجع مبيعات';
+
+    const { returnRecord, stockMovements, auditEntries } = processReturn(
+      foundSale,
+      itemsToReturn.map((item) => ({ productId: item.productId, qty: item.returnQty })),
+      reason,
+      user?.id || 'system',
+      currentProductQuantities
+    );
 
     itemsToReturn.forEach(item => {
-      // 1. Restore the item quantity in the correct inventory
-      try {
-        // Try mobiles
-        const mobiles = getMobiles();
-        const mobileIdx = mobiles.findIndex(m => m.id === item.productId);
-        if (mobileIdx >= 0) {
-          mobiles[mobileIdx] = { ...mobiles[mobileIdx], quantity: mobiles[mobileIdx].quantity + item.returnQty, updatedAt: new Date().toISOString() };
-          saveMobiles(mobiles);
-        } else {
-          // Try devices
-          const devices = getDevices();
-          const deviceIdx = devices.findIndex(d => d.id === item.productId);
-          if (deviceIdx >= 0) {
-            devices[deviceIdx] = { ...devices[deviceIdx], quantity: devices[deviceIdx].quantity + item.returnQty, updatedAt: new Date().toISOString() };
-            saveDevices(devices);
-          } else {
-            // Try computers
-            const computers = getComputers();
-            const computerIdx = computers.findIndex(c => c.id === item.productId);
-            if (computerIdx >= 0) {
-              computers[computerIdx] = { ...computers[computerIdx], quantity: computers[computerIdx].quantity + item.returnQty, updatedAt: new Date().toISOString() };
-              saveComputers(computers);
-            } else {
-              // Try cars
-              const cars = getCars();
-              const carIdx = cars.findIndex(c => c.id === item.productId);
-              if (carIdx >= 0) {
-                cars[carIdx] = { ...cars[carIdx], quantity: (cars[carIdx] as any).quantity ? (cars[carIdx] as any).quantity + item.returnQty : item.returnQty, updatedAt: new Date().toISOString() } as any;
-                saveCars(cars);
-              }
-            }
-          }
-        }
-      } catch { /* ignore */ }
-
-      // 2. Restore FIFO Batches
       if (item.batches && item.batches.length > 0) {
         let qtyToRestore = item.returnQty;
 
-        // Restore newer batches first (often latest purchased is returned first logically in FIFO reverse)
-        // or just restore exactly from where it was deducted based on original quantities
         const reversedBatches = [...item.batches].reverse();
         for (const batch of reversedBatches) {
           if (qtyToRestore <= 0) break;
@@ -143,15 +134,21 @@ export default function ReturnsPage() {
       }
     });
 
-    saveReturn({
-      originalInvoiceNumber: foundSale!.invoiceNumber,
-      originalSaleId: foundSale!.id,
+    saveMovements(stockMovements);
+    saveAuditEntries(auditEntries);
+    stockMovements.forEach((movement) => updateProductQuantity(movement.productId, movement.newQuantity));
+
+    addReturnRecord({
+      originalInvoiceNumber: foundSale.invoiceNumber,
+      originalSaleId: foundSale.id,
       date: returnDate,
       items: itemsToReturn.map(i => ({ productId: i.productId, name: i.name, qty: i.returnQty, price: i.price, reason: i.reason })),
-      totalRefund,
+      totalRefund: returnRecord.totalRefund,
+      reason,
+      processedBy: user?.id || 'system',
     });
 
-    toast({ title: '✅ تم تسجيل المرتجع', description: `إجمالي الاسترداد: ${totalRefund.toLocaleString()} ج.م` });
+    toast({ title: '✅ تم تسجيل المرتجع', description: `إجمالي الاسترداد: ${returnRecord.totalRefund.toLocaleString()} ج.م` });
     setFoundSale(null);
     setReturnItems([]);
     setInvoiceSearch('');
@@ -228,7 +225,7 @@ export default function ReturnsPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-semibold text-foreground">{item.name}</p>
-                    <p className="text-xs text-muted-foreground">المباع: {item.qty} — سعر الوحدة: {item.price.toLocaleString()} ج.م</p>
+                    <p className="text-xs text-muted-foreground">المباع: {item.soldQty} — المتاح للإرجاع: {item.availableQty} — سعر الوحدة: {item.price.toLocaleString()} ج.م</p>
                   </div>
                   {item.returnQty > 0 && (
                     <span className="rounded-full bg-rose-100 dark:bg-rose-500/15 text-rose-700 dark:text-rose-400 px-2 py-0.5 text-xs font-bold">
@@ -242,10 +239,11 @@ export default function ReturnsPage() {
                     <input
                       type="number"
                       min={0}
-                      max={item.qty}
+                      max={item.availableQty}
                       value={item.returnQty}
-                      onChange={e => updateItem(i, 'returnQty', Math.max(0, Math.min(item.qty, +e.target.value)))}
+                      onChange={e => updateItem(i, 'returnQty', Math.max(0, Math.min(item.availableQty, +e.target.value)))}
                       className={IC}
+                      disabled={item.availableQty === 0}
                     />
                   </div>
                   <div>

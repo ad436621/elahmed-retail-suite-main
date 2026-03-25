@@ -44,6 +44,7 @@ vi.mock('@/data/batchesData', () => {
         getBatches: vi.fn(() => [...batches]),
         saveBatches: vi.fn((b: unknown[]) => { batches = b; }),
         updateBatchQty: vi.fn(),
+        restoreBatchQty: vi.fn(),
         getWeightedAvgCost: vi.fn(() => null),
         __setMockBatches: (b: unknown[]) => { batches = b; },
     };
@@ -177,28 +178,79 @@ describe('processSale', () => {
 
 describe('voidSale', () => {
     it('should void a sale successfully', () => {
-        const sale = makeSale();
-        const { voidedSale } = voidSale(sale, 'طلب العميل', 'admin-1');
+        const sale = makeSale({
+            items: [{
+                productId: 'p1',
+                name: 'iPhone 15',
+                qty: 1,
+                price: 1500,
+                cost: 1000,
+                lineDiscount: 0,
+            }],
+        });
+        const { voidedSale, stockMovements } = voidSale(sale, 'طلب العميل', 'admin-1', {
+            p1: makeProduct(),
+        });
         expect(voidedSale.voidedAt).not.toBeNull();
         expect(voidedSale.voidReason).toBe('طلب العميل');
         expect(voidedSale.voidedBy).toBe('admin-1');
+        expect(stockMovements).toHaveLength(1);
+        expect(stockMovements[0].quantityChange).toBe(1);
+        expect(stockMovements[0].type).toBe('return');
     });
 
     it('should throw when trying to void an already voided sale', () => {
         const sale = makeSale({ voidedAt: '2024-01-16T00:00:00Z' });
-        expect(() => voidSale(sale, 'سبب', 'admin-1')).toThrow('already voided');
+        expect(() => voidSale(sale, 'سبب', 'admin-1', {})).toThrow('already voided');
     });
 
     it('should not mutate original sale', () => {
-        const sale = makeSale();
-        voidSale(sale, 'سبب', 'admin-1');
+        const sale = makeSale({
+            items: [{
+                productId: 'p1',
+                name: 'iPhone 15',
+                qty: 1,
+                price: 1500,
+                cost: 1000,
+                lineDiscount: 0,
+            }],
+        });
+        voidSale(sale, 'سبب', 'admin-1', { p1: makeProduct() });
         expect(sale.voidedAt).toBeNull();
     });
 
     it('should create an audit entry', () => {
-        const sale = makeSale();
-        const { auditEntry } = voidSale(sale, 'سبب', 'admin-1');
+        const sale = makeSale({
+            items: [{
+                productId: 'p1',
+                name: 'iPhone 15',
+                qty: 1,
+                price: 1500,
+                cost: 1000,
+                lineDiscount: 0,
+            }],
+        });
+        const { auditEntry } = voidSale(sale, 'سبب', 'admin-1', { p1: makeProduct() });
         expect(auditEntry).toBeDefined();
+    });
+
+    it('restores sold batches when voiding a sale', async () => {
+        const sale = makeSale({
+            items: [{
+                productId: 'p1',
+                name: 'iPhone 15',
+                qty: 1,
+                price: 1500,
+                cost: 1000,
+                lineDiscount: 0,
+                batches: [{ batchId: 'batch-1', qtyFromBatch: 1, costPrice: 1000, salePrice: 1500, profit: 500 }],
+            }],
+        });
+        const batchesData = await import('@/data/batchesData');
+
+        voidSale(sale, 'سبب', 'admin-1', { p1: makeProduct() });
+
+        expect(batchesData.restoreBatchQty).toHaveBeenCalledWith('batch-1', 1);
     });
 });
 

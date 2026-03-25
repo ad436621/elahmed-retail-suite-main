@@ -58,11 +58,21 @@ function deriveStatus(totalAmount: number, paidAmount: number): InvoiceStatus {
     return 'partial';
 }
 
+function getNextInvoiceNumber(invoices: PurchaseInvoice[]): string {
+    const maxSequence = invoices.reduce((max, invoice) => {
+        const match = /^PI-(\d+)$/.exec(invoice.invoiceNumber);
+        const sequence = match ? Number.parseInt(match[1], 10) : 0;
+        return Number.isFinite(sequence) ? Math.max(max, sequence) : max;
+    }, 0);
+
+    return `PI-${String(maxSequence + 1).padStart(4, '0')}`;
+}
+
 export function addPurchaseInvoice(
     data: Omit<PurchaseInvoice, 'id' | 'invoiceNumber' | 'remaining' | 'status' | 'createdAt' | 'updatedAt'>
 ): PurchaseInvoice {
     const all = getPurchaseInvoices();
-    const invoiceNumber = `PI-${String(all.length + 1).padStart(4, '0')}`;
+    const invoiceNumber = getNextInvoiceNumber(all);
     const remaining = data.totalAmount - data.paidAmount;
     const status = deriveStatus(data.totalAmount, data.paidAmount);
     const invoice: PurchaseInvoice = {

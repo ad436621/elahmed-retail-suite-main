@@ -61,9 +61,84 @@ export default function PurchaseInvoicesPage() {
         }));
     };
 
+    const validateItems = () => {
+        const meaningfulItems = wItems.filter(item =>
+            item.productName.trim() ||
+            item.category?.trim() ||
+            item.notes?.trim() ||
+            item.quantity > 0 ||
+            item.unitPrice > 0 ||
+            item.totalPrice > 0
+        );
+
+        if (meaningfulItems.length === 0) {
+            return { ok: false as const, message: 'أضف بند شراء واحد على الأقل' };
+        }
+
+        for (const item of meaningfulItems) {
+            if (!item.productName.trim()) {
+                return { ok: false as const, message: 'اسم المنتج مطلوب لكل بند شراء' };
+            }
+            if (item.quantity <= 0) {
+                return { ok: false as const, message: `الكمية غير صالحة في البند "${item.productName}"` };
+            }
+            if (item.unitPrice < 0) {
+                return { ok: false as const, message: `سعر الوحدة غير صالح في البند "${item.productName}"` };
+            }
+        }
+
+        const items = meaningfulItems.map(item => ({
+            ...item,
+            productName: item.productName.trim(),
+            totalPrice: item.quantity * item.unitPrice,
+        }));
+        const computedTotal = items.reduce((sum, item) => sum + item.totalPrice, 0);
+
+        if (computedTotal <= 0) {
+            return { ok: false as const, message: 'إجمالي الفاتورة يجب أن يكون أكبر من صفر' };
+        }
+
+        return { ok: true as const, items, totalAmount: computedTotal };
+    };
+
+    const validateStep = (stepNumber: number) => {
+        if (stepNumber === 1 && !wForm.supplierName.trim()) {
+            toast({ title: 'خطأ', description: 'اسم المورد مطلوب', variant: 'destructive' });
+            return false;
+        }
+
+        if (stepNumber >= 2) {
+            const itemValidation = validateItems();
+            if (!itemValidation.ok) {
+                toast({ title: 'خطأ', description: itemValidation.message, variant: 'destructive' });
+                return false;
+            }
+
+            if (stepNumber === 3 && (wForm.paidAmount < 0 || wForm.paidAmount > itemValidation.totalAmount)) {
+                toast({ title: 'خطأ', description: 'المبلغ المدفوع يجب أن يكون بين صفر وإجمالي الفاتورة', variant: 'destructive' });
+                return false;
+            }
+        }
+
+        return true;
+    };
+
     const handleSubmit = () => {
-        if (!wForm.supplierName.trim()) { toast({ title: 'خطأ', description: 'اسم المورد مطلوب', variant: 'destructive' }); return; }
-        addPurchaseInvoice({ ...wForm, totalAmount, items: wItems, createdBy: user?.fullName ?? 'system' });
+        if (!validateStep(3)) return;
+
+        const itemValidation = validateItems();
+        if (!itemValidation.ok) {
+            toast({ title: 'خطأ', description: itemValidation.message, variant: 'destructive' });
+            return;
+        }
+
+        addPurchaseInvoice({
+            ...wForm,
+            paidAmount: Math.min(wForm.paidAmount, itemValidation.totalAmount),
+            totalAmount: itemValidation.totalAmount,
+            items: itemValidation.items,
+            createdBy: user?.fullName ?? 'system',
+        });
         toast({ title: '✅ تمت إضافة الفاتورة' });
         setStep(0);
         setWForm({ supplierName: '', supplierId: '', invoiceDate: new Date().toISOString().slice(0, 10), paymentMethod: 'cash', paidAmount: 0, notes: '' });
@@ -217,7 +292,14 @@ export default function PurchaseInvoicesPage() {
                         <div className="flex gap-2">
                             {step > 1 && <button onClick={() => setStep(s => s - 1)} className="rounded-xl border border-border px-4 py-2.5 text-sm font-medium hover:bg-muted">السابق</button>}
                             {step < 3 ? (
-                                <button onClick={() => setStep(s => s + 1)} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground">التالي <ChevronLeft className="h-4 w-4" /></button>
+                                <button
+                                    onClick={() => {
+                                        if (validateStep(step)) setStep(s => s + 1);
+                                    }}
+                                    className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground"
+                                >
+                                    التالي <ChevronLeft className="h-4 w-4" />
+                                </button>
                             ) : (
                                 <button onClick={handleSubmit} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-600 py-2.5 text-sm font-semibold text-white hover:bg-emerald-500"><Check className="h-4 w-4" /> حفظ</button>
                             )}

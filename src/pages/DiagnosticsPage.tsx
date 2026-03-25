@@ -2,7 +2,7 @@
 // DiagnosticsPage — نظام تشخيص الأخطاء التلقائي
 // Scans all data sources and reports issues with fix buttons
 // ============================================================
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { AlertTriangle, CheckCircle2, XCircle, RefreshCw, Wrench, Database, TrendingDown, Package, CreditCard, Activity, Info, Shield, Zap } from 'lucide-react';
 import { getAllSales } from '@/repositories/saleRepository';
 import { getDamagedItems } from '@/data/damagedData';
@@ -85,6 +85,22 @@ function IssueCard({ issue, onFix }: { issue: DiagnosticIssue; onFix?: () => voi
 
 export default function DiagnosticsPage() {
     const [refreshKey, setRefreshKey] = useState(0);
+
+    useEffect(() => {
+        const handleStorage = (e: StorageEvent | CustomEvent) => {
+            const key = 'key' in e ? e.key : (e as CustomEvent).detail?.key;
+            if (key && (key.startsWith('gx_') || key.startsWith('elahmed_'))) {
+                setRefreshKey((current) => current + 1);
+            }
+        };
+
+        window.addEventListener('storage', handleStorage as EventListener);
+        window.addEventListener('local-storage', handleStorage as EventListener);
+        return () => {
+            window.removeEventListener('storage', handleStorage as EventListener);
+            window.removeEventListener('local-storage', handleStorage as EventListener);
+        };
+    }, []);
 
     const issues = useMemo((): DiagnosticIssue[] => {
         const result: DiagnosticIssue[] = [];

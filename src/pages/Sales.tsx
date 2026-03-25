@@ -4,6 +4,9 @@ import { useState, useMemo, useEffect } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
 import { getActiveSales, getAllSales, saveSale } from '@/repositories/saleRepository';
+import { saveAuditEntries } from '@/repositories/auditRepository';
+import { updateProductQuantity, getAllInventoryProducts } from '@/repositories/productRepository';
+import { saveMovements } from '@/repositories/stockRepository';
 import { voidSale } from '@/services/saleService';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -41,7 +44,7 @@ const Sales = () => {
     };
   }, []);
 
-  const allSales = useMemo(() => showVoided ? getAllSales() : getActiveSales(), [refreshKey, showVoided]);
+  const allSales = showVoided ? getAllSales() : getActiveSales();
 
   const filtered = useMemo(
     () => allSales.filter(s =>
@@ -66,8 +69,19 @@ const Sales = () => {
     try {
       const sale = allSales.find(s => s.id === showVoidDialog.saleId);
       if (!sale) return;
-      const { voidedSale } = voidSale(sale, voidReason.trim(), user?.id || 'admin');
+      const productMap = Object.fromEntries(
+        getAllInventoryProducts().map((product) => [product.id, product])
+      );
+      const { voidedSale, auditEntry, stockMovements } = voidSale(
+        sale,
+        voidReason.trim(),
+        user?.id || 'admin',
+        productMap
+      );
       saveSale(voidedSale);
+      saveMovements(stockMovements);
+      saveAuditEntries([auditEntry]);
+      stockMovements.forEach((movement) => updateProductQuantity(movement.productId, movement.newQuantity));
       setRefreshKey(k => k + 1);
       toast({ title: '✅ تم إلغاء الفاتورة', description: `${showVoidDialog.invoiceNumber} — ${voidReason}` });
     } catch (err: unknown) {

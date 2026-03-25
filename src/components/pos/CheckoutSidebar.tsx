@@ -7,12 +7,12 @@ import { useState, useCallback, useEffect } from 'react';
 import { ShoppingCart, PauseCircle, FileText, RotateCcw, HelpCircle, Trash2, Receipt } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
-import { CartItem, Product } from '@/domain/types';
+import { CartItem } from '@/domain/types';
 import { processSale } from '@/services/saleService';
 import { saveSale } from '@/repositories/saleRepository';
 import { saveMovements } from '@/repositories/stockRepository';
 import { saveAuditEntries } from '@/repositories/auditRepository';
-import { updateProductQuantity } from '@/repositories/productRepository';
+import { getAllInventoryProducts, updateProductQuantity } from '@/repositories/productRepository';
 import { printInvoice } from '@/services/invoicePrinter';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -89,8 +89,27 @@ export default function CheckoutSidebar({
         if (isProcessing) return;
         setIsProcessing(true);
         try {
+            const liveProducts = new Map(getAllInventoryProducts().map((product) => [product.id, product]));
+            const liveCart = cart.map((item) => {
+                const liveProduct = liveProducts.get(item.product.id);
+                if (!liveProduct) {
+                    throw new Error(`المنتج "${item.product.name}" لم يعد موجودًا في المخزون`);
+                }
+
+                return {
+                    ...item,
+                    product: {
+                        ...item.product,
+                        quantity: liveProduct.quantity,
+                        warehouseId: liveProduct.warehouseId ?? item.product.warehouseId,
+                        updatedAt: liveProduct.updatedAt,
+                        deletedAt: liveProduct.deletedAt,
+                    },
+                };
+            });
+
             const result = processSale(
-                cart,
+                liveCart,
                 invoiceDiscount,
                 method,
                 user?.id ?? 'user-1',
@@ -110,13 +129,14 @@ export default function CheckoutSidebar({
                 change,
             });
             setMode('success');
-        } catch (e: any) {
-            toast({ title: 'حدث خطأ', description: e?.message, variant: 'destructive' });
+        } catch (e: unknown) {
+            const message = e instanceof Error ? e.message : 'حدث خطأ غير متوقع';
+            toast({ title: 'حدث خطأ', description: message, variant: 'destructive' });
             setMode('cart');
         } finally {
             setIsProcessing(false);
         }
-    }, [cart, invoiceDiscount, user, grandTotal, toast]);
+    }, [cart, invoiceDiscount, user, grandTotal, toast, isProcessing]);
 
     const handleSuccessDismiss = useCallback(() => {
         onClearCart();

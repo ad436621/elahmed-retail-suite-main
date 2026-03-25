@@ -132,24 +132,41 @@ function ChartTooltip({ active, payload, label }: any) {
 export default function ReportsPage() {
     const [dateRange, setDateRange] = useState<DateRange>('month');
     const [activeTab, setActiveTab] = useState('overview');
+    const [refreshKey, setRefreshKey] = useState(0);
+
+    useEffect(() => {
+        const handleStorage = (e: StorageEvent | CustomEvent) => {
+            const key = 'key' in e ? e.key : (e as CustomEvent).detail?.key;
+            if (key && (key.startsWith('gx_') || key.startsWith('elahmed_'))) {
+                setRefreshKey((current) => current + 1);
+            }
+        };
+
+        window.addEventListener('storage', handleStorage as EventListener);
+        window.addEventListener('local-storage', handleStorage as EventListener);
+        return () => {
+            window.removeEventListener('storage', handleStorage as EventListener);
+            window.removeEventListener('local-storage', handleStorage as EventListener);
+        };
+    }, []);
 
     // ── Raw Data ───────────────────────────────────────────────
-    const allSales = useMemo(() => getAllSales(), []);
-    const mobiles = useMemo(() => getMobiles(), []);
-    const mobileAcc = useMemo(() => getMobileAccessories(), []);
-    const computers = useMemo(() => getComputers(), []);
-    const computerAcc = useMemo(() => getComputerAccessories(), []);
-    const devices = useMemo(() => getDevices(), []);
-    const deviceAcc = useMemo(() => getDeviceAccessories(), []);
-    const cars = useMemo(() => getCars(), []);
-    const maintenance = useMemo(() => getMaintenanceOrders(), []);
-    const contracts = useMemo(() => getContracts(), []);
-    const expenses = useMemo(() => getExpenses(), []);
-    const damagedItems = useMemo(() => getDamagedItems(), []);
-    const otherRevenues = useMemo(() => getOtherRevenues(), []);
+    const allSales = useMemo(() => getAllSales(), [refreshKey]);
+    const mobiles = useMemo(() => getMobiles(), [refreshKey]);
+    const mobileAcc = useMemo(() => getMobileAccessories(), [refreshKey]);
+    const computers = useMemo(() => getComputers(), [refreshKey]);
+    const computerAcc = useMemo(() => getComputerAccessories(), [refreshKey]);
+    const devices = useMemo(() => getDevices(), [refreshKey]);
+    const deviceAcc = useMemo(() => getDeviceAccessories(), [refreshKey]);
+    const cars = useMemo(() => getCars(), [refreshKey]);
+    const maintenance = useMemo(() => getMaintenanceOrders(), [refreshKey]);
+    const contracts = useMemo(() => getContracts(), [refreshKey]);
+    const expenses = useMemo(() => getExpenses(), [refreshKey]);
+    const damagedItems = useMemo(() => getDamagedItems(), [refreshKey]);
+    const otherRevenues = useMemo(() => getOtherRevenues(), [refreshKey]);
     // #18 FIX: New module data
-    const suppliers = useMemo(() => getSuppliers(), []);
-    const supplierTxns = useMemo(() => getSupplierTransactions(), []);
+    const suppliers = useMemo(() => getSuppliers(), [refreshKey]);
+    const supplierTxns = useMemo(() => getSupplierTransactions(), [refreshKey]);
     
     // #18 FIX Async wallets data
     const [wallets, setWallets] = useState<any[]>([]);
@@ -160,8 +177,8 @@ export default function ReportsPage() {
         getWallets().then(setWallets).catch(console.error);
         getWalletTransactions().then(setWalletTxns).catch(console.error);
         getTotalBalance().then(setWalletTotalBalance).catch(console.error);
-    }, []);
-    const employees = useMemo(() => getEmployees(), []);
+    }, [refreshKey]);
+    const employees = useMemo(() => getEmployees(), [refreshKey]);
 
     // ── Date filtering ─────────────────────────────────────────
     const { from, to } = getDateRange(dateRange);

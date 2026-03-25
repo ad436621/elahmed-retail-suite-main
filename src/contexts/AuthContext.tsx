@@ -33,7 +33,7 @@ interface AuthContextType {
   allUsers: AppUser[];
   refreshUsers: () => void;
   updateAppUser: (id: string, updates: Partial<Omit<AppUser, 'id' | 'createdAt'>>) => void;
-  resetUserPassword: (username: string, newPassword: string) => boolean;
+  resetUserPassword: (username: string, newPassword: string) => Promise<boolean>;
 }
 
 const SESSION_KEY = STORAGE_KEYS.SESSION;
@@ -210,12 +210,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refreshUsers();
   }, [refreshUsers]);
 
-  const resetUserPassword = useCallback((username: string, newPassword: string) => {
+  const resetUserPassword = useCallback(async (username: string, newPassword: string) => {
     if (USE_BACKEND) {
       return false;
     }
-    // #01: changePassword is now async but we fire-and-forget here
-    changePassword(username, newPassword);
+    const changed = await changePassword(username, newPassword);
+    if (!changed) {
+      return false;
+    }
     refreshUsers();
     return true;
   }, [refreshUsers]);
