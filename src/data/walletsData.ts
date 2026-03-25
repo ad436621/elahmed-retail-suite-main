@@ -4,8 +4,10 @@
 
 import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
 import { STORAGE_KEYS } from '@/config';
+import type { Sale } from '@/domain/types';
 
 const WALLETS_KEY = STORAGE_KEYS.WALLETS;
+const TRANSACTIONS_KEY = STORAGE_KEYS.WALLET_TRANSACTIONS;
 
 // ─── Types ──────────────────────────────────────────────────
 
@@ -32,6 +34,41 @@ export interface WalletTransaction {
     relatedWalletName?: string;
     date: string;
     reference?: string;
+}
+
+function hasElectronIpc(): boolean {
+    return typeof window !== 'undefined' && !!window.electron?.ipcRenderer;
+}
+
+function loadLocalTransactions(): WalletTransaction[] {
+    return getStorageItem<WalletTransaction[]>(TRANSACTIONS_KEY, []);
+}
+
+function saveLocalTransactions(transactions: WalletTransaction[]): void {
+    setStorageItem(TRANSACTIONS_KEY, transactions);
+}
+
+function buildLocalTransaction(txn: Omit<WalletTransaction, 'id' | 'date'>): WalletTransaction {
+    return {
+        ...txn,
+        id: crypto.randomUUID(),
+        date: new Date().toISOString(),
+    };
+}
+
+function mapElectronRow(row: Record<string, unknown>): WalletTransaction {
+    return {
+        id: String(row.id ?? crypto.randomUUID()),
+        walletId: String(row.walletId ?? ''),
+        type: row.type as TransactionType,
+        subType: row.subType ? String(row.subType) : undefined,
+        amount: Number(row.amount ?? 0),
+        reason: String(row.description ?? ''),
+        date: String(row.createdAt ?? new Date().toISOString()),
+        reference: row.relatedId ? String(row.relatedId) : undefined,
+        relatedWalletId: row.relatedWalletId ? String(row.relatedWalletId) : undefined,
+        relatedWalletName: row.relatedWalletName ? String(row.relatedWalletName) : undefined,
+    };
 }
 
 // ─── Default wallets ────────────────────────────────────────
@@ -100,8 +137,9 @@ export async function updateWallet(id: string, data: Partial<Wallet>): Promise<v
 export async function deleteWallet(id: string): Promise<void> {
     const current = await getWallets();
     saveWalletsMetadata(current.filter(w => w.id !== id));
-    // Ideally we should also delete all safe_transactions for this wallet from SQL, 
-    // but the backend IPC handler doesn't have a delete route yet.
+    if (!hasElectronIpc()) {
+        saveLocalTransactions(loadLocalTransactions().filter(txn => txn.walletId !== id));
+    }
 }
 
 export async function getTotalBalance(): Promise<number> {
@@ -113,20 +151,11 @@ export async function getTotalBalance(): Promise<number> {
 
 export async function getTransactions(walletId?: string): Promise<WalletTransaction[]> {
     try {
-        const rows = await window.electron.ipcRenderer.invoke('db:safe_transactions:get');
-        const mappedTxns: WalletTransaction[] = rows.map((r: any) => ({
-            id: r.id,
-            walletId: r.walletId,
-            type: r.type as TransactionType,
-            subType: r.subType,
-            amount: r.amount,
-            reason: r.description || '',
-            date: r.createdAt,
-            reference: r.relatedId,
-            relatedWalletId: null, // Depending on subType implementation
-            relatedWalletName: null,
-        }));
-        
+        const mappedTxns = hasElectronIpc()
+            ? (await window.electron.ipcRenderer.invoke('db:safe_transactions:get') as Record<string, unknown>[])
+                .map(mapElectronRow)
+            : loadLocalTransactions();
+
         return walletId ? mappedTxns.filter(t => t.walletId === walletId) : mappedTxns;
     } catch (e) {
         console.error('Failed to get safe_transactions', e);
@@ -134,16 +163,90 @@ export async function getTransactions(walletId?: string): Promise<WalletTransact
     }
 }
 
-async function addTransaction(txn: Omit<WalletTransaction, 'id' | 'date'>): Promise<void> {
-    await window.electron.ipcRenderer.invoke('db:safe_transactions:add', {
-        walletId: txn.walletId,
-        type: txn.type,
-        subType: txn.subType || 'expense', // default ELOS subtype
-        amount: txn.amount,
-        description: txn.reason,
-        relatedId: txn.reference,
-        affectsCapital: true, // simplified
-        affectsProfit: false
+async function addTransaction(txn: Omit<WalletTransaction, 'id' | 'date'>): Promise<WalletTransaction> {
+    if (hasElectronIpc()) {
+        await window.electron.ipcRenderer.invoke('db:safe_transactions:add', {
+            walletId: txn.walletId,
+            type: txn.type,
+            subType: txn.subType || 'expense',
+            amount: txn.amount,
+            description: txn.reason,
+            relatedId: txn.reference,
+            affectsCapital: true,
+            affectsProfit: false,
+        });
+
+        return {
+            ...txn,
+            id: crypto.randomUUID(),
+            date: new Date().toISOString(),
+        };
+    }
+
+    const nextTxn = buildLocalTransaction(txn);
+    saveLocalTransactions([...loadLocalTransactions(), nextTxn]);
+    return nextTxn;
+}
+
+async function getDefaultWallet(): Promise<Wallet | undefined> {
+    const wallets = await getWallets();
+    return wallets.find(wallet => wallet.isDefault) ?? wallets[0];
+}
+
+function isSaleLedgerEntry(txn: WalletTransaction, saleId: string): boolean {
+    return txn.reference === saleId && txn.subType?.startsWith('sale_') === true;
+}
+
+export async function recordSalePayment(sale: Pick<Sale, 'id' | 'invoiceNumber' | 'paymentMethod' | 'total' | 'voidedAt'>): Promise<void> {
+    if (sale.total <= 0 || sale.voidedAt) {
+        return;
+    }
+
+    const wallet = await getDefaultWallet();
+    if (!wallet) {
+        return;
+    }
+
+    const existing = await getTransactions();
+    if (existing.some(txn => isSaleLedgerEntry(txn, sale.id))) {
+        return;
+    }
+
+    await addTransaction({
+        walletId: wallet.id,
+        type: 'deposit',
+        subType: `sale_${sale.paymentMethod}`,
+        amount: sale.total,
+        reason: `Sale ${sale.invoiceNumber}`,
+        reference: sale.id,
+    });
+}
+
+export async function reverseSalePayment(sale: Pick<Sale, 'id' | 'invoiceNumber' | 'total'>): Promise<void> {
+    if (sale.total <= 0) {
+        return;
+    }
+
+    const wallet = await getDefaultWallet();
+    if (!wallet) {
+        return;
+    }
+
+    const existing = await getTransactions();
+    const hasSaleEntry = existing.some(txn => isSaleLedgerEntry(txn, sale.id));
+    const alreadyReversed = existing.some(txn => txn.reference === sale.id && txn.subType === 'sale_void');
+
+    if (!hasSaleEntry || alreadyReversed) {
+        return;
+    }
+
+    await addTransaction({
+        walletId: wallet.id,
+        type: 'withdrawal',
+        subType: 'sale_void',
+        amount: sale.total,
+        reason: `Void sale ${sale.invoiceNumber}`,
+        reference: sale.id,
     });
 }
 

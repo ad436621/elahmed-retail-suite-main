@@ -151,10 +151,29 @@ const translations: Record<Language, Record<string, string>> = {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
+function isSupportedLanguage(value: string | null): value is Language {
+  return value === 'en' || value === 'ar';
+}
+
+function getInitialLanguage(): Language {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEYS.LANGUAGE);
+    if (isSupportedLanguage(stored)) {
+      return stored;
+    }
+  } catch {
+    // Ignore storage access issues and fall back to browser preference.
+  }
+
+  if (typeof navigator !== 'undefined' && navigator.language.toLowerCase().startsWith('en')) {
+    return 'en';
+  }
+
+  return 'ar';
+}
+
 export const LanguageProvider = ({ children }: { children: ReactNode }) => {
-  const [language, setLanguageState] = useState<Language>(() => {
-    return (localStorage.getItem(STORAGE_KEYS.LANGUAGE) as Language) || 'en';
-  });
+  const [language, setLanguageState] = useState<Language>(getInitialLanguage);
 
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);

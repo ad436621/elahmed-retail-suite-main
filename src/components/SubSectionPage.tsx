@@ -10,7 +10,7 @@ import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import {
     Plus, Trash2, Pencil, X, Check, Search, ImagePlus, ImageOff,
-    AlertTriangle, FolderOpen, Settings2, Download
+    AlertTriangle, Filter, FolderOpen, Settings2, Download
 } from 'lucide-react';
 import { exportToExcel, ExcelColumn } from '@/services/excelService';
 import { useToast } from '@/hooks/use-toast';
@@ -308,6 +308,7 @@ export default function SubSectionPage({ config }: { config: SubSectionPageConfi
     const [editId, setEditId] = useState<string | null>(null);
     const [form, setForm] = useState<Omit<SubItem, 'id' | 'createdAt' | 'updatedAt'>>(emptyForm());
     const [search, setSearch] = useState('');
+    const [showFilters, setShowFilters] = useState(true);
     const [catFilter, setCatFilter] = useState('الكل');
 
     const refresh = () => setItems(config.getItems());
@@ -366,6 +367,7 @@ export default function SubSectionPage({ config }: { config: SubSectionPageConfi
         ? config.getCapital()
         : items.reduce((s, i) => s + i.costPrice * i.quantity, 0);
     const lowStock = items.filter(i => i.minStock !== undefined && i.quantity <= i.minStock);
+    const activeFiltersCount = [search.trim(), allCats.length > 0 && catFilter !== allCats[0]].filter(Boolean).length;
 
     return (
         <div className="space-y-5 animate-fade-in" dir="rtl">
@@ -409,6 +411,20 @@ export default function SubSectionPage({ config }: { config: SubSectionPageConfi
                         </div>
                     )}
                     <button
+                        onClick={() => setShowFilters(current => !current)}
+                        aria-expanded={showFilters}
+                        className={cn(
+                            'relative flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition-all',
+                            showFilters ? 'border-primary/30 bg-primary/10 text-primary' : 'border-border bg-card text-muted-foreground hover:text-foreground'
+                        )}>
+                        <Filter className="h-4 w-4" /> الفلاتر
+                        {activeFiltersCount > 0 && (
+                            <span className="absolute -left-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-black text-white">
+                                {activeFiltersCount}
+                            </span>
+                        )}
+                    </button>
+                    <button
                         onClick={() => setShowCatManager(true)}
                         className="flex items-center gap-2 rounded-xl border border-border bg-muted/50 px-4 py-2.5 text-sm font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition-all shadow-sm">
                         <Settings2 className="h-4 w-4" /> التصنيفات ({cats.length})
@@ -429,7 +445,8 @@ export default function SubSectionPage({ config }: { config: SubSectionPageConfi
             </div>
 
             {/* Filters */}
-            <div className="flex gap-3 flex-wrap items-start">
+            {showFilters && (
+                <div className="flex gap-3 flex-wrap items-start">
                 <div className="relative flex-1 min-w-[200px]">
                     <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <input value={search} onChange={e => setSearch(e.target.value)}
@@ -450,7 +467,12 @@ export default function SubSectionPage({ config }: { config: SubSectionPageConfi
                         ))}
                     </div>
                 )}
-            </div>
+                </div>
+            )}
+
+            {!showFilters && activeFiltersCount > 0 && (
+                <p className="text-xs font-medium text-muted-foreground">الفلاتر مخفية لكنها ما زالت مطبقة على النتائج الحالية.</p>
+            )}
 
             {/* Categories Manager Modal */}
             {showCatManager && (

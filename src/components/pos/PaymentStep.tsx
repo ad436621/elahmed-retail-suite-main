@@ -40,10 +40,10 @@ export default function PaymentStep({ grandTotal, onConfirm, onBack, isProcessin
     const canConfirm = !isProcessing && (method === 'card' || method === 'split' || amountTendered > 0);
 
     const handleConfirm = useCallback(() => {
-        if (!canConfirm) return;
+        if (!canConfirm || !hasEnoughTendered) return;
         const tendered = method === 'cash' ? amountTendered : grandTotal;
         onConfirm(method, tendered);
-    }, [canConfirm, method, amountTendered, grandTotal, onConfirm]);
+    }, [canConfirm, hasEnoughTendered, method, amountTendered, grandTotal, onConfirm]);
 
     // Keyboard: Enter = confirm, Escape = back (global within this component)
     useEffect(() => {

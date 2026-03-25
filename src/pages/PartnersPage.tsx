@@ -5,6 +5,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { Users, Plus, Pencil, Trash2, Search, Phone, MapPin, Loader2 } from 'lucide-react';
 import { useConfirm } from '@/components/ConfirmDialog';
+import { getPartners, addPartner, updatePartner, deletePartner } from '@/data/partnersData';
 
 // ── Types ────────────────────────────────────────────────────
 export interface Partner {
@@ -46,7 +47,7 @@ export default function PartnersPage() {
     async function loadPartners() {
         try {
             setIsLoading(true);
-            const data = await window.electron.ipcRenderer.invoke('db:partners:get');
+            const data = await getPartners();
             setPartners(data || []);
         } catch (err) {
             console.error('Failed to load partners', err);
@@ -67,9 +68,14 @@ export default function PartnersPage() {
         if (!form.name) return;
         try {
             if (editId) {
-                await window.electron.ipcRenderer.invoke('db:partners:update', editId, form);
+                await updatePartner(editId, form);
             } else {
-                await window.electron.ipcRenderer.invoke('db:partners:add', { ...form, active: true });
+                await addPartner({
+                    ...(form as Omit<Partner, 'id' | 'createdAt' | 'updatedAt'>),
+                    active: true,
+                    partnershipType: form.partnershipType || 'other',
+                    name: form.name,
+                });
             }
             await loadPartners();
             setShowForm(false);
@@ -88,7 +94,7 @@ export default function PartnersPage() {
         if (!ok) return;
         
         try {
-            await window.electron.ipcRenderer.invoke('db:partners:delete', id);
+            await deletePartner(id);
             await loadPartners();
         } catch (err) {
             console.error('Failed to delete partner', err);

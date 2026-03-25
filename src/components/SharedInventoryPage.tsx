@@ -1,6 +1,8 @@
 import { useState, useEffect, useMemo, ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useDebounce } from '@/hooks/useDebounce';
+import { usePagination, PaginationBar } from '@/hooks/usePagination';
 import {
     Plus, Trash2, Pencil, X, Check, Headphones, Search,
     AlignLeft, LayoutGrid, List, Tag, FileSpreadsheet, ImageOff, Wrench, Monitor, Tv, Laptop, Download
@@ -22,7 +24,7 @@ import { cn } from '@/lib/utils';
 
 export type CategorySection = 'computer' | 'device';
 export type InventoryColor = 'indigo' | 'orange';
-type SharedInventoryCondition = 'new' | 'used';
+type SharedInventoryCondition = 'new' | 'like_new' | 'used' | 'broken';
 
 interface SharedInventoryRecord extends Record<string, unknown> {
     id: string;
@@ -126,9 +128,10 @@ export interface SharedInventoryConfig {
 // ─── Shared Form State ────────────────────────────────────────
 
 const makeEmptyForm = () => ({
-    name: '', barcode: '', category: '', condition: 'new' as 'new' | 'used',
+    name: '', barcode: '', category: '', condition: 'new' as SharedInventoryCondition,
     quantity: 1, oldCostPrice: 0, newCostPrice: 0, salePrice: 0,
-    model: '', color: '', extra: '', notes: '', description: '', image: undefined as string | undefined, warehouseId: ''
+    model: '', color: '', extra: '', notes: '', description: '', image: undefined as string | undefined, warehouseId: '',
+    ram: '', storage: '',
 });
 
 const IC = "w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all placeholder:text-muted-foreground/60";
@@ -286,6 +289,7 @@ export default function SharedInventoryPage({ config }: { config: SharedInventor
     const devices = useInventoryData(config.getDevices, [config.deviceStorageKey]);
 
     const [search, setSearch] = useState('');
+    const debouncedSearch = useDebounce(search, 300);
     const [activeFilter, setActiveFilter] = useState<string>('all');
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
 
@@ -336,11 +340,16 @@ export default function SharedInventoryPage({ config }: { config: SharedInventor
                 p.name.toLowerCase().includes(sl) ||
                 (p.model && p.model.toLowerCase().includes(sl)) ||
                 (config.extraDeviceField?.searchable && p.extra && p.extra.toLowerCase().includes(sl)) ||
-                (p.color && p.color.toLowerCase().includes(sl))
+                (p.color && p.color.toLowerCase().includes(sl)) ||
+                (p.barcode && p.barcode.toLowerCase().includes(sl)) ||
+                (p.category && p.category.toLowerCase().includes(sl))
             );
         }
         return res;
-    }, [unifiedProducts, search, activeFilter, config.extraDeviceField]);
+    }, [unifiedProducts, debouncedSearch, activeFilter, config.extraDeviceField]);
+
+    // ── Pagination ──
+    const { paginatedItems, page, totalPages, totalItems, pageSize, nextPage, prevPage, setPage, reset: resetPagination } = usePagination(filteredList, 30);
 
     const refreshData = () => setCategories(loadCats(config.categoryStorageKey, []));
 
@@ -363,6 +372,7 @@ export default function SharedInventoryPage({ config }: { config: SharedInventor
             warehouseId: f.warehouseId || warehouses.find(w => w.isDefault)?.id || '',
         };
         if (config.extraDeviceField) payload[config.extraDeviceField.key] = f.extra;
+        if (config.navSection === 'computers') { payload['ram'] = f.ram; payload['storage'] = f.storage; }
         if (editId) config.updateDevice(editId, payload);
         else config.addDevice(payload);
         
@@ -383,7 +393,8 @@ export default function SharedInventoryPage({ config }: { config: SharedInventor
             quantity: item.quantity, oldCostPrice: item.oldCostPrice, newCostPrice: item.newCostPrice, salePrice: item.salePrice,
             model: item.model || '', color: item.color || '', extra: item.extra || '',
             notes: item.notes || '', description: item.description || '', image: item.image,
-            warehouseId: item._raw.warehouseId || ''
+            warehouseId: item._raw.warehouseId || '',
+            ram: (item._raw as any).ram || '', storage: (item._raw as any).storage || '',
         });
         setEditId(item.id);
         setShowForm(true);
@@ -511,7 +522,7 @@ export default function SharedInventoryPage({ config }: { config: SharedInventor
                                     <th className="px-3 py-3 text-center">الكمية</th>
                                     <th className="px-3 py-3 text-right">تكلفة الوحدة</th>
                                     <th className="px-3 py-3 text-right">سعر البيع</th>
-                                    <th className="px-3 py-3 text-right">توقعات الربح</th>
+                                    <th className="px-3 py-3 text-right">هامش الربح</th>
                                     <th className="px-3 py-3 text-left">إجراءات</th>
                                 </tr>
                             </thead>
@@ -520,6 +531,8 @@ export default function SharedInventoryPage({ config }: { config: SharedInventor
                                     <tr><td colSpan={9} className="py-14 text-center text-muted-foreground">لا توجد منتجات</td></tr>
                                 ) : filteredList.map((item, i) => {
                                     const avgCost = getWeightedAvgCost(item.id) || item.newCostPrice;
+                                    const profit = item.salePrice - avgCost;
+                                    const margin = item.salePrice > 0 ? (profit / item.salePrice) * 100 : 0;
                                     const detailParts = [item.model, item.extra, item.color].filter(Boolean);
                                     const details = detailParts.join(' · ');
                                     return (
@@ -544,7 +557,11 @@ export default function SharedInventoryPage({ config }: { config: SharedInventor
                                                 <button onClick={() => setActiveBatchesModal({ id: item.id, name: item.name })} className="hover:text-primary transition-colors underline decoration-dotted underline-offset-2" title="الضغط لعرض التفاصيل">{avgCost.toLocaleString()}</button>
                                             </td>
                                             <td className="px-3 py-2 text-sm font-bold text-foreground tabular-nums">{item.salePrice.toLocaleString()}</td>
-                                            <td className="px-3 py-2 text-xs font-bold text-emerald-600 tabular-nums">{(item.salePrice - avgCost).toLocaleString()}</td>
+                                            <td className="px-3 py-2 text-xs font-bold tabular-nums">
+                                                <span className={margin >= 20 ? 'text-emerald-600' : margin >= 10 ? 'text-amber-600' : 'text-red-500'}>
+                                                    {margin.toFixed(1)}%
+                                                </span>
+                                            </td>
                                             <td className="px-3 py-2 text-left">
                                                 <div className="flex justify-end gap-1.5">
                                                     <button onClick={() => openEdit(item)} className="rounded-lg p-1.5 hover:bg-primary/10 text-primary transition-colors"><Pencil className="h-3.5 w-3.5" /></button>
@@ -584,9 +601,15 @@ export default function SharedInventoryPage({ config }: { config: SharedInventor
                                 </div>
                                 <div className="col-span-2 sm:col-span-1">
                                     <label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase">حالة المنتج *</label>
-                                    <div className="flex gap-2 h-10">
-                                        <button type="button" onClick={() => setF(p => ({ ...p, condition: 'new' }))} className={`flex-1 rounded-xl border text-sm font-semibold transition-all ${f.condition === 'new' ? 'bg-primary/10 border-primary text-primary' : 'bg-transparent border-input text-muted-foreground'}`}>جديد</button>
-                                        <button type="button" onClick={() => setF(p => ({ ...p, condition: 'used' }))} className={`flex-1 rounded-xl border text-sm font-semibold transition-all ${f.condition === 'used' ? 'bg-orange-100 dark:bg-orange-500/15 border-orange-400 dark:border-orange-500/30 text-orange-700 dark:text-orange-400' : 'bg-transparent border-input text-muted-foreground'}`}>مستعمل</button>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {[{v: 'new' as const, l: 'جديد'}, {v: 'like_new' as const, l: 'مثل الجديد'}, {v: 'used' as const, l: 'مستعمل'}, {v: 'broken' as const, l: 'معطل'}].map(cond => (
+                                            <button key={cond.v} type="button" onClick={() => setF(p => ({ ...p, condition: cond.v }))}
+                                                className={`flex-1 py-1.5 rounded-xl border text-[13px] font-semibold transition-all ${
+                                                    f.condition === cond.v
+                                                        ? cond.v === 'used' || cond.v === 'broken' ? 'bg-orange-100 dark:bg-orange-500/15 border-orange-400 dark:border-orange-500/30 text-orange-700 dark:text-orange-400' : 'bg-primary/10 border-primary text-primary'
+                                                        : 'bg-transparent border-input text-muted-foreground'
+                                                }`}>{cond.l}</button>
+                                        ))}
                                     </div>
                                 </div>
                             </div>
@@ -609,13 +632,20 @@ export default function SharedInventoryPage({ config }: { config: SharedInventor
                             </div>
 
                             {activeCategoryType === 'device' ? (
-                                <div className={`grid ${config.extraDeviceField ? 'grid-cols-3' : 'grid-cols-2'} gap-3 bg-muted/20 p-3 rounded-xl border border-border/40`}>
+                                <div className={`grid ${config.extraDeviceField ? 'grid-cols-2 sm:grid-cols-3' : 'grid-cols-2'} gap-3 bg-muted/20 p-3 rounded-xl border border-border/40`}>
                                     <div className="col-span-full mb-1"><span className="text-xs font-bold text-primary flex items-center gap-1"><span className="[&>svg]:h-3.5 [&>svg]:w-3.5">{config.icon}</span> مواصفات الجهاز</span></div>
                                     <div><label className="mb-1 block text-xs text-muted-foreground">الموديل</label><input value={f.model} onChange={e => setF(p => ({ ...p, model: e.target.value }))} className={IC} /></div>
                                     {config.extraDeviceField && (
                                         <div><label className="mb-1 block text-xs text-muted-foreground">{config.extraDeviceField.label}</label><input value={f.extra} onChange={e => setF(p => ({ ...p, extra: e.target.value }))} className={IC} /></div>
                                     )}
                                     <div><label className="mb-1 block text-xs text-muted-foreground">اللون</label><input data-validation="text-only" value={f.color} onChange={e => setF(p => ({ ...p, color: e.target.value }))} className={IC} /></div>
+                                    {/* RAM & Storage — only for computers */}
+                                    {config.navSection === 'computers' && (
+                                        <>
+                                            <div><label className="mb-1 block text-xs text-muted-foreground">الرامات (RAM)</label><input value={f.ram} onChange={e => setF(p => ({ ...p, ram: e.target.value }))} placeholder="8GB" className={IC} /></div>
+                                            <div><label className="mb-1 block text-xs text-muted-foreground">التخزين (Storage)</label><input value={f.storage} onChange={e => setF(p => ({ ...p, storage: e.target.value }))} placeholder="256GB SSD" className={IC} /></div>
+                                        </>
+                                    )}
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-2 gap-3 bg-muted/20 p-3 rounded-xl border border-border/40">
@@ -630,12 +660,23 @@ export default function SharedInventoryPage({ config }: { config: SharedInventor
                                 <textarea value={f.description} onChange={e => setF(p => ({ ...p, description: e.target.value }))} rows={2} className={`${IC} resize-none`} />
                             </div>
 
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                                 <div><label className="mb-1 block text-xs font-bold text-muted-foreground uppercase">الكمية</label><input type="number" min={0} value={f.quantity} onChange={e => setF(p => ({ ...p, quantity: +e.target.value }))} className={IC} /></div>
-                                <div><label className="mb-1 block text-xs font-bold text-muted-foreground uppercase">س. شراء قديم</label><input type="number" min={0} value={f.oldCostPrice} onChange={e => setF(p => ({ ...p, oldCostPrice: +e.target.value }))} className={IC} /></div>
-                                <div><label className="mb-1 block text-xs font-bold text-muted-foreground uppercase">التكلفة الفعلية</label><input type="number" min={0} value={f.newCostPrice} onChange={e => setF(p => ({ ...p, newCostPrice: +e.target.value }))} className={IC} /></div>
+                                <div><label className="mb-1 block text-xs font-bold text-muted-foreground uppercase">سعر الشراء (التكلفة)</label><input type="number" min={0} value={f.newCostPrice} onChange={e => setF(p => ({ ...p, newCostPrice: +e.target.value, oldCostPrice: +e.target.value }))} className={IC} /></div>
                                 <div><label className="mb-1 block text-xs font-bold text-primary uppercase">سعر البيع</label><input type="number" min={0} value={f.salePrice} onChange={e => setF(p => ({ ...p, salePrice: +e.target.value }))} className={`${IC} border-primary/40 focus:ring-primary`} /></div>
                             </div>
+                            {/* هامش الربح المحسوب */}
+                            {f.newCostPrice > 0 && f.salePrice > 0 && (
+                                <div className="rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 px-4 py-2.5 flex items-center justify-between">
+                                    <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">💰 هامش الربح</span>
+                                    <span className="text-sm font-black text-emerald-600 dark:text-emerald-400 tabular-nums">
+                                        {(f.salePrice - f.newCostPrice).toLocaleString('ar-EG')} ج.م
+                                        <span className="text-[10px] font-semibold text-emerald-500/80 mr-1">
+                                            ({((f.salePrice - f.newCostPrice) / f.newCostPrice * 100).toFixed(1)}%)
+                                        </span>
+                                    </span>
+                                </div>
+                            )}
                         </div>
 
                         <div className="flex gap-2 px-4 pb-4 border-t border-border pt-3 bg-muted/10 rounded-b-2xl">

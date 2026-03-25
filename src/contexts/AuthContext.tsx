@@ -22,10 +22,16 @@ export interface AuthUser {
   lastLogin?: string;
 }
 
+interface LoginResult {
+  success: boolean;
+  error?: string;
+  requiresPasswordChange?: boolean;
+}
+
 interface AuthContextType {
   user: AuthUser | null;
   isAuthenticated: boolean;
-  login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  login: (username: string, password: string) => Promise<LoginResult>;
   logout: () => void;
   hasPermission: (page: Permission) => boolean;
   isOwner: () => boolean;
@@ -166,6 +172,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (!passwordValid) {
       return { success: false, error: 'اسم المستخدم أو كلمة المرور غير صحيحة' };
+    }
+
+    if (found.mustChangePassword) {
+      return {
+        success: false,
+        requiresPasswordChange: true,
+        error: 'يجب تغيير كلمة المرور قبل الدخول لأول مرة',
+      };
     }
 
     const authUser: AuthUser = {

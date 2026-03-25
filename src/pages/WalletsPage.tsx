@@ -2,11 +2,11 @@
 // Wallets Page — Multi-wallet / treasury management
 // ============================================================
 
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { Wallet, Plus, TrendingUp, TrendingDown, ArrowLeftRight, X, Save, ChevronDown, ChevronUp, Trash2, Star, Loader2 } from 'lucide-react';
 import {
     getWallets, getTransactions, addWallet, deleteWallet,
-    deposit, withdraw, transfer, getTotalBalance,
+    deposit, withdraw, transfer,
     type Wallet as WalletType, type WalletTransaction,
 } from '@/data/walletsData';
 import { useConfirm } from '@/components/ConfirmDialog';
@@ -23,6 +23,17 @@ const WALLET_COLORS = [
 ];
 
 type OpType = 'deposit' | 'withdrawal' | 'transfer';
+
+function getTransactionLabel(txn: WalletTransaction): string {
+    if (txn.subType === 'opening_balance') return 'رصيد افتتاحي';
+    if (txn.subType === 'sale_void') return 'عكس بيع';
+    if (txn.subType?.startsWith('sale_')) return 'تحصيل بيع';
+
+    if (txn.type === 'deposit') return 'إيداع';
+    if (txn.type === 'withdrawal') return 'سحب';
+    if (txn.type === 'transfer_in') return 'تحويل وارد';
+    return 'تحويل صادر';
+}
 
 // ─── Operation Modal ─────────────────────────────────────────
 
@@ -181,6 +192,7 @@ function WalletCard({ wallet, allWallets, walletTxns, onOperation, onDelete }: {
 
     const txnLabel: Record<WalletTransaction['type'], string> = { deposit: 'إيداع', withdrawal: 'سحب', transfer_in: 'تحويل وارد', transfer_out: 'تحويل صادر' };
     const txnColor: Record<WalletTransaction['type'], string> = { deposit: 'text-emerald-600', withdrawal: 'text-rose-600', transfer_in: 'text-blue-600', transfer_out: 'text-amber-600' };
+    void txnLabel;
 
     return (
         <div className="rounded-2xl border border-border bg-card overflow-hidden">
@@ -225,7 +237,7 @@ function WalletCard({ wallet, allWallets, walletTxns, onOperation, onDelete }: {
                     ) : txns.map(t => (
                         <div key={t.id} className="flex items-center gap-3 px-5 py-3">
                             <div className="flex-1 min-w-0">
-                                <p className={`text-xs font-bold ${txnColor[t.type]}`}>{txnLabel[t.type]}</p>
+                                <p className={`text-xs font-bold ${txnColor[t.type]}`}>{getTransactionLabel(t)}</p>
                                 <p className="text-[11px] text-muted-foreground truncate">{t.reason}</p>
                             </div>
                             <div className="text-right shrink-0">
@@ -253,7 +265,7 @@ export default function WalletsPage() {
     const [opModal, setOpModal] = useState<{ wallet: WalletType; type: OpType } | null>(null);
     const { confirm } = useConfirm();
 
-    const loadData = async () => {
+    const loadData = useCallback(async () => {
         setLoading(true);
         try {
             const [ws, ts] = await Promise.all([getWallets(), getTransactions()]);
@@ -264,13 +276,22 @@ export default function WalletsPage() {
         } finally {
             setLoading(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
         loadData();
-    }, []);
+    }, [loadData]);
 
     const totalBalance = useMemo(() => wallets.reduce((sum, w) => sum + w.balance, 0), [wallets]);
+    const transactionsByWalletId = useMemo(() => {
+        const grouped = new Map<string, WalletTransaction[]>();
+        allTxns.forEach((txn) => {
+            const current = grouped.get(txn.walletId);
+            if (current) current.push(txn);
+            else grouped.set(txn.walletId, [txn]);
+        });
+        return grouped;
+    }, [allTxns]);
 
     // Compute today's totals
     const today = new Date().toISOString().slice(0, 10);
@@ -342,6 +363,9 @@ export default function WalletsPage() {
                             {fmt(totalBalance)}
                             <span className="text-2xl text-muted-foreground mr-2" style={{ WebkitTextFillColor: 'initial', WebkitBackgroundClip: 'initial', backgroundClip: 'initial' }}>ج.م</span>
                         </p>
+                        <p className="text-[11px] text-muted-foreground">
+                            تشمل كل الحركات اليومية بما فيها المبيعات وعكس البيع والتحويلات.
+                        </p>
                         {/* Mini stats */}
                         <div className="flex gap-6 flex-wrap">
                             <div>
@@ -405,7 +429,7 @@ export default function WalletsPage() {
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {wallets.map(w => (
                     <WalletCard key={w.id} wallet={w} allWallets={wallets} 
-                        walletTxns={allTxns.filter(t => t.walletId === w.id)}
+                        walletTxns={transactionsByWalletId.get(w.id) ?? []}
                         onOperation={(wallet, type) => setOpModal({ wallet, type })}
                         onDelete={handleDeleteWallet} />
                 ))}

@@ -10,7 +10,7 @@
 //   - Performance optimizations
 // ============================================================
 
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo, useDeferredValue } from 'react';
 import {
   Search, Moon, Sun, Clock, Barcode, Download,
   Send, ArrowLeft, Package, AlertTriangle, Calculator,
@@ -89,6 +89,7 @@ export default function POS() {
   const [showHeld, setShowHeld] = useState(false);
   const [now, setNow] = useState(new Date());
   const [refreshKey, setRefreshKey] = useState(0);
+  const deferredSearchTerm = useDeferredValue(searchTerm);
 
   // Checkout trigger ref (injected by CheckoutSidebar via callback)
   const checkoutTriggerRef = useRef<(() => void) | null>(null);
@@ -98,6 +99,7 @@ export default function POS() {
   // reads the latest values without re-registering the listener.
   const filteredProductsRef = useRef<Product[]>([]);
   const grandTotalRef = useRef<number>(0);
+  const searchTermRef = useRef(searchTerm);
   const handleCheckoutReady = useCallback((trigger: () => void) => {
     checkoutTriggerRef.current = trigger;
   }, []);
@@ -153,7 +155,7 @@ export default function POS() {
         e.preventDefault();
         (e.target as HTMLElement).blur?.();
         searchInputRef.current?.blur();
-        if (searchTerm) {
+        if (searchTermRef.current) {
           setSearchTerm('');
         }
         return;
@@ -287,10 +289,10 @@ export default function POS() {
     };
     window.addEventListener('keydown', fn);
     return () => window.removeEventListener('keydown', fn);
-  }, [cart, holdInvoice, applyInvoiceDiscount, addToCart, updateCartItemQty, removeFromCart, toggleTheme, navigate, toast, searchTerm]);
+  }, [cart, holdInvoice, applyInvoiceDiscount, addToCart, updateCartItemQty, removeFromCart, toggleTheme, navigate, toast]);
 
   // ── Products ────────────────────────────────────────────────
-  const allProducts = getAllInventoryProducts();
+  const allProducts = useMemo(() => getAllInventoryProducts(), [refreshKey]);
   const mobileCategories = useMemo(() => getCategoriesBySection('mobile'), []);
   const deviceCategories = useMemo(() => getCategoriesBySection('device'), []);
 
@@ -352,9 +354,9 @@ export default function POS() {
       if (conditionFilter !== 'all') prods = prods.filter(p => p.condition === conditionFilter);
     }
 
-    if (searchTerm.trim()) prods = searchProducts(prods, searchTerm, undefined, 40);
+    if (deferredSearchTerm.trim()) prods = searchProducts(prods, deferredSearchTerm, undefined, 40);
     return prods;
-  }, [allProducts, selectedTab, subMode, conditionFilter, selectedChip, searchTerm]);
+  }, [allProducts, selectedTab, subMode, conditionFilter, selectedChip, deferredSearchTerm]);
 
   // Set of product IDs in cart for highlighting
   const cartProductIds = useMemo(() => new Set(cart.map(i => i.product.id)), [cart]);
@@ -365,8 +367,17 @@ export default function POS() {
   useEffect(() => { grandTotalRef.current = grandTotal; }, [grandTotal]);
 
   // ── Count metrics ───────────────────────────────────────────
-  const availableCount = filteredProducts.filter(p => p.quantity > 0).length;
-  const lowStockCount = filteredProducts.filter(p => p.quantity > 0 && p.quantity <= 3).length;
+  const { availableCount, lowStockCount } = useMemo(() => (
+    filteredProducts.reduce((summary, product) => {
+      if (product.quantity > 0) {
+        summary.availableCount += 1;
+        if (product.quantity <= 3) {
+          summary.lowStockCount += 1;
+        }
+      }
+      return summary;
+    }, { availableCount: 0, lowStockCount: 0 })
+  ), [filteredProducts]);
 
   const isTransferTab = selectedTab === 'transfers';
 
@@ -640,3 +651,6 @@ export default function POS() {
     </div>
   );
 }
+  useEffect(() => {
+    searchTermRef.current = searchTerm;
+  }, [searchTerm]);

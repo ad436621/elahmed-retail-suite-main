@@ -1,13 +1,14 @@
 import { Search, Ban, ChevronLeft, ChevronRight, Download } from 'lucide-react';
 import { exportToExcel, SALES_COLUMNS, prepareSalesForExport } from '@/services/excelService';
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useDeferredValue } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { cn } from '@/lib/utils';
-import { getActiveSales, getAllSales, saveSale } from '@/repositories/saleRepository';
+import { getAllSales, saveSale } from '@/repositories/saleRepository';
 import { saveAuditEntries } from '@/repositories/auditRepository';
 import { updateProductQuantity, getAllInventoryProducts } from '@/repositories/productRepository';
 import { saveMovements } from '@/repositories/stockRepository';
 import { voidSale } from '@/services/saleService';
+import { reverseSalePayment } from '@/data/walletsData';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useConfirm } from '@/components/ConfirmDialog';
@@ -17,8 +18,7 @@ const PAGE_SIZE = 20;
 const paymentLabels: Record<string, string> = {
   cash: 'نقدي',
   card: 'بطاقة',
-  installment: 'تقسيط',
-  mixed: 'مختلط',
+  split: 'مختلط',
 };
 
 const Sales = () => {
@@ -30,6 +30,7 @@ const Sales = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [showVoided, setShowVoided] = useState(false);
   const [page, setPage] = useState(1);
+  const deferredSearch = useDeferredValue(search);
 
   useEffect(() => {
     const handleStorage = (e: StorageEvent | CustomEvent) => {
@@ -44,27 +45,49 @@ const Sales = () => {
     };
   }, []);
 
-  const allSales = showVoided ? getAllSales() : getActiveSales();
+  const allSales = useMemo(() => getAllSales(), [refreshKey]);
+  const activeSales = useMemo(() => allSales.filter((sale) => !sale.voidedAt), [allSales]);
+  const visibleSales = showVoided ? allSales : activeSales;
+  const hiddenVoidedCount = allSales.length - activeSales.length;
 
   const filtered = useMemo(
-    () => allSales.filter(s =>
-      s.invoiceNumber.toLowerCase().includes(search.toLowerCase()) ||
-      s.employee.toLowerCase().includes(search.toLowerCase())
-    ).sort((a, b) => (b.date ?? '').localeCompare(a.date ?? '')),
-    [allSales, search]
+    () => {
+      const normalizedSearch = deferredSearch.trim().toLowerCase();
+      return visibleSales.filter((sale) => {
+        if (!normalizedSearch) {
+          return true;
+        }
+
+        return sale.invoiceNumber.toLowerCase().includes(normalizedSearch) ||
+          sale.employee.toLowerCase().includes(normalizedSearch);
+      }).sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''));
+    },
+    [deferredSearch, visibleSales]
   );
 
   // Pagination
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paged = useMemo(() => filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), [filtered, page]);
+  const emptyStateMessage = useMemo(() => {
+    if (showVoided || hiddenVoidedCount === 0) {
+      return 'لا توجد فواتير';
+    }
+
+    if (search.trim()) {
+      return `لا توجد فواتير مطابقة. يوجد ${hiddenVoidedCount} فاتورة ملغاة مخفية من العرض الحالي.`;
+    }
+
+    return `لا توجد فواتير نشطة. يوجد ${hiddenVoidedCount} فاتورة ملغاة ويمكن عرضها من الفلتر.`;
+  }, [hiddenVoidedCount, search, showVoided]);
 
   // Reset page when search changes
   useEffect(() => { setPage(1); }, [search, showVoided]);
+  useEffect(() => { setPage((current) => Math.min(current, totalPages)); }, [totalPages]);
 
   const [voidReason, setVoidReason] = useState('');
   const [showVoidDialog, setShowVoidDialog] = useState<{ saleId: string; invoiceNumber: string } | null>(null);
 
-  const handleVoidConfirm = () => {
+  const handleVoidConfirm = async () => {
     if (!showVoidDialog || !voidReason.trim()) return;
     try {
       const sale = allSales.find(s => s.id === showVoidDialog.saleId);
@@ -82,6 +105,11 @@ const Sales = () => {
       saveMovements(stockMovements);
       saveAuditEntries([auditEntry]);
       stockMovements.forEach((movement) => updateProductQuantity(movement.productId, movement.newQuantity));
+      try {
+        await reverseSalePayment(sale);
+      } catch {
+        toast({ title: 'تم إلغاء الفاتورة مع ملاحظة', description: 'تعذر عكس الحركة المالية من الخزنة.' });
+      }
       setRefreshKey(k => k + 1);
       toast({ title: '✅ تم إلغاء الفاتورة', description: `${showVoidDialog.invoiceNumber} — ${voidReason}` });
     } catch (err: unknown) {
@@ -121,6 +149,12 @@ const Sales = () => {
         </div>
         <p className="text-xs text-muted-foreground">{filtered.length} فاتورة</p>
       </div>
+
+      {!showVoided && hiddenVoidedCount > 0 && (
+        <div className="rounded-xl border border-amber-300/60 bg-amber-50/70 px-3 py-2 text-xs text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-300">
+          {paged.length === 0 ? emptyStateMessage : `العرض الحالي يخفي ${hiddenVoidedCount} فاتورة ملغاة، لكن التصدير يشمل كل الفواتير.`}
+        </div>
+      )}
 
       <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden mb-8">
         <div className="overflow-x-auto pb-2">

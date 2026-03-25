@@ -319,6 +319,7 @@ export default function DevicesInventory() {
     const [colorFilter, setColorFilter] = useState<string>('all');
     const [modelFilter, setModelFilter] = useState('');
     const [viewMode, setViewMode] = useState<ViewMode>('grid');
+    const [showFilters, setShowFilters] = useState(true);
     // Dialogs
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
@@ -422,6 +423,20 @@ export default function DevicesInventory() {
         modelFilter,
         conditionFilter,
     ]);
+
+    const activeFiltersCount = useMemo(
+        () => [
+            search.trim(),
+            sourceFilter !== 'all',
+            supplierFilter !== 'all',
+            brandFilter !== 'all',
+            categoryFilter !== 'all',
+            colorFilter !== 'all',
+            modelFilter.trim(),
+            conditionFilter !== 'all',
+        ].filter(Boolean).length,
+        [search, sourceFilter, supplierFilter, brandFilter, categoryFilter, colorFilter, modelFilter, conditionFilter],
+    );
 
     // Computed values
     const filteredDevices = useMemo(() => {
@@ -624,7 +639,21 @@ export default function DevicesInventory() {
                     />
                 </div>
 
-                <div className="flex justify-end">
+                <div className="flex flex-wrap justify-end gap-2">
+                    <button
+                        onClick={() => setShowFilters((current) => !current)}
+                        aria-expanded={showFilters}
+                        className={`relative flex h-8 items-center gap-1.5 rounded-lg border px-3 text-xs font-bold transition-all ${showFilters ? 'border-primary/30 bg-primary/10 text-primary' : 'border-border bg-card text-muted-foreground hover:text-foreground'}`}
+                    >
+                        <Filter className="h-4 w-4" />
+                        الفلاتر
+                        {activeFiltersCount > 0 && (
+                            <span className="absolute -left-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-black text-white">
+                                {activeFiltersCount}
+                            </span>
+                        )}
+                    </button>
+
                     <div className="flex border border-border rounded-lg p-1">
                         <Button
                             variant={viewMode === 'grid' ? 'default' : 'ghost'}
@@ -645,29 +674,26 @@ export default function DevicesInventory() {
                     </div>
                 </div>
 
-                <FilterBar
-                    fields={filterFields}
-                    onReset={() => {
-                        setSearch('');
-                        setSourceFilter('all');
-                        setSupplierFilter('all');
-                        setBrandFilter('all');
-                        setCategoryFilter('all');
-                        setColorFilter('all');
-                        setModelFilter('');
-                        setConditionFilter('all');
-                    }}
-                    activeCount={[
-                        search.trim(),
-                        sourceFilter !== 'all',
-                        supplierFilter !== 'all',
-                        brandFilter !== 'all',
-                        categoryFilter !== 'all',
-                        colorFilter !== 'all',
-                        modelFilter.trim(),
-                        conditionFilter !== 'all',
-                    ].filter(Boolean).length}
-                />
+                {showFilters && (
+                    <FilterBar
+                        fields={filterFields}
+                        onReset={() => {
+                            setSearch('');
+                            setSourceFilter('all');
+                            setSupplierFilter('all');
+                            setBrandFilter('all');
+                            setCategoryFilter('all');
+                            setColorFilter('all');
+                            setModelFilter('');
+                            setConditionFilter('all');
+                        }}
+                        activeCount={activeFiltersCount}
+                    />
+                )}
+
+                {!showFilters && activeFiltersCount > 0 && (
+                    <p className="text-xs font-medium text-muted-foreground">الفلاتر مخفية لكنها ما زالت مطبقة على النتائج الحالية.</p>
+                )}
 
                 {/* Results count */}
                 <div className="text-sm text-muted-foreground">

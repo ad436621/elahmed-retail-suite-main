@@ -13,6 +13,7 @@ import {
   List,
   Pencil,
   Plus,
+  SlidersHorizontal,
   Trash2,
   X,
 } from 'lucide-react';
@@ -334,6 +335,7 @@ export default function TechSubInventoryPage({ config }: { config: TechSubInvent
   const [ownerFilter, setOwnerFilter] = useState('all');
   const [sourceFilter, setSourceFilter] = useState('all');
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
+  const [showFilters, setShowFilters] = useState(true);
 
   const [showForm, setShowForm] = useState(false);
   const [showCategoryManager, setShowCategoryManager] = useState(false);
@@ -472,6 +474,20 @@ export default function TechSubInventoryPage({ config }: { config: TechSubInvent
       },
     ];
   }, [brandFilter, categoryFilter, conditionFilter, config.section, modelFilter, ownerFilter, ownerOptions, search, sourceFilter, uniqueBrands, uniqueCategories, uniqueSources]);
+
+  const activeFiltersCount = useMemo(
+    () =>
+      [
+        config.section === 'accessories' && search.trim(),
+        categoryFilter !== 'all',
+        modelFilter.trim(),
+        brandFilter !== 'all',
+        conditionFilter !== 'all',
+        config.section === 'accessories' && ownerFilter !== 'all',
+        config.section === 'spare-parts' && sourceFilter !== 'all',
+      ].filter(Boolean).length,
+    [brandFilter, categoryFilter, conditionFilter, config.section, modelFilter, ownerFilter, search, sourceFilter],
+  );
 
   const filteredItems = useMemo(() => {
     const searchValue = debouncedSearch.trim().toLowerCase();
@@ -671,6 +687,23 @@ export default function TechSubInventoryPage({ config }: { config: TechSubInvent
             </button>
           </div>
 
+          <button
+            onClick={() => setShowFilters((current) => !current)}
+            aria-expanded={showFilters}
+            className={cn(
+              'relative flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition-all',
+              showFilters ? 'border-primary/30 bg-primary/10 text-primary' : 'border-border bg-card text-muted-foreground hover:text-foreground',
+            )}
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+            الفلاتر
+            {activeFiltersCount > 0 && (
+              <span className="absolute -left-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-[10px] font-black text-white">
+                {activeFiltersCount}
+              </span>
+            )}
+          </button>
+
           <button onClick={() => setShowCategoryManager(true)} className="flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold hover:bg-muted">
             <FolderOpen className="h-4 w-4" />
             التصنيفات ({uniqueCategories.length})
@@ -717,7 +750,9 @@ export default function TechSubInventoryPage({ config }: { config: TechSubInvent
         </div>
       </div>
 
-      <FilterBar fields={filterFields} onReset={resetFilters} />
+      {showFilters && <FilterBar fields={filterFields} onReset={resetFilters} activeCount={activeFiltersCount} />}
+
+      {!showFilters && activeFiltersCount > 0 && <p className="text-xs font-medium text-muted-foreground">الفلاتر مخفية لكنها ما زالت مطبقة على النتائج الحالية.</p>}
 
       {viewMode === 'grid' ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">

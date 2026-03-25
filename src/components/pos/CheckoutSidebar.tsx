@@ -14,6 +14,7 @@ import { saveMovements } from '@/repositories/stockRepository';
 import { saveAuditEntries } from '@/repositories/auditRepository';
 import { getAllInventoryProducts, updateProductQuantity } from '@/repositories/productRepository';
 import { printInvoice } from '@/services/invoicePrinter';
+import { recordSalePayment } from '@/data/walletsData';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import CartItemRow from './CartItemRow';
@@ -119,7 +120,22 @@ export default function CheckoutSidebar({
             saveMovements(result.stockMovements);
             saveAuditEntries(result.auditEntries);
             result.stockMovements.forEach(m => updateProductQuantity(m.productId, m.newQuantity));
-            try { printInvoice(result.sale); } catch { /* silent */ }
+
+            let postSaleWarning: string | null = null;
+
+            try {
+                await recordSalePayment(result.sale);
+            } catch {
+                postSaleWarning = 'تم البيع لكن فشل تسجيل الحركة في الخزنة.';
+            }
+
+            try {
+                printInvoice(result.sale);
+            } catch {
+                postSaleWarning = postSaleWarning
+                    ? `${postSaleWarning} وفشلت الطباعة أيضًا.`
+                    : 'تم البيع لكن تعذرت طباعة الفاتورة.';
+            }
 
             const change = method === 'cash' ? Math.max(0, amountTendered - grandTotal) : 0;
             setSuccessData({
@@ -129,6 +145,10 @@ export default function CheckoutSidebar({
                 change,
             });
             setMode('success');
+
+            if (postSaleWarning) {
+                toast({ title: 'تم البيع مع ملاحظة', description: postSaleWarning });
+            }
         } catch (e: unknown) {
             const message = e instanceof Error ? e.message : 'حدث خطأ غير متوقع';
             toast({ title: 'حدث خطأ', description: message, variant: 'destructive' });

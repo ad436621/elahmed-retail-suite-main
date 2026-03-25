@@ -555,10 +555,17 @@ export default function MobilesInventory() {
 
     // ── Stats ──
     const stats = useMemo(() => {
+        let totalItems = 0;
+        let totalCost = 0;
+        let totalSale = 0;
+
+        filteredList.forEach((product) => {
+            totalItems += product.quantity;
+            totalCost += normalizeCostPrice(getWeightedAvgCost(product.id), product.newCostPrice) * product.quantity;
+            totalSale += product.salePrice * product.quantity;
+        });
+
         const totalTypes = filteredList.length;
-        const totalItems = filteredList.reduce((s, p) => s + p.quantity, 0);
-        const totalCost = filteredList.reduce((s, p) => s + normalizeCostPrice(getWeightedAvgCost(p.id), p.newCostPrice) * p.quantity, 0);
-        const totalSale = filteredList.reduce((s, p) => s + p.salePrice * p.quantity, 0);
         return { totalTypes, totalItems, totalCost, totalSale };
     }, [filteredList]);
 
@@ -854,7 +861,7 @@ export default function MobilesInventory() {
 
             {/* ═══ MAIN LAYOUT: Side Panel + Content ═══ */}
             {showFilters && (
-                <div className="mb-4">
+                <div className="mb-4 lg:hidden">
                     <FilterBar
                         fields={filterFields}
                         onReset={resetFilters}
@@ -866,7 +873,7 @@ export default function MobilesInventory() {
             <div className="flex gap-4">
 
                 {/* ─── Right (RTL): Filter Side Panel ─── */}
-                {false && showFilters && (
+                {showFilters && (
                     <div className="hidden lg:block w-64 shrink-0">
                         <div className="rounded-2xl border border-border bg-card p-3.5 space-y-3.5 sticky top-4">
                             {/* Panel Header */}
@@ -993,6 +1000,7 @@ export default function MobilesInventory() {
                 <div className="flex-1 min-w-0 space-y-3">
 
                     {/* Category Tabs */}
+                    <p className="sm:hidden text-[11px] text-muted-foreground mb-2">اسحب أفقياً لعرض بقية التصنيفات.</p>
                     <div className="flex gap-2 w-full overflow-x-auto hide-scrollbar pb-1 px-1 -mx-1">
                         <button onClick={() => setActiveFilter('all')}
                             className={`shrink-0 rounded-xl px-4 py-2 text-sm font-semibold border transition-all flex items-center gap-2 ${activeFilter === 'all' ? 'bg-primary/10 text-primary border-primary/30 shadow-sm' : 'bg-card border-border text-muted-foreground hover:text-foreground hover:border-primary/30'}`}>

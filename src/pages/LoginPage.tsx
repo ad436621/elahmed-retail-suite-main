@@ -2,6 +2,7 @@ import React, { useState, useEffect, memo, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { verifyRecoveryCode, changePassword, findUserByUsername } from '@/data/usersData';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { getStorageItem, removeStorageItem, setStorageItem } from '@/lib/localStorageHelper';
 import {
   Loader2, Lock, AlertTriangle, Sparkles, User, KeyRound, ShieldCheck,
   RotateCcw, Eye, EyeOff, CheckCircle,
@@ -66,7 +67,28 @@ const GlassCard = ({ children }: { children: React.ReactNode }) => (
   </div>
 );
 
-type Screen = 'login' | 'forgot' | 'done';
+type Screen = 'login' | 'forgot' | 'done' | 'forceChange';
+
+type LoginLockoutState = {
+  attempts: number;
+  lockoutEnd: number | null;
+};
+
+const LOGIN_LOCKOUT_KEY = 'elahmed_login_lockout_v1';
+const EMPTY_LOCKOUT_STATE: LoginLockoutState = { attempts: 0, lockoutEnd: null };
+
+function readLockoutState(): LoginLockoutState {
+  const stored = getStorageItem<LoginLockoutState>(LOGIN_LOCKOUT_KEY, EMPTY_LOCKOUT_STATE);
+  if (!stored.lockoutEnd || stored.lockoutEnd > Date.now()) {
+    return {
+      attempts: Math.max(0, stored.attempts || 0),
+      lockoutEnd: stored.lockoutEnd ?? null,
+    };
+  }
+
+  removeStorageItem(LOGIN_LOCKOUT_KEY);
+  return EMPTY_LOCKOUT_STATE;
+}
 
 const LoginPage = () => {
   const { login } = useAuth();
@@ -74,8 +96,7 @@ const LoginPage = () => {
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [attempts, setAttempts] = useState(0);
-  const [lockoutEnd, setLockoutEnd] = useState<number | null>(null);
+  const [lockoutState, setLockoutState] = useState<LoginLockoutState>(() => readLockoutState());
   const [lockoutSec, setLockoutSec] = useState(0);
   const [screen, setScreen] = useState<Screen>('login');
   const [fpUsername, setFpUsername] = useState('');
@@ -84,21 +105,46 @@ const LoginPage = () => {
   const [fpConfirm, setFpConfirm] = useState('');
   const [fpError, setFpError] = useState('');
   const [fpStep, setFpStep] = useState<1 | 2>(1);
+  const [forcePass, setForcePass] = useState('');
+  const [forceConfirm, setForceConfirm] = useState('');
+  const [forceError, setForceError] = useState('');
 
   const MAX_ATTEMPTS = 5;
   const LOCKOUT_SEC = 30;
+  const attempts = lockoutState.attempts;
+  const lockoutEnd = lockoutState.lockoutEnd;
+  const setAttempts = useCallback((nextAttempts: number) => {
+    setLockoutState((current) => ({ ...current, attempts: nextAttempts }));
+  }, []);
+  const setLockoutEnd = useCallback((nextLockoutEnd: number | null) => {
+    setLockoutState((current) => ({ ...current, lockoutEnd: nextLockoutEnd }));
+  }, []);
+
+  useEffect(() => {
+    if (lockoutState.attempts === 0 && !lockoutState.lockoutEnd) {
+      removeStorageItem(LOGIN_LOCKOUT_KEY);
+      return;
+    }
+
+    setStorageItem(LOGIN_LOCKOUT_KEY, lockoutState);
+  }, [lockoutState]);
+
+  const clearLockout = useCallback(() => {
+    setLockoutState(EMPTY_LOCKOUT_STATE);
+    setLockoutSec(0);
+  }, []);
 
   useEffect(() => {
     if (!lockoutEnd) return;
     const tick = () => {
       const rem = Math.ceil((lockoutEnd - Date.now()) / 1000);
-      if (rem <= 0) { setLockoutEnd(null); setLockoutSec(0); setAttempts(0); setError(''); }
+      if (rem <= 0) { clearLockout(); setError(''); }
       else setLockoutSec(rem);
     };
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
-  }, [lockoutEnd]);
+  }, [clearLockout, lockoutEnd]);
 
   const isLocked = !!lockoutEnd && Date.now() < lockoutEnd;
 
@@ -108,17 +154,44 @@ const LoginPage = () => {
     setError(''); setLoading(true);
     try {
       const result = await login(username, password);
+      if (result.requiresPasswordChange) {
+        clearLockout();
+        setForcePass('');
+        setForceConfirm('');
+        setForceError('');
+        setPassword('');
+        setScreen('forceChange');
+        return;
+      }
       if (!result.success) {
-        const n = attempts + 1; setAttempts(n);
+        const n = attempts + 1;
+        setAttempts(n);
+        if (n >= MAX_ATTEMPTS) {
+          setLockoutEnd(Date.now() + LOCKOUT_SEC * 1000);
+          setError(`تم قفل الحساب مؤقتاً. حاول بعد ${LOCKOUT_SEC} ثانية`);
+          return;
+        }
+        setError(result.error || 'بيانات غير صحيحة');
+        return;
         if (n >= MAX_ATTEMPTS) { setLockoutEnd(Date.now() + LOCKOUT_SEC * 1000); setError(`تم قفل الحساب مؤقتاً. حاول بعد ${LOCKOUT_SEC} ثانية`); }
         else setError(result.error || 'بيانات غير صحيحة');
       }
+      clearLockout();
+      setError('');
     } catch (err) {
-      const n = attempts + 1; setAttempts(n);
+      const n = attempts + 1;
+      setAttempts(n);
+      if (n >= MAX_ATTEMPTS) {
+        setLockoutEnd(Date.now() + LOCKOUT_SEC * 1000);
+        setError('تم قفل الحساب مؤقتاً');
+        return;
+      }
+      setError(err instanceof Error ? err.message : 'بيانات غير صحيحة');
+      return;
       if (n >= MAX_ATTEMPTS) { setLockoutEnd(Date.now() + LOCKOUT_SEC * 1000); setError(`تم قفل الحساب مؤقتاً`); }
       else setError(err instanceof Error ? err.message : 'بيانات غير صحيحة');
     } finally { setLoading(false); }
-  }, [login, username, password, attempts, isLocked]);
+  }, [LOCKOUT_SEC, attempts, clearLockout, isLocked, login, password, username]);
 
   const handleFpStep1 = (e: React.FormEvent) => {
     e.preventDefault(); setFpError('');
@@ -138,7 +211,50 @@ const LoginPage = () => {
       setFpError('حدث خطأ أثناء التغيير');
     }
   };
-  const goLogin = () => { setScreen('login'); setFpStep(1); setFpError(''); setFpUsername(''); setFpCode(''); setFpPass(''); setFpConfirm(''); };
+  const handleForcedPasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setForceError('');
+
+    if (forcePass.length < 4) {
+      setForceError('كلمة المرور يجب أن تكون 4 أحرف على الأقل');
+      return;
+    }
+
+    if (forcePass !== forceConfirm) {
+      setForceError('كلمتا المرور غير متطابقتين');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const changed = await changePassword(username, forcePass);
+      if (!changed) {
+        setForceError('تعذر تحديث كلمة المرور');
+        return;
+      }
+      setScreen('done');
+    } catch {
+      setForceError('حدث خطأ أثناء تحديث كلمة المرور');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const goLogin = () => {
+    setScreen('login');
+    setUsername('');
+    setPassword('');
+    setError('');
+    setFpStep(1);
+    setFpError('');
+    setFpUsername('');
+    setFpCode('');
+    setFpPass('');
+    setFpConfirm('');
+    setForcePass('');
+    setForceConfirm('');
+    setForceError('');
+  };
 
   const fieldClass = "h-12 w-full rounded-xl border border-white/10 bg-white/5 px-4 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/50 transition-all duration-300 backdrop-blur-sm";
 
@@ -161,6 +277,45 @@ const LoginPage = () => {
   );
 
   /* ── FORGOT ── */
+  if (screen === 'forceChange') return (
+    <GlassCard>
+      <div className="p-6 space-y-5">
+        <div className="text-center space-y-3 pt-2">
+          <div className="flex justify-center">
+            <div className="relative flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-primary/70 shadow-lg shadow-primary/30">
+              <div className="absolute inset-0 rounded-2xl bg-primary/40 blur-lg opacity-60 animate-pulse" />
+              <ShieldCheck className="relative h-8 w-8 text-white" />
+            </div>
+          </div>
+          <h2 className="text-2xl font-bold text-white">تغيير كلمة المرور مطلوب</h2>
+          <p className="text-sm text-white/50">الحساب الافتراضي لا يدخل للنظام قبل تعيين كلمة مرور جديدة.</p>
+        </div>
+
+        <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 p-3 text-center">
+          <p className="text-xs text-amber-300/80">المستخدم الحالي: <span className="font-mono font-bold text-amber-300">{username}</span></p>
+        </div>
+
+        <form onSubmit={handleForcedPasswordChange} className="space-y-4">
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 text-sm text-white/70 font-medium"><Lock className="h-4 w-4 text-primary" /> كلمة المرور الجديدة</label>
+            <input type="password" value={forcePass} onChange={e => setForcePass(e.target.value)} required minLength={4} autoFocus placeholder="أدخل كلمة مرور جديدة" className={fieldClass} />
+          </div>
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 text-sm text-white/70 font-medium"><Lock className="h-4 w-4 text-primary" /> تأكيد كلمة المرور</label>
+            <input type="password" value={forceConfirm} onChange={e => setForceConfirm(e.target.value)} required placeholder="أعد كتابة كلمة المرور" className={fieldClass} />
+          </div>
+          {forceError && <Alert variant="destructive" className="bg-destructive/10 border-destructive/30"><AlertTriangle className="h-4 w-4" /><AlertDescription>{forceError}</AlertDescription></Alert>}
+          <button type="submit" disabled={loading} className="w-full h-11 rounded-xl bg-gradient-to-l from-primary to-primary/80 font-bold text-white hover:opacity-90 transition-all shadow-lg shadow-primary/20 disabled:opacity-50 flex items-center justify-center gap-2">
+            {loading ? <><Loader2 className="h-5 w-5 animate-spin" /> جارٍ الحفظ...</> : 'حفظ كلمة المرور'}
+          </button>
+          <button type="button" onClick={goLogin} className="w-full h-10 rounded-xl text-sm text-white/50 hover:text-white hover:bg-white/5 transition-all">
+            العودة
+          </button>
+        </form>
+      </div>
+    </GlassCard>
+  );
+
   if (screen === 'forgot') return (
     <GlassCard>
       <div className="p-6 space-y-5">

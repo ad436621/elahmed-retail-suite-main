@@ -148,6 +148,7 @@ const SettingsPage = () => {
       </div>
 
       {/* Tab Navigation */}
+      <p className="sm:hidden text-[11px] text-muted-foreground mb-2">اسحب أفقياً لعرض بقية تبويبات الإعدادات.</p>
       <div className="flex gap-1.5 w-full overflow-x-auto hide-scrollbar pb-3 mb-5 border-b border-border">
         {TABS.map(tab => (
           <button key={tab.id} onClick={() => setActiveTab(tab.id)}

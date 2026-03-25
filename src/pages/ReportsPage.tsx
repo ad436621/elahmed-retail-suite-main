@@ -26,7 +26,13 @@ import { getOtherRevenues } from '@/data/otherRevenueData';
 import { getWeightedAvgCost } from '@/data/batchesData';
 // #18 FIX: New module data for extra report tabs
 import { getSuppliers, getSupplierTransactions, getTotalOwedToSuppliers } from '@/data/suppliersData';
-import { getWallets, getTransactions as getWalletTransactions, getTotalBalance } from '@/data/walletsData';
+import {
+    getWallets,
+    getTransactions as getWalletTransactions,
+    getTotalBalance,
+    type Wallet as WalletType,
+    type WalletTransaction,
+} from '@/data/walletsData';
 import { getEmployees } from '@/data/employeesData';
 import { cn } from '@/lib/utils';
 
@@ -169,19 +175,40 @@ export default function ReportsPage() {
     const supplierTxns = useMemo(() => getSupplierTransactions(), [refreshKey]);
     
     // #18 FIX Async wallets data
-    const [wallets, setWallets] = useState<any[]>([]);
-    const [walletTxns, setWalletTxns] = useState<any[]>([]);
+    const [wallets, setWallets] = useState<WalletType[]>([]);
+    const [walletTxns, setWalletTxns] = useState<WalletTransaction[]>([]);
     const [walletTotalBalance, setWalletTotalBalance] = useState(0);
     
     useEffect(() => {
-        getWallets().then(setWallets).catch(console.error);
-        getWalletTransactions().then(setWalletTxns).catch(console.error);
-        getTotalBalance().then(setWalletTotalBalance).catch(console.error);
+        let cancelled = false;
+
+        const loadWalletsData = async () => {
+            try {
+                const [nextWallets, nextWalletTxns, nextWalletBalance] = await Promise.all([
+                    getWallets(),
+                    getWalletTransactions(),
+                    getTotalBalance(),
+                ]);
+
+                if (cancelled) return;
+                setWallets(nextWallets);
+                setWalletTxns(nextWalletTxns);
+                setWalletTotalBalance(nextWalletBalance);
+            } catch (error) {
+                console.error('Failed to load wallet reports data', error);
+            }
+        };
+
+        loadWalletsData();
+
+        return () => {
+            cancelled = true;
+        };
     }, [refreshKey]);
     const employees = useMemo(() => getEmployees(), [refreshKey]);
 
     // ── Date filtering ─────────────────────────────────────────
-    const { from, to } = getDateRange(dateRange);
+    const { from, to } = useMemo(() => getDateRange(dateRange), [dateRange]);
     const sales = useMemo(
         () => allSales.filter(s => !s.voidedAt && inRange(s.date, from, to)),
         [allSales, from, to]
@@ -219,6 +246,83 @@ export default function ReportsPage() {
     const deviceInvValue = useMemo(() => devices.reduce((s, d) => s + (getWeightedAvgCost(d.id) || d.newCostPrice) * (d.quantity || 1), 0), [devices]);
     const carsInvValue = useMemo(() => cars.reduce((s, c) => s + c.purchasePrice, 0), [cars]);
     const totalInvValue = mobileInvValue + computerInvValue + deviceInvValue + carsInvValue;
+    const salesByDay = useMemo(() => {
+        const grouped = new Map<string, typeof sales>();
+        sales.forEach((sale) => {
+            const key = sale.date?.slice(0, 10);
+            if (!key) return;
+
+            const current = grouped.get(key);
+            if (current) current.push(sale);
+            else grouped.set(key, [sale]);
+        });
+        return grouped;
+    }, [sales]);
+    const maintenanceByDay = useMemo(() => {
+        const grouped = new Map<string, typeof filteredMaint>();
+        filteredMaint.forEach((order) => {
+            const key = order.createdAt?.slice(0, 10);
+            if (!key) return;
+
+            const current = grouped.get(key);
+            if (current) current.push(order);
+            else grouped.set(key, [order]);
+        });
+        return grouped;
+    }, [filteredMaint]);
+    const salesByMonth = useMemo(() => {
+        const grouped = new Map<string, typeof allSales>();
+        allSales.forEach((sale) => {
+            if (sale.voidedAt) return;
+
+            const key = sale.date?.slice(0, 7);
+            if (!key) return;
+
+            const current = grouped.get(key);
+            if (current) current.push(sale);
+            else grouped.set(key, [sale]);
+        });
+        return grouped;
+    }, [allSales]);
+    const maintenanceByMonth = useMemo(() => {
+        const grouped = new Map<string, typeof maintenance>();
+        maintenance.forEach((order) => {
+            const key = order.createdAt?.slice(0, 7);
+            if (!key) return;
+
+            const current = grouped.get(key);
+            if (current) current.push(order);
+            else grouped.set(key, [order]);
+        });
+        return grouped;
+    }, [maintenance]);
+    const expensesByMonth = useMemo(() => {
+        const grouped = new Map<string, typeof expenses>();
+        expenses.forEach((expense) => {
+            const key = expense.date?.slice(0, 7);
+            if (!key) return;
+
+            const current = grouped.get(key);
+            if (current) current.push(expense);
+            else grouped.set(key, [expense]);
+        });
+        return grouped;
+    }, [expenses]);
+    const todaySalesCount = useMemo(() => {
+        const today = new Date().toISOString().slice(0, 10);
+        return allSales.filter((sale) => !sale.voidedAt && sale.date?.startsWith(today)).length;
+    }, [allSales]);
+    const owedToSuppliers = useMemo(() => getTotalOwedToSuppliers(), [suppliers]);
+    const sortedWallets = useMemo(() => [...wallets].sort((a, b) => b.balance - a.balance), [wallets]);
+    const recentWalletTxns = useMemo(
+        () => [...walletTxns].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8),
+        [walletTxns]
+    );
+    const walletDepositCount = useMemo(() => walletTxns.filter((txn) => txn.type === 'deposit').length, [walletTxns]);
+    const walletWithdrawalCount = useMemo(() => walletTxns.filter((txn) => txn.type === 'withdrawal').length, [walletTxns]);
+    const activeEmployeesCount = useMemo(() => employees.filter((employee) => employee.isActive).length, [employees]);
+    const inactiveEmployeesCount = useMemo(() => employees.filter((employee) => !employee.isActive).length, [employees]);
+    const totalSalary = useMemo(() => employees.reduce((sum, employee) => sum + (employee.baseSalary || 0), 0), [employees]);
 
     // ── Daily Sales for chart ─────────────────────────────────
     const dailyData = useMemo(() => {
@@ -226,8 +330,8 @@ export default function ReportsPage() {
         return Array.from({ length: Math.min(days, 30) }, (_, i) => {
             const d = new Date(); d.setDate(d.getDate() - (Math.min(days, 30) - 1 - i));
             const ds = d.toISOString().slice(0, 10);
-            const daySales = sales.filter(s => s.date?.startsWith(ds));
-            const dayMaint = filteredMaint.filter(m => (m.createdAt ?? '').startsWith(ds));
+            const daySales = salesByDay.get(ds) ?? [];
+            const dayMaint = maintenanceByDay.get(ds) ?? [];
             return {
                 date: `${d.getDate()}/${d.getMonth() + 1}`,
                 مبيعات: daySales.reduce((s, x) => s + x.total, 0),
@@ -235,16 +339,16 @@ export default function ReportsPage() {
                 صيانة: dayMaint.reduce((s, m) => s + m.totalSale, 0),
             };
         });
-    }, [sales, filteredMaint, dateRange]);
+    }, [dateRange, maintenanceByDay, salesByDay]);
 
     // ── Monthly for 12-month chart ────────────────────────────
     const monthlyData = useMemo(() => Array.from({ length: 12 }, (_, i) => {
         const d = new Date(); d.setMonth(d.getMonth() - (11 - i));
         const yy = d.getFullYear(); const mm = String(d.getMonth() + 1).padStart(2, '0');
         const prefix = `${yy}-${mm}`;
-        const mSales = allSales.filter(s => !s.voidedAt && s.date?.startsWith(prefix));
-        const mMaint = maintenance.filter(m => (m.createdAt ?? '').startsWith(prefix));
-        const mExp = expenses.filter(e => (e.date ?? '').startsWith(prefix));
+        const mSales = salesByMonth.get(prefix) ?? [];
+        const mMaint = maintenanceByMonth.get(prefix) ?? [];
+        const mExp = expensesByMonth.get(prefix) ?? [];
         return {
             شهر: MONTHS_AR[d.getMonth()],
             مبيعات: mSales.reduce((s, x) => s + x.total, 0),
@@ -252,7 +356,7 @@ export default function ReportsPage() {
             صيانة: mMaint.reduce((s, m) => s + m.totalSale, 0),
             مصروفات: mExp.reduce((s, e) => s + e.amount, 0),
         };
-    }), [allSales, maintenance, expenses]);
+    }), [expensesByMonth, maintenanceByMonth, salesByMonth]);
 
     // ── Revenue distribution pie ──────────────────────────────
     const revenuePie = useMemo(() => {
@@ -366,7 +470,8 @@ export default function ReportsPage() {
             </div>
 
             {/* ── Tabs ── */}
-            <div className="flex gap-1 bg-muted/40 rounded-xl p-1 overflow-x-auto">
+            <p className="sm:hidden text-[11px] text-muted-foreground">اسحب أفقياً لعرض بقية التبويبات.</p>
+            <div className="flex gap-1 bg-muted/40 rounded-xl p-1 overflow-x-auto hide-scrollbar">
                 {TABS.map(tab => {
                     const Icon = tab.icon;
                     return (
@@ -474,7 +579,7 @@ export default function ReportsPage() {
                         <KPICard label="إجمالي المبيعات" value={`${fmt(totalRevenue)} ج.م`} sub={`${sales.length} فاتورة`} icon={ShoppingCart} color="bg-primary" />
                         <KPICard label="إجمالي الربح" value={`${fmt(totalProfit)} ج.م`} sub={`${profitMargin.toFixed(1)}% هامش`} icon={TrendingUp} color="bg-emerald-500" />
                         <KPICard label="متوسط الفاتورة" value={`${fmt(avgInvoice)} ج.م`} icon={Receipt} color="bg-blue-500" />
-                        <KPICard label="فواتير اليوم" value={`${allSales.filter(s => !s.voidedAt && s.date?.startsWith(new Date().toISOString().slice(0, 10))).length}`} sub="مقارنة بالفترة المحددة" icon={Calendar} color="bg-amber-500" />
+                        <KPICard label="فواتير اليوم" value={`${todaySalesCount}`} sub="مقارنة بالفترة المحددة" icon={Calendar} color="bg-amber-500" />
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
@@ -858,7 +963,7 @@ export default function ReportsPage() {
                 <div className="space-y-6">
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                         <KPICard label="عدد الموردين" value={`${suppliers.length}`} sub="مورد نشط" icon={Users} color="bg-primary" />
-                        <KPICard label="إجمالي المستحقات" value={`${fmt(getTotalOwedToSuppliers())} ج.م`} sub="ديون للموردين" icon={TrendingDown} color="bg-red-500" trend={getTotalOwedToSuppliers() > 0 ? 'down' : null} />
+                        <KPICard label="إجمالي المستحقات" value={`${fmt(owedToSuppliers)} ج.م`} sub="ديون للموردين" icon={TrendingDown} color="bg-red-500" trend={owedToSuppliers > 0 ? 'down' : null} />
                         <KPICard label="موردين مديونين" value={`${suppliers.filter(s => s.balance > 0).length}`} sub="يستحقون سداد" icon={AlertTriangle} color="bg-orange-500" />
                         <KPICard label="عمليات الشراء" value={`${supplierTxns.filter(t => t.type === 'purchase').length}`} sub="إجمالي فواتير" icon={Receipt} color="bg-violet-500" />
                     </div>
@@ -921,8 +1026,8 @@ export default function ReportsPage() {
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                         <KPICard label="إجمالي الرصيد" value={`${fmt(walletTotalBalance)} ج.م`} sub="كل المحافظ" icon={DollarSign} color="bg-emerald-500" />
                         <KPICard label="عدد المحافظ" value={`${wallets.length}`} sub="محافظ وحسابات" icon={Receipt} color="bg-primary" />
-                        <KPICard label="معاملات الإيداع" value={`${walletTxns.filter(t => t.type === 'deposit').length}`} icon={TrendingUp} color="bg-blue-500" />
-                        <KPICard label="معاملات السحب" value={`${walletTxns.filter(t => t.type === 'withdrawal').length}`} icon={TrendingDown} color="bg-red-500" />
+                        <KPICard label="معاملات الإيداع" value={`${walletDepositCount}`} icon={TrendingUp} color="bg-blue-500" />
+                        <KPICard label="معاملات السحب" value={`${walletWithdrawalCount}`} icon={TrendingDown} color="bg-red-500" />
                     </div>
 
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
@@ -932,7 +1037,7 @@ export default function ReportsPage() {
                                 <p className="text-sm text-muted-foreground text-center py-8">لا توجد محافظ</p>
                             ) : (
                                 <div className="space-y-3">
-                                    {[...wallets].sort((a, b) => b.balance - a.balance).map(w => {
+                                    {sortedWallets.map(w => {
                                         const total = Math.max(walletTotalBalance, 1);
                                         const pctW = Math.round((w.balance / total) * 100);
                                         return (
@@ -957,7 +1062,7 @@ export default function ReportsPage() {
                                 <p className="text-sm text-muted-foreground text-center py-8">لا توجد معاملات</p>
                             ) : (
                                 <div className="space-y-2">
-                                    {[...walletTxns].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8).map(t => (
+                                    {recentWalletTxns.map(t => (
                                         <div key={t.id} className="flex items-center justify-between p-2.5 rounded-lg border border-border/30">
                                             <div>
                                                 <p className="text-xs font-semibold text-foreground truncate max-w-[150px]">{t.reason}</p>
@@ -982,9 +1087,9 @@ export default function ReportsPage() {
                 <div className="space-y-6">
                     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                         <KPICard label="إجمالي الموظفين" value={`${employees.length}`} sub="موظف مسجل" icon={Users} color="bg-primary" />
-                        <KPICard label="موظفون نشطون" value={`${employees.filter(e => e.isActive).length}`} icon={TrendingUp} color="bg-emerald-500" />
-                        <KPICard label="موظفون مستقيلون" value={`${employees.filter(e => !e.isActive).length}`} icon={TrendingDown} color="bg-red-500" />
-                        <KPICard label="إجمالي الرواتب" value={`${fmt(employees.reduce((s, e) => s + (e.baseSalary || 0), 0))} ج.م`} sub="شهرياً" icon={DollarSign} color="bg-amber-500" />
+                        <KPICard label="موظفون نشطون" value={`${activeEmployeesCount}`} icon={TrendingUp} color="bg-emerald-500" />
+                        <KPICard label="موظفون مستقيلون" value={`${inactiveEmployeesCount}`} icon={TrendingDown} color="bg-red-500" />
+                        <KPICard label="إجمالي الرواتب" value={`${fmt(totalSalary)} ج.م`} sub="شهرياً" icon={DollarSign} color="bg-amber-500" />
                     </div>
 
                     <Card>

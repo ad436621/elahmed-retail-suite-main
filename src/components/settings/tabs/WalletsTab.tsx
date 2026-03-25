@@ -1,6 +1,6 @@
 // ── Wallets Tab ── (rewired to use walletsData.ts — same data as WalletsPage)
 // ─────────────────────────────────────────────────────────────
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Wallet, CreditCard, Plus, Banknote, Save, Trash2, Settings, ExternalLink } from 'lucide-react';
 import SectionCard from '@/components/settings/SectionCard';
 import ToggleRow from '@/components/settings/ToggleRow';
@@ -37,28 +37,52 @@ const WALLET_COLORS = [
 
 export default function WalletsTab() {
     const { toast } = useToast();
-    const [wallets, setWallets] = useState<WalletType[]>(getWallets);
+    const [wallets, setWallets] = useState<WalletType[]>([]);
 
     // New wallet form
     const [newWalletName, setNewWalletName] = useState('');
     const [newWalletIcon, setNewWalletIcon] = useState('💵');
     const [newWalletColor, setNewWalletColor] = useState(WALLET_COLORS[0].value);
 
-    const refresh = () => setWallets(getWallets());
-
-    const handleAddWallet = () => {
-        if (!newWalletName.trim()) return;
-        addWallet({ name: newWalletName.trim(), icon: newWalletIcon, color: newWalletColor, balance: 0, isDefault: false });
-        refresh();
-        setNewWalletName('');
-        toast({ title: '✅ تمت إضافة المحفظة', description: newWalletName });
+    const refresh = async () => {
+        try {
+            setWallets(await getWallets());
+        } catch (error) {
+            console.error('Failed to load wallets in settings', error);
+            setWallets([]);
+        }
     };
 
-    const handleDeleteWallet = (w: WalletType) => {
+    useEffect(() => {
+        void refresh();
+    }, []);
+
+    const handleAddWallet = async () => {
+        const walletName = newWalletName.trim();
+        if (!walletName) return;
+
+        try {
+            await addWallet({ name: walletName, icon: newWalletIcon, color: newWalletColor, balance: 0, isDefault: false });
+            await refresh();
+            setNewWalletName('');
+            toast({ title: '✅ تمت إضافة المحفظة', description: walletName });
+        } catch (error) {
+            console.error('Failed to add wallet from settings', error);
+            toast({ title: 'تعذر إضافة المحفظة', description: 'حاول مرة أخرى', variant: 'destructive' });
+        }
+    };
+
+    const handleDeleteWallet = async (w: WalletType) => {
         if (w.isDefault) { toast({ title: 'تنبيه', description: 'لا يمكن حذف المحفظة الافتراضية', variant: 'destructive' }); return; }
-        deleteWallet(w.id);
-        refresh();
-        toast({ title: 'تم الحذف', description: w.name });
+
+        try {
+            await deleteWallet(w.id);
+            await refresh();
+            toast({ title: 'تم الحذف', description: w.name });
+        } catch (error) {
+            console.error('Failed to delete wallet from settings', error);
+            toast({ title: 'تعذر حذف المحفظة', description: w.name, variant: 'destructive' });
+        }
     };
 
     // Transfers

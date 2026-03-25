@@ -23,7 +23,7 @@ function getStoredInvoiceCounter(): number {
   } catch (e) {
     console.error('Failed to read invoice counter:', e);
   }
-  return 5; // Default starting value
+  return 0;
 }
 
 function saveInvoiceCounter(counter: number): void {
