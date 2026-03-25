@@ -130,6 +130,11 @@ export default function Installments() {
     const [search, setSearch] = useState('');
     const [productCategory, setProductCategory] = useState<InventoryFilter>('all');
     const [deleteTarget, setDeleteTarget] = useState<InstallmentContract | null>(null); // confirm delete
+    const editingContract = useMemo(
+        () => (editingId ? contracts.find((item) => item.id === editingId) || null : null),
+        [contracts, editingId],
+    );
+    const isInventoryLinkLocked = form.contractType === 'product' && Boolean(editingContract?.productId);
 
     const productCategories = [
         { id: 'all', label: 'الكل', icon: Layers },
@@ -164,6 +169,30 @@ export default function Installments() {
         const nextContracts = getContracts();
         setContracts(nextContracts);
         setShowSchedule(current => current ? nextContracts.find(item => item.id === current.id) || null : null);
+    };
+
+    const restoreReservedProductStock = (contract: InstallmentContract) => {
+        if (contract.contractType !== 'product' || !contract.productId) return;
+
+        const linkedProduct = getAllInventoryProducts().find((item) => item.id === contract.productId);
+        if (!linkedProduct) {
+            throw new Error('لا يمكن حذف العقد لأن المنتج المرتبط غير متاح الآن لاسترجاع الكمية. راجع المخزون أولًا.');
+        }
+
+        const nextQuantity = linkedProduct.quantity + 1;
+        updateProductQuantity(linkedProduct.id, nextQuantity);
+        saveMovements([{
+            id: crypto.randomUUID(),
+            productId: linkedProduct.id,
+            type: 'correction',
+            quantityChange: 1,
+            previousQuantity: linkedProduct.quantity,
+            newQuantity: nextQuantity,
+            reason: `استرجاع مخزون بعد حذف عقد أجل: ${contract.contractNumber} (${contract.customerName})`,
+            referenceId: contract.id,
+            userId: user?.id || 'system',
+            timestamp: new Date().toISOString(),
+        }]);
     };
 
     const updateBaseForm = (updates: Partial<ContractFormState>) => {
@@ -312,8 +341,9 @@ export default function Installments() {
             return;
         }
 
-        const selectedProduct = form.contractType === 'product' && !editingId ? inventory.find(p => p.id === form.productId) : null;
-        if (selectedProduct) {
+        const selectedProduct = form.contractType === 'product' && form.productId ? inventory.find(p => p.id === form.productId) : null;
+        const shouldDeductSelectedProduct = Boolean(selectedProduct && (!editingContract || !editingContract.productId));
+        if (selectedProduct && shouldDeductSelectedProduct) {
             try { validateStock(selectedProduct, 1); }
             catch (err: unknown) {
                 const msg = err instanceof Error ? err.message : 'الكمية غير متوفرة';
@@ -332,8 +362,12 @@ export default function Installments() {
             guarantorAddress: form.guarantorAddress.trim(),
             customerPhone: form.customerPhone.trim(),
             customerAddress: form.customerAddress.trim(),
-            productId: form.contractType === 'product' ? form.productId || undefined : undefined,
-            productName: form.contractType === 'transfer' ? `تحويل ${form.transferType}` : form.productName.trim(),
+            productId: form.contractType === 'product'
+                ? (isInventoryLinkLocked ? editingContract?.productId : form.productId || undefined)
+                : undefined,
+            productName: form.contractType === 'transfer'
+                ? `تحويل ${form.transferType}`
+                : (isInventoryLinkLocked ? (editingContract?.productName || form.productName.trim()) : form.productName.trim()),
             transferType: form.contractType === 'transfer' ? form.transferType : undefined,
             cashPrice: form.cashPrice,
             installmentPrice: form.installmentPrice,
@@ -356,7 +390,7 @@ export default function Installments() {
             return;
         }
 
-        if (selectedProduct) {
+        if (selectedProduct && shouldDeductSelectedProduct) {
             updateProductQuantity(selectedProduct.id, selectedProduct.quantity - 1);
             saveMovements([{
                 id: crypto.randomUUID(),
@@ -760,7 +794,7 @@ export default function Installments() {
                                                         })}
                                                     </div>
                                                     <select value={form.productId || ''}
-                                                        disabled={Boolean(editingId)}
+                                                        disabled={isInventoryLinkLocked}
                                                         onChange={e => {
                                                             if (!e.target.value) { updateBaseForm({ productId: '', productName: '', cashPrice: 0, installmentPrice: 0 }); return; }
                                                             const p = inventory.find(x => x.id === e.target.value);
@@ -777,7 +811,7 @@ export default function Installments() {
                                                             </option>
                                                         ))}
                                                     </select>
-                                                    {editingId && <p className="text-[11px] text-amber-700">تعديل ربط المنتج بالمخزون معطل في وضع التعديل للحفاظ على الكميات الحالية.</p>}
+                                                    {isInventoryLinkLocked && <p className="text-[11px] text-amber-700">هذا العقد مرتبط بمخزون فعلي بالفعل، لذلك تغيير الربط معطل حتى لا تختل الكميات.</p>}
                                                     <div className="flex items-center gap-2">
                                                         <hr className="flex-1 border-border/50" />
                                                         <span className="text-[10px] text-muted-foreground">أو</span>
@@ -787,9 +821,11 @@ export default function Installments() {
                                             )}
                                             <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">اسم المنتج (يدوي بدون خصم من المخزون)</label>
                                         <input value={form.productName}
+                                            disabled={isInventoryLinkLocked}
                                             onChange={e => setForm(f => ({ ...f, productName: e.target.value, productId: '' }))}
                                             placeholder={form.contractType === 'car' ? 'مثال: تويوتا كورولا 2022' : 'اسم المنتج...'}
                                             className={IC} />
+                                        {isInventoryLinkLocked && <p className="mt-1 text-[11px] text-muted-foreground">يمكن تعديل البيانات المالية والجدول، لكن اسم المنتج المرتبط بالمخزون يبقى ثابتًا داخل العقد.</p>}
                                         </div>
                                     )}
                                 </div>
@@ -1264,7 +1300,20 @@ export default function Installments() {
                         </div>
 
                         <div className="flex gap-3">
-                            <button onClick={() => { deleteContract(deleteTarget.id); setDeleteTarget(null); refresh(); toast({ title: '🗑️ تم حذف العقد', description: deleteTarget.customerName }); }}
+                            <button onClick={() => {
+                                try {
+                                    restoreReservedProductStock(deleteTarget);
+                                } catch (error: unknown) {
+                                    const description = error instanceof Error ? error.message : 'تعذر استرجاع الكمية المرتبطة بالعقد';
+                                    toast({ title: 'تعذر حذف العقد', description, variant: 'destructive' });
+                                    return;
+                                }
+
+                                deleteContract(deleteTarget.id);
+                                setDeleteTarget(null);
+                                refresh();
+                                toast({ title: '🗑️ تم حذف العقد', description: deleteTarget.customerName });
+                            }}
                                 className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-red-600 hover:bg-red-500 py-3 text-sm font-bold text-white shadow-md shadow-red-600/20 transition-all">
                                 <Trash2 className="h-4 w-4" /> نعم، احذف العقد
                             </button>

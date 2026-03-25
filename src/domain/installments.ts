@@ -110,6 +110,14 @@ export function getPaymentsTotal(payments: InstallmentPayment[]): number {
   return toCurrency(payments.reduce((sum, payment) => sum + payment.amount, 0));
 }
 
+export function resetSchedulePayments(schedule: InstallmentScheduleItem[]): InstallmentScheduleItem[] {
+  return schedule.map((item) => ({
+    ...item,
+    paidAmount: 0,
+    paid: false,
+  }));
+}
+
 export function applyPaymentToSchedule(schedule: InstallmentScheduleItem[], amount: number) {
   let remainingPayment = toCurrency(amount);
   const allocations: NonNullable<InstallmentPayment['allocations']> = [];
@@ -141,13 +149,39 @@ export function applyPaymentToSchedule(schedule: InstallmentScheduleItem[], amou
   };
 }
 
+export function replayPaymentsOnSchedule(
+  schedule: InstallmentScheduleItem[],
+  payments: InstallmentPayment[],
+  financedAmount: number,
+) {
+  let projectedSchedule = normalizeSchedule(resetSchedulePayments(schedule), financedAmount);
+  const projectedPayments = payments.map((payment) => {
+    const allocation = applyPaymentToSchedule(projectedSchedule, payment.amount);
+    projectedSchedule = allocation.schedule;
+
+    return {
+      ...payment,
+      allocations: allocation.allocations,
+    };
+  });
+
+  return {
+    schedule: normalizeSchedule(projectedSchedule, financedAmount),
+    payments: projectedPayments,
+  };
+}
+
 export function normalizeContract(contract: InstallmentContract): InstallmentContract {
   const financedAmount = getFinancedAmount(contract.installmentPrice, contract.downPayment);
-  const schedule = normalizeSchedule(contract.schedule || [], financedAmount);
-  const totalDue = getScheduleTotal(schedule);
   const payments = contract.payments || [];
-  const paidTotal = toCurrency(contract.downPayment + getPaymentsTotal(payments));
-  const remaining = toCurrency(Math.max(0, totalDue - getPaymentsTotal(payments)));
+  const scheduleSeed = normalizeSchedule(contract.schedule || [], financedAmount);
+  const projection = replayPaymentsOnSchedule(scheduleSeed, payments, financedAmount);
+  const schedule = projection.schedule;
+  const normalizedPayments = projection.payments;
+  const totalDue = getScheduleTotal(schedule);
+  const paymentsTotal = getPaymentsTotal(normalizedPayments);
+  const paidTotal = toCurrency(contract.downPayment + paymentsTotal);
+  const remaining = toCurrency(Math.max(0, totalDue - paymentsTotal));
   const monthlyInstallment = schedule.length > 0 ? toCurrency(totalDue / schedule.length) : 0;
   const today = new Date().toISOString().slice(0, 10);
   const hasOverdue = remaining > 0 && schedule.some((item) => !item.paid && item.dueDate < today);
@@ -159,7 +193,7 @@ export function normalizeContract(contract: InstallmentContract): InstallmentCon
     guarantorAddress: contract.guarantorAddress || '',
     firstInstallmentDate: contract.firstInstallmentDate || schedule[0]?.dueDate || getDefaultFirstInstallmentDate(),
     schedule,
-    payments,
+    payments: normalizedPayments,
     paidTotal,
     remaining,
     monthlyInstallment,
@@ -179,10 +213,14 @@ export function buildContractFromDraft(
     ? input.schedule
     : generateInstallmentSchedule(financedAmount, input.months, firstInstallmentDate);
 
-  const schedule = normalizeSchedule(draftSchedule, financedAmount);
+  const scheduleSeed = normalizeSchedule(draftSchedule, financedAmount);
+  const projection = replayPaymentsOnSchedule(scheduleSeed, existingPayments, financedAmount);
+  const schedule = projection.schedule;
+  const payments = projection.payments;
   const totalDue = getScheduleTotal(schedule);
-  const paidTotal = toCurrency(input.downPayment + getPaymentsTotal(existingPayments));
-  const remaining = toCurrency(Math.max(0, totalDue - getPaymentsTotal(existingPayments)));
+  const paymentsTotal = getPaymentsTotal(payments);
+  const paidTotal = toCurrency(input.downPayment + paymentsTotal);
+  const remaining = toCurrency(Math.max(0, totalDue - paymentsTotal));
 
   return normalizeContract({
     ...meta,
@@ -205,7 +243,7 @@ export function buildContractFromDraft(
     monthlyInstallment: schedule.length > 0 ? toCurrency(totalDue / schedule.length) : 0,
     firstInstallmentDate,
     schedule,
-    payments: existingPayments,
+    payments,
     paidTotal,
     remaining,
     notes: input.notes || '',

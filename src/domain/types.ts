@@ -15,7 +15,19 @@ export interface User {
   active: boolean;
 }
 
-export type ProductSource = 'mobile' | 'mobile_acc' | 'computer' | 'computer_acc' | 'device' | 'device_acc' | 'car' | 'legacy';
+export type ProductSource =
+  | 'mobile'
+  | 'mobile_acc'
+  | 'mobile_spare'
+  | 'computer'
+  | 'computer_acc'
+  | 'computer_spare'
+  | 'device'
+  | 'device_acc'
+  | 'device_spare'
+  | 'car'
+  | 'car_spare'
+  | 'legacy';
 
 export type ProductCondition = 'new' | 'like_new' | 'used' | 'broken';
 

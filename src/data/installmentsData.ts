@@ -15,6 +15,7 @@ import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
 import { STORAGE_KEYS } from '@/config';
 
 const KEY = STORAGE_KEYS.INSTALLMENTS;
+const SEQUENCE_KEY = `${KEY}_sequence`;
 
 function readContracts(): InstallmentContract[] {
   return getStorageItem<InstallmentContract[]>(KEY, []);
@@ -28,11 +29,25 @@ export function saveContracts(contracts: InstallmentContract[]): void {
   setStorageItem(KEY, contracts.map(normalizeContract));
 }
 
+function getNextContractSequence(contracts: InstallmentContract[]): number {
+  const storedSequence = getStorageItem<number>(SEQUENCE_KEY, 0);
+  const scannedSequence = contracts.reduce((max, contract) => {
+    const match = /^INS-(\d+)$/.exec(contract.contractNumber || '');
+    const sequence = match ? Number(match[1]) : 0;
+    return Number.isFinite(sequence) ? Math.max(max, sequence) : max;
+  }, 0);
+
+  const nextSequence = Math.max(storedSequence, scannedSequence) + 1;
+  setStorageItem(SEQUENCE_KEY, nextSequence);
+  return nextSequence;
+}
+
 export function addContract(input: InstallmentDraftInput): InstallmentContract {
   const all = getContracts();
+  const nextSequence = getNextContractSequence(all);
   const contract = buildContractFromDraft(input, {
     id: crypto.randomUUID(),
-    contractNumber: `INS-${(all.length + 1).toString().padStart(4, '0')}`,
+    contractNumber: `INS-${nextSequence.toString().padStart(4, '0')}`,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   });
