@@ -365,6 +365,7 @@ export default function POS() {
   // always reads the latest filteredProducts and grandTotal.
   useEffect(() => { filteredProductsRef.current = filteredProducts; }, [filteredProducts]);
   useEffect(() => { grandTotalRef.current = grandTotal; }, [grandTotal]);
+  useEffect(() => { searchTermRef.current = searchTerm; }, [searchTerm]);
 
   // ── Count metrics ───────────────────────────────────────────
   const { availableCount, lowStockCount } = useMemo(() => (
@@ -651,6 +652,3 @@ export default function POS() {
     </div>
   );
 }
-  useEffect(() => {
-    searchTermRef.current = searchTerm;
-  }, [searchTerm]);
