@@ -6,10 +6,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useDebounce } from '@/hooks/useDebounce';
+import { usePagination, PaginationBar } from '@/hooks/usePagination';
 import {
     Plus, Trash2, Pencil, X, Check, Smartphone, Headphones, Search,
     AlignLeft, LayoutGrid, List, Tag, FileSpreadsheet, ImageOff,
-    Filter, SlidersHorizontal, RotateCcw, Package, Wrench, Download
+    Filter, SlidersHorizontal, RotateCcw, Package, Wrench, Download, Info
 } from 'lucide-react';
 import { exportToExcel, MOBILE_COLUMNS, prepareConditionForExport } from '@/services/excelService';
 import {
@@ -26,15 +28,19 @@ import { ProductBatchesModal } from '@/components/ProductBatchesModal';
 import { loadCats, saveCats } from '@/data/categoriesData';
 import { ExcelColumnMappingDialog } from '@/components/ExcelColumnMappingDialog';
 import { useConfirm } from '@/components/ConfirmDialog';
+import { FilterBar, type FilterBarField } from '@/components/FilterBar';
+import { ProductDetailsModal, type ProductDetailsData } from '@/components/ProductDetailsModal';
+import { calculateMarginPercent, calculateProfitAmount, calculateSalePriceFromProfit, getMarginTone, normalizeCostPrice } from '@/domain/pricing';
+import { PRODUCT_CONDITION_OPTIONS, type ProductConditionValue, getProductConditionBadgeClass, getProductConditionLabel } from '@/domain/productConditions';
 
 const IC = 'w-full rounded-xl border border-border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all';
 
 const emptyForm = {
-    name: '', barcode: '', category: '', condition: 'new' as 'new' | 'like_new' | 'used' | 'broken',
-    quantity: 1, oldCostPrice: 0, newCostPrice: 0, salePrice: 0,
+    name: '', barcode: '', category: '', condition: 'new' as ProductConditionValue,
+    quantity: 1, oldCostPrice: 0, newCostPrice: 0, salePrice: 0, profitMargin: 0,
     storage: '', ram: '', color: '', supplier: '', serialNumber: '',
     imei2: '', model: '', description: '', image: '', notes: '', subcategory: '',
-    boxNumber: '', source: '', taxExcluded: false, warehouseId: '',
+    boxNumber: '', source: '', taxExcluded: false, warehouseId: '', brand: '',
 };
 
 interface UnitEntry {
@@ -57,13 +63,16 @@ interface InventoryViewItem {
     salePrice: number;
     newCostPrice: number;
     oldCostPrice: number;
+    profitMargin: number;
     category?: string;
     condition: NonNullable<MobileItem['condition']>;
     categoryName?: string;
     storage: string;
     ram: string;
     color: string;
+    brand: string;
     supplier: string;
+    source: string;
     serialNumber: string;
     warehouseId: string;
 }
@@ -254,22 +263,28 @@ export default function MobilesInventory() {
 
     const mobiles = useInventoryData(getMobiles, ['gx_mobiles_v2']);
     const [search, setSearch] = useState('');
+    const debouncedSearch = useDebounce(search, 300);
     const [activeFilter, setActiveFilter] = useState<string>('all');
     const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
+    const [showFilters, setShowFilters] = useState(true);
 
     // ── Side Panel Filters ──
     const [filterImei, setFilterImei] = useState('');
     const [filterSupplier, setFilterSupplier] = useState('all');
-    const [filterCondition, setFilterCondition] = useState<'all' | 'new' | 'like_new' | 'used' | 'broken'>('all');
+    const [filterBrand, setFilterBrand] = useState('all');
+    const [filterSource, setFilterSource] = useState('all');
+    const [filterColor, setFilterColor] = useState('all');
+    const [filterModel, setFilterModel] = useState('');
+    const [filterCondition, setFilterCondition] = useState<'all' | ProductConditionValue>('all');
     const [filterStock, setFilterStock] = useState<'all' | 'in' | 'out'>('all');
     const [filterMinPrice, setFilterMinPrice] = useState('');
     const [filterMaxPrice, setFilterMaxPrice] = useState('');
-    const [showFilters, setShowFilters] = useState(true);
 
     const [showForm, setShowForm] = useState(false);
     const [editId, setEditId] = useState<string | null>(null);
+    const [selectedDetails, setSelectedDetails] = useState<ProductDetailsData | null>(null);
     const [f, setF] = useState(emptyForm);
-    const [customSupplier, setCustomSupplier] = useState(false);
+    const [pricingMode, setPricingMode] = useState<'sale' | 'margin'>('sale');
     const [customStorage, setCustomStorage] = useState(false);
     const [customRam, setCustomRam] = useState(false);
 
@@ -287,22 +302,45 @@ export default function MobilesInventory() {
     const unifiedProducts = useMemo(() => {
         const list: InventoryViewItem[] = [];
         mobiles.forEach(m => {
+            const costPrice = normalizeCostPrice(m.newCostPrice, m.oldCostPrice);
             list.push({
                 _raw: m, _type: 'device',
-                id: m.id, name: m.name, barcode: m.barcode, image: m.image, description: m.description,
+                id: m.id, name: m.name, model: m.model || '', barcode: m.barcode, image: m.image, description: m.description,
                 quantity: m.quantity, salePrice: m.salePrice, newCostPrice: m.newCostPrice, oldCostPrice: m.oldCostPrice,
+                profitMargin: typeof m.profitMargin === 'number' ? m.profitMargin : calculateProfitAmount(costPrice, m.salePrice),
                 category: m.category, condition: m.condition || 'new', categoryName: m.category,
-                storage: m.storage, ram: m.ram, color: m.color, supplier: m.supplier, serialNumber: m.serialNumber,
+                storage: m.storage, ram: m.ram, color: m.color, brand: m.brand || '', supplier: m.supplier,
+                source: m.source || '', serialNumber: m.serialNumber,
                 warehouseId: m.warehouseId || ''
             });
         });
         return list;
     }, [mobiles]);
 
-    // ── Extract unique suppliers for filter dropdown ──
+    // ── Extract unique values for filter dropdowns ──
     const uniqueSuppliers = useMemo(() => {
         const set = new Set<string>();
         unifiedProducts.forEach(p => { if (p.supplier) set.add(p.supplier); });
+        return Array.from(set).sort();
+    }, [unifiedProducts]);
+    const uniqueBrands = useMemo(() => {
+        const set = new Set<string>();
+        unifiedProducts.forEach(p => { if (p.brand) set.add(p.brand); });
+        return Array.from(set).sort();
+    }, [unifiedProducts]);
+    const uniqueSources = useMemo(() => {
+        const set = new Set<string>();
+        unifiedProducts.forEach(p => { if (p.source) set.add(p.source); });
+        return Array.from(set).sort();
+    }, [unifiedProducts]);
+    const uniqueColors = useMemo(() => {
+        const set = new Set<string>();
+        unifiedProducts.forEach(p => { if (p.color) set.add(p.color); });
+        return Array.from(set).sort();
+    }, [unifiedProducts]);
+    const uniqueModels = useMemo(() => {
+        const set = new Set<string>();
+        unifiedProducts.forEach(p => { if (p.model) set.add(p.model); });
         return Array.from(set).sort();
     }, [unifiedProducts]);
 
@@ -310,15 +348,10 @@ export default function MobilesInventory() {
         let res = unifiedProducts;
         if (activeFilter === 'used') res = res.filter(p => p.condition === 'used');
         else if (activeFilter !== 'all') res = res.filter(p => p.category === activeFilter);
-        // Text search
-        if (search) {
-            const sl = search.toLowerCase();
-            res = res.filter(p =>
-                p.name.toLowerCase().includes(sl) ||
-                (p.serialNumber && p.serialNumber.toLowerCase().includes(sl)) ||
-                (p.model && p.model.toLowerCase().includes(sl)) ||
-                (p.color && p.color.toLowerCase().includes(sl))
-            );
+        // Text search — expanded
+        if (debouncedSearch.trim()) {
+            const sl = debouncedSearch.trim().toLowerCase();
+            res = res.filter(p => p.name.toLowerCase().includes(sl));
         }
         // IMEI / Serial filter
         if (filterImei.trim()) {
@@ -328,6 +361,23 @@ export default function MobilesInventory() {
         // Supplier filter
         if (filterSupplier !== 'all') {
             res = res.filter(p => p.supplier === filterSupplier);
+        }
+        // Brand filter
+        if (filterBrand !== 'all') {
+            res = res.filter(p => p.brand === filterBrand);
+        }
+        // Source filter
+        if (filterSource !== 'all') {
+            res = res.filter(p => p.source === filterSource);
+        }
+        // Color filter
+        if (filterColor !== 'all') {
+            res = res.filter(p => p.color === filterColor);
+        }
+        // Model filter
+        if (filterModel.trim()) {
+            const modelLower = filterModel.trim().toLowerCase();
+            res = res.filter(p => (p.model || '').toLowerCase().includes(modelLower));
         }
         // Condition filter
         if (filterCondition !== 'all') {
@@ -342,21 +392,172 @@ export default function MobilesInventory() {
         if (!isNaN(minP)) res = res.filter(p => p.salePrice >= minP);
         if (!isNaN(maxP)) res = res.filter(p => p.salePrice <= maxP);
         return res;
-    }, [unifiedProducts, search, activeFilter, filterImei, filterSupplier, filterCondition, filterStock, filterMinPrice, filterMaxPrice]);
+    }, [unifiedProducts, debouncedSearch, activeFilter, filterImei, filterSupplier, filterBrand, filterSource, filterColor, filterModel, filterCondition, filterStock, filterMinPrice, filterMaxPrice]);
 
-    const activeFiltersCount = [filterImei, filterSupplier !== 'all', filterCondition !== 'all', filterStock !== 'all', filterMinPrice, filterMaxPrice].filter(Boolean).length;
+    // ── Pagination ──
+    const { paginatedItems, page, totalPages, totalItems, pageSize, nextPage, prevPage, setPage, reset: resetPagination } = usePagination(filteredList, 30);
+
+    const activeFiltersCount = [
+        search.trim(),
+        filterImei.trim(),
+        filterSupplier !== 'all',
+        filterBrand !== 'all',
+        filterSource !== 'all',
+        activeFilter !== 'all',
+        filterColor !== 'all',
+        filterModel.trim(),
+        filterCondition !== 'all',
+        filterStock !== 'all',
+        filterMinPrice,
+        filterMaxPrice,
+    ].filter(Boolean).length;
+
+    const filterFields = useMemo<FilterBarField[]>(() => [
+        {
+            id: 'name',
+            label: 'اسم المنتج',
+            type: 'text',
+            value: search,
+            placeholder: 'ابحث باسم المنتج',
+            onChange: setSearch,
+        },
+        {
+            id: 'source',
+            label: 'المصدر',
+            type: 'select',
+            value: filterSource,
+            options: [{ label: 'كل المصادر', value: 'all' }, ...uniqueSources.map((value) => ({ label: value, value }))],
+            onChange: setFilterSource,
+        },
+        {
+            id: 'supplier',
+            label: 'المورد',
+            type: 'select',
+            value: filterSupplier,
+            options: [{ label: 'كل الموردين', value: 'all' }, ...uniqueSuppliers.map((value) => ({ label: value, value }))],
+            onChange: setFilterSupplier,
+        },
+        {
+            id: 'brand',
+            label: 'اسم الشركة',
+            type: 'select',
+            value: filterBrand,
+            options: [{ label: 'كل الشركات', value: 'all' }, ...uniqueBrands.map((value) => ({ label: value, value }))],
+            onChange: setFilterBrand,
+        },
+        {
+            id: 'category',
+            label: 'التصنيف',
+            type: 'select',
+            value: activeFilter,
+            options: [{ label: 'كل التصنيفات', value: 'all' }, ...categories.map((value) => ({ label: value, value }))],
+            onChange: setActiveFilter,
+        },
+        {
+            id: 'color',
+            label: 'اللون',
+            type: 'select',
+            value: filterColor,
+            options: [{ label: 'كل الألوان', value: 'all' }, ...uniqueColors.map((value) => ({ label: value, value }))],
+            onChange: setFilterColor,
+        },
+        {
+            id: 'model',
+            label: 'الموديل',
+            type: 'text',
+            value: filterModel,
+            placeholder: uniqueModels[0] ? `مثال: ${uniqueModels[0]}` : 'ابحث بالموديل',
+            onChange: setFilterModel,
+        },
+        {
+            id: 'condition',
+            label: 'الحالة',
+            type: 'select',
+            value: filterCondition,
+            options: [
+                { label: 'كل الحالات', value: 'all' },
+                ...PRODUCT_CONDITION_OPTIONS.map((option) => ({ label: option.label, value: option.value })),
+            ],
+            onChange: (value) => setFilterCondition(value as 'all' | ProductConditionValue),
+        },
+        {
+            id: 'imei',
+            label: 'IMEI',
+            type: 'text',
+            value: filterImei,
+            placeholder: 'بحث برقم IMEI',
+            onChange: setFilterImei,
+        },
+        {
+            id: 'stock',
+            label: 'حالة المخزون',
+            type: 'select',
+            value: filterStock,
+            options: [
+                { label: 'كل الحالات', value: 'all' },
+                { label: 'متاح', value: 'in' },
+                { label: 'نفد', value: 'out' },
+            ],
+            onChange: (value) => setFilterStock(value as typeof filterStock),
+        },
+        {
+            id: 'min-price',
+            label: 'أقل سعر',
+            type: 'number',
+            value: filterMinPrice,
+            placeholder: '0',
+            onChange: setFilterMinPrice,
+        },
+        {
+            id: 'max-price',
+            label: 'أعلى سعر',
+            type: 'number',
+            value: filterMaxPrice,
+            placeholder: '0',
+            onChange: setFilterMaxPrice,
+        },
+    ], [
+        search,
+        filterSource,
+        uniqueSources,
+        filterSupplier,
+        uniqueSuppliers,
+        filterBrand,
+        uniqueBrands,
+        activeFilter,
+        categories,
+        filterColor,
+        uniqueColors,
+        filterModel,
+        uniqueModels,
+        filterCondition,
+        filterImei,
+        filterStock,
+        filterMinPrice,
+        filterMaxPrice,
+    ]);
 
     const resetFilters = () => {
-        setFilterImei(''); setFilterSupplier('all'); setFilterCondition('all');
-        setFilterStock('all'); setFilterMinPrice(''); setFilterMaxPrice('');
-        setSearch(''); setActiveFilter('all');
+        setSearch('');
+        setFilterImei('');
+        setFilterSupplier('all');
+        setFilterBrand('all');
+        setFilterSource('all');
+        setActiveFilter('all');
+        setFilterColor('all');
+        setFilterModel('');
+        setFilterCondition('all');
+        setFilterStock('all');
+        setFilterMinPrice('');
+        setFilterMaxPrice('');
+        resetPagination();
     };
 
     // ── Stats ──
     const stats = useMemo(() => {
         const totalTypes = filteredList.length;
         const totalItems = filteredList.reduce((s, p) => s + p.quantity, 0);
-        const totalCost = filteredList.reduce((s, p) => s + (getWeightedAvgCost(p.id) || p.newCostPrice) * p.quantity, 0);
+        const totalCost = filteredList.reduce((s, p) => s + normalizeCostPrice(getWeightedAvgCost(p.id), p.newCostPrice) * p.quantity, 0);
         const totalSale = filteredList.reduce((s, p) => s + p.salePrice * p.quantity, 0);
         return { totalTypes, totalItems, totalCost, totalSale };
     }, [filteredList]);
@@ -373,18 +574,96 @@ export default function MobilesInventory() {
         toast({ title: '✅ تم حفظ التصنيفات', description: `${updated.length} تصنيف` });
     };
 
+    const setSalePriceValue = (value: number) => {
+        setPricingMode('sale');
+        setF((prev) => {
+            const nextSalePrice = Number.isFinite(value) ? value : 0;
+            const costPrice = normalizeCostPrice(prev.newCostPrice, prev.oldCostPrice);
+            return {
+                ...prev,
+                salePrice: nextSalePrice,
+                profitMargin: calculateProfitAmount(costPrice, nextSalePrice),
+            };
+        });
+    };
+
+    const setProfitMarginValue = (value: number) => {
+        setPricingMode('margin');
+        setF((prev) => {
+            const nextProfitMargin = Number.isFinite(value) ? value : 0;
+            const costPrice = normalizeCostPrice(prev.newCostPrice, prev.oldCostPrice);
+            return {
+                ...prev,
+                profitMargin: nextProfitMargin,
+                salePrice: calculateSalePriceFromProfit(costPrice, nextProfitMargin),
+            };
+        });
+    };
+
+    const setCostPriceValue = (value: number) => {
+        setF((prev) => {
+            const nextCostPrice = Number.isFinite(value) ? value : 0;
+            const nextProfitMargin = pricingMode === 'margin'
+                ? prev.profitMargin
+                : calculateProfitAmount(nextCostPrice, prev.salePrice);
+
+            return {
+                ...prev,
+                oldCostPrice: nextCostPrice,
+                newCostPrice: nextCostPrice,
+                salePrice: pricingMode === 'margin'
+                    ? calculateSalePriceFromProfit(nextCostPrice, prev.profitMargin)
+                    : prev.salePrice,
+                profitMargin: nextProfitMargin,
+            };
+        });
+    };
+
+    const openDetails = (item: InventoryViewItem) => {
+        const costPrice = normalizeCostPrice(getWeightedAvgCost(item.id), item.newCostPrice);
+
+        setSelectedDetails({
+            id: item.id,
+            name: item.name,
+            barcode: item.barcode,
+            category: item.category,
+            condition: item.condition,
+            brand: item.brand,
+            supplier: item.supplier,
+            source: item.source,
+            model: item.model,
+            color: item.color,
+            storage: item.storage,
+            ram: item.ram,
+            quantity: item.quantity,
+            costPrice,
+            oldCostPrice: item.oldCostPrice,
+            salePrice: item.salePrice,
+            profitMargin: item.profitMargin,
+            serialNumber: item.serialNumber,
+            imei2: item._raw?.imei2,
+            description: item.description,
+            notes: item._raw?.notes,
+            image: item.image,
+            createdAt: item._raw?.createdAt,
+            updatedAt: item._raw?.updatedAt,
+        });
+    };
+
     const handleFormSubmit = () => {
         if (!f.category) { toast({ title: '⚠️ اختر تصنيفاً', variant: 'destructive' }); return; }
         if (!f.name.trim()) { toast({ title: '⚠️ أدخل اسم المنتج', variant: 'destructive' }); return; }
         
+        if (f.newCostPrice < 0 || f.salePrice < 0 || f.profitMargin < 0) { toast({ title: 'âڑ ï¸ڈ ط£ط¯ط®ظ„ ط£ط±ظ‚ط§ظ…ط§ظ‹ طµط­ظٹط­ط©', variant: 'destructive' }); return; }
+
         if (editId) {
             // ─ تعديل وحدة واحدة ─
             const u = units[0] || emptyUnit();
             updateMobile(editId, {
                 name: f.name, barcode: u.barcode || f.barcode, deviceType: 'mobile',
                 category: f.category, condition: f.condition, quantity: f.quantity,
-                storage: f.storage, ram: f.ram, color: u.color || f.color, supplier: f.supplier,
-                oldCostPrice: f.oldCostPrice, newCostPrice: f.newCostPrice, salePrice: f.salePrice,
+                storage: f.storage, ram: f.ram, color: u.color || f.color, model: f.model, brand: f.brand, supplier: f.supplier,
+                oldCostPrice: f.oldCostPrice, newCostPrice: f.newCostPrice, salePrice: f.salePrice, profitMargin: f.profitMargin,
                 serialNumber: u.imei1 || f.serialNumber, imei2: u.imei2 || f.imei2,
                 boxNumber: f.boxNumber, source: f.source, taxExcluded: f.taxExcluded,
                 notes: '', description: f.description, image: f.image, warehouseId: f.warehouseId,
@@ -401,9 +680,9 @@ export default function MobilesInventory() {
                 addMobile({
                     name: f.name, barcode: u.barcode || `MOB-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
                     deviceType: 'mobile', category: f.category, condition: f.condition,
-                    quantity: 1, storage: f.storage, ram: f.ram, color: u.color || f.color,
-                    supplier: f.supplier, oldCostPrice: f.oldCostPrice, newCostPrice: f.newCostPrice,
-                    salePrice: f.salePrice, serialNumber: u.imei1, imei2: u.imei2,
+                    quantity: 1, storage: f.storage, ram: f.ram, color: u.color || f.color, model: f.model,
+                    brand: f.brand, supplier: f.supplier, oldCostPrice: f.oldCostPrice, newCostPrice: f.newCostPrice,
+                    salePrice: f.salePrice, profitMargin: f.profitMargin, serialNumber: u.imei1, imei2: u.imei2,
                     boxNumber: f.boxNumber, source: f.source, taxExcluded: f.taxExcluded,
                     notes: '', description: f.description, image: f.image, warehouseId: f.warehouseId || warehouses.find(w => w.isDefault)?.id || '',
                 });
@@ -415,26 +694,38 @@ export default function MobilesInventory() {
         refreshData();
     };
 
-    const openAdd = () => { setEditId(null); setF(emptyForm); setCustomSupplier(false); setCustomStorage(false); setCustomRam(false); setShowForm(true); };
+    const openAdd = () => {
+        setEditId(null);
+        setSelectedDetails(null);
+        setF(emptyForm);
+        setPricingMode('sale');
+        setCustomStorage(false);
+        setCustomRam(false);
+        setUnits([emptyUnit()]);
+        setShowForm(true);
+    };
     const openEdit = (item: InventoryViewItem) => {
         setEditId(item.id);
         setF({
             name: item.name, barcode: item.barcode || '', category: item.category,
             condition: item.condition, quantity: item.quantity,
-            oldCostPrice: item.oldCostPrice, newCostPrice: item.newCostPrice, salePrice: item.salePrice,
+            oldCostPrice: item.oldCostPrice, newCostPrice: item.newCostPrice, salePrice: item.salePrice, profitMargin: item.profitMargin,
             storage: item.storage || '', ram: item.ram || '', color: item.color || '',
-            supplier: item.supplier || '', serialNumber: item.serialNumber || '',
+            brand: item.brand || '', supplier: item.supplier || '', serialNumber: item.serialNumber || '',
             imei2: item._raw?.imei2 || '', model: item.model || '', description: item.description || '', image: item.image || '',
-            boxNumber: item._raw?.boxNumber || '', source: item._raw?.source || '', taxExcluded: item._raw?.taxExcluded || false,
+            boxNumber: item._raw?.boxNumber || '', source: item.source || '', taxExcluded: item._raw?.taxExcluded || false,
             notes: '', subcategory: '', warehouseId: item.warehouseId || '',
         });
         setUnits([{ imei1: item.serialNumber || '', imei2: item._raw?.imei2 || '', color: item.color || '', barcode: item.barcode || '' }]);
-        setCustomSupplier(!!item.supplier && !BRAND_OPTIONS.includes(item.supplier));
+        setPricingMode('sale');
         setCustomStorage(!!item.storage && !STORAGE_OPTIONS.includes(item.storage));
         setCustomRam(!!item.ram && !RAM_OPTIONS.includes(item.ram));
         setShowForm(true);
     };
-    const closeForm = () => setShowForm(false);
+    const closeForm = () => {
+        setShowForm(false);
+        setPricingMode('sale');
+    };
 
     const handleDelete = async (item: InventoryViewItem) => {
         const ok = await confirm({
@@ -562,10 +853,20 @@ export default function MobilesInventory() {
             </div>
 
             {/* ═══ MAIN LAYOUT: Side Panel + Content ═══ */}
+            {showFilters && (
+                <div className="mb-4">
+                    <FilterBar
+                        fields={filterFields}
+                        onReset={resetFilters}
+                        activeCount={activeFiltersCount}
+                    />
+                </div>
+            )}
+
             <div className="flex gap-4">
 
                 {/* ─── Right (RTL): Filter Side Panel ─── */}
-                {showFilters && (
+                {false && showFilters && (
                     <div className="hidden lg:block w-64 shrink-0">
                         <div className="rounded-2xl border border-border bg-card p-3.5 space-y-3.5 sticky top-4">
                             {/* Panel Header */}
@@ -594,14 +895,36 @@ export default function MobilesInventory() {
 
                             <div className="border-t border-border/50" />
 
-                            {/* Supplier / Brand */}
+                            {/* Brand */}
                             <div>
                                 <label className="flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground mb-1">
-                                    <Package className="h-3 w-3 text-primary" /> الشركة / المورد
+                                    <Smartphone className="h-3 w-3 text-primary" /> الشركة (البراند)
+                                </label>
+                                <select value={filterBrand} onChange={e => setFilterBrand(e.target.value)} className={`${IC} text-xs`}>
+                                    <option value="all">عرض الكل</option>
+                                    {uniqueBrands.map(s => <option key={s} value={s}>{s}</option>)}
+                                </select>
+                            </div>
+
+                            {/* Supplier */}
+                            <div>
+                                <label className="flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground mb-1">
+                                    <Package className="h-3 w-3 text-primary" /> المورد
                                 </label>
                                 <select value={filterSupplier} onChange={e => setFilterSupplier(e.target.value)} className={`${IC} text-xs`}>
                                     <option value="all">عرض الكل</option>
                                     {uniqueSuppliers.map(s => <option key={s} value={s}>{s}</option>)}
+                                </select>
+                            </div>
+
+                            {/* Source */}
+                            <div>
+                                <label className="flex items-center gap-1.5 text-[11px] font-bold text-muted-foreground mb-1">
+                                    📍 المصدر
+                                </label>
+                                <select value={filterSource} onChange={e => setFilterSource(e.target.value)} className={`${IC} text-xs`}>
+                                    <option value="all">عرض الكل</option>
+                                    {uniqueSources.map(s => <option key={s} value={s}>{s}</option>)}
                                 </select>
                             </div>
 
@@ -693,7 +1016,7 @@ export default function MobilesInventory() {
                     <div className="relative max-w-md">
                         <Search className="absolute right-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60 pointer-events-none" />
                         <input value={search} onChange={e => setSearch(e.target.value)}
-                            placeholder="بحث بالاسم أو السيريال أو اللون..."
+                            placeholder="ابحث باسم المنتج"
                             className={`${IC} pr-10`} />
                     </div>
 
@@ -705,8 +1028,9 @@ export default function MobilesInventory() {
                                     <Smartphone className="h-14 w-14 mx-auto mb-4 opacity-15" />
                                     <p className="text-base font-medium">لا توجد منتجات مطابقة</p>
                                 </div>
-                            ) : filteredList.map(item => (
+                            ) : paginatedItems.map(item => (
                                 <InventoryProductCard key={item.id} item={item}
+                                    onDetails={() => openDetails(item)}
                                     onEdit={() => openEdit(item)}
                                     onDelete={() => handleDelete(item)}
                                 />
@@ -733,13 +1057,15 @@ export default function MobilesInventory() {
                                     <tbody>
                                         {filteredList.length === 0 ? (
                                             <tr><td colSpan={11} className="py-14 text-center text-muted-foreground">لا توجد منتجات</td></tr>
-                                        ) : filteredList.map((item, i) => {
-                                            const avgCost = getWeightedAvgCost(item.id) || item.newCostPrice;
+                                        ) : paginatedItems.map((item, i) => {
+                                            const avgCost = normalizeCostPrice(getWeightedAvgCost(item.id), item.newCostPrice);
+                                            const profit = typeof item.profitMargin === 'number' ? item.profitMargin : calculateProfitAmount(avgCost, item.salePrice);
+                                            const margin = calculateMarginPercent(avgCost, item.salePrice);
                                             const details = item._type === 'device'
                                                 ? [item.storage, item.ram, item.color].filter(Boolean).join(' · ')
                                                 : [item.model, item.color].filter(Boolean).join(' · ');
                                             return (
-                                                <tr key={item.id} className={`border-b border-border/40 hover:bg-muted/20 transition-colors ${i % 2 !== 0 ? 'bg-muted/10' : ''}`}>
+                                                <tr key={item.id} onClick={() => openDetails(item)} className={`border-b border-border/40 cursor-pointer transition-colors hover:bg-muted/20 ${i % 2 !== 0 ? 'bg-muted/10' : ''}`}>
                                                     <td className="px-3 py-2"><input type="checkbox" className="rounded" /></td>
                                                     <td className="px-3 py-2">
                                                         <div className="flex items-center gap-2">
@@ -753,8 +1079,8 @@ export default function MobilesInventory() {
                                                     <td className="px-3 py-2 text-[11px] text-muted-foreground">{details || '—'}</td>
                                                     <td className="px-3 py-2 text-xs font-semibold text-primary">{item.category || '—'}</td>
                                                     <td className="px-3 py-2">
-                                                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${item.condition === 'used' || item.condition === 'broken' ? 'bg-orange-100 dark:bg-orange-500/15 text-orange-700 dark:text-orange-400' : 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'}`}>
-                                                            {item.condition === 'new' ? 'جديد' : item.condition === 'like_new' ? 'مثل الجديد' : item.condition === 'broken' ? 'معطل' : 'مستعمل'}
+                                                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${getProductConditionBadgeClass(item.condition)}`}>
+                                                            {getProductConditionLabel(item.condition)}
                                                         </span>
                                                     </td>
                                                     <td className="px-3 py-2 text-[10px] text-muted-foreground font-mono">
@@ -764,13 +1090,18 @@ export default function MobilesInventory() {
                                                     <td className="px-3 py-2 text-center">
                                                         <span className={`rounded-full px-2.5 py-0.5 text-xs font-bold ${item.quantity === 0 ? 'bg-red-100 dark:bg-red-500/15 text-red-600 dark:text-red-400' : 'bg-muted text-foreground'}`}>{item.quantity}</span>
                                                     </td>
-                                                    <td className="px-3 py-2 text-sm font-bold text-foreground tabular-nums">{item.salePrice.toLocaleString()}</td>
-                                                    <td className="px-3 py-2 text-xs font-bold text-emerald-600 tabular-nums">{(item.salePrice - avgCost).toLocaleString()}</td>
+                                                    <td className="px-3 py-2 text-sm font-bold text-foreground tabular-nums">{item.salePrice.toLocaleString('ar-EG')}</td>
+                                                    <td className="px-3 py-2 text-xs font-bold tabular-nums">
+                                                        <span className={getMarginTone(margin)}>
+                                                            {profit.toLocaleString('ar-EG')} ج.م • {margin.toFixed(1)}%
+                                                        </span>
+                                                    </td>
                                                     <td className="px-3 py-2 text-left">
                                                         <div className="flex justify-end gap-1">
-                                                            <button onClick={() => setActiveBatchesModal({ id: item.id, name: item.name })} className="rounded-lg p-1.5 hover:bg-cyan-50 dark:hover:bg-cyan-500/10 text-cyan-600 transition-colors" title="عرض الدفعات"><List className="h-3.5 w-3.5" /></button>
-                                                            <button onClick={() => openEdit(item)} className="rounded-lg p-1.5 hover:bg-primary/10 text-primary transition-colors" title="تعديل"><Pencil className="h-3.5 w-3.5" /></button>
-                                                            <button onClick={() => handleDelete(item)} className="rounded-lg p-1.5 hover:bg-red-50 dark:hover:bg-red-500/10 text-destructive transition-colors" title="حذف"><Trash2 className="h-3.5 w-3.5" /></button>
+                                                            <button onClick={(event) => { event.stopPropagation(); openDetails(item); }} className="rounded-lg p-1.5 hover:bg-cyan-50 dark:hover:bg-cyan-500/10 text-cyan-600 transition-colors" title="تفاصيل"><Info className="h-3.5 w-3.5" /></button>
+                                                            <button onClick={(event) => { event.stopPropagation(); setActiveBatchesModal({ id: item.id, name: item.name }); }} className="rounded-lg p-1.5 hover:bg-cyan-50 dark:hover:bg-cyan-500/10 text-cyan-600 transition-colors" title="عرض الدفعات"><List className="h-3.5 w-3.5" /></button>
+                                                            <button onClick={(event) => { event.stopPropagation(); openEdit(item); }} className="rounded-lg p-1.5 hover:bg-primary/10 text-primary transition-colors" title="تعديل"><Pencil className="h-3.5 w-3.5" /></button>
+                                                            <button onClick={(event) => { event.stopPropagation(); handleDelete(item); }} className="rounded-lg p-1.5 hover:bg-red-50 dark:hover:bg-red-500/10 text-destructive transition-colors" title="حذف"><Trash2 className="h-3.5 w-3.5" /></button>
                                                         </div>
                                                     </td>
                                                 </tr>
@@ -781,6 +1112,16 @@ export default function MobilesInventory() {
                             </div>
                         </div>
                     )}
+
+                    <PaginationBar
+                        page={page}
+                        totalPages={totalPages}
+                        totalItems={totalItems}
+                        pageSize={pageSize}
+                        onPrev={prevPage}
+                        onNext={nextPage}
+                        onPage={setPage}
+                    />
 
                 </div>{/* end main content */}
 
@@ -812,8 +1153,8 @@ export default function MobilesInventory() {
                                 </div>
                                 <div className="col-span-2 sm:col-span-1">
                                     <div className="flex flex-wrap gap-2 h-auto text-center mt-1">
-                                                        {[{v: 'new', l: 'جديد'}, {v: 'like_new', l: 'مثل الجديد'}, {v: 'used', l: 'مستعمل'}, {v: 'broken', l: 'معطل'}].map(cond => (
-                                                            <button key={cond.v} type="button" onClick={() => setF(p => ({ ...p, condition: cond.v as typeof p.condition }))} className={`flex-1 py-1.5 rounded-xl border text-[13px] font-semibold transition-all ${f.condition === cond.v ? 'bg-primary/10 border-primary text-primary' : 'bg-transparent border-input text-muted-foreground'}`}>{cond.l}</button>
+                                                        {PRODUCT_CONDITION_OPTIONS.map((cond) => (
+                                                            <button key={cond.value} type="button" onClick={() => setF(p => ({ ...p, condition: cond.value }))} className={`flex-1 py-1.5 rounded-xl border text-[13px] font-semibold transition-all ${f.condition === cond.value ? 'bg-primary/10 border-primary text-primary' : 'bg-transparent border-input text-muted-foreground'}`}>{cond.label}</button>
                                                         ))}
                                     </div>
                                 </div>
@@ -866,22 +1207,34 @@ export default function MobilesInventory() {
                                         </div>
                                         {/* اللون */}
                                         <div><label className="mb-1 block text-xs text-muted-foreground">اللون</label><input data-validation="text-only" value={f.color} onChange={e => setF(p => ({ ...p, color: e.target.value }))} className={IC} /></div>
-                                        {/* الشركة */}
+                                        <div><label className="mb-1 block text-xs text-muted-foreground">الموديل</label><input value={f.model} onChange={e => setF(p => ({ ...p, model: e.target.value }))} className={IC} /></div>
+                                        {/* الشركة (البراند) — يدوي + datalist */}
                                         <div>
-                                            <label className="mb-1 block text-xs text-muted-foreground">الشركة</label>
-                                            <select value={customSupplier ? '__other__' : f.supplier} onChange={e => { const v = e.target.value; if (v === '__other__') { setCustomSupplier(true); setF(p => ({ ...p, supplier: '' })); } else { setCustomSupplier(false); setF(p => ({ ...p, supplier: v })); } }} className={IC}>
-                                                <option value="">-- اختر --</option>
-                                                {BRAND_OPTIONS.map(b => <option key={b} value={b}>{b}</option>)}
-                                                <option value="__other__">أخرى...</option>
-                                            </select>
-                                            {customSupplier && (
-                                                <input value={f.supplier} onChange={e => setF(p => ({ ...p, supplier: e.target.value }))} placeholder="اسم الشركة..." className={`${IC} mt-1.5`} autoFocus />
-                                            )}
+                                            <label className="mb-1 block text-xs text-muted-foreground">الشركة (البراند)</label>
+                                            <input value={f.brand} onChange={e => setF(p => ({ ...p, brand: e.target.value }))} list="brand-list" placeholder="اكتب أو اختر..." className={IC} />
+                                            <datalist id="brand-list">
+                                                {BRAND_OPTIONS.map(b => <option key={b} value={b} />)}
+                                                {uniqueBrands.filter(b => !BRAND_OPTIONS.includes(b)).map(b => <option key={b} value={b} />)}
+                                            </datalist>
+                                        </div>
+                                        {/* المورد */}
+                                        <div>
+                                            <label className="mb-1 block text-xs text-muted-foreground">المورد</label>
+                                            <input value={f.supplier} onChange={e => setF(p => ({ ...p, supplier: e.target.value }))} list="supplier-list" placeholder="اسم المورد..." className={IC} />
+                                            <datalist id="supplier-list">
+                                                {uniqueSuppliers.map(s => <option key={s} value={s} />)}
+                                            </datalist>
                                         </div>
                                         {/* رقم الكرتونة */}
                                         <div><label className="mb-1 block text-xs text-muted-foreground">رقم الكرتونة</label><input value={f.boxNumber} onChange={e => setF(p => ({ ...p, boxNumber: e.target.value }))} className={IC} /></div>
                                         {/* المصدر */}
-                                        <div><label className="mb-1 block text-xs text-muted-foreground">المصدر</label><input value={f.source} onChange={e => setF(p => ({ ...p, source: e.target.value }))} className={IC} /></div>
+                                        <div>
+                                            <label className="mb-1 block text-xs text-muted-foreground">المصدر</label>
+                                            <input value={f.source} onChange={e => setF(p => ({ ...p, source: e.target.value }))} list="source-list" placeholder="اكتب أو اختر..." className={IC} />
+                                            <datalist id="source-list">
+                                                {uniqueSources.map(s => <option key={s} value={s} />)}
+                                            </datalist>
+                                        </div>
                                         {/* الضريبة */}
                                         <div className="col-span-1 flex items-end pb-3">
                                             <label className="flex items-center gap-2 text-xs font-semibold cursor-pointer">
@@ -943,10 +1296,29 @@ export default function MobilesInventory() {
 
                             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                                 <div><label className="mb-1 block text-xs font-bold text-muted-foreground uppercase">الكمية</label><input type="number" min={0} value={f.quantity} onChange={e => setF(p => ({ ...p, quantity: +e.target.value }))} className={IC} /></div>
-                                <div><label className="mb-1 block text-xs font-bold text-muted-foreground uppercase">س. شراء قديم</label><input type="number" min={0} value={f.oldCostPrice} onChange={e => setF(p => ({ ...p, oldCostPrice: +e.target.value }))} className={IC} /></div>
-                                <div><label className="mb-1 block text-xs font-bold text-muted-foreground uppercase">التكلفة الفعلية</label><input type="number" min={0} value={f.newCostPrice} onChange={e => setF(p => ({ ...p, newCostPrice: +e.target.value }))} className={IC} /></div>
-                                <div><label className="mb-1 block text-xs font-bold text-primary uppercase">سعر البيع</label><input type="number" min={0} value={f.salePrice} onChange={e => setF(p => ({ ...p, salePrice: +e.target.value }))} className={`${IC} border-primary/40 focus:ring-primary`} /></div>
+                                <div><label className="mb-1 block text-xs font-bold text-muted-foreground uppercase">سعر الشراء</label><input type="number" min={0} value={f.newCostPrice} onChange={e => setCostPriceValue(+e.target.value)} className={IC} /></div>
+                                <div><label className="mb-1 block text-xs font-bold text-primary uppercase">سعر البيع</label><input type="number" min={0} value={f.salePrice} onChange={e => setSalePriceValue(+e.target.value)} className={`${IC} border-primary/40 focus:ring-primary`} /></div>
+                                <div><label className="mb-1 block text-xs font-bold text-muted-foreground uppercase">هامش الربح</label><input type="number" min={0} value={f.profitMargin} onChange={e => setProfitMarginValue(+e.target.value)} className={IC} /></div>
                             </div>
+                            {/* هامش الربح المحسوب */}
+                            {(() => {
+                                const cost = f.newCostPrice || 0;
+                                const profit = f.salePrice - cost;
+                                const margin = f.salePrice > 0 ? (profit / f.salePrice) * 100 : 0;
+                                return f.salePrice > 0 ? (
+                                    <div className="col-span-full p-3 rounded-lg bg-muted/50 mt-2 flex justify-between items-center">
+                                        <div className="text-right">
+                                            <span className="block text-sm font-bold text-muted-foreground">هامش الربح</span>
+                                            {margin < 10 && (
+                                                <span className="block text-xs text-amber-600 mt-1">تحذير: الهامش أقل من 10%</span>
+                                            )}
+                                        </div>
+                                        <span className={`text-lg font-black tabular-nums ${margin >= 20 ? 'text-emerald-600 dark:text-emerald-400' : margin >= 10 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-500'}`}>
+                                            {margin.toFixed(1)}%
+                                        </span>
+                                    </div>
+                                ) : null;
+                            })()}
                         </div>
 
                         <div className="flex-none flex gap-2 px-4 py-4 border-t border-border bg-muted/10 rounded-b-2xl">
@@ -962,6 +1334,13 @@ export default function MobilesInventory() {
                     </div>
                 </div>,
                 document.body
+            )}
+
+            {selectedDetails && (
+                <ProductDetailsModal
+                    product={selectedDetails}
+                    onClose={() => setSelectedDetails(null)}
+                />
             )}
 
             {/* Categories Manager Modal */}
@@ -996,9 +1375,9 @@ export default function MobilesInventory() {
                             name: row.name || '', barcode: row.barcode || '', deviceType: row.deviceType || 'mobile',
                             category: row.category || '', condition: row.condition || 'new',
                             quantity: Number(row.quantity) || 0, storage: row.storage || '', ram: row.ram || '',
-                            color: row.color || '', supplier: row.supplier || '',
+                            color: row.color || '', model: row.model || '', supplier: row.supplier || '',
                             oldCostPrice: Number(row.oldCostPrice) || 0, newCostPrice: Number(row.newCostPrice) || 0,
-                            salePrice: Number(row.salePrice) || 0, serialNumber: row.serialNumber || '',
+                            salePrice: Number(row.salePrice) || 0, profitMargin: Number(row.profitMargin) || 0, serialNumber: row.serialNumber || '',
                             boxNumber: row.boxNumber || '', source: row.source || '', taxExcluded: row.taxExcluded === 'true' || row.taxExcluded === true,
                             notes: row.notes || '', description: row.description || '',
                         };

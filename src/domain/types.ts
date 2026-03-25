@@ -200,10 +200,14 @@ export interface MobileItem {
   storage: string;
   ram: string;
   color: string;
+  model?: string;
+  brand?: string;             // اسم الشركة المصنعة (يدوي)
   supplier: string;
-  oldCostPrice: number;
-  newCostPrice: number;
+  oldCostPrice: number;       // @deprecated — use costPrice
+  newCostPrice: number;       // سعر الشراء (التكلفة)
+  costPrice?: number;         // alias for newCostPrice
   salePrice: number;
+  profitMargin?: number;      // هامش الربح = salePrice - costPrice
   serialNumber: string;       // IMEI 1
   imei2?: string;             // IMEI 2 (اختياري)
   notes: string;
@@ -228,13 +232,15 @@ export interface MobileAccessory {
   boxNumber?: string;
   source?: string;
   taxExcluded?: boolean;
+  brand?: string;             // اسم الشركة (يدوي — مستقل عن شركات الموبايل)
   supplier?: string;
-  serialNumber?: string;       // IMEI 1
-  imei2?: string;             // IMEI 2
   color: string;
-  oldCostPrice: number;
+  oldCostPrice: number;       // @deprecated
   newCostPrice: number;
+  costPrice?: number;         // alias for newCostPrice
   salePrice: number;
+  profitMargin?: number;      // هامش الربح = salePrice - costPrice
+  minStock?: number;          // حد التنبيه
   notes: string;
   description: string;
   image?: string;
@@ -257,13 +263,15 @@ export interface MobileSparePart {
   boxNumber?: string;
   source?: string;
   taxExcluded?: boolean;
+  brand?: string;             // الشركة المصنعة
   supplier?: string;
-  serialNumber?: string;       // IMEI 1
-  imei2?: string;             // IMEI 2
   color: string;
-  oldCostPrice: number;
+  oldCostPrice: number;       // @deprecated
   newCostPrice: number;
+  costPrice?: number;         // alias for newCostPrice
   salePrice: number;
+  profitMargin?: number;      // هامش الربح
+  minStock?: number;          // حد التنبيه
   notes: string;
   description: string;
   image?: string;
@@ -284,12 +292,18 @@ export interface DeviceItem {
   model: string;
   barcode?: string;
   category?: string;
-  condition?: 'new' | 'used';
+  condition?: ProductCondition;
   color: string;
+  brand?: string;             // الشركة المصنعة
+  supplier?: string;          // المورد
+  source?: string;            // المصدر
   quantity: number;
-  oldCostPrice: number;
+  oldCostPrice: number;       // @deprecated
   newCostPrice: number;
+  costPrice?: number;
   salePrice: number;
+  profitMargin?: number;
+  minStock?: number;
   notes: string;
   description: string;
   image?: string;
@@ -307,11 +321,18 @@ export interface DeviceAccessory {
   barcode?: string;
   category?: string;
   subcategory: string;
+  condition?: ProductCondition;
   quantity: number;
   color: string;
-  oldCostPrice: number;
+  brand?: string;
+  supplier?: string;
+  source?: string;
+  oldCostPrice: number;       // @deprecated
   newCostPrice: number;
+  costPrice?: number;
   salePrice: number;
+  profitMargin?: number;
+  minStock?: number;
   notes: string;
   description: string;
   image?: string;
@@ -335,13 +356,21 @@ export interface ComputerItem {
   barcode?: string;
   deviceType: ComputerDeviceType; // computer or laptop
   category?: string;
-  condition?: 'new' | 'used';
+  condition?: ProductCondition;
   color: string;
+  brand?: string;             // الشركة المصنعة
+  supplier?: string;          // المورد
+  source?: string;            // المصدر
   quantity: number;
   processor?: string;
-  oldCostPrice: number;
+  ram?: string;               // الرامات
+  storage?: string;           // التخزين
+  oldCostPrice: number;       // @deprecated
   newCostPrice: number;
+  costPrice?: number;
   salePrice: number;
+  profitMargin?: number;      // هامش الربح
+  minStock?: number;
   notes: string;
   description: string;
   image?: string;
@@ -359,11 +388,18 @@ export interface ComputerAccessory {
   barcode?: string;
   category?: string;
   subcategory: string;
+  condition?: ProductCondition;
   quantity: number;
   color: string;
-  oldCostPrice: number;
+  brand?: string;             // الشركة المصنعة
+  supplier?: string;          // المورد
+  source?: string;            // المصدر
+  oldCostPrice: number;       // @deprecated
   newCostPrice: number;
+  costPrice?: number;
   salePrice: number;
+  profitMargin?: number;
+  minStock?: number;
   notes: string;
   description: string;
   image?: string;
@@ -440,15 +476,28 @@ export interface InstallmentPayment {
   amount: number;
   date: string;
   note: string;
+  allocations?: Array<{
+    scheduleItemId: string;
+    amount: number;
+  }>;
 }
 
 export interface InstallmentScheduleItem {
+  id?: string;
   month: number;
   dueDate: string;
   amount: number;
   paidAmount: number; // For tracking partial payments
   penalty: number;    // For adding late fees
   paid: boolean;
+  remainingAfter?: number;
+  note?: string;
+}
+
+export interface InstallmentCustomField {
+  id: string;
+  label: string;
+  value: string;
 }
 
 export interface InstallmentContract {
@@ -465,6 +514,7 @@ export interface InstallmentContract {
   customerPhone: string;
   customerAddress: string;
   productName: string;
+  productId?: string;
   // For transfer contracts: the wallet/operator used (e.g. "فودافون كاش")
   transferType?: string;
   cashPrice: number;
@@ -478,6 +528,7 @@ export interface InstallmentContract {
   paidTotal: number;
   remaining: number;
   notes?: string;
+  customFields?: InstallmentCustomField[];
   status: 'active' | 'completed' | 'overdue';
   settledEarly?: boolean;
   settlementDiscount?: number;

@@ -42,7 +42,7 @@ export function addDevice(item: Omit<DeviceItem, 'id' | 'createdAt' | 'updatedAt
             quantity: newItem.quantity,
             remainingQty: newItem.quantity,
             purchaseDate: newItem.createdAt,
-            supplier: '',
+            supplier: newItem.supplier || '',
             notes: 'رصيد افتتاحي (إضافة جديدة)',
         });
     }
@@ -94,7 +94,7 @@ export function addDeviceAccessory(item: Omit<DeviceAccessory, 'id' | 'createdAt
             quantity: newItem.quantity,
             remainingQty: newItem.quantity,
             purchaseDate: newItem.createdAt,
-            supplier: '',
+            supplier: newItem.supplier || '',
             notes: 'رصيد افتتاحي (إضافة جديدة)',
         });
     }

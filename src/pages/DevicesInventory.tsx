@@ -6,7 +6,7 @@ import { useState, useMemo, useCallback, memo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
-    Tv, Plus, Search, Trash2, Pencil, X, Check, LayoutGrid, List, Tag,
+    Tv, Plus, Trash2, Pencil, X, Check, LayoutGrid, List, Tag,
     FileSpreadsheet, Download, Upload, ShoppingCart, RefreshCw, Filter,
     CheckCircle, Package, AlertCircle, MoreHorizontal, Headphones, Wrench
 } from 'lucide-react';
@@ -28,6 +28,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import { useDebounce } from '@/hooks/useDebounce';
+import { useInventoryData } from '@/hooks/useInventoryData';
 import { ImageUpload } from '@/components/ImageUpload';
 import {
     getDevices, addDevice, updateDevice, deleteDevice,
@@ -40,18 +41,25 @@ import { ProductBatchesModal } from '@/components/ProductBatchesModal';
 import { isBarcodeDuplicate } from '@/repositories/productRepository';
 import { ExcelColumnMappingDialog } from '@/components/ExcelColumnMappingDialog';
 import { StatCard } from '@/components/StatCard';
+import { FilterBar, type FilterBarField } from '@/components/FilterBar';
+import { ProductDetailsModal } from '@/components/ProductDetailsModal';
+import { PRODUCT_CONDITION_OPTIONS, type ProductConditionValue, getProductConditionBadgeClass, getProductConditionLabel } from '@/domain/productConditions';
+import { calculateMarginPercent, calculateProfitAmount, normalizeCostPrice } from '@/domain/pricing';
 
 // Types
 type ViewMode = 'grid' | 'table' | 'compact';
-type ConditionFilter = 'all' | 'new' | 'used';
+type ConditionFilter = 'all' | ProductConditionValue;
 
 interface DeviceFormData {
     name: string;
     model: string;
     barcode: string;
     category: string;
-    condition: 'new' | 'used';
+    condition: ProductConditionValue;
     color: string;
+    brand: string;
+    supplier: string;
+    source: string;
     quantity: number;
     oldCostPrice: number;
     newCostPrice: number;
@@ -64,7 +72,7 @@ interface DeviceFormData {
 
 const emptyForm = (): DeviceFormData => ({
     name: '', model: '', barcode: '', category: '',
-    condition: 'new', color: '', quantity: 1,
+    condition: 'new', color: '', brand: '', supplier: '', source: '', quantity: 1,
     oldCostPrice: 0, newCostPrice: 0, salePrice: 0,
     notes: '', description: '', image: undefined, warehouseId: ''
 });
@@ -80,28 +88,41 @@ const accentStyles = {
 // Optimized Device Card with memo
 const DeviceCard = memo(function DeviceCard({
     item,
+    onDetails,
     onEdit,
     onDelete,
     onAddToCart,
     onShowBatches
 }: {
     item: DeviceItem;
+    onDetails: () => void;
     onEdit: () => void;
     onDelete: () => void;
     onAddToCart: () => void;
     onShowBatches: () => void;
 }) {
-    const avgCost = getWeightedAvgCost(item.id);
-    const profit = item.salePrice - (item.condition === 'used' ? item.oldCostPrice : avgCost);
-    const margin = item.salePrice > 0 ? ((profit / item.salePrice) * 100) : 0;
+    const avgCost = normalizeCostPrice(getWeightedAvgCost(item.id), item.newCostPrice || item.oldCostPrice);
+    const profit = typeof item.profitMargin === 'number' ? item.profitMargin : calculateProfitAmount(avgCost, item.salePrice);
+    const margin = calculateMarginPercent(avgCost, item.salePrice);
 
     return (
-        <div className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 relative">
+        <div
+            className="group flex cursor-pointer flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 relative"
+            role="button"
+            tabIndex={0}
+            onClick={onDetails}
+            onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    onDetails();
+                }
+            }}
+        >
             {/* Top-left badges */}
             <div className="absolute top-2 left-2 z-10 flex flex-col gap-1.5">
-                <Badge variant={item.condition === 'used' ? 'secondary' : 'default'}
-                    className={item.condition === 'used' ? 'bg-orange-100 dark:bg-orange-500/15 text-orange-700 dark:text-orange-400' : 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'}>
-                    {item.condition === 'used' ? 'مستعمل' : 'جديد'}
+                <Badge variant="secondary"
+                    className={getProductConditionBadgeClass(item.condition)}>
+                    {getProductConditionLabel(item.condition)}
                 </Badge>
                 <Badge variant="outline" className="bg-white/80 backdrop-blur text-xs truncate max-w-[80px]">
                     {item.category || 'بدون'}
@@ -139,24 +160,27 @@ const DeviceCard = memo(function DeviceCard({
                             <span className="text-xs font-bold text-muted-foreground mr-1">ج.م</span>
                         </span>
                         <Badge variant="outline" className={`text-xs font-bold border-0 shadow-sm ${margin >= 20 ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10' : margin >= 10 ? 'bg-amber-50 text-amber-600 dark:bg-amber-500/10' : 'bg-red-50 text-red-500 dark:bg-red-500/10'}`}>
-                            الربح {margin.toFixed(1)}%
+                            {profit.toLocaleString('ar-EG')} ج.م • {margin.toFixed(1)}%
                         </Badge>
                     </div>
 
-                    {/* Actions */}
-                    <div className="flex gap-1.5">
-                        <Button size="sm" variant="outline" className="flex-1 h-8" onClick={onAddToCart}>
-                            <ShoppingCart className="h-3 w-3 mr-1" />
-                            إضافة
-                        </Button>
-                        <Button size="sm" variant="ghost" className="h-8 px-2" onClick={onEdit}>
-                            <Pencil className="h-3.5 w-3.5" />
-                        </Button>
-                        <Button size="sm" variant="ghost" className="h-8 px-2 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10"
-                            onClick={onDelete}>
-                            <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
-                    </div>
+                        {/* Actions */}
+                        <div className="flex gap-1.5">
+                            <Button size="sm" variant="outline" className="flex-1 h-8" onClick={(event) => { event.stopPropagation(); onAddToCart(); }}>
+                                <ShoppingCart className="h-3 w-3 mr-1" />
+                                إضافة
+                            </Button>
+                            <Button size="sm" variant="ghost" className="h-8 px-2" onClick={(event) => { event.stopPropagation(); onDetails(); }} aria-label="تفاصيل الجهاز">
+                                <AlertCircle className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button size="sm" variant="ghost" className="h-8 px-2" onClick={(event) => { event.stopPropagation(); onEdit(); }}>
+                                <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                            <Button size="sm" variant="ghost" className="h-8 px-2 text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-500/10"
+                                onClick={(event) => { event.stopPropagation(); onDelete(); }}>
+                                <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                        </div>
                 </div>
             </div>
         </div>
@@ -269,7 +293,7 @@ export default function DevicesInventory() {
     const navigate = useNavigate();
 
     // Data
-    const devices = getDevices();
+    const devices = useInventoryData(getDevices, ['gx_devices_v2']);
     const [categories, setCategories] = useState<string[]>(() => loadCats('devices_cats', ['شاشات', 'ريسيفرات', 'راوترات']));
     const [showCatManager, setShowCatManager] = useState(false);
     const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
@@ -289,12 +313,18 @@ export default function DevicesInventory() {
     const [search, setSearch] = useState('');
     const [conditionFilter, setConditionFilter] = useState<ConditionFilter>('all');
     const [categoryFilter, setCategoryFilter] = useState<string>('all');
+    const [brandFilter, setBrandFilter] = useState<string>('all');
+    const [supplierFilter, setSupplierFilter] = useState<string>('all');
+    const [sourceFilter, setSourceFilter] = useState<string>('all');
+    const [colorFilter, setColorFilter] = useState<string>('all');
+    const [modelFilter, setModelFilter] = useState('');
     const [viewMode, setViewMode] = useState<ViewMode>('grid');
     // Dialogs
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
     const [isExcelOpen, setIsExcelOpen] = useState(false);
     const [isBatchesOpen, setIsBatchesOpen] = useState(false);
+    const [detailsDevice, setDetailsDevice] = useState<DeviceItem | null>(null);
 
     // Form
     const [form, setForm] = useState<DeviceFormData>(emptyForm());
@@ -304,27 +334,115 @@ export default function DevicesInventory() {
     // Debounce
     const debouncedSearch = useDebounce(search, 300);
 
+    const uniqueBrands = useMemo(() => Array.from(new Set(devices.map((device) => device.brand).filter(Boolean))).sort(), [devices]);
+    const uniqueSuppliers = useMemo(() => Array.from(new Set(devices.map((device) => device.supplier).filter(Boolean))).sort(), [devices]);
+    const uniqueSources = useMemo(() => Array.from(new Set(devices.map((device) => device.source).filter(Boolean))).sort(), [devices]);
+    const uniqueColors = useMemo(() => Array.from(new Set(devices.map((device) => device.color).filter(Boolean))).sort(), [devices]);
+
+    const filterFields = useMemo<FilterBarField[]>(() => [
+        {
+            id: 'name',
+            label: 'اسم المنتج',
+            type: 'text',
+            value: search,
+            placeholder: 'ابحث باسم الجهاز',
+            onChange: setSearch,
+        },
+        {
+            id: 'source',
+            label: 'المصدر',
+            type: 'select',
+            value: sourceFilter,
+            options: [{ label: 'كل المصادر', value: 'all' }, ...uniqueSources.map((value) => ({ label: value, value }))],
+            onChange: setSourceFilter,
+        },
+        {
+            id: 'supplier',
+            label: 'المورد',
+            type: 'select',
+            value: supplierFilter,
+            options: [{ label: 'كل الموردين', value: 'all' }, ...uniqueSuppliers.map((value) => ({ label: value, value }))],
+            onChange: setSupplierFilter,
+        },
+        {
+            id: 'brand',
+            label: 'اسم الشركة',
+            type: 'select',
+            value: brandFilter,
+            options: [{ label: 'كل الشركات', value: 'all' }, ...uniqueBrands.map((value) => ({ label: value, value }))],
+            onChange: setBrandFilter,
+        },
+        {
+            id: 'category',
+            label: 'التصنيف',
+            type: 'select',
+            value: categoryFilter,
+            options: [{ label: 'كل التصنيفات', value: 'all' }, ...categories.map((value) => ({ label: value, value }))],
+            onChange: setCategoryFilter,
+        },
+        {
+            id: 'color',
+            label: 'اللون',
+            type: 'select',
+            value: colorFilter,
+            options: [{ label: 'كل الألوان', value: 'all' }, ...uniqueColors.map((value) => ({ label: value, value }))],
+            onChange: setColorFilter,
+        },
+        {
+            id: 'model',
+            label: 'الموديل',
+            type: 'text',
+            value: modelFilter,
+            placeholder: 'ابحث بالموديل',
+            onChange: setModelFilter,
+        },
+        {
+            id: 'condition',
+            label: 'الحالة',
+            type: 'select',
+            value: conditionFilter,
+            options: [
+                { label: 'كل الحالات', value: 'all' },
+                ...PRODUCT_CONDITION_OPTIONS.map((option) => ({ label: option.label, value: option.value })),
+            ],
+            onChange: (value) => setConditionFilter(value as ConditionFilter),
+        },
+    ], [
+        search,
+        sourceFilter,
+        uniqueSources,
+        supplierFilter,
+        uniqueSuppliers,
+        brandFilter,
+        uniqueBrands,
+        categoryFilter,
+        categories,
+        colorFilter,
+        uniqueColors,
+        modelFilter,
+        conditionFilter,
+    ]);
+
     // Computed values
     const filteredDevices = useMemo(() => {
         return devices.filter(d => {
-            const matchesSearch = !debouncedSearch ||
-                d.name.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-                d.model?.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
-                d.barcode?.includes(debouncedSearch);
-
-            const matchesCondition = conditionFilter === 'all' ||
-                (conditionFilter === 'used' ? d.condition === 'used' : d.condition === 'new');
-
+            const matchesSearch = !debouncedSearch || d.name.toLowerCase().includes(debouncedSearch.toLowerCase());
+            const matchesCondition = conditionFilter === 'all' || (d.condition || 'new') === conditionFilter;
             const matchesCategory = categoryFilter === 'all' || d.category === categoryFilter;
+            const matchesBrand = brandFilter === 'all' || d.brand === brandFilter;
+            const matchesSupplier = supplierFilter === 'all' || d.supplier === supplierFilter;
+            const matchesSource = sourceFilter === 'all' || d.source === sourceFilter;
+            const matchesColor = colorFilter === 'all' || d.color === colorFilter;
+            const matchesModel = !modelFilter.trim() || (d.model || '').toLowerCase().includes(modelFilter.trim().toLowerCase());
 
-            return matchesSearch && matchesCondition && matchesCategory;
+            return matchesSearch && matchesCondition && matchesCategory && matchesBrand && matchesSupplier && matchesSource && matchesColor && matchesModel;
         });
-    }, [devices, debouncedSearch, conditionFilter, categoryFilter]);
+    }, [devices, debouncedSearch, conditionFilter, categoryFilter, brandFilter, supplierFilter, sourceFilter, colorFilter, modelFilter]);
 
     const stats = useMemo(() => ({
         total: devices.length,
         available: devices.filter(d => d.quantity > 0).length,
-        used: devices.filter(d => d.condition === 'used').length,
+        used: devices.filter(d => d.condition === 'used' || d.condition === 'like_new').length,
     }), [devices]);
 
     // Handlers
@@ -338,6 +456,9 @@ export default function DevicesInventory() {
                 category: item.category,
                 condition: item.condition || 'new',
                 color: item.color || '',
+                brand: item.brand || '',
+                supplier: item.supplier || '',
+                source: item.source || '',
                 quantity: item.quantity,
                 oldCostPrice: item.oldCostPrice || 0,
                 newCostPrice: item.newCostPrice || 0,
@@ -368,6 +489,8 @@ export default function DevicesInventory() {
             return;
         }
 
+        const purchaseCost = normalizeCostPrice(form.newCostPrice, form.oldCostPrice);
+
         const payload = {
             name: form.name,
             model: form.model,
@@ -375,10 +498,14 @@ export default function DevicesInventory() {
             category: form.category,
             condition: form.condition,
             color: form.color,
+            brand: form.brand.trim(),
+            supplier: form.supplier.trim(),
+            source: form.source.trim(),
             quantity: form.quantity,
-            oldCostPrice: form.condition === 'used' ? form.oldCostPrice : 0,
-            newCostPrice: form.condition === 'used' ? 0 : form.newCostPrice,
+            oldCostPrice: purchaseCost,
+            newCostPrice: purchaseCost,
             salePrice: form.salePrice,
+            profitMargin: calculateProfitAmount(purchaseCost, form.salePrice),
             notes: form.notes,
             description: form.description,
             image: form.image,
@@ -394,8 +521,7 @@ export default function DevicesInventory() {
         }
 
         setIsFormOpen(false);
-        window.location.reload();
-    }, [form, editingId, toast]);
+    }, [form, editingId, toast, warehouses]);
 
     const handleDelete = useCallback(() => {
         if (selectedProduct) {
@@ -403,7 +529,6 @@ export default function DevicesInventory() {
             toast({ title: '✅ تم الحذف', description: 'تم حذف الجهاز بنجاح' });
             setIsDeleteOpen(false);
             setSelectedProduct(null);
-            window.location.reload();
         }
     }, [selectedProduct, toast]);
 
@@ -419,10 +544,9 @@ export default function DevicesInventory() {
 
     // Profit calculation for form
     const profitMargin = useMemo(() => {
-        const cost = form.condition === 'used' ? form.oldCostPrice : form.newCostPrice;
-        if (form.salePrice <= 0) return 0;
-        return ((form.salePrice - cost) / form.salePrice) * 100;
-    }, [form.salePrice, form.newCostPrice, form.oldCostPrice, form.condition]);
+        const cost = normalizeCostPrice(form.newCostPrice, form.oldCostPrice);
+        return calculateMarginPercent(cost, form.salePrice);
+    }, [form.salePrice, form.newCostPrice, form.oldCostPrice]);
 
     return (
         <div className="min-h-screen bg-background" dir="rtl">
@@ -500,65 +624,50 @@ export default function DevicesInventory() {
                     />
                 </div>
 
-                {/* Tabs & Filters */}
-                <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-end">                    <div className="flex flex-wrap gap-2 items-center">
-                        {/* Search */}
-                        <div className="relative">
-                            <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                            <Input
-                                placeholder="بحث..."
-                                value={search}
-                                onChange={(e) => setSearch(e.target.value)}
-                                className="w-48 pr-9"
-                            />
-                        </div>
-
-                        {/* Condition Filter */}
-                        <Select value={conditionFilter} onValueChange={(v) => setConditionFilter(v as ConditionFilter)}>
-                            <SelectTrigger className="w-32">
-                                <SelectValue placeholder="الحالة" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">الكل</SelectItem>
-                                <SelectItem value="new">جديد</SelectItem>
-                                <SelectItem value="used">مستعمل</SelectItem>
-                            </SelectContent>
-                        </Select>
-
-                        {/* Category Filter */}
-                        <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-                            <SelectTrigger className="w-40">
-                                <SelectValue placeholder="الفئة" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="all">كل الفئات</SelectItem>
-                                {categories.map((cat, i) => (
-                                    <SelectItem key={i} value={cat}>{cat}</SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-
-                        {/* View Mode Toggle */}
-                        <div className="flex border border-border rounded-lg p-1">
-                            <Button
-                                variant={viewMode === 'grid' ? 'default' : 'ghost'}
-                                size="sm"
-                                className="h-8 px-2"
-                                onClick={() => setViewMode('grid')}
-                            >
-                                <LayoutGrid className="h-4 w-4" />
-                            </Button>
-                            <Button
-                                variant={viewMode === 'table' ? 'default' : 'ghost'}
-                                size="sm"
-                                className="h-8 px-2"
-                                onClick={() => setViewMode('table')}
-                            >
-                                <List className="h-4 w-4" />
-                            </Button>
-                        </div>
+                <div className="flex justify-end">
+                    <div className="flex border border-border rounded-lg p-1">
+                        <Button
+                            variant={viewMode === 'grid' ? 'default' : 'ghost'}
+                            size="sm"
+                            className="h-8 px-2"
+                            onClick={() => setViewMode('grid')}
+                        >
+                            <LayoutGrid className="h-4 w-4" />
+                        </Button>
+                        <Button
+                            variant={viewMode === 'table' ? 'default' : 'ghost'}
+                            size="sm"
+                            className="h-8 px-2"
+                            onClick={() => setViewMode('table')}
+                        >
+                            <List className="h-4 w-4" />
+                        </Button>
                     </div>
                 </div>
+
+                <FilterBar
+                    fields={filterFields}
+                    onReset={() => {
+                        setSearch('');
+                        setSourceFilter('all');
+                        setSupplierFilter('all');
+                        setBrandFilter('all');
+                        setCategoryFilter('all');
+                        setColorFilter('all');
+                        setModelFilter('');
+                        setConditionFilter('all');
+                    }}
+                    activeCount={[
+                        search.trim(),
+                        sourceFilter !== 'all',
+                        supplierFilter !== 'all',
+                        brandFilter !== 'all',
+                        categoryFilter !== 'all',
+                        colorFilter !== 'all',
+                        modelFilter.trim(),
+                        conditionFilter !== 'all',
+                    ].filter(Boolean).length}
+                />
 
                 {/* Results count */}
                 <div className="text-sm text-muted-foreground">
@@ -578,6 +687,7 @@ export default function DevicesInventory() {
                                     <DeviceCard
                                         key={device.id}
                                         item={device}
+                                        onDetails={() => setDetailsDevice(device)}
                                         onEdit={() => handleOpenForm(device)}
                                         onDelete={() => { setSelectedProduct(device); setIsDeleteOpen(true); }}
                                         onAddToCart={() => handleAddToCart(device)}
@@ -603,18 +713,18 @@ export default function DevicesInventory() {
                                     </TableHeader>
                                     <TableBody>
                                         {filteredDevices.map(device => {
-                                            const cost = device.condition === 'used' ? device.oldCostPrice : getWeightedAvgCost(device.id);
-                                            const profit = device.salePrice - cost;
-                                            const margin = device.salePrice > 0 ? (profit / device.salePrice) * 100 : 0;
+                                            const cost = normalizeCostPrice(getWeightedAvgCost(device.id), device.newCostPrice || device.oldCostPrice);
+                                            const profit = typeof device.profitMargin === 'number' ? device.profitMargin : calculateProfitAmount(cost, device.salePrice);
+                                            const margin = calculateMarginPercent(cost, device.salePrice);
                                             return (
-                                                <TableRow key={device.id} className="hover:bg-muted/30">
+                                                <TableRow key={device.id} className="hover:bg-muted/30 cursor-pointer" onClick={() => setDetailsDevice(device)}>
                                                     <TableCell className="font-medium">{device.name}</TableCell>
                                                     <TableCell>{device.model}</TableCell>
                                                     <TableCell>{device.category}</TableCell>
                                                     <TableCell>
-                                                        <Badge variant={device.condition === 'used' ? 'secondary' : 'default'}
-                                                            className={device.condition === 'used' ? 'bg-orange-100 dark:bg-orange-500/15 text-orange-700 dark:text-orange-400' : 'bg-emerald-100 dark:bg-emerald-500/15 text-emerald-700 dark:text-emerald-400'}>
-                                                            {device.condition === 'used' ? 'مستعمل' : 'جديد'}
+                                                        <Badge variant="secondary"
+                                                            className={getProductConditionBadgeClass(device.condition)}>
+                                                            {getProductConditionLabel(device.condition)}
                                                         </Badge>
                                                     </TableCell>
                                                     <TableCell>
@@ -626,17 +736,20 @@ export default function DevicesInventory() {
                                                     <TableCell className="font-bold">{device.salePrice.toLocaleString('ar-EG')}</TableCell>
                                                     <TableCell>
                                                         <span className={margin >= 20 ? 'text-emerald-600' : margin >= 10 ? 'text-amber-600' : 'text-red-500'}>
-                                                            {margin.toFixed(1)}%
+                                                            {profit.toLocaleString('ar-EG')} ج.م • {margin.toFixed(1)}%
                                                         </span>
                                                     </TableCell>
                                                     <TableCell>
                                                         <div className="flex gap-1 justify-center">
-                                                            <Button size="sm" variant="ghost" onClick={() => handleOpenForm(device)}>
+                                                            <Button size="sm" variant="ghost" onClick={(event) => { event.stopPropagation(); setDetailsDevice(device); }} aria-label="تفاصيل الجهاز">
+                                                                <AlertCircle className="h-3.5 w-3.5" />
+                                                            </Button>
+                                                            <Button size="sm" variant="ghost" onClick={(event) => { event.stopPropagation(); handleOpenForm(device); }}>
                                                                 <Pencil className="h-3.5 w-3.5" />
                                                             </Button>
                                                             <Button size="sm" variant="ghost"
                                                                 className="text-red-500 hover:text-red-600"
-                                                                onClick={() => { setSelectedProduct(device); setIsDeleteOpen(true); }}>
+                                                                onClick={(event) => { event.stopPropagation(); setSelectedProduct(device); setIsDeleteOpen(true); }}>
                                                                 <Trash2 className="h-3.5 w-3.5" />
                                                             </Button>
                                                         </div>
@@ -649,6 +762,16 @@ export default function DevicesInventory() {
                             </div>
                         )}
             </div>
+
+            {detailsDevice && (
+                <ProductDetailsModal
+                    product={{
+                        ...detailsDevice,
+                        costPrice: detailsDevice.newCostPrice || detailsDevice.oldCostPrice,
+                    }}
+                    onClose={() => setDetailsDevice(null)}
+                />
+            )}
 
             {/* Add/Edit Form Dialog */}
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
@@ -719,13 +842,14 @@ export default function DevicesInventory() {
 
                         <div>
                             <label className="text-sm font-medium mb-1.5 block">الحالة</label>
-                            <Select value={form.condition} onValueChange={(v) => setForm(f => ({ ...f, condition: v as 'new' | 'used' }))}>
+                            <Select value={form.condition} onValueChange={(v) => setForm(f => ({ ...f, condition: v as ProductConditionValue }))}>
                                 <SelectTrigger>
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="new">جديد</SelectItem>
-                                    <SelectItem value="used">مستعمل</SelectItem>
+                                    {PRODUCT_CONDITION_OPTIONS.map((option) => (
+                                        <SelectItem key={option.value} value={option.value}>{option.label}</SelectItem>
+                                    ))}
                                 </SelectContent>
                             </Select>
                         </div>
@@ -740,6 +864,45 @@ export default function DevicesInventory() {
                         </div>
 
                         <div>
+                            <label className="text-sm font-medium mb-1.5 block">اسم الشركة</label>
+                            <Input
+                                value={form.brand}
+                                onChange={(e) => setForm(f => ({ ...f, brand: e.target.value }))}
+                                placeholder="مثل: Samsung"
+                                list="device-brand-list"
+                            />
+                            <datalist id="device-brand-list">
+                                {uniqueBrands.map((brand) => <option key={brand} value={brand} />)}
+                            </datalist>
+                        </div>
+
+                        <div>
+                            <label className="text-sm font-medium mb-1.5 block">المورد</label>
+                            <Input
+                                value={form.supplier}
+                                onChange={(e) => setForm(f => ({ ...f, supplier: e.target.value }))}
+                                placeholder="اسم المورد"
+                                list="device-supplier-list"
+                            />
+                            <datalist id="device-supplier-list">
+                                {uniqueSuppliers.map((supplier) => <option key={supplier} value={supplier} />)}
+                            </datalist>
+                        </div>
+
+                        <div>
+                            <label className="text-sm font-medium mb-1.5 block">المصدر</label>
+                            <Input
+                                value={form.source}
+                                onChange={(e) => setForm(f => ({ ...f, source: e.target.value }))}
+                                placeholder="المصدر"
+                                list="device-source-list"
+                            />
+                            <datalist id="device-source-list">
+                                {uniqueSources.map((source) => <option key={source} value={source} />)}
+                            </datalist>
+                        </div>
+
+                        <div>
                             <label className="text-sm font-medium mb-1.5 block">الكمية *</label>
                             <Input
                                 type="number"
@@ -749,27 +912,18 @@ export default function DevicesInventory() {
                             />
                         </div>
 
-                        {form.condition === 'used' ? (
-                            <div>
-                                <label className="text-sm font-medium mb-1.5 block">سعر التكلفة (مستعمل)</label>
-                                <Input
-                                    type="number"
-                                    min="0"
-                                    value={form.oldCostPrice}
-                                    onChange={(e) => setForm(f => ({ ...f, oldCostPrice: parseFloat(e.target.value) || 0 }))}
-                                />
-                            </div>
-                        ) : (
-                            <div>
-                                <label className="text-sm font-medium mb-1.5 block">سعر التكلفة (جديد)</label>
-                                <Input
-                                    type="number"
-                                    min="0"
-                                    value={form.newCostPrice}
-                                    onChange={(e) => setForm(f => ({ ...f, newCostPrice: parseFloat(e.target.value) || 0 }))}
-                                />
-                            </div>
-                        )}
+                        <div>
+                            <label className="text-sm font-medium mb-1.5 block">سعر الشراء</label>
+                            <Input
+                                type="number"
+                                min="0"
+                                value={normalizeCostPrice(form.newCostPrice, form.oldCostPrice)}
+                                onChange={(e) => {
+                                    const value = parseFloat(e.target.value) || 0;
+                                    setForm((current) => ({ ...current, oldCostPrice: value, newCostPrice: value }));
+                                }}
+                            />
+                        </div>
 
                         <div>
                             <label className="text-sm font-medium mb-1.5 block">سعر البيع *</label>
@@ -858,12 +1012,16 @@ export default function DevicesInventory() {
                             model: typeof row.model === 'string' ? row.model : '',
                             barcode: typeof row.barcode === 'string' && row.barcode ? row.barcode : crypto.randomUUID().slice(0, 8).toUpperCase(),
                             category: typeof row.category === 'string' ? row.category : '',
-                            condition: row.condition === 'used' ? 'used' : 'new',
+                            condition: PRODUCT_CONDITION_OPTIONS.some((option) => option.value === row.condition) ? row.condition as ProductConditionValue : 'new',
                             color: typeof row.color === 'string' ? row.color : '',
+                            brand: typeof row.brand === 'string' ? row.brand : '',
+                            supplier: typeof row.supplier === 'string' ? row.supplier : '',
+                            source: typeof row.source === 'string' ? row.source : '',
                             quantity: Number(row.quantity) || 0,
                             oldCostPrice: Number(row.oldCostPrice) || 0,
                             newCostPrice: Number(row.newCostPrice) || 0,
                             salePrice: Number(row.salePrice) || 0,
+                            profitMargin: Number(row.profitMargin) || 0,
                             notes: typeof row.notes === 'string' ? row.notes : '',
                             description: typeof row.description === 'string' ? row.description : '',
                         });

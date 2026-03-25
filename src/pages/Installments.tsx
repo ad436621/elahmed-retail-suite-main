@@ -1,9 +1,10 @@
-import { useState, useMemo } from 'react';
+﻿import { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Check, CreditCard, DollarSign, Search, Printer, Calendar, Smartphone, Monitor, Tv, Car, Layers, Send, Tag, CheckCircle2, Trash2, AlertTriangle, Download } from 'lucide-react';
+import { X, Check, CreditCard, DollarSign, Search, Printer, Calendar, Smartphone, Monitor, Tv, Car, Layers, Send, Tag, Trash2, AlertTriangle, Download, Pencil, Plus } from 'lucide-react';
 import { exportToExcel, INSTALLMENT_COLUMNS, prepareInstallmentsForExport } from '@/services/excelService';
-import { InstallmentContract } from '@/domain/types';
-import { getContracts, addContract, addPaymentToContract, deleteContract, payInstallment } from '@/data/installmentsData';
+import { InstallmentContract, InstallmentCustomField, InstallmentScheduleItem } from '@/domain/types';
+import { getContracts, addContract, addPaymentToContract, deleteContract, updateContract } from '@/data/installmentsData';
+import { generateInstallmentSchedule, getDefaultFirstInstallmentDate, getFinancedAmount, normalizeSchedule } from '@/domain/installments';
 import { getAllInventoryProducts, updateProductQuantity } from '@/repositories/productRepository';
 import { saveMovements } from '@/repositories/stockRepository';
 import { validateStock } from '@/domain/stock';
@@ -16,6 +17,30 @@ import { usePagination, PaginationBar } from '@/hooks/usePagination';
 const TRANSFER_TYPES_LIST = ['فودافون كاش', 'اتصالات كاش', 'اورنج كاش', 'ويي', 'انستاباي', 'تحويل بنكي'];
 
 type ContractType = 'product' | 'transfer' | 'car';
+type InventoryFilter = 'all' | 'mobiles' | 'computers' | 'devices' | 'cars';
+
+interface ContractFormState {
+    contractType: ContractType;
+    customerName: string;
+    customerIdCard: string;
+    guarantorName: string;
+    guarantorIdCard: string;
+    guarantorPhone: string;
+    guarantorAddress: string;
+    customerPhone: string;
+    customerAddress: string;
+    productId: string;
+    productName: string;
+    transferType: string;
+    cashPrice: number;
+    installmentPrice: number;
+    downPayment: number;
+    months: number;
+    firstInstallmentDate: string;
+    notes: string;
+    schedule: InstallmentScheduleItem[];
+    customFields: InstallmentCustomField[];
+}
 
 const IC = 'w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all';
 
@@ -36,14 +61,53 @@ const TYPE_COLORS: Record<ContractType, string> = {
     car: 'bg-sky-100 text-sky-700 dark:bg-sky-500/15 dark:text-sky-400',
 };
 
-const emptyForm = {
-    contractType: 'product' as ContractType,
+const money = (value: number) => `${(value || 0).toLocaleString('ar-EG')} ج.م`;
+
+const emptyForm = (contractType: ContractType = 'product'): ContractFormState => ({
+    contractType,
     customerName: '', customerIdCard: '', guarantorName: '', guarantorIdCard: '',
+    guarantorPhone: '', guarantorAddress: '',
     customerPhone: '', customerAddress: '',
     productId: '', productName: '',
     transferType: TRANSFER_TYPES_LIST[0],
     cashPrice: 0, installmentPrice: 0, downPayment: 0, months: 12,
+    firstInstallmentDate: getDefaultFirstInstallmentDate(),
     notes: '',
+    schedule: [],
+    customFields: [],
+});
+
+const formFromContract = (contract: InstallmentContract): ContractFormState => ({
+    contractType: (contract.contractType ?? 'product') as ContractType,
+    customerName: contract.customerName,
+    customerIdCard: contract.customerIdCard,
+    guarantorName: contract.guarantorName,
+    guarantorIdCard: contract.guarantorIdCard,
+    guarantorPhone: contract.guarantorPhone || '',
+    guarantorAddress: contract.guarantorAddress || '',
+    customerPhone: contract.customerPhone,
+    customerAddress: contract.customerAddress,
+    productId: contract.productId || '',
+    productName: contract.productName,
+    transferType: contract.transferType || TRANSFER_TYPES_LIST[0],
+    cashPrice: contract.cashPrice,
+    installmentPrice: contract.installmentPrice,
+    downPayment: contract.downPayment,
+    months: contract.months,
+    firstInstallmentDate: contract.firstInstallmentDate || getDefaultFirstInstallmentDate(),
+    notes: contract.notes || '',
+    schedule: (contract.schedule || []).map(item => ({
+        ...item,
+        id: item.id || crypto.randomUUID(),
+        note: item.note || '',
+    })),
+    customFields: (contract.customFields || []).map(field => ({ ...field })),
+});
+
+const getContractStatus = (contract: InstallmentContract): InstallmentContract['status'] => {
+    if (contract.remaining <= 0) return 'completed';
+    const today = new Date().toISOString().slice(0, 10);
+    return contract.schedule.some(item => !item.paid && item.dueDate < today) ? 'overdue' : 'active';
 };
 
 // ─── Main Component ───────────────────────────────────────────
@@ -59,10 +123,12 @@ export default function Installments() {
     const [showForm, setShowForm] = useState(() => searchParams.has('type'));
     const [showPayment, setShowPayment] = useState<string | null>(null);
     const [showSchedule, setShowSchedule] = useState<InstallmentContract | null>(null);
-    const [form, setForm] = useState({ ...emptyForm, contractType: initialType });
+    const [editingId, setEditingId] = useState<string | null>(null);
+    const [scheduleEdited, setScheduleEdited] = useState(false);
+    const [form, setForm] = useState<ContractFormState>(() => emptyForm(initialType));
     const [payment, setPayment] = useState({ amount: 0, date: new Date().toISOString().slice(0, 10), note: '' });
     const [search, setSearch] = useState('');
-    const [productCategory, setProductCategory] = useState('all');
+    const [productCategory, setProductCategory] = useState<InventoryFilter>('all');
     const [deleteTarget, setDeleteTarget] = useState<InstallmentContract | null>(null); // confirm delete
 
     const productCategories = [
@@ -88,12 +154,134 @@ export default function Installments() {
         });
     }, [inventory, productCategory]);
 
-    const refresh = () => setContracts(getContracts());
+    const financedAmount = getFinancedAmount(form.installmentPrice, form.downPayment);
+    const previewSchedule = useMemo(() => normalizeSchedule(form.schedule, financedAmount), [form.schedule, financedAmount]);
+    const scheduleTotal = useMemo(() => previewSchedule.reduce((sum, item) => sum + item.amount, 0), [previewSchedule]);
+    const remaining = financedAmount;
+    const monthly = previewSchedule.length > 0 ? scheduleTotal / previewSchedule.length : 0;
 
-    const remaining = form.installmentPrice - form.downPayment;
-    const monthly = form.months > 0 ? Math.floor(remaining / form.months) : 0;
+    const refresh = () => {
+        const nextContracts = getContracts();
+        setContracts(nextContracts);
+        setShowSchedule(current => current ? nextContracts.find(item => item.id === current.id) || null : null);
+    };
 
-    // ─── Submit ───────────────────────────────────────────────
+    const updateBaseForm = (updates: Partial<ContractFormState>) => {
+        setForm(current => {
+            const next = { ...current, ...updates };
+            if (!scheduleEdited) {
+                next.schedule = generateInstallmentSchedule(
+                    getFinancedAmount(next.installmentPrice, next.downPayment),
+                    Math.max(1, next.months),
+                    next.firstInstallmentDate,
+                );
+            }
+            return next;
+        });
+    };
+
+    const rebuildSchedule = () => {
+        setScheduleEdited(false);
+        setForm(current => ({
+            ...current,
+            schedule: generateInstallmentSchedule(
+                getFinancedAmount(current.installmentPrice, current.downPayment),
+                Math.max(1, current.months),
+                current.firstInstallmentDate,
+            ),
+        }));
+    };
+
+    const updateScheduleItem = (rowId: string | undefined, field: 'dueDate' | 'amount' | 'note', value: string) => {
+        if (!rowId) return;
+        setScheduleEdited(true);
+        setForm(current => {
+            const schedule = current.schedule.map(item =>
+                item.id === rowId
+                    ? { ...item, [field]: field === 'amount' ? Math.max(0, Number(value || 0)) : value }
+                    : item,
+            );
+            return { ...current, schedule, months: Math.max(1, schedule.length) };
+        });
+    };
+
+    const addScheduleRow = () => {
+        setScheduleEdited(true);
+        setForm(current => {
+            const lastDueDate = current.schedule[current.schedule.length - 1]?.dueDate || current.firstInstallmentDate;
+            const baseDate = new Date(lastDueDate);
+            baseDate.setMonth(baseDate.getMonth() + 1);
+            const schedule = [
+                ...current.schedule,
+                {
+                    id: crypto.randomUUID(),
+                    month: current.schedule.length + 1,
+                    dueDate: baseDate.toISOString().slice(0, 10),
+                    amount: 0,
+                    paidAmount: 0,
+                    penalty: 0,
+                    paid: false,
+                    remainingAfter: 0,
+                    note: '',
+                },
+            ];
+
+            return { ...current, schedule, months: schedule.length };
+        });
+    };
+
+    const removeScheduleRow = (rowId: string | undefined) => {
+        if (!rowId) return;
+        setScheduleEdited(true);
+        setForm(current => {
+            if (current.schedule.length <= 1) return current;
+            const schedule = current.schedule.filter(item => item.id !== rowId);
+            return { ...current, schedule, months: schedule.length };
+        });
+    };
+
+    const addCustomField = () => {
+        setForm(current => ({
+            ...current,
+            customFields: [...current.customFields, { id: crypto.randomUUID(), label: '', value: '' }],
+        }));
+    };
+
+    const updateCustomField = (id: string, key: 'label' | 'value', value: string) => {
+        setForm(current => ({
+            ...current,
+            customFields: current.customFields.map(field => field.id === id ? { ...field, [key]: value } : field),
+        }));
+    };
+
+    const removeCustomField = (id: string) => {
+        setForm(current => ({
+            ...current,
+            customFields: current.customFields.filter(field => field.id !== id),
+        }));
+    };
+
+    const closeForm = () => {
+        setEditingId(null);
+        setScheduleEdited(false);
+        setForm(emptyForm(initialType));
+        setShowForm(false);
+    };
+
+    const openCreateForm = (contractType: ContractType) => {
+        setEditingId(null);
+        setScheduleEdited(false);
+        setForm(emptyForm(contractType));
+        setShowForm(true);
+    };
+
+    const openEditForm = (contract: InstallmentContract) => {
+        setEditingId(contract.id);
+        setScheduleEdited(true);
+        setForm(formFromContract(contract));
+        setShowForm(true);
+    };
+
     const handleSubmit = () => {
         if (!form.customerName.trim()) {
             toast({ title: 'خطأ', description: 'اسم العميل مطلوب', variant: 'destructive' });
@@ -107,9 +295,24 @@ export default function Installments() {
             toast({ title: 'خطأ', description: 'أدخل إجمالي الأجل', variant: 'destructive' });
             return;
         }
+        if (form.downPayment < 0 || form.downPayment > form.installmentPrice) {
+            toast({ title: 'خطأ', description: 'المقدم يجب أن يكون بين صفر وإجمالي الأجل', variant: 'destructive' });
+            return;
+        }
+        if (financedAmount > 0 && previewSchedule.length === 0) {
+            toast({ title: 'خطأ', description: 'أنشئ جدول الأقساط أولًا', variant: 'destructive' });
+            return;
+        }
+        if (previewSchedule.some(item => !item.dueDate || item.amount <= 0)) {
+            toast({ title: 'خطأ', description: 'كل دفعة يجب أن تحتوي على تاريخ ومبلغ صالح', variant: 'destructive' });
+            return;
+        }
+        if (Math.abs(scheduleTotal - financedAmount) > 0.01) {
+            toast({ title: 'خطأ', description: 'إجمالي جدول الأقساط يجب أن يساوي المبلغ المتبقي بعد المقدم', variant: 'destructive' });
+            return;
+        }
 
-        // Validate stock for product type
-        const selectedProduct = form.contractType === 'product' ? inventory.find(p => p.id === form.productId) : null;
+        const selectedProduct = form.contractType === 'product' && !editingId ? inventory.find(p => p.id === form.productId) : null;
         if (selectedProduct) {
             try { validateStock(selectedProduct, 1); }
             catch (err: unknown) {
@@ -119,15 +322,40 @@ export default function Installments() {
             }
         }
 
-        const { productId, ...contractData } = form;
-        const finalData =
-            form.contractType === 'transfer'
-                ? { ...contractData, productName: `تحويل ${form.transferType}`, contractType: 'transfer' as ContractType }
-                : { ...contractData, contractType: form.contractType };
+        const payload = {
+            contractType: form.contractType,
+            customerName: form.customerName.trim(),
+            customerIdCard: form.customerIdCard.trim(),
+            guarantorName: form.guarantorName.trim(),
+            guarantorIdCard: form.guarantorIdCard.trim(),
+            guarantorPhone: form.guarantorPhone.trim(),
+            guarantorAddress: form.guarantorAddress.trim(),
+            customerPhone: form.customerPhone.trim(),
+            customerAddress: form.customerAddress.trim(),
+            productId: form.contractType === 'product' ? form.productId || undefined : undefined,
+            productName: form.contractType === 'transfer' ? `تحويل ${form.transferType}` : form.productName.trim(),
+            transferType: form.contractType === 'transfer' ? form.transferType : undefined,
+            cashPrice: form.cashPrice,
+            installmentPrice: form.installmentPrice,
+            downPayment: form.downPayment,
+            months: previewSchedule.length || Math.max(1, form.months),
+            firstInstallmentDate: form.firstInstallmentDate,
+            notes: form.notes.trim(),
+            customFields: form.customFields
+                .filter(field => field.label.trim() || field.value.trim())
+                .map(field => ({ ...field, label: field.label.trim(), value: field.value.trim() })),
+            schedule: previewSchedule,
+        };
 
-        const newContract = addContract(finalData as unknown as Omit<InstallmentContract, 'id' | 'createdAt' | 'updatedAt'>);
+        const savedContract = editingId
+            ? updateContract(editingId, payload)
+            : addContract(payload as unknown as Omit<InstallmentContract, 'id' | 'createdAt' | 'updatedAt'>);
 
-        // Deduct from stock if product was selected from inventory
+        if (!savedContract) {
+            toast({ title: 'خطأ', description: 'تعذر حفظ العقد', variant: 'destructive' });
+            return;
+        }
+
         if (selectedProduct) {
             updateProductQuantity(selectedProduct.id, selectedProduct.quantity - 1);
             saveMovements([{
@@ -137,30 +365,56 @@ export default function Installments() {
                 quantityChange: -1,
                 previousQuantity: selectedProduct.quantity,
                 newQuantity: selectedProduct.quantity - 1,
-                reason: `عقد أجل: ${newContract.contractNumber} (${newContract.customerName})`,
-                referenceId: newContract.id,
+                reason: `عقد أجل: ${savedContract.contractNumber} (${savedContract.customerName})`,
+                referenceId: savedContract.id,
                 userId: user?.id || 'system',
                 timestamp: new Date().toISOString(),
             }]);
         }
 
-        toast({ title: `✅ تم إنشاء عقد ${TYPE_LABELS[form.contractType]} بالأجل`, description: form.customerName });
-        setForm(emptyForm);
-        setShowForm(false);
+        toast({
+            title: editingId ? '✅ تم تحديث العقد' : `✅ تم إنشاء عقد ${TYPE_LABELS[form.contractType]} بالأجل`,
+            description: savedContract.customerName,
+        });
+        closeForm();
         refresh();
     };
 
-    // ─── Payment ──────────────────────────────────────────────
     const handlePayment = (contractId: string) => {
         if (payment.amount <= 0) {
             toast({ title: 'خطأ', description: 'المبلغ يجب أن يكون أكبر من صفر', variant: 'destructive' });
             return;
         }
+        const contract = contracts.find(item => item.id === contractId);
+        if (!contract) return;
+        if (payment.amount > contract.remaining + 0.01) {
+            toast({ title: 'خطأ', description: 'المبلغ أكبر من الرصيد المتبقي', variant: 'destructive' });
+            return;
+        }
+
         addPaymentToContract(contractId, payment);
         toast({ title: '✅ تم تسجيل الدفعة', description: `${payment.amount.toLocaleString()} ج.م` });
         setShowPayment(null);
         setPayment({ amount: 0, date: new Date().toISOString().slice(0, 10), note: '' });
         refresh();
+    };
+
+    const buildScheduleTimeline = (contract: InstallmentContract) => {
+        let runningRemaining = contract.schedule.reduce((sum, item) => sum + item.amount + (item.penalty || 0), 0);
+        const today = new Date().toISOString().slice(0, 10);
+
+        return contract.schedule.map(item => {
+            const totalDue = item.amount + (item.penalty || 0);
+            runningRemaining = Math.max(0, Number((runningRemaining - (item.paidAmount || 0)).toFixed(2)));
+            const outstanding = Math.max(0, totalDue - (item.paidAmount || 0));
+
+            return {
+                ...item,
+                totalDue,
+                actualRemainingAfter: runningRemaining,
+                statusLabel: outstanding <= 0 ? 'مدفوع' : item.dueDate < today ? 'متأخر' : 'مفتوح',
+            };
+        });
     };
 
     // ─── Print ────────────────────────────────────────────────
@@ -303,10 +557,13 @@ export default function Installments() {
         if (w) { w.document.write(html); w.document.close(); w.focus(); setTimeout(() => w.print(), 250); }
     };
 
-    const filtered = useMemo(() => contracts.filter(c =>
-        c.customerName.includes(search) || c.customerPhone.includes(search) ||
-        c.productName.includes(search) || c.contractNumber.includes(search)
-    ).sort((a, b) => b.createdAt?.localeCompare(a.createdAt ?? '') ?? 0), [contracts, search]);
+    const filtered = useMemo(() => contracts
+        .map(contract => ({ ...contract, status: getContractStatus(contract) }))
+        .filter(c =>
+            c.customerName.includes(search) || c.customerPhone.includes(search) ||
+            c.productName.includes(search) || c.contractNumber.includes(search)
+        )
+        .sort((a, b) => b.createdAt?.localeCompare(a.createdAt ?? '') ?? 0), [contracts, search]);
 
     const { paginatedItems, page, totalPages, totalItems, pageSize, nextPage, prevPage, setPage } = usePagination(filtered, 15);
 
@@ -324,8 +581,8 @@ export default function Installments() {
                         <h1 className="text-2xl font-bold text-foreground">البيع بالأجل / التقسيط</h1>
                         <p className="text-xs text-muted-foreground">
                             {contracts.length} عقد ·{' '}
-                            <span className="text-blue-600">{contracts.filter(c => c.status === 'active').length} نشط</span> ·{' '}
-                            <span className="text-red-600">{contracts.filter(c => c.status === 'overdue').length} متأخر</span>
+                            <span className="text-blue-600">{contracts.filter(c => getContractStatus(c) === 'active').length} نشط</span> ·{' '}
+                            <span className="text-red-600">{contracts.filter(c => getContractStatus(c) === 'overdue').length} متأخر</span>
                         </p>
                     </div>
                 </div>
@@ -337,7 +594,7 @@ export default function Installments() {
                     </button>
                     {(['product', 'transfer', 'car'] as ContractType[]).map(t => (
                         <button key={t}
-                            onClick={() => { setForm({ ...emptyForm, contractType: t }); setShowForm(true); }}
+                            onClick={() => openCreateForm(t)}
                             className={`flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all shadow-sm ${t === 'product' ? 'bg-primary text-primary-foreground hover:bg-primary/90'
                                 : t === 'transfer' ? 'bg-amber-500 text-white hover:bg-amber-600'
                                     : 'bg-sky-600 text-white hover:bg-sky-700'
@@ -360,16 +617,17 @@ export default function Installments() {
 
             {/* ─── New Contract Modal ─────────────────────────────── */}
             {showForm && createPortal(
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-6" onClick={() => setShowForm(false)}>
-                    <div className="w-full max-w-2xl rounded-3xl border border-border bg-card shadow-2xl flex flex-col max-h-[90vh] animate-scale-in" onClick={e => e.stopPropagation()}>
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-6" onClick={closeForm}>
+                    <div className="w-full max-w-5xl rounded-3xl border border-border bg-card shadow-2xl flex flex-col max-h-[92vh] animate-scale-in" onClick={e => e.stopPropagation()}>
                         {/* Header */}
                         <div className="flex items-center justify-between shrink-0 p-5 border-b border-border/50">
                             <h2 className="text-xl font-bold text-foreground flex items-center gap-2">
                                 {form.contractType === 'transfer' ? <><Send className="h-6 w-6 text-amber-500" /> عقد أجل تحويل مالي</>
                                     : form.contractType === 'car' ? <><Car className="h-6 w-6 text-sky-500" /> عقد أجل سيارة</>
                                         : <><Tag className="h-6 w-6 text-primary" /> عقد أجل بضاعة</>}
+                                {editingId && <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-semibold text-amber-700">تعديل</span>}
                             </h2>
-                            <button onClick={() => setShowForm(false)} className="rounded-full p-2 bg-muted/50 hover:bg-muted transition-colors">
+                            <button onClick={closeForm} className="rounded-full p-2 bg-muted/50 hover:bg-muted transition-colors">
                                 <X className="h-5 w-5 text-muted-foreground" />
                             </button>
                         </div>
@@ -381,7 +639,20 @@ export default function Installments() {
                             <div className="flex rounded-xl overflow-hidden border border-border/60 bg-muted/30 p-1 gap-1 w-full max-w-md mx-auto">
                                 {(['product', 'transfer', 'car'] as ContractType[]).map(t => (
                                     <button key={t}
-                                        onClick={() => setForm(f => ({ ...f, contractType: t, productName: '', productId: '' }))}
+                                        onClick={() => {
+                                            setScheduleEdited(false);
+                                            setForm(f => ({
+                                                ...emptyForm(t),
+                                                customerName: f.customerName,
+                                                customerIdCard: f.customerIdCard,
+                                                customerPhone: f.customerPhone,
+                                                customerAddress: f.customerAddress,
+                                                guarantorName: f.guarantorName,
+                                                guarantorIdCard: f.guarantorIdCard,
+                                                guarantorPhone: f.guarantorPhone,
+                                                guarantorAddress: f.guarantorAddress,
+                                            }));
+                                        }}
                                         className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all flex items-center justify-center gap-2 ${form.contractType === t
                                             ? t === 'product' ? 'bg-primary text-primary-foreground shadow-sm'
                                                 : t === 'transfer' ? 'bg-amber-500 text-white shadow-sm'
@@ -434,6 +705,16 @@ export default function Installments() {
                                         <input value={form.guarantorIdCard}
                                             onChange={e => setForm(f => ({ ...f, guarantorIdCard: e.target.value }))} className={IC} placeholder="14 رقم..." />
                                     </div>
+                                    <div>
+                                        <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">هاتف الضامن</label>
+                                        <input value={form.guarantorPhone}
+                                            onChange={e => setForm(f => ({ ...f, guarantorPhone: e.target.value }))} className={IC} placeholder="01X..." />
+                                    </div>
+                                    <div>
+                                        <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">عنوان الضامن</label>
+                                        <input value={form.guarantorAddress}
+                                            onChange={e => setForm(f => ({ ...f, guarantorAddress: e.target.value }))} className={IC} placeholder="العنوان..." />
+                                    </div>
                                 </div>
                             </div>
                             
@@ -479,12 +760,13 @@ export default function Installments() {
                                                         })}
                                                     </div>
                                                     <select value={form.productId || ''}
+                                                        disabled={Boolean(editingId)}
                                                         onChange={e => {
-                                                            if (!e.target.value) { setForm(f => ({ ...f, productId: '', productName: '', cashPrice: 0, installmentPrice: 0 })); return; }
+                                                            if (!e.target.value) { updateBaseForm({ productId: '', productName: '', cashPrice: 0, installmentPrice: 0 }); return; }
                                                             const p = inventory.find(x => x.id === e.target.value);
                                                             if (p) {
                                                                 const installP = Math.ceil(p.sellingPrice * 1.3);
-                                                                setForm(f => ({ ...f, productId: p.id, productName: p.name, cashPrice: p.sellingPrice, installmentPrice: installP }));
+                                                                updateBaseForm({ productId: p.id, productName: p.name, cashPrice: p.sellingPrice, installmentPrice: installP });
                                                             }
                                                         }}
                                                         className={IC}>
@@ -495,6 +777,7 @@ export default function Installments() {
                                                             </option>
                                                         ))}
                                                     </select>
+                                                    {editingId && <p className="text-[11px] text-amber-700">تعديل ربط المنتج بالمخزون معطل في وضع التعديل للحفاظ على الكميات الحالية.</p>}
                                                     <div className="flex items-center gap-2">
                                                         <hr className="flex-1 border-border/50" />
                                                         <span className="text-[10px] text-muted-foreground">أو</span>
@@ -503,10 +786,10 @@ export default function Installments() {
                                                 </div>
                                             )}
                                             <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">اسم المنتج (يدوي بدون خصم من المخزون)</label>
-                                            <input value={form.productName}
-                                                onChange={e => setForm(f => ({ ...f, productName: e.target.value, productId: '' }))}
-                                                placeholder={form.contractType === 'car' ? 'مثال: تويوتا كورولا 2022' : 'اسم المنتج...'}
-                                                className={IC} />
+                                        <input value={form.productName}
+                                            onChange={e => setForm(f => ({ ...f, productName: e.target.value, productId: '' }))}
+                                            placeholder={form.contractType === 'car' ? 'مثال: تويوتا كورولا 2022' : 'اسم المنتج...'}
+                                            className={IC} />
                                         </div>
                                     )}
                                 </div>
@@ -519,32 +802,154 @@ export default function Installments() {
                                     <div>
                                         <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">سعر الكاش (ج.م)</label>
                                         <input type="number" min={0} value={form.cashPrice || ''}
-                                            onChange={e => setForm(f => ({ ...f, cashPrice: +e.target.value }))} className={IC} />
+                                            onChange={e => updateBaseForm({ cashPrice: +e.target.value })} className={IC} />
                                     </div>
                                     <div>
                                         <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">إجمالي الأجل <span className="text-destructive">*</span></label>
                                         <input type="number" min={0} value={form.installmentPrice || ''}
-                                            onChange={e => setForm(f => ({ ...f, installmentPrice: +e.target.value }))} className={IC} />
+                                            onChange={e => updateBaseForm({ installmentPrice: +e.target.value })} className={IC} />
                                     </div>
                                     <div>
                                         <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">المقدم (ج.م)</label>
                                         <input type="number" min={0} value={form.downPayment || ''}
-                                            onChange={e => setForm(f => ({ ...f, downPayment: +e.target.value }))} className={IC} />
+                                            onChange={e => updateBaseForm({ downPayment: +e.target.value })} className={IC} />
                                     </div>
                                     <div>
                                         <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">عدد الأشهر</label>
                                         <input type="number" min={1} value={form.months || ''}
-                                            onChange={e => setForm(f => ({ ...f, months: +e.target.value }))} className={IC} />
+                                            onChange={e => updateBaseForm({ months: Math.max(1, +e.target.value || 1) })} className={IC} />
+                                    </div>
+                                    <div>
+                                        <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">أول تاريخ استحقاق</label>
+                                        <input type="date" value={form.firstInstallmentDate}
+                                            onChange={e => updateBaseForm({ firstInstallmentDate: e.target.value })} className={IC} />
                                     </div>
                                 </div>
 
                                 {form.installmentPrice > 0 && (
                                     <div className="rounded-2xl border border-blue-200 bg-blue-50/50 p-4 grid grid-cols-3 gap-2 text-center text-sm shadow-inner transition-all">
-                                        <div><p className="text-muted-foreground text-xs mb-1">المبلغ المتبقي</p><p className="font-bold text-blue-700 text-lg">{remaining.toLocaleString()} ج.م</p></div>
-                                        <div className="border-x border-blue-200/50"><p className="text-muted-foreground text-xs mb-1">القسط الشهري</p><p className="font-bold text-primary text-lg">{monthly.toLocaleString()} ج.م</p></div>
+                                        <div><p className="text-muted-foreground text-xs mb-1">المبلغ المتبقي</p><p className="font-bold text-blue-700 text-lg">{money(remaining)}</p></div>
+                                        <div className="border-x border-blue-200/50"><p className="text-muted-foreground text-xs mb-1">متوسط القسط</p><p className="font-bold text-primary text-lg">{money(monthly)}</p></div>
                                         <div><p className="text-muted-foreground text-xs mb-1">عدد الأشهر</p><p className="font-bold text-foreground text-lg">{form.months}</p></div>
                                     </div>
                                 )}
+
+                                {!scheduleEdited && previewSchedule.length > 0 && (
+                                    <p className="text-xs text-muted-foreground">
+                                        تم إنشاء جدول الأقساط تلقائيًا. يمكنك تعديله يدويًا من القسم التالي إذا احتجت.
+                                    </p>
+                                )}
+                                {Math.abs(scheduleTotal - financedAmount) > 0.01 && form.installmentPrice > 0 && (
+                                    <p className="text-xs font-semibold text-red-600">
+                                        إجمالي الجدول الحالي {money(scheduleTotal)} ولا يساوي الرصيد المطلوب {money(financedAmount)}.
+                                    </p>
+                                )}
+                            </div>
+
+                            <div className="space-y-4 rounded-2xl border border-border/50 bg-muted/10 p-4">
+                                <div className="flex items-center justify-between gap-2 flex-wrap border-b border-border/50 pb-2">
+                                    <h3 className="font-semibold text-sm text-primary flex items-center gap-2"><Calendar className="h-4 w-4" /> جدول الأقساط القابل للتعديل</h3>
+                                    <div className="flex gap-2">
+                                        <button type="button" onClick={addScheduleRow}
+                                            className="flex items-center gap-1.5 rounded-xl border border-border bg-background px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted transition-colors">
+                                            <Plus className="h-3.5 w-3.5" /> دفعة جديدة
+                                        </button>
+                                        <button type="button" onClick={rebuildSchedule}
+                                            className="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/10 transition-colors">
+                                            إعادة التوزيع
+                                        </button>
+                                    </div>
+                                </div>
+                                {scheduleEdited && (
+                                    <p className="text-xs text-amber-700">
+                                        تم تعديل الجدول يدويًا. لن يتم إعادة حسابه تلقائيًا إلا إذا استخدمت زر إعادة التوزيع.
+                                    </p>
+                                )}
+                                {previewSchedule.length === 0 ? (
+                                    <div className="rounded-xl border border-dashed border-border/60 bg-background p-6 text-center text-sm text-muted-foreground">
+                                        أدخل القيم المالية وسيتم إنشاء جدول الأقساط هنا.
+                                    </div>
+                                ) : (
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full min-w-[760px] text-sm">
+                                            <thead>
+                                                <tr className="border-b border-border/50 text-muted-foreground">
+                                                    <th className="pb-2 text-right font-semibold">رقم الدفعة</th>
+                                                    <th className="pb-2 text-right font-semibold">تاريخ الاستحقاق</th>
+                                                    <th className="pb-2 text-right font-semibold">المبلغ</th>
+                                                    <th className="pb-2 text-right font-semibold">الرصيد بعد الدفعة</th>
+                                                    <th className="pb-2 text-right font-semibold">ملاحظة</th>
+                                                    <th className="pb-2 text-right font-semibold">حذف</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {previewSchedule.map(item => (
+                                                    <tr key={item.id || item.month} className="border-b border-border/40 last:border-0">
+                                                        <td className="py-3 font-bold text-foreground">{item.month}</td>
+                                                        <td className="py-3 pl-3">
+                                                            <input type="date" value={item.dueDate}
+                                                                onChange={e => updateScheduleItem(item.id, 'dueDate', e.target.value)} className={IC} />
+                                                        </td>
+                                                        <td className="py-3 pl-3">
+                                                            <input type="number" min={0} value={item.amount || ''}
+                                                                onChange={e => updateScheduleItem(item.id, 'amount', e.target.value)} className={IC} />
+                                                        </td>
+                                                        <td className="py-3 font-semibold text-foreground">{money(item.remainingAfter || 0)}</td>
+                                                        <td className="py-3 pl-3">
+                                                            <input value={item.note || ''}
+                                                                onChange={e => updateScheduleItem(item.id, 'note', e.target.value)}
+                                                                className={IC} placeholder="اختياري" />
+                                                        </td>
+                                                        <td className="py-3">
+                                                            <button type="button" onClick={() => removeScheduleRow(item.id)} disabled={previewSchedule.length <= 1}
+                                                                className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                                                                حذف
+                                                            </button>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="space-y-4 rounded-2xl border border-border/50 bg-muted/10 p-4">
+                                <div className="flex items-center justify-between gap-2 flex-wrap border-b border-border/50 pb-2">
+                                    <h3 className="font-semibold text-sm text-primary flex items-center gap-2"><Plus className="h-4 w-4" /> حقول إضافية وملاحظات</h3>
+                                    <button type="button" onClick={addCustomField}
+                                        className="flex items-center gap-1.5 rounded-xl border border-border bg-background px-3 py-2 text-xs font-semibold text-foreground hover:bg-muted transition-colors">
+                                        <Plus className="h-3.5 w-3.5" /> إضافة حقل
+                                    </button>
+                                </div>
+                                {form.customFields.length === 0 ? (
+                                    <div className="rounded-xl border border-dashed border-border/60 bg-background p-4 text-center text-sm text-muted-foreground">
+                                        لا توجد حقول إضافية بعد.
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {form.customFields.map(field => (
+                                            <div key={field.id} className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-3">
+                                                <input value={field.label}
+                                                    onChange={e => updateCustomField(field.id, 'label', e.target.value)}
+                                                    className={IC} placeholder="اسم الحقل" />
+                                                <input value={field.value}
+                                                    onChange={e => updateCustomField(field.id, 'value', e.target.value)}
+                                                    className={IC} placeholder="القيمة" />
+                                                <button type="button" onClick={() => removeCustomField(field.id)}
+                                                    className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-100 transition-colors">
+                                                    حذف
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                                <div>
+                                    <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">ملاحظات العقد</label>
+                                    <textarea value={form.notes}
+                                        onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+                                        className={`${IC} min-h-[120px] resize-y`} placeholder="أي ملاحظات أو بيانات إضافية..." />
+                                </div>
                             </div>
                         </div>
 
@@ -552,9 +957,9 @@ export default function Installments() {
                         <div className="flex gap-3 p-5 shrink-0 border-t border-border/50 bg-muted/20">
                             <button onClick={handleSubmit}
                                 className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground shadow-md shadow-primary/20 hover:bg-primary/90 transition-all hover:-translate-y-0.5">
-                                <Check className="h-5 w-5" /> إنشاء العقد
+                                <Check className="h-5 w-5" /> {editingId ? 'حفظ التعديلات' : 'إنشاء العقد'}
                             </button>
-                            <button onClick={() => setShowForm(false)}
+                            <button onClick={closeForm}
                                 className="px-6 rounded-xl border border-border/80 bg-background text-foreground py-3 text-sm font-semibold hover:bg-muted transition-colors">إلغاء</button>
                         </div>
                     </div>
@@ -597,59 +1002,142 @@ export default function Installments() {
             {/* ─── Schedule Modal ────────────────────────────────── */}
             {showSchedule && createPortal(
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setShowSchedule(null)}>
-                    <div className="w-full max-w-md rounded-3xl border border-border bg-card shadow-2xl animate-scale-in flex flex-col max-h-[85vh]" onClick={e => e.stopPropagation()}>
+                    <div className="w-full max-w-5xl rounded-3xl border border-border bg-card shadow-2xl animate-scale-in flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between shrink-0 p-5 border-b border-border/50">
-                            <h3 className="text-lg font-bold text-foreground flex items-center gap-2"><Calendar className="h-5 w-5 text-blue-600" /> جدول الأقساط الشهرية</h3>
-                            <button onClick={() => setShowSchedule(null)} className="rounded-full p-2 bg-muted/50 hover:bg-muted transition-colors">
-                                <X className="h-4 w-4 text-muted-foreground" />
-                            </button>
+                            <div>
+                                <h3 className="text-lg font-bold text-foreground flex items-center gap-2"><Calendar className="h-5 w-5 text-blue-600" /> تفاصيل عقد التقسيط</h3>
+                                <p className="text-xs text-muted-foreground mt-1">{showSchedule.contractNumber} • {showSchedule.productName}</p>
+                            </div>
+                            <div className="flex gap-2">
+                                <button onClick={() => openEditForm(showSchedule)}
+                                    className="flex items-center gap-1.5 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 px-3 py-2 text-xs font-semibold hover:bg-amber-100 transition-colors">
+                                    <Pencil className="h-3.5 w-3.5" /> تعديل
+                                </button>
+                                <button onClick={() => setShowSchedule(null)} className="rounded-full p-2 bg-muted/50 hover:bg-muted transition-colors">
+                                    <X className="h-4 w-4 text-muted-foreground" />
+                                </button>
+                            </div>
                         </div>
-                        <div className="p-5 pb-2 shrink-0 bg-muted/10 border-b border-border/30">
-                            <p className="text-sm mb-1 font-semibold text-foreground flex items-center gap-2"><CreditCard className="h-4 w-4 text-muted-foreground" /> {showSchedule.customerName}</p>
-                            <p className="text-xs text-muted-foreground mb-1">{showSchedule.productName} — قسط شهري: <span className="font-bold text-primary">{showSchedule.monthlyInstallment.toLocaleString()} ج.م</span></p>
-                        </div>
-                        
-                        <div className="overflow-y-auto p-4 space-y-3">
-                            {showSchedule.schedule.map(s => {
-                                const today = new Date().toISOString().slice(0, 10);
-                                const isOverdue = !s.paid && s.dueDate < today;
-                                return (
-                                    <div key={s.month} className={`flex items-center justify-between rounded-2xl px-4 py-3 border text-sm gap-2 transition-all hover:scale-[1.01] ${s.paid ? 'bg-emerald-50/50 dark:bg-emerald-500/5 border-emerald-200 dark:border-emerald-500/20 shadow-sm'
-                                        : isOverdue ? 'bg-red-50/80 dark:bg-red-500/10 border-red-200 dark:border-red-500/20 shadow-sm'
-                                            : 'bg-background hover:bg-muted/30 border-border shadow-sm'
-                                        }`}>
-                                        <div className="flex items-center gap-3 min-w-0">
-                                            <span className={`font-black text-sm w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${s.paid ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400' : isOverdue ? 'bg-red-100 dark:bg-red-500/20 text-red-700 dark:text-red-400' : 'bg-primary/10 text-primary'
-                                                }`}>{s.month}</span>
-                                            <div>
-                                                <p className="text-xs text-muted-foreground mb-0.5">{s.dueDate}</p>
-                                                <p className={`font-bold text-sm ${s.paid ? 'text-emerald-700 dark:text-emerald-400' : isOverdue ? 'text-red-600 dark:text-red-400' : 'text-foreground'}`}>{s.amount.toLocaleString()} ج.م</p>
-                                            </div>
+                        <div className="overflow-y-auto p-5 space-y-5">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                <div className="rounded-2xl border border-border/70 bg-background p-4 text-center">
+                                    <p className="text-xs text-muted-foreground mb-1">العميل</p>
+                                    <p className="font-bold text-foreground">{showSchedule.customerName}</p>
+                                </div>
+                                <div className="rounded-2xl border border-border/70 bg-background p-4 text-center">
+                                    <p className="text-xs text-muted-foreground mb-1">المدفوع</p>
+                                    <p className="font-bold text-emerald-600">{money(showSchedule.paidTotal)}</p>
+                                </div>
+                                <div className="rounded-2xl border border-border/70 bg-background p-4 text-center">
+                                    <p className="text-xs text-muted-foreground mb-1">المتبقي</p>
+                                    <p className="font-bold text-primary">{money(showSchedule.remaining)}</p>
+                                </div>
+                                <div className="rounded-2xl border border-border/70 bg-background p-4 text-center">
+                                    <p className="text-xs text-muted-foreground mb-1">عدد الدفعات</p>
+                                    <p className="font-bold text-foreground">{showSchedule.schedule.length}</p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-4">
+                                <div className="rounded-2xl border border-border/70 bg-background p-4">
+                                    <h4 className="text-sm font-semibold text-foreground mb-3">جدول السداد</h4>
+                                    <div className="overflow-x-auto">
+                                        <table className="w-full min-w-[720px] text-sm">
+                                            <thead>
+                                                <tr className="border-b border-border/50 text-muted-foreground">
+                                                    <th className="pb-2 text-right font-semibold">الدفعة</th>
+                                                    <th className="pb-2 text-right font-semibold">تاريخ الاستحقاق</th>
+                                                    <th className="pb-2 text-right font-semibold">قيمة القسط</th>
+                                                    <th className="pb-2 text-right font-semibold">المدفوع</th>
+                                                    <th className="pb-2 text-right font-semibold">الرصيد بعد الدفعة</th>
+                                                    <th className="pb-2 text-right font-semibold">الحالة</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {buildScheduleTimeline(showSchedule).map(item => (
+                                                    <tr key={item.id || item.month} className="border-b border-border/40 last:border-0">
+                                                        <td className="py-3 font-bold text-foreground">{item.month}</td>
+                                                        <td className="py-3 text-foreground">{item.dueDate}</td>
+                                                        <td className="py-3 font-semibold text-foreground">{money(item.totalDue)}</td>
+                                                        <td className="py-3 text-foreground">{money(item.paidAmount || 0)}</td>
+                                                        <td className="py-3 font-semibold text-foreground">{money(item.actualRemainingAfter)}</td>
+                                                        <td className="py-3">
+                                                            <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${item.statusLabel === 'مدفوع' ? 'bg-emerald-100 text-emerald-700' : item.statusLabel === 'متأخر' ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}`}>
+                                                                {item.statusLabel}
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div className="rounded-2xl border border-border/70 bg-background p-4">
+                                        <h4 className="text-sm font-semibold text-foreground mb-3">بيانات إضافية</h4>
+                                        <div className="space-y-2 text-sm">
+                                            <div className="flex justify-between gap-2"><span className="text-muted-foreground">العميل</span><span className="font-semibold text-foreground">{showSchedule.customerName}</span></div>
+                                            <div className="flex justify-between gap-2"><span className="text-muted-foreground">الهاتف</span><span className="font-semibold text-foreground">{showSchedule.customerPhone || '—'}</span></div>
+                                            <div className="flex justify-between gap-2"><span className="text-muted-foreground">الضامن</span><span className="font-semibold text-foreground">{showSchedule.guarantorName || '—'}</span></div>
+                                            <div className="flex justify-between gap-2"><span className="text-muted-foreground">هاتف الضامن</span><span className="font-semibold text-foreground">{showSchedule.guarantorPhone || '—'}</span></div>
                                         </div>
-                                        {s.paid ? (
-                                            <span className="flex items-center gap-1.5 px-3 py-1 text-xs text-emerald-600 bg-emerald-100/50 rounded-lg font-bold shrink-0"><CheckCircle2 className="h-4 w-4" /> مدفوع</span>
+                                        {showSchedule.notes && <div className="mt-3 rounded-xl bg-muted/30 p-3 text-sm text-foreground">{showSchedule.notes}</div>}
+                                    </div>
+
+                                    <div className="rounded-2xl border border-border/70 bg-background p-4">
+                                        <div className="flex items-center justify-between gap-2 mb-3">
+                                            <h4 className="text-sm font-semibold text-foreground">سجل الدفعات</h4>
+                                            {showSchedule.remaining > 0 && (
+                                                <button
+                                                    onClick={() => {
+                                                        const nextInstallment = showSchedule.schedule.find(item => !item.paid);
+                                                        setPayment({
+                                                            amount: nextInstallment ? Math.max(0, (nextInstallment.amount + (nextInstallment.penalty || 0)) - (nextInstallment.paidAmount || 0)) : showSchedule.remaining,
+                                                            date: new Date().toISOString().slice(0, 10),
+                                                            note: nextInstallment ? `دفعة القسط رقم ${nextInstallment.month}` : '',
+                                                        });
+                                                        setShowPayment(showSchedule.id);
+                                                    }}
+                                                    className="flex items-center gap-1.5 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-200 px-3 py-2 text-xs font-semibold hover:bg-emerald-100 transition-colors"
+                                                >
+                                                    <DollarSign className="h-3.5 w-3.5" /> دفعة جديدة
+                                                </button>
+                                            )}
+                                        </div>
+                                        {showSchedule.payments.length === 0 ? (
+                                            <div className="rounded-xl border border-dashed border-border/60 p-4 text-center text-sm text-muted-foreground">
+                                                لا توجد دفعات مسجلة بعد.
+                                            </div>
                                         ) : (
-                                            <button
-                                                onClick={() => {
-                                                    payInstallment(showSchedule.id, s.month, s.amount);
-                                                    refresh();
-                                                    // Update showSchedule state to reflect change
-                                                    setShowSchedule(prev => prev ? { ...prev, schedule: prev.schedule.map(x => x.month === s.month ? { ...x, paid: true } : x), paidTotal: prev.paidTotal + s.amount, remaining: Math.max(0, prev.remaining - s.amount) } : null);
-                                                }}
-                                                className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 shadow-sm ${isOverdue ? 'bg-red-600 text-white hover:bg-red-500' : 'bg-primary text-primary-foreground hover:bg-primary/90'
-                                                    }`}>
-                                                <DollarSign className="h-4 w-4" /> {isOverdue ? 'دفع متأخر' : 'دفع الآن'}
-                                            </button>
+                                            <div className="space-y-2 max-h-72 overflow-y-auto">
+                                                {showSchedule.payments.map(p => (
+                                                    <div key={p.id} className="rounded-xl bg-muted/20 p-3 text-sm">
+                                                        <div className="flex items-center justify-between gap-2">
+                                                            <span className="font-semibold text-emerald-600">+{money(p.amount)}</span>
+                                                            <span className="text-muted-foreground">{p.date}</span>
+                                                        </div>
+                                                        {p.note && <p className="mt-1 text-xs text-muted-foreground">{p.note}</p>}
+                                                    </div>
+                                                ))}
+                                            </div>
                                         )}
                                     </div>
-                                );
-                            })}
-                        </div>
-                        {/* Totals summary */}
-                        <div className="p-4 shrink-0 bg-muted/20 border-t border-border/50">
-                            <div className="rounded-2xl border border-border/80 bg-background p-4 grid grid-cols-2 gap-3 text-center text-sm shadow-sm">
-                                <div className="border-l border-border/50"><p className="text-muted-foreground text-xs mb-1 font-semibold">المبلغ المسدد</p><p className="font-black text-emerald-600 text-lg">{showSchedule.paidTotal.toLocaleString()} ج.م</p></div>
-                                <div><p className="text-muted-foreground text-xs mb-1 font-semibold">المبلغ المتبقي</p><p className="font-black text-primary text-lg">{showSchedule.remaining.toLocaleString()} ج.م</p></div>
+
+                                    {(showSchedule.customFields?.length ?? 0) > 0 && (
+                                        <div className="rounded-2xl border border-border/70 bg-background p-4">
+                                            <h4 className="text-sm font-semibold text-foreground mb-3">الحقول الإضافية</h4>
+                                            <div className="space-y-2">
+                                                {showSchedule.customFields?.map(field => (
+                                                    <div key={field.id} className="flex items-center justify-between gap-2 rounded-xl bg-muted/20 px-3 py-2 text-sm">
+                                                        <span className="text-muted-foreground">{field.label}</span>
+                                                        <span className="font-semibold text-foreground">{field.value || '—'}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -722,14 +1210,26 @@ export default function Installments() {
 
                             <div className="flex gap-2 flex-wrap">
                                 {c.status !== 'completed' && (
-                                    <button onClick={() => setShowPayment(c.id)}
+                                    <button onClick={() => {
+                                        const nextInstallment = c.schedule.find(item => !item.paid);
+                                        setPayment({
+                                            amount: nextInstallment ? Math.max(0, (nextInstallment.amount + (nextInstallment.penalty || 0)) - (nextInstallment.paidAmount || 0)) : c.remaining,
+                                            date: new Date().toISOString().slice(0, 10),
+                                            note: nextInstallment ? `دفعة القسط رقم ${nextInstallment.month}` : '',
+                                        });
+                                        setShowPayment(c.id);
+                                    }}
                                         className="flex items-center gap-1.5 rounded-xl bg-emerald-50 text-emerald-600 border border-emerald-200 px-3 py-1.5 text-xs font-semibold hover:bg-emerald-100 transition-colors">
                                         <DollarSign className="h-3.5 w-3.5" /> تسجيل دفعة
                                     </button>
                                 )}
+                                <button onClick={() => openEditForm(c)}
+                                    className="flex items-center gap-1.5 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 px-3 py-1.5 text-xs font-semibold hover:bg-amber-100 transition-colors">
+                                    <Pencil className="h-3.5 w-3.5" /> تعديل
+                                </button>
                                 <button onClick={() => setShowSchedule(c)}
                                     className="flex items-center gap-1.5 rounded-xl bg-blue-50 text-blue-600 border border-blue-200 px-3 py-1.5 text-xs font-semibold hover:bg-blue-100 transition-colors">
-                                    <Calendar className="h-3.5 w-3.5" /> جدول الأقساط
+                                    <Calendar className="h-3.5 w-3.5" /> تفاصيل العقد
                                 </button>
                                 <button onClick={() => printContract(c)}
                                     className="flex items-center gap-1.5 rounded-xl bg-muted text-muted-foreground border border-border px-3 py-1.5 text-xs font-semibold hover:bg-muted/80 transition-colors">

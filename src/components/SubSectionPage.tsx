@@ -28,9 +28,11 @@ export interface SubItem {
     quantity: number;
     costPrice: number;
     salePrice: number;
+    profitMargin?: number;
     minStock?: number;
     barcode?: string;
     supplier?: string;
+    source?: string;
     condition?: 'new' | 'like_new' | 'used' | 'broken';
     notes?: string;
     image?: string;
@@ -276,7 +278,7 @@ function CategoriesManager({ cats, onSave, onClose, addBtnClass }: {
 const IC = 'w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all';
 const emptyForm = (): Omit<SubItem, 'id' | 'createdAt' | 'updatedAt'> => ({
     name: '', brand: '', category: '', model: '', barcode: '', supplier: '', condition: 'new',
-    quantity: 0, costPrice: 0, salePrice: 0, minStock: 2, notes: '', image: undefined,
+    quantity: 0, costPrice: 0, salePrice: 0, profitMargin: 0, minStock: 2, notes: '', image: undefined,
 });
 
 // ─── Main Component ──────────────────────────────────────────
@@ -320,11 +322,15 @@ export default function SubSectionPage({ config }: { config: SubSectionPageConfi
             toast({ title: 'خطأ', description: 'الاسم مطلوب', variant: 'destructive' });
             return;
         }
+        const payload = {
+            ...form,
+            profitMargin: typeof form.profitMargin === 'number' ? form.profitMargin : (form.salePrice - form.costPrice),
+        };
         if (editId) {
-            config.updateItem(editId, form);
+            config.updateItem(editId, payload);
             toast({ title: '✅ تم التعديل' });
         } else {
-            config.addItem(form);
+            config.addItem(payload);
             toast({ title: '✅ تمت الإضافة', description: form.name });
         }
         setForm(emptyForm()); setEditId(null); setShowForm(false); refresh();
@@ -334,7 +340,7 @@ export default function SubSectionPage({ config }: { config: SubSectionPageConfi
         setForm({
             name: item.name, brand: item.brand ?? '', category: item.category ?? '',
             model: item.model ?? '', quantity: item.quantity, costPrice: item.costPrice,
-            salePrice: item.salePrice, minStock: item.minStock ?? 2,
+            salePrice: item.salePrice, profitMargin: item.profitMargin ?? (item.salePrice - item.costPrice), minStock: item.minStock ?? 2,
             barcode: item.barcode ?? '', supplier: item.supplier ?? '', condition: item.condition ?? 'new',
             notes: item.notes ?? '', image: item.image,
         });
@@ -523,23 +529,50 @@ export default function SubSectionPage({ config }: { config: SubSectionPageConfi
                             <div>
                                 <label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase">سعر الشراء</label>
                                 <input type="number" min={0} value={form.costPrice}
-                                    onChange={e => setForm(f => ({ ...f, costPrice: +e.target.value }))} className={IC} />
+                                    onChange={e => {
+                                        const costPrice = +e.target.value;
+                                        setForm(f => ({
+                                            ...f,
+                                            costPrice,
+                                            salePrice: typeof f.profitMargin === 'number' ? costPrice + f.profitMargin : f.salePrice,
+                                            profitMargin: typeof f.profitMargin === 'number' ? f.profitMargin : (f.salePrice - costPrice),
+                                        }));
+                                    }} className={IC} />
                             </div>
                             <div>
                                 <label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase">سعر البيع</label>
                                 <input type="number" min={0} value={form.salePrice}
-                                    onChange={e => setForm(f => ({ ...f, salePrice: +e.target.value }))} className={IC} />
+                                    onChange={e => {
+                                        const salePrice = +e.target.value;
+                                        setForm(f => ({ ...f, salePrice, profitMargin: salePrice - f.costPrice }));
+                                    }} className={IC} />
                             </div>
-                            {form.salePrice > 0 && form.costPrice > 0 && (
-                                <div className={`col-span-2 rounded-xl border p-3 flex justify-between ${form.salePrice >= form.costPrice ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20' : 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/20'}`}>
-                                    <span className={`text-sm font-semibold ${form.salePrice >= form.costPrice ? 'text-emerald-600' : 'text-red-600'}`}>
-                                        هامش الربح
-                                    </span>
-                                    <span className={`text-lg font-extrabold ${form.salePrice >= form.costPrice ? 'text-emerald-600' : 'text-red-600'}`}>
-                                        {(form.salePrice - form.costPrice).toLocaleString()} ج.م
-                                    </span>
-                                </div>
-                            )}
+                            <div>
+                                <label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase">هامش الربح</label>
+                                <input type="number" min={0} value={form.profitMargin ?? 0}
+                                    onChange={e => {
+                                        const profitMargin = +e.target.value;
+                                        setForm(f => ({ ...f, profitMargin, salePrice: f.costPrice + profitMargin }));
+                                    }} className={IC} />
+                            </div>
+                            {(() => {
+                                const cost = form.costPrice || 0;
+                                const profit = form.salePrice - cost;
+                                const margin = form.salePrice > 0 ? (profit / form.salePrice) * 100 : 0;
+                                return form.salePrice > 0 ? (
+                                    <div className="col-span-2 p-3 rounded-lg bg-muted/50 mt-2">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-sm text-muted-foreground">هامش الربح</span>
+                                            <span className={`font-bold ${margin >= 20 ? 'text-emerald-600 dark:text-emerald-400' : margin >= 10 ? 'text-amber-600 dark:text-amber-400' : 'text-red-500 dark:text-red-400'}`}>
+                                                {margin.toFixed(1)}%
+                                            </span>
+                                        </div>
+                                        {margin < 10 && (
+                                            <p className="text-xs text-amber-600 mt-1">تحذير: الهامش أقل من 10%</p>
+                                        )}
+                                    </div>
+                                ) : null;
+                            })()}
                             <div className="col-span-2">
                                 <label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase">ملاحظات</label>
                                 <textarea value={form.notes ?? ''} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
@@ -649,8 +682,10 @@ export default function SubSectionPage({ config }: { config: SubSectionPageConfi
                                 <td className="px-4 py-3 text-sm font-bold tabular-nums">
                                     {item.salePrice.toLocaleString()}
                                 </td>
-                                <td className="px-4 py-3 text-xs font-bold text-emerald-600 tabular-nums">
-                                    {(item.salePrice - item.costPrice).toLocaleString()}
+                                <td className="px-4 py-3 text-xs font-bold tabular-nums">
+                                    <span className={item.salePrice > 0 && (((item.salePrice - item.costPrice) / item.salePrice) * 100) >= 20 ? 'text-emerald-600' : item.salePrice > 0 && (((item.salePrice - item.costPrice) / item.salePrice) * 100) >= 10 ? 'text-amber-600' : 'text-red-500'}>
+                                        {((item.profitMargin ?? (item.salePrice - item.costPrice))).toLocaleString('ar-EG')} ج.م • {item.salePrice > 0 ? (((item.salePrice - item.costPrice) / item.salePrice) * 100).toFixed(1) : 0}%
+                                    </span>
                                 </td>
                                 <td className="px-4 py-3">
                                     <div className="flex gap-1">

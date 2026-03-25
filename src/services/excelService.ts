@@ -129,6 +129,8 @@ export const MOBILE_COLUMNS: ExcelColumn[] = [
     { key: 'deviceType', header: 'نوع الجهاز', width: 12 },
     { key: 'category', header: 'الفئة', width: 15 },
     { key: 'condition', header: 'الحالة', width: 12 },
+    { key: 'brand', header: 'الشركة', width: 16 },
+    { key: 'model', header: 'الموديل', width: 15 },
     { key: 'quantity', header: 'الكمية', width: 10, format: 'number' },
     { key: 'storage', header: 'التخزين', width: 12 },
     { key: 'ram', header: 'الرام', width: 10 },
@@ -141,6 +143,7 @@ export const MOBILE_COLUMNS: ExcelColumn[] = [
     { key: 'oldCostPrice', header: 'سعر التكلفة القديم', width: 18, format: 'currency' },
     { key: 'newCostPrice', header: 'سعر التكلفة الجديد', width: 18, format: 'currency' },
     { key: 'salePrice', header: 'سعر البيع', width: 15, format: 'currency' },
+    { key: 'profitMargin', header: 'هامش الربح', width: 15, format: 'currency' },
     { key: 'notes', header: 'ملاحظات', width: 25 },
 ];
 
@@ -152,6 +155,8 @@ export const MOBILE_ACCESSORY_COLUMNS: ExcelColumn[] = [
     { key: 'barcode', header: 'الباركود', width: 18 },
     { key: 'category', header: 'الفئة', width: 15 },
     { key: 'subcategory', header: 'الفئة الفرعية', width: 15 },
+    { key: 'brand', header: 'الشركة', width: 16 },
+    { key: 'condition', header: 'الحالة', width: 12 },
     { key: 'quantity', header: 'الكمية', width: 10, format: 'number' },
     { key: 'color', header: 'اللون', width: 12 },
     { key: 'supplier', header: 'المورد', width: 18 },
@@ -159,6 +164,8 @@ export const MOBILE_ACCESSORY_COLUMNS: ExcelColumn[] = [
     { key: 'oldCostPrice', header: 'سعر التكلفة القديم', width: 18, format: 'currency' },
     { key: 'newCostPrice', header: 'سعر التكلفة الجديد', width: 18, format: 'currency' },
     { key: 'salePrice', header: 'سعر البيع', width: 15, format: 'currency' },
+    { key: 'profitMargin', header: 'هامش الربح', width: 15, format: 'currency' },
+    { key: 'minStock', header: 'حد التنبيه', width: 14, format: 'number' },
     { key: 'notes', header: 'ملاحظات', width: 25 },
 ];
 
@@ -175,12 +182,18 @@ export const COMPUTER_COLUMNS: ExcelColumn[] = [
     { key: 'deviceType', header: 'نوع الجهاز', width: 14 },
     { key: 'category', header: 'الفئة', width: 15 },
     { key: 'condition', header: 'الحالة', width: 12 },
+    { key: 'brand', header: 'الشركة', width: 16 },
     { key: 'color', header: 'اللون', width: 12 },
     { key: 'quantity', header: 'الكمية', width: 10, format: 'number' },
+    { key: 'ram', header: 'الرام', width: 10 },
+    { key: 'storage', header: 'التخزين', width: 12 },
     { key: 'processor', header: 'المعالج', width: 15 },
+    { key: 'supplier', header: 'المورد', width: 18 },
+    { key: 'source', header: 'المصدر', width: 15 },
     { key: 'oldCostPrice', header: 'سعر التكلفة القديم', width: 18, format: 'currency' },
     { key: 'newCostPrice', header: 'سعر التكلفة الجديد', width: 18, format: 'currency' },
     { key: 'salePrice', header: 'سعر البيع', width: 15, format: 'currency' },
+    { key: 'profitMargin', header: 'هامش الربح', width: 15, format: 'currency' },
     { key: 'notes', header: 'ملاحظات', width: 25 },
 ];
 
@@ -192,11 +205,17 @@ export const COMPUTER_ACCESSORY_COLUMNS: ExcelColumn[] = [
     { key: 'barcode', header: 'الباركود', width: 18 },
     { key: 'category', header: 'الفئة', width: 15 },
     { key: 'subcategory', header: 'الفئة الفرعية', width: 15 },
+    { key: 'brand', header: 'الشركة', width: 16 },
+    { key: 'condition', header: 'الحالة', width: 12 },
     { key: 'quantity', header: 'الكمية', width: 10, format: 'number' },
     { key: 'color', header: 'اللون', width: 12 },
+    { key: 'supplier', header: 'المورد', width: 18 },
+    { key: 'source', header: 'المصدر', width: 15 },
     { key: 'oldCostPrice', header: 'سعر التكلفة القديم', width: 18, format: 'currency' },
     { key: 'newCostPrice', header: 'سعر التكلفة الجديد', width: 18, format: 'currency' },
     { key: 'salePrice', header: 'سعر البيع', width: 15, format: 'currency' },
+    { key: 'profitMargin', header: 'هامش الربح', width: 15, format: 'currency' },
+    { key: 'minStock', header: 'حد التنبيه', width: 14, format: 'number' },
     { key: 'notes', header: 'ملاحظات', width: 25 },
 ];
 
@@ -212,11 +231,15 @@ export const DEVICE_COLUMNS: ExcelColumn[] = [
     { key: 'barcode', header: 'الباركود', width: 18 },
     { key: 'category', header: 'الفئة', width: 15 },
     { key: 'condition', header: 'الحالة', width: 12 },
+    { key: 'brand', header: 'الشركة', width: 16 },
     { key: 'color', header: 'اللون', width: 12 },
+    { key: 'supplier', header: 'المورد', width: 18 },
+    { key: 'source', header: 'المصدر', width: 15 },
     { key: 'quantity', header: 'الكمية', width: 10, format: 'number' },
     { key: 'oldCostPrice', header: 'سعر التكلفة القديم', width: 18, format: 'currency' },
     { key: 'newCostPrice', header: 'سعر التكلفة الجديد', width: 18, format: 'currency' },
     { key: 'salePrice', header: 'سعر البيع', width: 15, format: 'currency' },
+    { key: 'profitMargin', header: 'هامش الربح', width: 15, format: 'currency' },
     { key: 'notes', header: 'ملاحظات', width: 25 },
 ];
 
