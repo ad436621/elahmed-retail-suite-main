@@ -311,76 +311,124 @@ export default function CarsInventory() {
 
             {/* Form Modal */}
             {showForm && createPortal(
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm overflow-y-auto py-6 px-4" onClick={() => { setShowForm(false); setEditId(null); }}>
-                    <div className="w-full max-w-xl mx-auto rounded-2xl border border-border bg-card p-6 shadow-2xl space-y-4 animate-scale-in" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center justify-between">
-                            <h2 className="text-lg font-bold text-foreground">{editId ? 'تعديل سيارة' : 'إضافة سيارة'}</h2>
-                            <button onClick={() => { setShowForm(false); setEditId(null); }} className="rounded-lg p-1.5 hover:bg-muted transition-colors"><X className="h-5 w-5 text-muted-foreground" /></button>
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm overflow-y-auto py-6 px-4" onClick={() => { setShowForm(false); setEditId(null); }}>
+                    <div className="w-full max-w-xl mx-auto rounded-2xl border border-border bg-card shadow-2xl animate-scale-in" onClick={e => e.stopPropagation()}>
+
+                        {/* ── Modal Header ── */}
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-muted/30 rounded-t-2xl">
+                            <div className="flex items-center gap-3">
+                                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-500/10 border border-sky-500/20">
+                                    <Car className="h-4 w-4 text-sky-600" />
+                                </div>
+                                <div>
+                                    <h2 className="text-base font-bold text-foreground">{editId ? '✏️ تعديل سيارة' : '➕ إضافة سيارة جديدة'}</h2>
+                                    <p className="text-xs text-muted-foreground">مخزون السيارات</p>
+                                </div>
+                            </div>
+                            <button onClick={() => { setShowForm(false); setEditId(null); }} className="rounded-xl p-2 hover:bg-muted text-muted-foreground transition-colors"><X className="h-5 w-5" /></button>
                         </div>
-                        <div className="space-y-3">
+
+                        {/* ── Modal Body ── */}
+                        <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
                             <ImageUpload value={form.image} onChange={v => setForm(f => ({ ...f, image: v }))} />
-                            <div className="grid grid-cols-2 gap-3">
-                                <div className="col-span-2">
-                                    <label className="mb-1 block text-xs font-semibold text-muted-foreground">اسم السيارة *</label>
+
+                            {/* Section 1: Basic Info */}
+                            <div className="rounded-xl border border-border/50 bg-muted/20 p-4 space-y-3">
+                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-primary inline-block" />
+                                    معلومات أساسية
+                                </p>
+                                <div>
+                                    <label className="mb-1.5 block text-xs font-semibold text-foreground/80">اسم السيارة <span className="text-destructive">*</span></label>
                                     <input data-validation="text-only" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="مثال: تويوتا كامري" className={IC} />
                                 </div>
-                                <div>
-                                    <label className="mb-1 block text-xs font-semibold text-muted-foreground">الموديل</label>
-                                    <input data-validation="text-only" value={form.model} onChange={e => setForm(f => ({ ...f, model: e.target.value }))} placeholder="SE" className={IC} />
-                                </div>
-                                <div>
-                                    <label className="mb-1 block text-xs font-semibold text-muted-foreground">سنة الصنع</label>
-                                    <input type="number" min={1990} max={new Date().getFullYear() + 1} value={form.year} onChange={e => setForm(f => ({ ...f, year: +e.target.value }))} className={IC} />
-                                </div>
-                                <div>
-                                    <label className="mb-1 block text-xs font-semibold text-muted-foreground">اللون</label>
-                                    <input data-validation="text-only" value={form.color} onChange={e => setForm(f => ({ ...f, color: e.target.value }))} className={IC} />
-                                </div>
-                                <div>
-                                    <label className="mb-1 block text-xs font-semibold text-muted-foreground">رقم اللوحة</label>
-                                    <input value={form.plateNumber} onChange={e => setForm(f => ({ ...f, plateNumber: e.target.value }))} className={IC} />
-                                </div>
-                                <div>
-                                    <label className="mb-1 block text-xs font-semibold text-muted-foreground">انتهاء الرخصة</label>
-                                    <input type="date" value={form.licenseExpiry} onChange={e => setForm(f => ({ ...f, licenseExpiry: e.target.value }))} className={IC} />
-                                </div>
-                                <div>
-                                    <label className="mb-1 block text-xs font-semibold text-muted-foreground">التصنيف</label>
-                                    <select value={form.category || ''} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} className={IC}>
-                                        <option value="">-- تصنيف السيارة --</option>
-                                        {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="mb-1 block text-xs font-semibold text-muted-foreground">الحالة</label>
-                                    <select value={form.condition} onChange={e => setForm(f => ({ ...f, condition: e.target.value as 'new' | 'used' }))} className={IC}>
-                                        <option value="new">جديدة</option>
-                                        <option value="used">مستعملة</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="mb-1 block text-xs font-semibold text-muted-foreground">سعر الشراء</label>
-                                    <input type="number" min={0} value={form.purchasePrice} onChange={e => setForm(f => ({ ...f, purchasePrice: +e.target.value }))} className={IC} />
-                                </div>
-                                <div>
-                                    <label className="mb-1 block text-xs font-semibold text-muted-foreground">سعر البيع</label>
-                                    <input type="number" min={0} value={form.salePrice} onChange={e => setForm(f => ({ ...f, salePrice: +e.target.value }))} className={IC} />
-                                </div>
-                                {form.salePrice > 0 && form.purchasePrice > 0 && (
-                                    <div className={`col-span-2 rounded-xl border p-3 flex justify-between items-center ${(form.salePrice - form.purchasePrice) >= 0 ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20' : 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/20'}`}>
-                                        <span className={`text-sm font-semibold ${(form.salePrice - form.purchasePrice) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>الربح المتوقع</span>
-                                        <span className={`text-lg font-extrabold ${(form.salePrice - form.purchasePrice) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>{(form.salePrice - form.purchasePrice).toLocaleString()} ج.م</span>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="mb-1.5 block text-xs font-semibold text-foreground/80">الموديل</label>
+                                        <input data-validation="text-only" value={form.model} onChange={e => setForm(f => ({ ...f, model: e.target.value }))} placeholder="SE" className={IC} />
                                     </div>
-                                )}
+                                    <div>
+                                        <label className="mb-1.5 block text-xs font-semibold text-foreground/80">اللون</label>
+                                        <input data-validation="text-only" value={form.color} onChange={e => setForm(f => ({ ...f, color: e.target.value }))} className={IC} />
+                                    </div>
+                                </div>
                             </div>
+
+                            {/* Section 2: Classification & Details */}
+                            <div className="rounded-xl border border-border/50 bg-muted/20 p-4 space-y-3">
+                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-sky-500 inline-block" />
+                                    التصنيف والتفاصيل
+                                </p>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="mb-1.5 block text-xs font-semibold text-foreground/80">سنة الصنع</label>
+                                        <input type="number" min={1990} max={new Date().getFullYear() + 1} value={form.year} onChange={e => setForm(f => ({ ...f, year: +e.target.value }))} className={IC} />
+                                    </div>
+                                    <div>
+                                        <label className="mb-1.5 block text-xs font-semibold text-foreground/80">رقم اللوحة</label>
+                                        <input value={form.plateNumber} onChange={e => setForm(f => ({ ...f, plateNumber: e.target.value }))} className={IC} />
+                                    </div>
+                                    <div>
+                                        <label className="mb-1.5 block text-xs font-semibold text-foreground/80">انتهاء الرخصة</label>
+                                        <input type="date" value={form.licenseExpiry} onChange={e => setForm(f => ({ ...f, licenseExpiry: e.target.value }))} className={IC} />
+                                    </div>
+                                    <div>
+                                        <label className="mb-1.5 block text-xs font-semibold text-foreground/80">الحالة</label>
+                                        <select value={form.condition} onChange={e => setForm(f => ({ ...f, condition: e.target.value as 'new' | 'used' }))} className={IC}>
+                                            <option value="new">جديدة</option>
+                                            <option value="used">مستعملة</option>
+                                        </select>
+                                    </div>
+                                    <div className="col-span-2">
+                                        <label className="mb-1.5 block text-xs font-semibold text-foreground/80">التصنيف</label>
+                                        <select value={form.category || ''} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} className={IC}>
+                                            <option value="">-- تصنيف السيارة --</option>
+                                            {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Section 3: Pricing */}
+                            <div className="rounded-xl border border-border/50 bg-gradient-to-l from-primary/5 to-transparent p-4 space-y-3">
+                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block" />
+                                    التسعير
+                                </p>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="mb-1.5 block text-xs font-semibold text-foreground/80">سعر الشراء</label>
+                                        <input type="number" min={0} value={form.purchasePrice} onChange={e => setForm(f => ({ ...f, purchasePrice: +e.target.value }))} className={IC} placeholder="0" />
+                                    </div>
+                                    <div>
+                                        <label className="mb-1.5 block text-xs font-semibold text-foreground/80">سعر البيع</label>
+                                        <input type="number" min={0} value={form.salePrice} onChange={e => setForm(f => ({ ...f, salePrice: +e.target.value }))} className={IC} placeholder="0" />
+                                    </div>
+                                </div>
+                                {form.salePrice > 0 && form.purchasePrice > 0 && (() => {
+                                    const profit = form.salePrice - form.purchasePrice;
+                                    const isPos = profit >= 0;
+                                    return (
+                                        <div className={`rounded-xl border p-3 flex justify-between items-center ${isPos ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-400' : 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400'}`}>
+                                            <span className="text-sm font-semibold">{isPos ? '✅ الربح المتوقع' : '⚠️ خسارة متوقعة'}</span>
+                                            <span className="text-xl font-extrabold">{profit.toLocaleString('ar-EG')} ج.م</span>
+                                        </div>
+                                    );
+                                })()}
+                            </div>
+
+                            {/* Notes */}
                             <div>
-                                <label className="mb-1 block text-xs font-semibold text-muted-foreground flex items-center gap-1"><AlignLeft className="h-3.5 w-3.5 text-primary" /> ملاحظات</label>
-                                <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={2} className={`${IC} resize-none`} />
+                                <label className="mb-1.5 block text-xs font-semibold text-foreground/80">ملاحظات</label>
+                                <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))} rows={2} className={`${IC} resize-none`} placeholder="أي ملاحظات..." />
                             </div>
                         </div>
-                        <div className="flex gap-2 pt-1">
-                            <button onClick={handleSubmit} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-all">
-                                <Check className="h-4 w-4" /> {editId ? 'حفظ' : 'إضافة'}
+
+                        {/* ── Modal Footer ── */}
+                        <div className="flex gap-3 px-6 py-4 border-t border-border bg-muted/20 rounded-b-2xl">
+                            <button onClick={handleSubmit} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-sky-600 py-2.5 text-sm font-bold text-white shadow-md hover:bg-sky-700 hover:shadow-lg transition-all">
+                                <Check className="h-4 w-4" /> {editId ? 'حفظ التعديلات' : 'إضافة السيارة'}
                             </button>
                             <button onClick={() => { setShowForm(false); setEditId(null); }} className="flex-1 rounded-xl border border-border py-2.5 text-sm font-medium hover:bg-muted transition-colors">إلغاء</button>
                         </div>

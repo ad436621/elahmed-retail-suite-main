@@ -31,13 +31,18 @@ export function initializeDatabase() {
       role TEXT NOT NULL,
       permissions TEXT, -- JSON
       active INTEGER DEFAULT 1,
-      passwordHash TEXT
+      passwordHash TEXT,
+      salt TEXT,
+      mustChangePassword INTEGER DEFAULT 0,
+      createdAt TEXT,
+      updatedAt TEXT
     );
 
     CREATE TABLE IF NOT EXISTS categories (
       id TEXT PRIMARY KEY,
-      name TEXT UNIQUE NOT NULL,
-      inventoryType TEXT NOT NULL
+      name TEXT NOT NULL,
+      inventoryType TEXT NOT NULL,
+      UNIQUE(name, inventoryType)
     );
 
     CREATE TABLE IF NOT EXISTS products (
@@ -51,12 +56,23 @@ export function initializeDatabase() {
       storage TEXT,
       ram TEXT,
       color TEXT,
+      brand TEXT,
+      description TEXT,
+      boxNumber TEXT,
+      taxExcluded INTEGER DEFAULT 0,
       quantity INTEGER DEFAULT 0,
       oldCostPrice REAL DEFAULT 0,
       newCostPrice REAL DEFAULT 0,
       salePrice REAL DEFAULT 0,
+      profitMargin REAL DEFAULT 0,
+      minStock INTEGER DEFAULT 0,
       supplier TEXT,
       source TEXT, -- 'mobile', 'computer', 'used', etc.
+      warehouseId TEXT,
+      serialNumber TEXT,
+      imei2 TEXT,
+      processor TEXT,
+      isArchived INTEGER DEFAULT 0,
       notes TEXT,
       image TEXT,
       createdAt TEXT,
@@ -77,8 +93,33 @@ export function initializeDatabase() {
       supplier TEXT,
       notes TEXT,
       createdAt TEXT,
-      updatedAt TEXT,
-      FOREIGN KEY (productId) REFERENCES products(id) ON DELETE CASCADE
+      updatedAt TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS stock_movements (
+      id TEXT PRIMARY KEY,
+      productId TEXT NOT NULL,
+      type TEXT NOT NULL,
+      quantityChange REAL NOT NULL,
+      previousQuantity REAL NOT NULL,
+      newQuantity REAL NOT NULL,
+      reason TEXT,
+      referenceId TEXT,
+      userId TEXT,
+      timestamp TEXT NOT NULL,
+      warehouseId TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS audit_logs (
+      id TEXT PRIMARY KEY,
+      userId TEXT NOT NULL,
+      action TEXT NOT NULL,
+      entityType TEXT NOT NULL,
+      entityId TEXT NOT NULL,
+      beforeStateJson TEXT,
+      afterStateJson TEXT,
+      machineId TEXT,
+      timestamp TEXT NOT NULL
     );
 
     CREATE TABLE IF NOT EXISTS sales (
@@ -107,8 +148,33 @@ export function initializeDatabase() {
       price REAL NOT NULL,
       cost REAL NOT NULL,
       lineDiscount REAL DEFAULT 0,
+      warehouseId TEXT,
       batches TEXT, -- JSON array of batch deductions
       FOREIGN KEY (saleId) REFERENCES sales(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS return_records (
+      id TEXT PRIMARY KEY,
+      returnNumber TEXT UNIQUE NOT NULL,
+      originalInvoiceNumber TEXT NOT NULL,
+      originalSaleId TEXT,
+      date TEXT NOT NULL,
+      totalRefund REAL NOT NULL DEFAULT 0 CHECK (totalRefund >= 0),
+      reason TEXT,
+      processedBy TEXT,
+      createdAt TEXT NOT NULL,
+      FOREIGN KEY (originalSaleId) REFERENCES sales(id) ON DELETE SET NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS return_items (
+      id TEXT PRIMARY KEY,
+      returnId TEXT NOT NULL,
+      productId TEXT NOT NULL,
+      name TEXT NOT NULL,
+      qty REAL NOT NULL CHECK (qty > 0),
+      price REAL NOT NULL CHECK (price >= 0),
+      reason TEXT,
+      FOREIGN KEY (returnId) REFERENCES return_records(id) ON DELETE CASCADE
     );
 
     CREATE TABLE IF NOT EXISTS customer_accounts (
@@ -122,40 +188,69 @@ export function initializeDatabase() {
     CREATE TABLE IF NOT EXISTS installments (
       id TEXT PRIMARY KEY,
       contractNumber TEXT UNIQUE NOT NULL,
+      contractType TEXT NOT NULL DEFAULT 'product',
       customerId TEXT,
       customerName TEXT NOT NULL,
       customerPhone TEXT,
       customerAddress TEXT,
-      customerNationalId TEXT,
+      customerIdCard TEXT,
       guarantorName TEXT,
+      guarantorIdCard TEXT,
       guarantorPhone TEXT,
       guarantorAddress TEXT,
       productId TEXT,
       productName TEXT NOT NULL,
-      totalAmount REAL NOT NULL,
-      downPayment REAL NOT NULL,
-      remainingAmount REAL NOT NULL,
-      months INTEGER NOT NULL,
-      monthlyPayment REAL NOT NULL,
+      transferType TEXT,
+      cashPrice REAL NOT NULL DEFAULT 0,
+      installmentPrice REAL NOT NULL DEFAULT 0,
+      downPayment REAL NOT NULL DEFAULT 0,
+      months INTEGER NOT NULL CHECK (months >= 1),
+      monthlyInstallment REAL NOT NULL DEFAULT 0,
+      paidTotal REAL NOT NULL DEFAULT 0,
+      remaining REAL NOT NULL DEFAULT 0,
       firstInstallmentDate TEXT,
-      startDate TEXT NOT NULL,
-      status TEXT NOT NULL, -- 'active', 'completed', 'defaulted'
       notes TEXT,
+      customFieldsJson TEXT,
+      status TEXT NOT NULL DEFAULT 'active',
       settledEarly INTEGER DEFAULT 0,
       settlementDiscount REAL DEFAULT 0,
-      createdAt TEXT
+      createdAt TEXT NOT NULL,
+      updatedAt TEXT NOT NULL,
+      FOREIGN KEY (customerId) REFERENCES customers(id) ON DELETE SET NULL,
+      FOREIGN KEY (productId) REFERENCES products(id) ON DELETE SET NULL
     );
 
     CREATE TABLE IF NOT EXISTS installment_schedules (
       id TEXT PRIMARY KEY,
       contractId TEXT NOT NULL,
+      monthNumber INTEGER NOT NULL CHECK (monthNumber >= 1),
       dueDate TEXT NOT NULL,
-      amount REAL NOT NULL,
-      paidAmount REAL DEFAULT 0,
-      penalty REAL DEFAULT 0,
+      amount REAL NOT NULL DEFAULT 0 CHECK (amount >= 0),
+      paidAmount REAL DEFAULT 0 CHECK (paidAmount >= 0),
+      penalty REAL DEFAULT 0 CHECK (penalty >= 0),
       paid INTEGER DEFAULT 0,
-      paymentDate TEXT,
+      remainingAfter REAL,
+      note TEXT,
       FOREIGN KEY (contractId) REFERENCES installments(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS installment_payments (
+      id TEXT PRIMARY KEY,
+      contractId TEXT NOT NULL,
+      amount REAL NOT NULL CHECK (amount >= 0),
+      date TEXT NOT NULL,
+      note TEXT,
+      createdAt TEXT NOT NULL,
+      FOREIGN KEY (contractId) REFERENCES installments(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS installment_payment_allocations (
+      id TEXT PRIMARY KEY,
+      paymentId TEXT NOT NULL,
+      scheduleItemId TEXT NOT NULL,
+      amount REAL NOT NULL CHECK (amount >= 0),
+      FOREIGN KEY (paymentId) REFERENCES installment_payments(id) ON DELETE CASCADE,
+      FOREIGN KEY (scheduleItemId) REFERENCES installment_schedules(id) ON DELETE CASCADE
     );
 
     -- ==========================================
@@ -170,6 +265,42 @@ export function initializeDatabase() {
       notes TEXT
     );
 
+    CREATE TABLE IF NOT EXISTS warehouse_items (
+      id TEXT PRIMARY KEY,
+      warehouseId TEXT,
+      name TEXT NOT NULL,
+      category TEXT NOT NULL,
+      quantity INTEGER NOT NULL DEFAULT 0,
+      costPrice REAL NOT NULL DEFAULT 0,
+      notes TEXT,
+      addedBy TEXT,
+      createdAt TEXT,
+      updatedAt TEXT,
+      FOREIGN KEY (warehouseId) REFERENCES warehouses(id) ON DELETE SET NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS cars_inventory (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      model TEXT NOT NULL,
+      year INTEGER NOT NULL,
+      color TEXT,
+      plateNumber TEXT,
+      licenseExpiry TEXT,
+      condition TEXT NOT NULL DEFAULT 'used',
+      category TEXT,
+      purchasePrice REAL NOT NULL DEFAULT 0,
+      salePrice REAL NOT NULL DEFAULT 0,
+      notes TEXT,
+      image TEXT,
+      warehouseId TEXT,
+      isArchived INTEGER DEFAULT 0,
+      deletedAt TEXT,
+      createdAt TEXT,
+      updatedAt TEXT,
+      FOREIGN KEY (warehouseId) REFERENCES warehouses(id) ON DELETE SET NULL
+    );
+
     CREATE TABLE IF NOT EXISTS accessories (
       id TEXT PRIMARY KEY,
       warehouseId TEXT,
@@ -180,12 +311,22 @@ export function initializeDatabase() {
       model TEXT,
       barcode TEXT,
       quantity INTEGER DEFAULT 0,
+      oldCostPrice REAL DEFAULT 0,
+      newCostPrice REAL DEFAULT 0,
       costPrice REAL DEFAULT 0,
       salePrice REAL DEFAULT 0,
+      profitMargin REAL DEFAULT 0,
       minStock INTEGER DEFAULT 0,
       condition TEXT DEFAULT 'new',
+      brand TEXT,
       supplier TEXT,
+      source TEXT,
+      boxNumber TEXT,
+      taxExcluded INTEGER DEFAULT 0,
       color TEXT,
+      description TEXT,
+      isArchived INTEGER DEFAULT 0,
+      deletedAt TEXT,
       notes TEXT,
       image TEXT,
       createdAt TEXT,
@@ -232,7 +373,8 @@ export function initializeDatabase() {
       affectsProfit INTEGER DEFAULT 0,
       createdBy TEXT,
       relatedId TEXT, -- invoiceId, expenseId, etc.
-      createdAt TEXT
+      createdAt TEXT,
+      FOREIGN KEY (walletId) REFERENCES wallets(id) ON DELETE RESTRICT
     );
 
     -- ==========================================
@@ -273,14 +415,29 @@ export function initializeDatabase() {
     CREATE TABLE IF NOT EXISTS employee_salaries (
       id TEXT PRIMARY KEY,
       employeeId TEXT NOT NULL,
+      employeeName TEXT,
       month TEXT NOT NULL,
       baseSalary REAL NOT NULL,
       commission REAL DEFAULT 0,
       bonus REAL DEFAULT 0,
       deductions REAL DEFAULT 0,
+      advanceDeducted REAL DEFAULT 0,
       netSalary REAL NOT NULL,
       paid INTEGER DEFAULT 0,
       paidAt TEXT,
+      walletId TEXT,
+      notes TEXT,
+      createdAt TEXT,
+      FOREIGN KEY (employeeId) REFERENCES employees(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS employee_advances (
+      id TEXT PRIMARY KEY,
+      employeeId TEXT NOT NULL,
+      employeeName TEXT,
+      amount REAL NOT NULL,
+      date TEXT NOT NULL,
+      deductedMonth TEXT,
       notes TEXT,
       createdAt TEXT,
       FOREIGN KEY (employeeId) REFERENCES employees(id) ON DELETE CASCADE
@@ -322,6 +479,20 @@ export function initializeDatabase() {
       updatedAt TEXT
     );
 
+    CREATE TABLE IF NOT EXISTS supplier_transactions (
+      id TEXT PRIMARY KEY,
+      supplierId TEXT NOT NULL,
+      supplierName TEXT,
+      type TEXT NOT NULL,
+      amount REAL NOT NULL,
+      balanceBefore REAL DEFAULT 0,
+      balanceAfter REAL DEFAULT 0,
+      notes TEXT,
+      createdBy TEXT,
+      createdAt TEXT,
+      FOREIGN KEY (supplierId) REFERENCES suppliers(id) ON DELETE CASCADE
+    );
+
     -- ==========================================
     -- REMINDERS
     -- ==========================================
@@ -331,11 +502,14 @@ export function initializeDatabase() {
       title TEXT NOT NULL,
       description TEXT,
       dueDate TEXT NOT NULL,
+      reminderTime TEXT,
       priority TEXT DEFAULT 'medium',
+      status TEXT DEFAULT 'pending',
       completed INTEGER DEFAULT 0,
       completedAt TEXT,
       recurring TEXT,
       category TEXT,
+      notes TEXT,
       createdAt TEXT,
       updatedAt TEXT
     );
@@ -346,13 +520,21 @@ export function initializeDatabase() {
 
     CREATE TABLE IF NOT EXISTS blacklist (
       id TEXT PRIMARY KEY,
-      name TEXT NOT NULL,
+      imei TEXT,
+      deviceName TEXT NOT NULL,
+      ownerName TEXT,
+      ownerPhone TEXT,
       phone TEXT,
+      status TEXT DEFAULT 'active',
+      reportedDate TEXT,
       nationalId TEXT,
       reason TEXT NOT NULL,
       notes TEXT,
       addedBy TEXT,
-      createdAt TEXT
+      createdBy TEXT,
+      name TEXT,
+      createdAt TEXT,
+      updatedAt TEXT
     );
 
     -- ==========================================
@@ -365,6 +547,7 @@ export function initializeDatabase() {
       productId TEXT,
       inventoryType TEXT,
       quantity REAL DEFAULT 1,
+      costPrice REAL DEFAULT 0,
       reason TEXT,
       estimatedLoss REAL DEFAULT 0,
       reportedBy TEXT,
@@ -384,8 +567,10 @@ export function initializeDatabase() {
       amount REAL NOT NULL,
       date TEXT NOT NULL,
       paymentMethod TEXT DEFAULT 'cash',
+      addedBy TEXT,
       notes TEXT,
-      createdAt TEXT
+      createdAt TEXT,
+      updatedAt TEXT
     );
 
     -- ==========================================
@@ -398,10 +583,45 @@ export function initializeDatabase() {
       type TEXT NOT NULL DEFAULT 'cash',
       balance REAL DEFAULT 0,
       isDefault INTEGER DEFAULT 0,
+      icon TEXT,
       color TEXT,
       notes TEXT,
       createdAt TEXT,
       updatedAt TEXT
+    );
+
+    -- ==========================================
+    -- PURCHASE INVOICES
+    -- ==========================================
+
+    CREATE TABLE IF NOT EXISTS purchase_invoices (
+      id TEXT PRIMARY KEY,
+      invoiceNumber TEXT UNIQUE NOT NULL,
+      supplierId TEXT,
+      supplierName TEXT NOT NULL,
+      invoiceDate TEXT NOT NULL,
+      totalAmount REAL NOT NULL DEFAULT 0 CHECK (totalAmount >= 0),
+      paidAmount REAL NOT NULL DEFAULT 0 CHECK (paidAmount >= 0),
+      remaining REAL NOT NULL DEFAULT 0 CHECK (remaining >= 0),
+      paymentMethod TEXT NOT NULL DEFAULT 'cash',
+      status TEXT NOT NULL DEFAULT 'confirmed',
+      notes TEXT,
+      createdBy TEXT,
+      createdAt TEXT NOT NULL,
+      updatedAt TEXT NOT NULL,
+      FOREIGN KEY (supplierId) REFERENCES suppliers(id) ON DELETE SET NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS purchase_invoice_items (
+      id TEXT PRIMARY KEY,
+      invoiceId TEXT NOT NULL,
+      productName TEXT NOT NULL,
+      category TEXT,
+      quantity REAL NOT NULL CHECK (quantity > 0),
+      unitPrice REAL NOT NULL CHECK (unitPrice >= 0),
+      totalPrice REAL NOT NULL CHECK (totalPrice >= 0),
+      notes TEXT,
+      FOREIGN KEY (invoiceId) REFERENCES purchase_invoices(id) ON DELETE CASCADE
     );
 
     -- ==========================================
@@ -411,6 +631,8 @@ export function initializeDatabase() {
     CREATE TABLE IF NOT EXISTS used_devices (
       id TEXT PRIMARY KEY,
       name TEXT NOT NULL,
+      model TEXT,
+      deviceType TEXT,
       category TEXT,
       condition TEXT DEFAULT 'good',
       purchasePrice REAL DEFAULT 0,
@@ -419,6 +641,8 @@ export function initializeDatabase() {
       serialNumber TEXT,
       color TEXT,
       storage TEXT,
+      ram TEXT,
+      description TEXT,
       notes TEXT,
       image TEXT,
       soldAt TEXT,
@@ -443,6 +667,23 @@ export function initializeDatabase() {
       openedBy TEXT,
       closedBy TEXT,
       notes TEXT
+    );
+
+    CREATE TABLE IF NOT EXISTS shift_closings (
+      id TEXT PRIMARY KEY,
+      shiftDate TEXT NOT NULL,
+      closedAt TEXT NOT NULL,
+      closedBy TEXT NOT NULL,
+      salesCount INTEGER NOT NULL DEFAULT 0,
+      salesCash REAL NOT NULL DEFAULT 0,
+      salesCard REAL NOT NULL DEFAULT 0,
+      salesTransfer REAL NOT NULL DEFAULT 0,
+      salesTotal REAL NOT NULL DEFAULT 0,
+      expectedCash REAL NOT NULL DEFAULT 0,
+      actualCash REAL NOT NULL DEFAULT 0,
+      cashDifference REAL NOT NULL DEFAULT 0,
+      notes TEXT,
+      createdAt TEXT NOT NULL
     );
 
     -- ==========================================
@@ -583,6 +824,32 @@ export function initializeDatabase() {
       line_total REAL NOT NULL DEFAULT 0,
       FOREIGN KEY(invoice_id) REFERENCES repair_invoices(id) ON DELETE CASCADE
     );
+
+    CREATE INDEX IF NOT EXISTS idx_products_barcode ON products(barcode);
+    CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses(date);
+    CREATE INDEX IF NOT EXISTS idx_employee_salaries_employee_month ON employee_salaries(employeeId, month);
+    CREATE INDEX IF NOT EXISTS idx_employee_advances_employee_date ON employee_advances(employeeId, date);
+    CREATE INDEX IF NOT EXISTS idx_product_batches_productId ON product_batches(productId);
+    CREATE INDEX IF NOT EXISTS idx_sale_items_saleId ON sale_items(saleId);
+    CREATE INDEX IF NOT EXISTS idx_customers_phone ON customers(phone);
+    CREATE INDEX IF NOT EXISTS idx_customers_nationalId ON customers(nationalId);
+    CREATE INDEX IF NOT EXISTS idx_blacklist_imei_status ON blacklist(imei, status);
+    CREATE INDEX IF NOT EXISTS idx_damaged_items_date ON damaged_items(date);
+    CREATE INDEX IF NOT EXISTS idx_installments_customerId ON installments(customerId);
+    CREATE INDEX IF NOT EXISTS idx_installments_productId ON installments(productId);
+    CREATE INDEX IF NOT EXISTS idx_installments_status ON installments(status);
+    CREATE INDEX IF NOT EXISTS idx_installments_createdAt ON installments(createdAt);
+    CREATE INDEX IF NOT EXISTS idx_installment_schedules_contract_month ON installment_schedules(contractId, monthNumber);
+    CREATE INDEX IF NOT EXISTS idx_installment_schedules_due_paid ON installment_schedules(dueDate, paid);
+    CREATE INDEX IF NOT EXISTS idx_installment_payments_contract_date ON installment_payments(contractId, date);
+    CREATE INDEX IF NOT EXISTS idx_installment_allocations_payment ON installment_payment_allocations(paymentId);
+    CREATE INDEX IF NOT EXISTS idx_installment_allocations_schedule ON installment_payment_allocations(scheduleItemId);
+    CREATE INDEX IF NOT EXISTS idx_supplier_transactions_supplier_created ON supplier_transactions(supplierId, createdAt);
+    CREATE INDEX IF NOT EXISTS idx_other_revenue_date ON other_revenue(date);
+    CREATE INDEX IF NOT EXISTS idx_reminders_due_status ON reminders(dueDate, status, completed);
+    CREATE INDEX IF NOT EXISTS idx_safe_transactions_wallet_created ON safe_transactions(walletId, createdAt);
+    CREATE INDEX IF NOT EXISTS idx_repair_tickets_status_created ON repair_tickets(status, createdAt);
+    CREATE INDEX IF NOT EXISTS idx_used_devices_serial_status ON used_devices(serialNumber, status);
   `);
 
   return db;

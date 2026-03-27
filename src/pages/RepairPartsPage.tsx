@@ -187,89 +187,137 @@ export default function RepairPartsPage() {
                 </div>
             </div>
 
+            {/* Form Modal */}
             {showForm && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto" onClick={() => setShowForm(false)}>
-                    <div className="w-full max-w-2xl rounded-3xl border border-border bg-background shadow-2xl animate-scale-in" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center justify-between px-6 py-4 border-b border-border">
-                            <h2 className="text-xl font-black">{editId ? 'تعديل قطعة' : 'إضافة قطعة جديدة'}</h2>
-                            <button onClick={() => setShowForm(false)} className="p-2 hover:bg-muted rounded-full"><X className="h-5 w-5" /></button>
+                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm overflow-y-auto py-6 px-4" onClick={() => setShowForm(false)}>
+                    <div className="w-full max-w-xl mx-auto rounded-3xl border border-border bg-background shadow-2xl animate-scale-in flex flex-col" onClick={e => e.stopPropagation()}>
+                        
+                        {/* ── Modal Body ── */}
+                        <div className="p-6 space-y-5 max-h-[80vh] overflow-y-auto w-full">
+                            
+                            {/* Section 1: Basic Info */}
+                            <div className="flex items-center gap-2 mb-2">
+                                <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                                <h3 className="text-sm font-bold text-foreground">معلومات أساسية</h3>
+                            </div>
+
+                            <div>
+                                <label className="mb-2 block text-[11px] font-bold text-muted-foreground text-right">اسم القطعة <span className="text-destructive">*</span></label>
+                                <div className="relative">
+                                    <Tag className="absolute right-3 top-3 h-4 w-4 text-muted-foreground/40" />
+                                    <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} 
+                                        className={`${IC} pr-9 transition-colors hover:border-primary/50 focus:border-primary focus:ring-1 focus:ring-primary`} placeholder="مثال: شاشة ايفون 13 اصلية" autoFocus />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="mb-2 block text-[11px] font-bold text-muted-foreground text-right">الباركود</label>
+                                    <div className="relative">
+                                        <QrCode className="absolute right-3 top-3 h-4 w-4 text-muted-foreground/40" />
+                                        <input value={form.barcode} onChange={e => setForm({ ...form, barcode: e.target.value })} 
+                                            className={`${IC} pr-9 transition-colors hover:border-primary/50 focus:border-primary focus:ring-1 focus:ring-primary`} placeholder="تلقائي إن تُرِك فارغاً" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="mb-2 block text-[11px] font-bold text-muted-foreground text-right">الماركة</label>
+                                    <input value={form.brand} onChange={e => setForm({ ...form, brand: e.target.value })} 
+                                        className={`${IC} transition-colors hover:border-primary/50 focus:border-primary focus:ring-1 focus:ring-primary`} placeholder="مثال: Apple, Samsung" />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="mb-2 block text-[11px] font-bold text-muted-foreground text-right">التصنيف</label>
+                                    <div className="relative">
+                                        <Layers className="absolute right-3 top-3 h-4 w-4 text-muted-foreground/40" />
+                                        <input value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} 
+                                            className={`${IC} pr-9 transition-colors hover:border-primary/50 focus:border-primary focus:ring-1 focus:ring-primary`} list="part-cats" placeholder="-- اختر تصنيف --" />
+                                        <datalist id="part-cats">
+                                            {categories.filter(c => c !== 'all').map(c => <option key={c} value={c} />)}
+                                        </datalist>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="mb-2 block text-[11px] font-bold text-muted-foreground text-right">الموديلات المتوافقة</label>
+                                    <input value={form.compatible_models} onChange={e => setForm({ ...form, compatible_models: e.target.value })} 
+                                        className={`${IC} transition-colors hover:border-primary/50 focus:border-primary focus:ring-1 focus:ring-primary`} placeholder="iPhone 11, 12, XR..." />
+                                </div>
+                            </div>
+
+                            {/* Section 2: Inventory Details */}
+                            <div className="flex items-center gap-2 mt-6 mb-2">
+                                <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+                                <h3 className="text-sm font-bold text-foreground">المخزون والتخزين</h3>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="mb-2 block text-[11px] font-bold text-muted-foreground text-right">SKU / رمز المورد</label>
+                                    <div className="relative">
+                                        <Hash className="absolute right-3 top-3 h-4 w-4 text-muted-foreground/40" />
+                                        <input value={form.sku} onChange={e => setForm({ ...form, sku: e.target.value })} 
+                                            className={`${IC} pr-9 transition-colors hover:border-primary/50 focus:border-primary focus:ring-1 focus:ring-primary`} placeholder="#" />
+                                    </div>
+                                </div>
+                                <div>
+                                    <label className="mb-2 block text-[11px] font-bold text-muted-foreground text-right">الكمية</label>
+                                    <input type="number" min={0} value={form.qty || ''} onChange={e => setForm({ ...form, qty: +e.target.value })} 
+                                        className={`${IC} transition-colors hover:border-primary/50 focus:border-primary focus:ring-1 focus:ring-primary text-center`} placeholder="0" />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="mb-2 block text-[11px] font-bold text-muted-foreground text-right">حد التنبيه</label>
+                                    <input type="number" min={0} value={form.min_qty || ''} onChange={e => setForm({ ...form, min_qty: +e.target.value })} 
+                                        className={`${IC} transition-colors hover:border-primary/50 focus:border-primary focus:ring-1 focus:ring-primary text-center`} placeholder="2" />
+                                </div>
+                                <div>
+                                    <label className="mb-2 block text-[11px] font-bold text-muted-foreground text-right">مكان التخزين (الرف/الدرج)</label>
+                                    <div className="relative">
+                                        <MapPin className="absolute right-3 top-3 h-4 w-4 text-muted-foreground/40" />
+                                        <input value={form.location} onChange={e => setForm({ ...form, location: e.target.value })} 
+                                            className={`${IC} pr-9 transition-colors hover:border-primary/50 focus:border-primary focus:ring-1 focus:ring-primary`} placeholder="درج A1، رف 2..." />
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="mb-2 block text-[11px] font-bold text-muted-foreground text-right">سعر الشراء</label>
+                                    <input type="number" min={0} value={form.unit_cost || ''} onChange={e => setForm({ ...form, unit_cost: +e.target.value })} 
+                                        className={`${IC} transition-colors hover:border-primary/50 focus:border-primary focus:ring-1 focus:ring-primary text-center font-bold`} placeholder="0.00" />
+                                </div>
+                                <div>
+                                    <label className="mb-2 block text-[11px] font-bold text-muted-foreground text-right">سعر البيع</label>
+                                    <input type="number" min={0} value={form.selling_price || ''} onChange={e => setForm({ ...form, selling_price: +e.target.value })} 
+                                        className={`${IC} transition-colors hover:border-primary/50 focus:border-primary focus:ring-1 focus:ring-primary text-center font-bold text-emerald-600`} placeholder="0.00" />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="mb-2 block text-[11px] font-bold text-muted-foreground text-right">هامش الربح</label>
+                                <div className={`w-full rounded-xl border px-3 py-2.5 text-sm text-center font-bold transition-colors ${(Number(form.selling_price) - Number(form.unit_cost)) >= 0 ? 'bg-emerald-50 text-emerald-600 border-emerald-200' : 'bg-red-50 text-red-600 border-red-200'}`}>
+                                    {(Number(form.selling_price) - Number(form.unit_cost)).toLocaleString('ar-EG')} ج.م
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="mb-2 block text-[11px] font-bold text-muted-foreground text-right">ملاحظات إضافية</label>
+                                <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} 
+                                    className={`${IC} min-h-[100px] resize-none transition-colors hover:border-primary/50 focus:border-primary focus:ring-1 focus:ring-primary`} placeholder="ملاحظات حول القطعة..." />
+                            </div>
                         </div>
-                        <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div className="md:col-span-2">
-                                <label className="text-xs font-bold text-muted-foreground mb-1 block">اسم القطعة *</label>
-                                <div className="relative">
-                                    <Tag className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
-                                    <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} className={`${IC} pr-9`} placeholder="مثال: شاشة ايفون 13 اصلية" />
-                                </div>
-                            </div>
-                            <div>
-                                <label className="text-xs font-bold text-muted-foreground mb-1 block">التصنيف</label>
-                                <div className="relative">
-                                    <Layers className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
-                                    <input value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} className={`${IC} pr-9`} list="part-cats" />
-                                    <datalist id="part-cats">
-                                        {categories.filter(c => c !== 'all').map(c => <option key={c} value={c} />)}
-                                    </datalist>
-                                </div>
-                            </div>
-                            <div>
-                                <label className="text-xs font-bold text-muted-foreground mb-1 block">البراند</label>
-                                <input value={form.brand} onChange={e => setForm({ ...form, brand: e.target.value })} className={IC} />
-                            </div>
-                            <div>
-                                <label className="text-xs font-bold text-muted-foreground mb-1 block">SKU / رمز المورد</label>
-                                <div className="relative">
-                                    <Hash className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
-                                    <input value={form.sku} onChange={e => setForm({ ...form, sku: e.target.value })} className={`${IC} pr-9`} />
-                                </div>
-                            </div>
-                            <div>
-                                <label className="text-xs font-bold text-muted-foreground mb-1 block">الباركود</label>
-                                <div className="relative">
-                                    <QrCode className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
-                                    <input value={form.barcode} onChange={e => setForm({ ...form, barcode: e.target.value })} className={`${IC} pr-9`} />
-                                </div>
-                            </div>
-                            <div>
-                                <label className="text-xs font-bold text-muted-foreground mb-1 block">تكلفة الشراء (ج.م)</label>
-                                <div className="relative">
-                                    <DollarSign className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
-                                    <input type="number" value={form.unit_cost || ''} onChange={e => setForm({ ...form, unit_cost: +e.target.value })} className={`${IC} pr-9`} />
-                                </div>
-                            </div>
-                            <div>
-                                <label className="text-xs font-bold text-muted-foreground mb-1 block">سعر البيع/التركيب (ج.م)</label>
-                                <div className="relative">
-                                    <DollarSign className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
-                                    <input type="number" value={form.selling_price || ''} onChange={e => setForm({ ...form, selling_price: +e.target.value })} className={`${IC} pr-9`} />
-                                </div>
-                            </div>
-                            <div>
-                                <label className="text-xs font-bold text-muted-foreground mb-1 block">الكمية الحالية</label>
-                                <input type="number" value={form.qty || ''} onChange={e => setForm({ ...form, qty: +e.target.value })} className={IC} />
-                            </div>
-                            <div>
-                                <label className="text-xs font-bold text-muted-foreground mb-1 block">الحد الأدنى (تنبيه)</label>
-                                <input type="number" value={form.min_qty || ''} onChange={e => setForm({ ...form, min_qty: +e.target.value })} className={IC} />
-                            </div>
-                            <div>
-                                <label className="text-xs font-bold text-muted-foreground mb-1 block">مكان التخزين</label>
-                                <div className="relative">
-                                    <MapPin className="absolute right-3 top-3 h-4 w-4 text-muted-foreground" />
-                                    <input value={form.location} onChange={e => setForm({ ...form, location: e.target.value })} className={`${IC} pr-9`} placeholder="درج A1، رف 2..." />
-                                </div>
-                            </div>
-                            <div>
-                                <label className="text-xs font-bold text-muted-foreground mb-1 block">الموديلات المتوافقة</label>
-                                <input value={form.compatible_models} onChange={e => setForm({ ...form, compatible_models: e.target.value })} className={IC} placeholder="iPhone 11, 12, XR..." />
-                            </div>
-                            <div className="md:col-span-2">
-                                <label className="text-xs font-bold text-muted-foreground mb-1 block">ملاحظات إضافية</label>
-                                <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} className={`${IC} h-20 resize-none`} />
-                            </div>
-                        </div>
-                        <div className="p-6 border-t border-border bg-muted/30 rounded-b-3xl">
-                            <button onClick={handleSubmit} className="w-full bg-emerald-600 text-white font-black py-4 rounded-2xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2">
+
+                        {/* ── Modal Footer ── */}
+                        <div className="flex gap-4 p-6 pt-2 pb-6 mt-auto">
+                            <button onClick={() => setShowForm(false)}
+                                className="flex-1 rounded-xl border border-border bg-background py-3.5 text-sm font-bold text-muted-foreground hover:bg-muted/50 transition-colors">
+                                إلغاء
+                            </button>
+                            <button onClick={handleSubmit}
+                                className="flex-1 rounded-xl bg-emerald-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">
                                 <CheckCircle2 className="h-5 w-5" /> {editId ? 'حفظ التعديلات' : 'إضافة القطعة للمخزون'}
                             </button>
                         </div>

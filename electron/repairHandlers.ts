@@ -51,9 +51,9 @@ export function setupRepairHandlers(db: DB) {
       id,
       ticketNo,
       ticket.client_id || ticket.customerId || null,
-      ticket.customer_name,
+      ticket.customer_name || 'عميل نقدي',
       ticket.customer_phone || null,
-      ticket.device_category,
+      ticket.device_category || 'mobile',
       ticket.device_brand || ticket.deviceBrand || null,
       ticket.device_model || ticket.deviceModel || null,
       ticket.imei_or_serial || ticket.serial || null,
@@ -61,11 +61,11 @@ export function setupRepairHandlers(db: DB) {
       ticket.accessories_received || ticket.accessories || null,
       ticket.device_passcode || ticket.password || null,
       ticket.status || 'received',
-      ticket.package_price || ticket.expectedCost || null,
-      ticket.warranty_days || null,
+      ticket.package_price ?? ticket.expectedCost ?? null,
+      ticket.warranty_days ?? null,
       ticket.assigned_tech_name || ticket.techName || null,
       ticket.tech_bonus_type || null,
-      ticket.tech_bonus_value || null,
+      ticket.tech_bonus_value ?? null,
       ticket.createdAt || now,
       ticket.createdBy || null,
       now,
@@ -83,7 +83,7 @@ export function setupRepairHandlers(db: DB) {
     for (const [key, val] of Object.entries(data)) {
       if (!EXCLUDED.includes(key)) {
         sets.push(`${key} = ?`);
-        values.push(val);
+        values.push(val === undefined ? null : val);
       }
     }
     if (sets.length === 0) return db.prepare('SELECT * FROM repair_tickets WHERE id = ?').get(id);

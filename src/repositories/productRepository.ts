@@ -1,38 +1,39 @@
 // ============================================================
 // GLEAMEX RETAIL SUITE - Product Repository
-// Data access layer - persisted to localStorage
+// Unified inventory access backed by SQLite/local fallback
 // ============================================================
 
+import { STORAGE_KEYS } from '@/config';
 import {
-  Product,
-  ProductSource,
-  ProductCondition,
-  MobileItem,
-  MobileAccessory,
-  MobileSparePart,
-  DeviceItem,
-  DeviceAccessory,
-  ComputerItem,
-  ComputerAccessory,
   CarItem,
+  ComputerAccessory,
+  ComputerItem,
+  DeviceAccessory,
+  DeviceItem,
+  MobileAccessory,
+  MobileItem,
+  MobileSparePart,
+  Product,
+  ProductCondition,
+  ProductSource,
 } from '@/domain/types';
 import {
-  getMobiles,
   getMobileAccessories,
   getMobileSpareParts,
+  getMobiles,
   updateMobile,
   updateMobileAccessory,
   updateMobileSparePart,
 } from '@/data/mobilesData';
 import {
-  getComputers,
   getComputerAccessories,
+  getComputers,
   updateComputer,
   updateComputerAccessory,
 } from '@/data/computersData';
 import {
-  getDevices,
   getDeviceAccessories,
+  getDevices,
   updateDevice,
   updateDeviceAccessory,
 } from '@/data/devicesData';
@@ -43,8 +44,12 @@ import {
   deviceSparePartsDB,
 } from '@/data/subInventoryData';
 import { getCars } from '@/data/carsData';
-import { STORAGE_KEYS } from '@/config';
-import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
+import {
+  addProductRow,
+  getProductRows,
+  InventoryProductRow,
+  updateProductRow,
+} from '@/data/inventoryTableBridge';
 
 type SubInventoryItem = ReturnType<typeof computerAccessoriesDB.get>[number];
 type InventoryItem =
@@ -58,14 +63,58 @@ type InventoryItem =
   | SubInventoryItem
   | CarItem;
 
-const STORAGE_KEY = STORAGE_KEYS.PRODUCTS;
+const LEGACY_STORAGE_KEY = STORAGE_KEYS.PRODUCTS;
+const LEGACY_SOURCE = 'legacy';
 
-function loadStore(): Product[] {
-  return getStorageItem<Product[]>(STORAGE_KEY, []);
+function getLegacyProductRows(): InventoryProductRow[] {
+  return getProductRows(LEGACY_SOURCE, LEGACY_STORAGE_KEY);
 }
 
-function persistStore(products: Product[]): void {
-  setStorageItem(STORAGE_KEY, products);
+function rowToProduct(row: InventoryProductRow): Product {
+  const costPrice = Number(row.newCostPrice ?? row.oldCostPrice ?? 0) || 0;
+  return {
+    id: row.id,
+    name: row.name,
+    model: row.model ?? '',
+    barcode: row.barcode ?? row.id,
+    category: row.category ?? '',
+    source: LEGACY_SOURCE,
+    condition: (row.condition as ProductCondition | undefined) ?? 'new',
+    supplier: row.supplier ?? '',
+    costPrice,
+    sellingPrice: Number(row.salePrice ?? 0) || 0,
+    quantity: Math.max(0, Math.round(Number(row.quantity ?? 0) || 0)),
+    minimumMarginPct: 0,
+    image: row.image,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+    deletedAt: row.deletedAt ?? null,
+    warehouseId: row.warehouseId,
+  };
+}
+
+function productToRow(product: Product): InventoryProductRow {
+  return {
+    id: product.id,
+    name: product.name,
+    model: product.model,
+    barcode: product.barcode,
+    category: product.category,
+    condition: product.condition,
+    quantity: product.quantity,
+    oldCostPrice: product.costPrice,
+    newCostPrice: product.costPrice,
+    salePrice: product.sellingPrice,
+    profitMargin: product.sellingPrice - product.costPrice,
+    supplier: product.supplier,
+    source: LEGACY_SOURCE,
+    warehouseId: product.warehouseId,
+    notes: '',
+    image: product.image,
+    createdAt: product.createdAt,
+    updatedAt: product.updatedAt,
+    deletedAt: product.deletedAt,
+  };
 }
 
 export function generateUniqueBarcode(): string {
@@ -167,7 +216,7 @@ const mapToProduct = (
 });
 
 export function getAllInventoryProducts(): Product[] {
-  const mainProducts = productStore.filter((product) => product.deletedAt === null);
+  const mainProducts = getAllProducts();
 
   const mobiles = getMobiles().map((item) => mapToProduct(item, 'موبايلات', 'mobile', item.condition));
   const mobileAccessories = getMobileAccessories().map((item) => mapToProduct(item, 'إكسسوارات موبايل', 'mobile_acc'));
@@ -202,40 +251,43 @@ export function getAllInventoryProducts(): Product[] {
   ];
 }
 
-const productStore: Product[] = loadStore();
-
 export function getAllProducts(): Product[] {
-  return productStore.filter((product) => product.deletedAt === null);
+  return getLegacyProductRows()
+    .map(rowToProduct)
+    .filter((product) => product.deletedAt === null);
 }
 
 export function getProductById(id: string): Product | undefined {
-  return productStore.find((product) => product.id === id && product.deletedAt === null);
+  return getLegacyProductRows()
+    .map(rowToProduct)
+    .find((product) => product.id === id && product.deletedAt === null);
 }
 
 export function getProductByBarcode(barcode: string): Product | undefined {
-  return productStore.find((product) => product.barcode === barcode && product.deletedAt === null);
+  return getLegacyProductRows()
+    .map(rowToProduct)
+    .find((product) => product.barcode === barcode && product.deletedAt === null);
 }
 
 export function saveProduct(product: Product): void {
-  const index = productStore.findIndex((item) => item.id === product.id);
-  if (index >= 0) {
-    productStore[index] = product;
-  } else {
-    productStore.push(product);
+  const existing = getLegacyProductRows().find((row) => row.id === product.id);
+  const payload = productToRow(product);
+
+  if (existing) {
+    updateProductRow(LEGACY_SOURCE, LEGACY_STORAGE_KEY, product.id, payload);
+    return;
   }
 
-  persistStore(productStore);
+  addProductRow(LEGACY_SOURCE, LEGACY_STORAGE_KEY, payload);
 }
 
 export function updateProductQuantity(productId: string, newQuantity: number): void {
-  const storeIndex = productStore.findIndex((product) => product.id === productId);
-  if (storeIndex >= 0) {
-    productStore[storeIndex] = {
-      ...productStore[storeIndex],
+  const storeProduct = getProductById(productId);
+  if (storeProduct) {
+    updateProductRow(LEGACY_SOURCE, LEGACY_STORAGE_KEY, productId, {
       quantity: newQuantity,
       updatedAt: new Date().toISOString(),
-    };
-    persistStore(productStore);
+    });
     return;
   }
 
@@ -306,12 +358,9 @@ export function updateProductQuantity(productId: string, newQuantity: number): v
 }
 
 export function softDeleteProduct(productId: string): void {
-  const index = productStore.findIndex((product) => product.id === productId);
-  if (index >= 0) {
-    productStore[index] = {
-      ...productStore[index],
-      deletedAt: new Date().toISOString(),
-    };
-    persistStore(productStore);
-  }
+  updateProductRow(LEGACY_SOURCE, LEGACY_STORAGE_KEY, productId, {
+    isArchived: true,
+    deletedAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  });
 }

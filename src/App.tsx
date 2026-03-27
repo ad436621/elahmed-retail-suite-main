@@ -54,8 +54,6 @@ const RemindersPage = lazy(() => import("@/pages/RemindersPage"));
 const ShiftClosingPage = lazy(() => import("@/pages/ShiftClosingPage"));
 const PurchaseInvoicesPage = lazy(() => import("@/pages/PurchaseInvoicesPage"));
 const ReportsPage = lazy(() => import("@/pages/ReportsPage"));
-const PartnersPage = lazy(() => import("@/pages/PartnersPage"));
-const StocktakePage = lazy(() => import("@/pages/StocktakePage"));
 const DiagnosticsPage = lazy(() => import("@/pages/DiagnosticsPage"));
 const CarSparePartsPage = lazy(() => import("@/pages/CarSparePartsPage"));
 const CarOilsPage = lazy(() => import("@/pages/CarOilsPage"));
@@ -202,9 +200,6 @@ const AppRoutes = () => (
         <Route path="/shift-closing" element={<PermGuard perm="shiftClosing"><ShiftClosingPage /></PermGuard>} />
         <Route path="/purchase-invoices" element={<PermGuard perm="purchaseInvoices"><PurchaseInvoicesPage /></PermGuard>} />
         <Route path="/reports" element={<PermGuard perm="dashboard"><ReportsPage /></PermGuard>} />
-        {/* #04 FIX: Missing pages */}
-        <Route path="/partners" element={<PermGuard perm="partners"><PartnersPage /></PermGuard>} />
-        <Route path="/stocktake" element={<PermGuard perm="stocktake"><StocktakePage /></PermGuard>} />
         {/* Diagnostics — owner only */}
         <Route path="/diagnostics" element={<OwnerGuard><DiagnosticsPage /></OwnerGuard>} />
       </Route>

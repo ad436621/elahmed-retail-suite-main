@@ -1,221 +1,377 @@
-// ============================================================
-// GX GLEAMEX — Users Data Layer
-// All users stored in localStorage (localStorage key: gx_users)
-// ============================================================
-
-import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
 import { STORAGE_KEYS } from '@/config';
+import { callElectronSync, emitDataChange, hasElectronIpc, readElectronSync } from '@/lib/electronDataBridge';
+import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
 
 const STORAGE_KEY = STORAGE_KEYS.USERS;
 const RECOVERY_CODE_KEY = STORAGE_KEYS.RECOVERY_CODE;
 
-// ─── #01 FIX: PBKDF2 Password Hashing (Web Crypto API) ──────
-
-/** Generate a random salt for password hashing */
 export function generateSalt(): string {
-    const arr = new Uint8Array(16);
-    crypto.getRandomValues(arr);
-    return btoa(String.fromCharCode(...arr));
+  const arr = new Uint8Array(16);
+  crypto.getRandomValues(arr);
+  return btoa(String.fromCharCode(...arr));
 }
 
-/** Hash a password using PBKDF2 with 100k iterations */
 export async function hashPassword(password: string, salt: string): Promise<string> {
-    const enc = new TextEncoder();
-    const key = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveBits']);
-    const bits = await crypto.subtle.deriveBits(
-        { name: 'PBKDF2', salt: enc.encode(salt), iterations: 100000, hash: 'SHA-256' },
-        key, 256
-    );
-    return btoa(String.fromCharCode(...new Uint8Array(bits)));
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits(
+    { name: 'PBKDF2', salt: enc.encode(salt), iterations: 100000, hash: 'SHA-256' },
+    key,
+    256,
+  );
+  return btoa(String.fromCharCode(...new Uint8Array(bits)));
 }
 
-/** Verify a password against a stored hash */
 export async function verifyPassword(password: string, salt: string, storedHash: string): Promise<boolean> {
-    const hash = await hashPassword(password, salt);
-    return hash === storedHash;
+  const hash = await hashPassword(password, salt);
+  return hash === storedHash;
 }
-
-/** Check if a password is already hashed (contains salt separator) */
-export function isPasswordHashed(user: AppUser): boolean {
-    return !!user.salt;
-}
-
-// Generate a secure recovery code and store in localStorage if not exists
-function getOrCreateRecoveryCode(): string {
-    try {
-        const existing = localStorage.getItem(RECOVERY_CODE_KEY);
-        if (existing && existing.length >= 8) return existing;
-
-        // Generate a new secure code
-        const newCode = 'GX-' + Math.random().toString(36).substring(2, 8).toUpperCase();
-        localStorage.setItem(RECOVERY_CODE_KEY, newCode);
-        return newCode;
-    } catch (e) {
-        console.error('Failed to manage recovery code:', e);
-        return 'GX-RECOVERY';
-    }
-}
-
-export const MASTER_RECOVERY_CODE = getOrCreateRecoveryCode();
 
 export type UserRole = 'owner' | 'user' | 'super_admin' | 'admin' | 'employee';
 
 export const ALL_PERMISSIONS = [
-    'dashboard',
-    'pos',
-    'sales',
-    'inventory',
-    'mobiles',
-    'computers',
-    'devices',
-    'used',
-    'cars',
-    'warehouse',
-    'maintenance',
-    'installments',
-    'expenses',
-    'damaged',
-    'otherRevenue',
-    'returns',
-    'settings',
-    'users',
-    'customers',
-    'wallets',
-    'employees',
-    'suppliers',
-    'partners',
-    'blacklist',
-    'reminders',
-    'shiftClosing',
-    'purchaseInvoices',
-    'stocktake',
+  'dashboard',
+  'pos',
+  'sales',
+  'inventory',
+  'mobiles',
+  'computers',
+  'devices',
+  'used',
+  'cars',
+  'warehouse',
+  'maintenance',
+  'installments',
+  'expenses',
+  'damaged',
+  'otherRevenue',
+  'returns',
+  'settings',
+  'users',
+  'customers',
+  'wallets',
+  'employees',
+  'suppliers',
+  'blacklist',
+  'reminders',
+  'shiftClosing',
+  'purchaseInvoices',
 ] as const;
 
 export type Permission = (typeof ALL_PERMISSIONS)[number];
 
 export const PERMISSION_LABELS: Record<Permission, string> = {
-    dashboard: 'لوحة التحكم',
-    pos: 'نقطة البيع',
-    sales: 'المبيعات',
-    inventory: 'المخزون العام',
-    mobiles: 'الموبيلات وإكسسوارات',
-    computers: 'الكمبيوتر وإكسسوارات',
-    devices: 'الأجهزة وإكسسوارات',
-    used: 'المستعمل',
-    cars: 'السيارات',
-    warehouse: 'المستودع',
-    maintenance: 'الصيانة',
-    installments: 'التقسيط',
-    expenses: 'المصروفات',
-    damaged: 'الهالك',
-    otherRevenue: 'أرباح أخرى',
-    returns: 'المرتجعات',
-    settings: 'الإعدادات',
-    users: 'إدارة المستخدمين',
-    customers: 'إدارة العملاء',
-    wallets: 'المحافظ والخزنة',
-    employees: 'الموظفين والرواتب',
-    suppliers: 'الموردون',
-    partners: 'الشركاء',
-    blacklist: 'القائمة السوداء',
-    reminders: 'التذكيرات',
-    shiftClosing: 'إقفال الوردية',
-    purchaseInvoices: 'فواتير الشراء',
-    stocktake: 'جرد المخزون',
+  dashboard: 'لوحة التحكم',
+  pos: 'نقطة البيع',
+  sales: 'المبيعات',
+  inventory: 'المخزون العام',
+  mobiles: 'الموبيلات وإكسسوارات',
+  computers: 'الكمبيوتر وإكسسوارات',
+  devices: 'الأجهزة وإكسسوارات',
+  used: 'المستعمل',
+  cars: 'السيارات',
+  warehouse: 'المستودع',
+  maintenance: 'الصيانة',
+  installments: 'التقسيط',
+  expenses: 'المصروفات',
+  damaged: 'الهالك',
+  otherRevenue: 'أرباح أخرى',
+  returns: 'المرتجعات',
+  settings: 'الإعدادات',
+  users: 'إدارة المستخدمين',
+  customers: 'إدارة العملاء',
+  wallets: 'المحافظ والخزنة',
+  employees: 'الموظفين والرواتب',
+  suppliers: 'الموردون',
+  blacklist: 'القائمة السوداء',
+  reminders: 'التذكيرات',
+  shiftClosing: 'إقفال الوردية',
+  purchaseInvoices: 'فواتير الشراء',
 };
 
 export interface AppUser {
-    id: string;
-    username: string;
-    password: string;
-    salt?: string;              // #01: PBKDF2 salt
-    fullName: string;
-    role: UserRole;
-    permissions: Permission[];
-    active: boolean;
-    createdAt: string;
-    mustChangePassword?: boolean;  // #02: Force password change on first login
+  id: string;
+  username: string;
+  password: string;
+  salt?: string;
+  fullName: string;
+  role: UserRole;
+  permissions: Permission[];
+  active: boolean;
+  createdAt: string;
+  mustChangePassword?: boolean;
+  updatedAt?: string;
+}
+
+interface UserRow {
+  id: string;
+  username: string;
+  fullName?: string | null;
+  role?: string | null;
+  permissions?: string | Permission[] | null;
+  active?: number | boolean | null;
+  passwordHash?: string | null;
+  salt?: string | null;
+  mustChangePassword?: number | boolean | null;
+  createdAt?: string | null;
+  updatedAt?: string | null;
 }
 
 const DEFAULT_OWNER: AppUser = {
-    id: 'owner-1',
-    username: 'admin',
-    password: 'admin123',       // Will be hashed on first login via migration
-    fullName: 'صاحب النظام',
-    role: 'owner',
-    permissions: [...ALL_PERMISSIONS],
-    active: true,
-    createdAt: new Date().toISOString(),
-    mustChangePassword: true,   // #02: Force password change
+  id: 'owner-1',
+  username: 'admin',
+  password: 'admin123',
+  fullName: 'صاحب النظام',
+  role: 'owner',
+  permissions: [...ALL_PERMISSIONS],
+  active: true,
+  createdAt: new Date().toISOString(),
+  mustChangePassword: true,
 };
 
+let usersCache: AppUser[] | null = null;
+let recoveryCodeCache: string | null = null;
+
+function parsePermissions(value: unknown, role: UserRole): Permission[] {
+  const fallback = role === 'owner' ? [...ALL_PERMISSIONS] : [];
+  const source = Array.isArray(value)
+    ? value
+    : typeof value === 'string' && value.trim()
+      ? (() => {
+        try {
+          const parsed = JSON.parse(value);
+          return Array.isArray(parsed) ? parsed : [];
+        } catch {
+          return value.split(',').map((item) => item.trim()).filter(Boolean);
+        }
+      })()
+      : [];
+
+  const normalized = source.filter((permission): permission is Permission => (
+    ALL_PERMISSIONS.includes(permission as Permission)
+  ));
+
+  return normalized.length > 0 ? normalized : fallback;
+}
+
+function normalizeUser(row: Partial<UserRow> | Partial<AppUser>): AppUser {
+  const role = (String((row as UserRow).role ?? 'user') as UserRole);
+  const createdAt = String((row as UserRow).createdAt ?? new Date().toISOString());
+  return {
+    id: String(row.id ?? crypto.randomUUID()),
+    username: String(row.username ?? '').trim(),
+    password: String((row as UserRow).passwordHash ?? (row as AppUser).password ?? ''),
+    salt: (row as UserRow).salt ? String((row as UserRow).salt) : undefined,
+    fullName: String((row as UserRow).fullName ?? (row as AppUser).fullName ?? '').trim(),
+    role,
+    permissions: parsePermissions((row as UserRow).permissions ?? (row as AppUser).permissions, role),
+    active: Boolean((row as UserRow).active ?? (row as AppUser).active ?? true),
+    createdAt,
+    mustChangePassword: Boolean((row as UserRow).mustChangePassword ?? (row as AppUser).mustChangePassword ?? false),
+    updatedAt: String((row as UserRow).updatedAt ?? (row as AppUser).updatedAt ?? createdAt),
+  };
+}
+
+function toUserRow(user: AppUser): UserRow {
+  return {
+    id: user.id,
+    username: user.username,
+    fullName: user.fullName,
+    role: user.role,
+    permissions: JSON.stringify(user.permissions),
+    active: user.active,
+    passwordHash: user.password,
+    salt: user.salt ?? null,
+    mustChangePassword: user.mustChangePassword ?? false,
+    createdAt: user.createdAt,
+    updatedAt: user.updatedAt ?? user.createdAt,
+  };
+}
+
+function setUsersState(users: AppUser[]): void {
+  usersCache = [...users.map(normalizeUser)].sort((left, right) => (
+    left.createdAt.localeCompare(right.createdAt) || left.username.localeCompare(right.username)
+  ));
+}
+
+function loadLocalUsers(): AppUser[] {
+  return getStorageItem<AppUser[]>(STORAGE_KEY, []).map(normalizeUser);
+}
+
+function refreshElectronUsers(): AppUser[] {
+  const rows = readElectronSync<UserRow[]>('db-sync:users:get', []);
+  setUsersState(rows.map(normalizeUser));
+  return usersCache ?? [];
+}
+
+function getStoredRecoveryCode(): string | null {
+  if (recoveryCodeCache) return recoveryCodeCache;
+
+  if (hasElectronIpc()) {
+    const value = readElectronSync<unknown>('db-sync:settings:get-json', null, RECOVERY_CODE_KEY);
+    if (typeof value === 'string' && value.trim()) {
+      recoveryCodeCache = value;
+      return recoveryCodeCache;
+    }
+    return null;
+  }
+
+  try {
+    const value = localStorage.getItem(RECOVERY_CODE_KEY);
+    if (value && value.trim()) {
+      recoveryCodeCache = value;
+      return recoveryCodeCache;
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+function persistRecoveryCode(code: string): string {
+  recoveryCodeCache = code;
+
+  if (hasElectronIpc()) {
+    callElectronSync('db-sync:settings:set-json', RECOVERY_CODE_KEY, code);
+    return code;
+  }
+
+  try {
+    localStorage.setItem(RECOVERY_CODE_KEY, code);
+  } catch (error) {
+    console.error('Failed to persist recovery code:', error);
+  }
+
+  return code;
+}
+
+function getOrCreateRecoveryCode(): string {
+  const existing = getStoredRecoveryCode();
+  if (existing) return existing;
+
+  const newCode = `GX-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+  return persistRecoveryCode(newCode);
+}
+
+export const MASTER_RECOVERY_CODE = getOrCreateRecoveryCode();
+
+export function isPasswordHashed(user: AppUser): boolean {
+  return Boolean(user.salt);
+}
+
 export function getUsers(): AppUser[] {
-    const stored = getStorageItem<AppUser[] | null>(STORAGE_KEY, null);
-    if (stored) return stored;
-    // Seed default owner on first run
-    const defaults = [DEFAULT_OWNER];
-    saveUsers(defaults);
-    return defaults;
+  if (usersCache) return usersCache;
+
+  if (hasElectronIpc()) {
+    const users = refreshElectronUsers();
+    if (users.length > 0) return users;
+
+    saveUsers([DEFAULT_OWNER]);
+    return usersCache ?? [DEFAULT_OWNER];
+  }
+
+  const stored = loadLocalUsers();
+  if (stored.length > 0) {
+    setUsersState(stored);
+    return usersCache ?? [];
+  }
+
+  saveUsers([DEFAULT_OWNER]);
+  return usersCache ?? [DEFAULT_OWNER];
 }
 
 export function saveUsers(users: AppUser[]): void {
-    setStorageItem(STORAGE_KEY, users);
+  const normalized = users.map(normalizeUser);
+
+  if (hasElectronIpc()) {
+    const rows = callElectronSync<UserRow[]>('db-sync:users:replaceAll', normalized.map(toUserRow));
+    setUsersState(Array.isArray(rows) ? rows.map(normalizeUser) : normalized);
+    emitDataChange(STORAGE_KEY);
+    return;
+  }
+
+  setStorageItem(STORAGE_KEY, normalized);
+  setUsersState(normalized);
+  emitDataChange(STORAGE_KEY);
 }
 
 export function getUserById(id: string): AppUser | undefined {
-    return getUsers().find(u => u.id === id);
+  return getUsers().find((user) => user.id === id);
 }
 
 export function findUserByUsername(username: string): AppUser | undefined {
-    return getUsers().find(u => u.username.toLowerCase() === username.toLowerCase());
+  const normalizedUsername = username.trim().toLowerCase();
+  return getUsers().find((user) => user.username.toLowerCase() === normalizedUsername);
 }
 
 export function addUser(data: Omit<AppUser, 'id' | 'createdAt'>): AppUser {
-    const users = getUsers();
-    const newUser: AppUser = {
-        ...data,
-        id: crypto.randomUUID(),
-        createdAt: new Date().toISOString(),
-    };
-    saveUsers([...users, newUser]);
-    return newUser;
+  const newUser = normalizeUser({
+    ...data,
+    id: crypto.randomUUID(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  });
+  saveUsers([...getUsers(), newUser]);
+  return newUser;
 }
 
 export function updateUser(id: string, updates: Partial<Omit<AppUser, 'id' | 'createdAt'>>): void {
-    const users = getUsers();
-    saveUsers(users.map(u => u.id === id ? { ...u, ...updates } : u));
+  saveUsers(getUsers().map((user) => (
+    user.id === id
+      ? normalizeUser({ ...user, ...updates, updatedAt: new Date().toISOString() })
+      : user
+  )));
 }
 
 export function deleteUser(id: string): void {
-    // Cannot delete the last owner
-    const users = getUsers();
-    const owners = users.filter(u => u.role === 'owner');
-    const target = users.find(u => u.id === id);
-    if (target?.role === 'owner' && owners.length <= 1) return;
-    saveUsers(users.filter(u => u.id !== id));
+  const users = getUsers();
+  const owners = users.filter((user) => user.role === 'owner');
+  const target = users.find((user) => user.id === id);
+  if (target?.role === 'owner' && owners.length <= 1) return;
+  saveUsers(users.filter((user) => user.id !== id));
 }
 
-/** Change password — hashes with PBKDF2 before saving */
 export async function changePassword(username: string, newPassword: string): Promise<boolean> {
-    const users = getUsers();
-    const user = users.find(u => u.username.toLowerCase() === username.toLowerCase());
-    if (!user) return false;
-    const salt = generateSalt();
-    const hashed = await hashPassword(newPassword, salt);
-    saveUsers(users.map(u => u.id === user.id ? { ...u, password: hashed, salt, mustChangePassword: false } : u));
-    return true;
+  const users = getUsers();
+  const user = users.find((entry) => entry.username.toLowerCase() === username.toLowerCase());
+  if (!user) return false;
+
+  const salt = generateSalt();
+  const hashed = await hashPassword(newPassword, salt);
+  saveUsers(users.map((entry) => (
+    entry.id === user.id
+      ? normalizeUser({
+        ...entry,
+        password: hashed,
+        salt,
+        mustChangePassword: false,
+        updatedAt: new Date().toISOString(),
+      })
+      : entry
+  )));
+  return true;
 }
 
-/** Migrate a plaintext password to PBKDF2 hash (called on first login) */
 export async function migratePasswordToHash(userId: string, plaintextPassword: string): Promise<void> {
-    const users = getUsers();
-    const user = users.find(u => u.id === userId);
-    if (!user || user.salt) return; // Already hashed
-    const salt = generateSalt();
-    const hashed = await hashPassword(plaintextPassword, salt);
-    saveUsers(users.map(u => u.id === userId ? { ...u, password: hashed, salt } : u));
+  const users = getUsers();
+  const user = users.find((entry) => entry.id === userId);
+  if (!user || user.salt) return;
+
+  const salt = generateSalt();
+  const hashed = await hashPassword(plaintextPassword, salt);
+  saveUsers(users.map((entry) => (
+    entry.id === userId
+      ? normalizeUser({
+        ...entry,
+        password: hashed,
+        salt,
+        updatedAt: new Date().toISOString(),
+      })
+      : entry
+  )));
 }
 
 export function verifyRecoveryCode(code: string): boolean {
-    return code.trim().toUpperCase() === MASTER_RECOVERY_CODE.toUpperCase();
+  return code.trim().toUpperCase() === MASTER_RECOVERY_CODE.toUpperCase();
 }

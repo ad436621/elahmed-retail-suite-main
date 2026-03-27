@@ -4,7 +4,8 @@ import {
     RepairTicket, RepairTicketPart, RepairEvent, 
     getRepairTickets, addRepairTicket, updateRepairTicket, deleteRepairTicket,
     getTicketParts, addTicketPart, removeTicketPart,
-    getRepairEvents, logRepairEvent
+    getRepairEvents, logRepairEvent,
+    getRepairParts, RepairPart
 } from '@/data/repairsData';
 import { useToast } from '@/hooks/use-toast';
 import { usePagination, PaginationBar } from '@/hooks/usePagination';
@@ -21,7 +22,8 @@ const statusLabels: Record<string, string> = {
     pending: '⏳ انتظار',
     in_progress: '🔧 إصلاح',
     waiting_for_parts: '📦 قطع',
-    completed: '✅ جاهز'
+    completed: '✅ جاهز',
+    testing: '🧪 اختبار ومراجعة' // Added new status
 };
 
 const statusStyles: Record<string, { bg: string; color: string; border: string }> = {
@@ -37,6 +39,7 @@ const statusStyles: Record<string, { bg: string; color: string; border: string }
     in_progress: { bg: 'rgba(59,130,246,0.12)', color: '#3b82f6', border: 'rgba(59,130,246,0.3)' },
     waiting_for_parts: { bg: 'rgba(236,72,153,0.12)', color: '#ec4899', border: 'rgba(236,72,153,0.3)' },
     completed: { bg: 'rgba(16,185,129,0.12)', color: '#10b981', border: 'rgba(16,185,129,0.3)' },
+    testing: { bg: 'rgba(250,204,21,0.12)', color: '#facc15', border: 'rgba(250,204,21,0.3)' } // Added new status style
 };
 
 const emptyTicket: Partial<RepairTicket> = {
@@ -67,12 +70,17 @@ export default function Maintenance() {
     
     // Ticket Parts State (for Edit Modal)
     const [ticketParts, setTicketParts] = useState<RepairTicketPart[]>([]);
-    const [newPart, setNewPart] = useState({ name: '', costPrice: 0, salePrice: 0, quantity: 1 });
+    const [newPart, setNewPart] = useState({ name: '', costPrice: 0, salePrice: 0, quantity: 1, part_id: '' });
+    const [inventoryParts, setInventoryParts] = useState<RepairPart[]>([]);
     
     const [search, setSearch] = useState('');
     const [categoryFilter, setCategoryFilter] = useState<'all' | string>('all');
     const [statusFilter, setStatusFilter] = useState<'all' | string>('all');
     const [deleteTarget, setDeleteTarget] = useState<RepairTicket | null>(null);
+
+    useEffect(() => {
+        getRepairParts().then(setInventoryParts).catch(console.error);
+    }, []);
 
     const refresh = async () => {
         setIsLoading(true);
@@ -104,15 +112,16 @@ export default function Maintenance() {
         try {
             const part = await addTicketPart({
                 ticket_id: editId,
-                part_id: 'custom-' + Date.now(),
+                part_id: newPart.part_id || ('custom-' + Date.now()),
                 qty: newPart.quantity,
-                unit_cost: newPart.salePrice, // In this UI, selling price is unitPrice
-                status: 'used'
+                unit_cost: newPart.salePrice,
+                status: 'used',
+                partName: newPart.name
             });
             // Re-fetch parts to get names etc
             const updatedParts = await getTicketParts(editId);
             setTicketParts(updatedParts);
-            setNewPart({ name: '', costPrice: 0, salePrice: 0, quantity: 1 });
+            setNewPart({ name: '', costPrice: 0, salePrice: 0, quantity: 1, part_id: '' });
             toast({ title: '✅ أضيفت القطعة' });
         } catch (error) {
             toast({ title: 'خطأ', description: 'فشل إضافة القطعة', variant: 'destructive' });
@@ -154,8 +163,10 @@ export default function Maintenance() {
             }
             setForm(emptyTicket); setEditId(null); setShowForm(false); 
             refresh();
-        } catch (error) {
-            toast({ title: 'خطأ', description: 'عملية الحفظ فشلت', variant: 'destructive' });
+        } catch (error: any) {
+            console.error("Save Error:", error);
+            const msg = error?.message || 'عملية الحفظ فشلت';
+            toast({ title: 'خطأ', description: `عملية الحفظ فشلت: ${msg}`, variant: 'destructive' });
         }
     };
 
@@ -247,7 +258,7 @@ export default function Maintenance() {
     // Calculate Stats
     const stats = useMemo(() => {
         return {
-            open: tickets.filter(t => ['received', 'diagnosing', 'repairing', 'waiting_parts', 'pending', 'in_progress'].includes(t.status)).length,
+            open: tickets.filter(t => ['received', 'diagnosing', 'repairing', 'waiting_parts', 'pending', 'in_progress', 'testing'].includes(t.status)).length,
             ready: tickets.filter(t => ['ready', 'completed'].includes(t.status)).length,
             delivered: tickets.filter(t => t.status === 'delivered').length
         };
@@ -409,26 +420,27 @@ export default function Maintenance() {
 
             {/* Form Modal */}
             {showForm && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm overflow-y-auto py-6" onClick={() => setShowForm(false)}>
-                    <div className="w-full max-w-4xl mx-4 rounded-3xl border border-border bg-background p-0 shadow-2xl animate-scale-in overflow-hidden flex flex-col max-h-[90vh]" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-card">
-                            <h2 className="text-xl font-black text-foreground">{editId ? `تذكرة رقم #${form.ticket_no}` : 'استلام جهاز صيانة جديد'}</h2>
-                            <button onClick={() => setShowForm(false)} className="rounded-full p-2 hover:bg-muted transition-colors"><X className="h-5 w-5 text-muted-foreground" /></button>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-6" onClick={() => setShowForm(false)}>
+                    <div className="w-full max-w-4xl bg-background rounded-3xl border border-border flex flex-col shadow-2xl animate-scale-in overflow-hidden max-h-[95vh]" onClick={e => e.stopPropagation()}>
+                        <div className="flex shrink-0 items-center justify-between px-6 py-4 border-b border-border bg-card">
+                            <h2 className="text-xl font-black text-foreground truncate pl-4">{editId ? `تذكرة رقم #${form.ticket_no}` : 'استلام جهاز صيانة جديد'}</h2>
+                            <button onClick={() => setShowForm(false)} className="rounded-full shrink-0 p-2 hover:bg-muted transition-colors"><X className="h-5 w-5 text-muted-foreground" /></button>
                         </div>
                         
-                        <div className="p-6 overflow-y-auto flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {/* Section 1: Customer Info */}
-                            <div className="space-y-4">
-                                <h3 className="text-sm font-bold text-primary flex items-center gap-2 border-b border-border pb-2"><AlignLeft className="h-4 w-4" /> بيانات العميل</h3>
-                                <div>
-                                    <label className="mb-1.5 block text-xs font-bold text-muted-foreground">اسم العميل *</label>
-                                    <input value={form.customer_name} onChange={e => setForm({ ...form, customer_name: e.target.value })} className={IC} />
+                        <div className="p-6 overflow-y-auto flex-1 flex flex-col gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {/* Section 1: Customer Info */}
+                                <div className="space-y-4">
+                                    <h3 className="text-sm font-bold text-primary flex items-center gap-2 border-b border-border pb-2"><AlignLeft className="h-4 w-4" /> بيانات العميل</h3>
+                                    <div>
+                                        <label className="mb-1.5 block text-xs font-bold text-muted-foreground">اسم العميل *</label>
+                                        <input value={form.customer_name || ''} onChange={e => setForm({ ...form, customer_name: e.target.value })} className={IC} />
+                                    </div>
+                                    <div>
+                                        <label className="mb-1.5 block text-xs font-bold text-muted-foreground">رقم الهاتف</label>
+                                        <input value={form.customer_phone || ''} onChange={e => setForm({ ...form, customer_phone: e.target.value })} className={IC} />
+                                    </div>
                                 </div>
-                                <div>
-                                    <label className="mb-1.5 block text-xs font-bold text-muted-foreground">رقم الهاتف</label>
-                                    <input value={form.customer_phone} onChange={e => setForm({ ...form, customer_phone: e.target.value })} className={IC} />
-                                </div>
-                            </div>
                             
                             {/* Section 2: Device Info */}
                             <div className="space-y-4">
@@ -436,7 +448,7 @@ export default function Maintenance() {
                                 <div className="grid grid-cols-2 gap-2">
                                     <div className="col-span-2">
                                         <label className="mb-1.5 block text-xs font-bold text-muted-foreground">موديل الجهاز *</label>
-                                        <input value={form.device_model || form.device_type} onChange={e => setForm({ ...form, device_model: e.target.value })} className={IC} placeholder="مثال: iPhone 13 Pro Max" />
+                                        <input value={form.device_model || form.device_type || ''} onChange={e => setForm({ ...form, device_model: e.target.value })} className={IC} placeholder="مثال: iPhone 13 Pro Max" />
                                     </div>
                                     <div>
                                         <label className="mb-1.5 block text-xs font-bold text-muted-foreground">براند الجهاز</label>
@@ -444,7 +456,7 @@ export default function Maintenance() {
                                     </div>
                                     <div>
                                         <label className="mb-1.5 block text-xs font-bold text-muted-foreground">التصنيف</label>
-                                        <select value={form.device_category} onChange={e => setForm({ ...form, device_category: e.target.value })} className={IC}>
+                                        <select value={form.device_category || 'mobile'} onChange={e => setForm({ ...form, device_category: e.target.value })} className={IC}>
                                             <option value="mobile">موبايل</option>
                                             <option value="tablet">تابلت</option>
                                             <option value="laptop">لابتوب</option>
@@ -453,18 +465,23 @@ export default function Maintenance() {
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="mb-1.5 block text-xs font-bold text-muted-foreground">الحالة الحالية</label>
-                                        <select value={form.status} onChange={e => setForm({ ...form, status: e.target.value as any })} className={IC}>
-                                            {Object.entries(statusLabels).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-                                        </select>
-                                    </div>
-                                    <div>
                                         <label className="mb-1.5 block text-xs font-bold text-muted-foreground">IMEI / SN</label>
                                         <input value={form.imei_or_serial || form.serial_number || ''} onChange={e => setForm({ ...form, imei_or_serial: e.target.value })} className={IC} />
                                     </div>
-                                    <div>
-                                        <label className="mb-1.5 block text-xs font-bold text-muted-foreground">رمز الدخول</label>
-                                        <input value={form.device_passcode || form.password || ''} onChange={e => setForm({ ...form, device_passcode: e.target.value })} className={IC} />
+                                    <div className="col-span-2">
+                                        <label className="mb-1.5 block text-xs font-bold text-muted-foreground">الحالة الحالية</label>
+                                        <div className="relative">
+                                            <select value={form.status || 'received'} onChange={e => setForm({ ...form, status: e.target.value as any })} className={IC}>
+                                                <option value="received">⏳ استلام</option>
+                                                <option value="diagnosing">🔍 فحص وتشخيص</option>
+                                                <option value="waiting_parts">📦 بانتظار القطع</option>
+                                                <option value="repairing">🔧 قيد الإصلاح</option>
+                                                <option value="testing">🧪 اختبار ومراجعة</option>
+                                                <option value="ready">✅ جاهز للتسليم</option>
+                                                <option value="delivered">🏁 تم التسليم</option>
+                                                <option value="cancelled">❌ ملغي / مرفوض</option>
+                                            </select>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -487,19 +504,41 @@ export default function Maintenance() {
                                     </div>
                                 </div>
                             </div>
+                            </div>
 
                             {/* Section 4: Parts Management (Only shown on edit) */}
                             {editId && (
-                                <div className="col-span-1 md:col-span-2 lg:col-span-3 mt-4 pt-6 border-t border-border">
+                                <div className="mt-2 pt-6 border-t border-border">
                                     <h3 className="text-sm font-bold text-primary flex items-center gap-2 mb-4"><PackageCheck className="h-4 w-4" /> قطع الغيار المضافة للتذكرة</h3>
                                     
                                     <div className="rounded-2xl border border-border p-4 bg-muted/20">
-                                        <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
-                                            <input value={newPart.name} onChange={e => setNewPart({ ...newPart, name: e.target.value })} placeholder="اسم القطعة" className={IC} />
-                                            <input type="number" value={newPart.quantity || ''} onChange={e => setNewPart({ ...newPart, quantity: +e.target.value })} placeholder="الكمية" className={IC} min="1" />
-                                            <div className="flex gap-2 md:col-span-2">
-                                                <input type="number" value={newPart.salePrice || ''} onChange={e => setNewPart({ ...newPart, salePrice: +e.target.value })} placeholder="سعر القطعة (للعميل)" className={IC} />
-                                                <button onClick={handleAddPart} className="shrink-0 bg-primary text-primary-foreground p-2.5 rounded-xl hover:bg-primary/90 transition-colors"><Plus className="h-5 w-5" /></button>
+                                        <div className="grid grid-cols-1 md:grid-cols-5 gap-3 mb-4 items-end">
+                                            <div className="md:col-span-2 flex flex-col gap-1.5">
+                                                <select 
+                                                    className={IC}
+                                                    onChange={(e) => {
+                                                        const pt = inventoryParts.find(p => p.id === e.target.value);
+                                                        if (pt) setNewPart({...newPart, name: pt.name, costPrice: pt.cost_price || pt.unit_cost, salePrice: pt.selling_price || pt.cost_price || pt.unit_cost, part_id: pt.id});
+                                                        else setNewPart({...newPart, part_id: ''});
+                                                    }}
+                                                >
+                                                    <option value="">+ إضافة قطعة خارجية (يدوي)</option>
+                                                    {inventoryParts.map(p => (
+                                                        <option key={p.id} value={p.id}>{p.name} - (متاح: {p.qty || p.current_stock || 0})</option>
+                                                    ))}
+                                                </select>
+                                                <input value={newPart.name} onChange={e => setNewPart({ ...newPart, name: e.target.value, part_id: '' })} placeholder="أو اكتب اسم القطعة يدوياً..." className={IC} />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs text-muted-foreground mb-1">الكمية</label>
+                                                <input type="number" value={newPart.quantity || ''} onChange={e => setNewPart({ ...newPart, quantity: +e.target.value })} className={IC} min="1" />
+                                            </div>
+                                            <div className="md:col-span-2 flex items-end gap-2">
+                                                <div className="flex-1">
+                                                    <label className="block text-xs text-muted-foreground mb-1">السعر (للعميل)</label>
+                                                    <input type="number" value={newPart.salePrice || ''} onChange={e => setNewPart({ ...newPart, salePrice: +e.target.value })} className={IC} />
+                                                </div>
+                                                <button onClick={handleAddPart} className="shrink-0 bg-primary/10 text-primary p-2.5 rounded-xl hover:bg-primary hover:text-primary-foreground transition-colors border border-primary/20"><Plus className="h-5 w-5" /></button>
                                             </div>
                                         </div>
                                         
@@ -540,7 +579,7 @@ export default function Maintenance() {
                             )}
                         </div>
                         
-                        <div className="flex gap-3 px-6 py-4 bg-muted/40 border-t border-border">
+                        <div className="shrink-0 flex gap-3 px-6 py-4 bg-muted/40 border-t border-border mt-auto">
                             <button onClick={handleSubmit} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 hover:opacity-90 py-3 text-sm font-bold text-white transition-all shadow-md">
                                 <CheckCircle2 className="h-4 w-4" /> {editId ? 'تحديث البيانات' : 'دخول التذكرة'}
                             </button>

@@ -12,6 +12,7 @@ import {
     Plus, Trash2, Pencil, X, Check, Search, ImagePlus, ImageOff,
     AlertTriangle, Filter, FolderOpen, Settings2, Download
 } from 'lucide-react';
+
 import { exportToExcel, ExcelColumn } from '@/services/excelService';
 import { useToast } from '@/hooks/use-toast';
 import { useConfirm } from '@/components/ConfirmDialog';
@@ -447,26 +448,26 @@ export default function SubSectionPage({ config }: { config: SubSectionPageConfi
             {/* Filters */}
             {showFilters && (
                 <div className="flex gap-3 flex-wrap items-start">
-                <div className="relative flex-1 min-w-[200px]">
-                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <input value={search} onChange={e => setSearch(e.target.value)}
-                        placeholder="بحث بالاسم، الماركة، الموديل..."
-                        className={`${IC} pr-9`} />
-                </div>
-                {allCats.length > 1 && (
-                    <div className="flex gap-1 flex-wrap">
-                        {allCats.map(cat => (
-                            <button key={cat} onClick={() => setCatFilter(cat)}
-                                className={cn('rounded-xl px-3 py-2 text-xs font-semibold transition-all',
-                                    catFilter === cat
-                                        ? `${config.addBtnClass} text-white`
-                                        : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                                )}>
-                                {cat}
-                            </button>
-                        ))}
+                    <div className="relative flex-1 min-w-[200px]">
+                        <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <input value={search} onChange={e => setSearch(e.target.value)}
+                            placeholder="بحث بالاسم، الماركة، الموديل..."
+                            className={`${IC} pr-9`} />
                     </div>
-                )}
+                    {allCats.length > 1 && (
+                        <div className="flex gap-1 flex-wrap">
+                            {allCats.map(cat => (
+                                <button key={cat} onClick={() => setCatFilter(cat)}
+                                    className={cn('rounded-xl px-3 py-2 text-xs font-semibold transition-all',
+                                        catFilter === cat
+                                            ? `${config.addBtnClass} text-white`
+                                            : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                                    )}>
+                                    {cat}
+                                </button>
+                            ))}
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -484,131 +485,265 @@ export default function SubSectionPage({ config }: { config: SubSectionPageConfi
                 />
             )}
 
-            {/* Add/Edit Form Modal */}
+            {/* ═══════════════════════════════════════════════════
+                Add / Edit Form Modal — Redesigned
+            ═══════════════════════════════════════════════════ */}
             {showForm && createPortal(
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm overflow-y-auto py-6 px-4" onClick={() => { setShowForm(false); setEditId(null); }}>
-                    <div className="w-full max-w-xl mx-auto rounded-2xl border border-border bg-card p-6 shadow-2xl space-y-4 animate-scale-in" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center justify-between">
-                            <h2 className="text-lg font-bold">{editId ? '✏️ تعديل' : '➕ إضافة'} — {config.title}</h2>
-                            <button onClick={() => { setShowForm(false); setEditId(null); }}
-                                className="rounded-lg p-1.5 hover:bg-muted">
-                                <X className="h-5 w-5 text-muted-foreground" />
-                            </button>
-                        </div>
-
-                        <ImageUpload value={form.image} onChange={v => setForm(f => ({ ...f, image: v }))} />
-
-                        <div className="grid grid-cols-2 gap-3">
-                            <div className="col-span-2">
-                                <label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase">الاسم *</label>
-                                <input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                                    className={IC} autoFocus />
-                            </div>
-                            <div>
-                                <label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase">الماركة</label>
-                                <input value={form.brand ?? ''} onChange={e => setForm(f => ({ ...f, brand: e.target.value }))} className={IC} />
-                            </div>
-                            <div>
-                                <label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase">الباركود</label>
-                                <input value={form.barcode ?? ''} onChange={e => setForm(f => ({ ...f, barcode: e.target.value }))} placeholder="تلقائي إن تُرِك فارغاً" className={IC} />
-                            </div>
-                            <div>
-                                <label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase">الموديل</label>
-                                <input value={form.model ?? ''} onChange={e => setForm(f => ({ ...f, model: e.target.value }))} className={IC} />
-                            </div>
-                            <div>
-                                <label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase">الحالة</label>
-                                <select value={form.condition ?? 'new'} onChange={e => setForm(f => ({ ...f, condition: e.target.value as any }))} className={IC}>
-                                    <option value="new">جديد</option>
-                                    <option value="like_new">مثل الجديد</option>
-                                    <option value="used">مستعمل</option>
-                                    <option value="broken">معطل</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase">المورد</label>
-                                <input value={form.supplier ?? ''} onChange={e => setForm(f => ({ ...f, supplier: e.target.value }))} className={IC} />
-                            </div>
-                            {cats.length > 0 && (
-                                <div>
-                                    <label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase">التصنيف</label>
-                                    <select value={form.category ?? ''} onChange={e => setForm(f => ({ ...f, category: e.target.value }))} className={IC}>
-                                        <option value="">-- اختر تصنيف --</option>
-                                        {cats.map(c => <option key={c}>{c}</option>)}
-                                    </select>
+                <div
+                    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm overflow-y-auto py-6 px-4"
+                    onClick={() => { setShowForm(false); setEditId(null); }}
+                >
+                    <div
+                        className="w-full max-w-xl mx-auto rounded-2xl border border-border bg-card shadow-2xl animate-scale-in"
+                        onClick={e => e.stopPropagation()}
+                    >
+                        {/* ── Modal Header ── */}
+                        <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-muted/30 rounded-t-2xl">
+                            <div className="flex items-center gap-3">
+                                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 border border-primary/20">
+                                    <span className={`[&>svg]:h-4 [&>svg]:w-4 ${config.iconText}`}>{config.icon}</span>
                                 </div>
-                            )}
-                            <div>
-                                <label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase">الكمية</label>
-                                <input type="number" min={0} value={form.quantity}
-                                    onChange={e => setForm(f => ({ ...f, quantity: +e.target.value }))} className={IC} />
+                                <div>
+                                    <h2 className="text-base font-bold text-foreground">
+                                        {editId ? '✏️ تعديل منتج' : '➕ إضافة منتج جديد'}
+                                    </h2>
+                                    <p className="text-xs text-muted-foreground">{config.title}</p>
+                                </div>
                             </div>
-                            <div>
-                                <label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase">حد التنبيه</label>
-                                <input type="number" min={0} value={form.minStock ?? 2}
-                                    onChange={e => setForm(f => ({ ...f, minStock: +e.target.value }))} className={IC} />
-                            </div>
-                            <div>
-                                <label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase">سعر الشراء</label>
-                                <input type="number" min={0} value={form.costPrice}
-                                    onChange={e => {
-                                        const costPrice = +e.target.value;
-                                        setForm(f => ({
-                                            ...f,
-                                            costPrice,
-                                            salePrice: typeof f.profitMargin === 'number' ? costPrice + f.profitMargin : f.salePrice,
-                                            profitMargin: typeof f.profitMargin === 'number' ? f.profitMargin : (f.salePrice - costPrice),
-                                        }));
-                                    }} className={IC} />
-                            </div>
-                            <div>
-                                <label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase">سعر البيع</label>
-                                <input type="number" min={0} value={form.salePrice}
-                                    onChange={e => {
-                                        const salePrice = +e.target.value;
-                                        setForm(f => ({ ...f, salePrice, profitMargin: salePrice - f.costPrice }));
-                                    }} className={IC} />
-                            </div>
-                            <div>
-                                <label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase">هامش الربح</label>
-                                <input type="number" min={0} value={form.profitMargin ?? 0}
-                                    onChange={e => {
-                                        const profitMargin = +e.target.value;
-                                        setForm(f => ({ ...f, profitMargin, salePrice: f.costPrice + profitMargin }));
-                                    }} className={IC} />
-                            </div>
-                            {(() => {
-                                const cost = form.costPrice || 0;
-                                const profit = form.salePrice - cost;
-                                const margin = form.salePrice > 0 ? (profit / form.salePrice) * 100 : 0;
-                                return form.salePrice > 0 ? (
-                                    <div className="col-span-2 p-3 rounded-lg bg-muted/50 mt-2">
-                                        <div className="flex justify-between items-center">
-                                            <span className="text-sm text-muted-foreground">هامش الربح</span>
-                                            <span className={`font-bold ${margin >= 20 ? 'text-emerald-600 dark:text-emerald-400' : margin >= 10 ? 'text-amber-600 dark:text-amber-400' : 'text-red-500 dark:text-red-400'}`}>
-                                                {margin.toFixed(1)}%
-                                            </span>
-                                        </div>
-                                        {margin < 10 && (
-                                            <p className="text-xs text-amber-600 mt-1">تحذير: الهامش أقل من 10%</p>
-                                        )}
+                            <button
+                                onClick={() => { setShowForm(false); setEditId(null); }}
+                                className="rounded-xl p-2 hover:bg-muted text-muted-foreground transition-colors"
+                            >
+                                <X className="h-5 w-5" />
+                            </button>
+                        </div>
+
+                        {/* ── Modal Body ── */}
+                        <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto">
+
+                            {/* Image */}
+                            <ImageUpload value={form.image} onChange={v => setForm(f => ({ ...f, image: v }))} />
+
+                            {/* ── Section 1: Basic Info ── */}
+                            <div className="rounded-xl border border-border/50 bg-muted/20 p-4 space-y-3">
+                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-primary inline-block" />
+                                    معلومات أساسية
+                                </p>
+                                <div>
+                                    <label className="mb-1.5 block text-xs font-semibold text-foreground/80">
+                                        الاسم <span className="text-destructive">*</span>
+                                    </label>
+                                    <input
+                                        value={form.name}
+                                        onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                                        className={IC}
+                                        placeholder="أدخل اسم المنتج"
+                                        autoFocus
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="mb-1.5 block text-xs font-semibold text-foreground/80">الماركة</label>
+                                        <input
+                                            value={form.brand ?? ''}
+                                            onChange={e => setForm(f => ({ ...f, brand: e.target.value }))}
+                                            className={IC}
+                                            placeholder="اسم الماركة"
+                                        />
                                     </div>
-                                ) : null;
-                            })()}
-                            <div className="col-span-2">
-                                <label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase">ملاحظات</label>
-                                <textarea value={form.notes ?? ''} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-                                    rows={2} className={`${IC} resize-none`} />
+                                    <div>
+                                        <label className="mb-1.5 block text-xs font-semibold text-foreground/80">الموديل</label>
+                                        <input
+                                            value={form.model ?? ''}
+                                            onChange={e => setForm(f => ({ ...f, model: e.target.value }))}
+                                            className={IC}
+                                            placeholder="رقم / اسم الموديل"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* ── Section 2: Classification & Barcode ── */}
+                            <div className="rounded-xl border border-border/50 bg-muted/20 p-4 space-y-3">
+                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-sky-500 inline-block" />
+                                    التصنيف والباركود
+                                </p>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="mb-1.5 block text-xs font-semibold text-foreground/80">الباركود</label>
+                                        <input
+                                            value={form.barcode ?? ''}
+                                            onChange={e => setForm(f => ({ ...f, barcode: e.target.value }))}
+                                            placeholder="تلقائي إن تُرِك فارغاً"
+                                            className={IC}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="mb-1.5 block text-xs font-semibold text-foreground/80">الحالة</label>
+                                        <select
+                                            value={form.condition ?? 'new'}
+                                            onChange={e => setForm(f => ({ ...f, condition: e.target.value as any }))}
+                                            className={IC}
+                                        >
+                                            <option value="new">جديد</option>
+                                            <option value="like_new">مثل الجديد</option>
+                                            <option value="used">مستعمل</option>
+                                            <option value="broken">معطل</option>
+                                        </select>
+                                    </div>
+                                    {cats.length > 0 && (
+                                        <div>
+                                            <label className="mb-1.5 block text-xs font-semibold text-foreground/80">التصنيف</label>
+                                            <select
+                                                value={form.category ?? ''}
+                                                onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
+                                                className={IC}
+                                            >
+                                                <option value="">-- اختر تصنيف --</option>
+                                                {cats.map(c => <option key={c}>{c}</option>)}
+                                            </select>
+                                        </div>
+                                    )}
+                                    <div>
+                                        <label className="mb-1.5 block text-xs font-semibold text-foreground/80">المورد</label>
+                                        <input
+                                            value={form.supplier ?? ''}
+                                            onChange={e => setForm(f => ({ ...f, supplier: e.target.value }))}
+                                            className={IC}
+                                            placeholder="اسم المورد"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* ── Section 3: Stock ── */}
+                            <div className="rounded-xl border border-border/50 bg-muted/20 p-4 space-y-3">
+                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500 inline-block" />
+                                    الكمية والمخزون
+                                </p>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="mb-1.5 block text-xs font-semibold text-foreground/80">الكمية</label>
+                                        <input
+                                            type="number" min={0} value={form.quantity}
+                                            onChange={e => setForm(f => ({ ...f, quantity: +e.target.value }))}
+                                            className={IC}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="mb-1.5 block text-xs font-semibold text-foreground/80">حد التنبيه</label>
+                                        <input
+                                            type="number" min={0} value={form.minStock ?? 2}
+                                            onChange={e => setForm(f => ({ ...f, minStock: +e.target.value }))}
+                                            className={IC}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* ── Section 4: Pricing ── */}
+                            <div className="rounded-xl border border-border/50 bg-gradient-to-l from-primary/5 to-transparent p-4 space-y-3">
+                                <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide flex items-center gap-1.5">
+                                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 inline-block" />
+                                    التسعير
+                                </p>
+                                <div className="grid grid-cols-3 gap-3">
+                                    <div>
+                                        <label className="mb-1.5 block text-xs font-semibold text-foreground/80">سعر الشراء</label>
+                                        <input
+                                            type="number" min={0} value={form.costPrice}
+                                            onChange={e => {
+                                                const costPrice = +e.target.value;
+                                                setForm(f => ({
+                                                    ...f,
+                                                    costPrice,
+                                                    salePrice: typeof f.profitMargin === 'number' ? costPrice + f.profitMargin : f.salePrice,
+                                                    profitMargin: typeof f.profitMargin === 'number' ? f.profitMargin : (f.salePrice - costPrice),
+                                                }));
+                                            }}
+                                            className={IC}
+                                            placeholder="0"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="mb-1.5 block text-xs font-semibold text-foreground/80">سعر البيع</label>
+                                        <input
+                                            type="number" min={0} value={form.salePrice}
+                                            onChange={e => {
+                                                const salePrice = +e.target.value;
+                                                setForm(f => ({ ...f, salePrice, profitMargin: salePrice - f.costPrice }));
+                                            }}
+                                            className={IC}
+                                            placeholder="0"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="mb-1.5 block text-xs font-semibold text-foreground/80">هامش الربح</label>
+                                        <input
+                                            type="number" min={0} value={form.profitMargin ?? 0}
+                                            onChange={e => {
+                                                const profitMargin = +e.target.value;
+                                                setForm(f => ({ ...f, profitMargin, salePrice: f.costPrice + profitMargin }));
+                                            }}
+                                            className={IC}
+                                            placeholder="0"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Profit Indicator */}
+                                {form.salePrice > 0 && (() => {
+                                    const profit = form.salePrice - form.costPrice;
+                                    const margin = (profit / form.salePrice) * 100;
+                                    const isGood = margin >= 20;
+                                    const isOk = margin >= 10;
+                                    const colorClass = isGood
+                                        ? 'bg-emerald-50 dark:bg-emerald-500/10 border-emerald-200 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-400'
+                                        : isOk
+                                            ? 'bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/20 text-amber-700 dark:text-amber-400'
+                                            : 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400';
+                                    return (
+                                        <div className={`rounded-xl border p-3 flex justify-between items-center ${colorClass}`}>
+                                            <span className="text-sm font-semibold">
+                                                {!isOk ? '⚠️ هامش منخفض' : isGood ? '✅ هامش ممتاز' : '🟡 هامش مقبول'}
+                                            </span>
+                                            <div className="text-left rtl:text-right">
+                                                <span className="text-xl font-extrabold">{margin.toFixed(1)}%</span>
+                                                <span className="text-xs mx-2 opacity-70">({profit.toLocaleString('ar-EG')} ج.م)</span>
+                                            </div>
+                                        </div>
+                                    );
+                                })()}
+                            </div>
+
+                            {/* Notes */}
+                            <div>
+                                <label className="mb-1.5 block text-xs font-semibold text-foreground/80">ملاحظات</label>
+                                <textarea
+                                    value={form.notes ?? ''}
+                                    onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+                                    rows={2}
+                                    className={`${IC} resize-none`}
+                                    placeholder="أي ملاحظات إضافية..."
+                                />
                             </div>
                         </div>
 
-                        <div className="flex gap-2">
-                            <button onClick={handleSubmit}
-                                className={cn('flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-semibold text-white', config.addBtnClass)}>
-                                <Check className="h-4 w-4" /> {editId ? 'حفظ التعديلات' : 'إضافة'}
+                        {/* ── Modal Footer ── */}
+                        <div className="flex gap-3 px-6 py-4 border-t border-border bg-muted/20 rounded-b-2xl">
+                            <button
+                                onClick={handleSubmit}
+                                className={cn('flex flex-1 items-center justify-center gap-2 rounded-xl py-2.5 text-sm font-bold text-white shadow-md transition-all hover:shadow-lg', config.addBtnClass)}
+                            >
+                                <Check className="h-4 w-4" /> {editId ? 'حفظ التعديلات' : 'إضافة المنتج'}
                             </button>
-                            <button onClick={() => { setShowForm(false); setEditId(null); }}
-                                className="flex-1 rounded-xl border border-border py-2.5 text-sm font-medium hover:bg-muted">
+                            <button
+                                onClick={() => { setShowForm(false); setEditId(null); }}
+                                className="flex-1 rounded-xl border border-border py-2.5 text-sm font-medium hover:bg-muted transition-colors text-foreground"
+                            >
                                 إلغاء
                             </button>
                         </div>

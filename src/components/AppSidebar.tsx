@@ -99,7 +99,6 @@ const NAV_GROUPS: NavGroup[] = [
       { to: '/used-inventory', icon: Package, label: 'المستعمل', perm: 'used' },
       { to: '/maintenance/parts', icon: Wrench, label: 'قطع وأكسسوارات الصيانة', perm: 'maintenance' },
       { to: '/warehouse', icon: Warehouse, label: 'المستودع', perm: 'warehouse' },
-      { to: '/stocktake', icon: PackageSearch, label: 'جرد المخزون', perm: 'stocktake' },
       { to: '/barcodes', icon: Barcode, label: 'طباعة الباركود', perm: 'inventory' },
     ],
   },
@@ -126,7 +125,6 @@ const NAV_GROUPS: NavGroup[] = [
       { to: '/customers', icon: UserCheck, label: 'العملاء', perm: 'customers' },
       { to: '/suppliers', icon: Truck, label: 'الموردون', perm: 'suppliers' },
       { to: '/employees', icon: Users, label: 'الموظفين', perm: 'employees' },
-      { to: '/partners', icon: Handshake, label: 'الشركاء', perm: 'partners' },
     ],
   },
   {

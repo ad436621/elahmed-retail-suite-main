@@ -13,6 +13,13 @@ import { STORAGE_KEYS } from '@/config';
 
 const INVOICE_COUNTER_KEY = STORAGE_KEYS.INVOICE_COUNTER;
 
+function extractInvoiceSequence(invoiceNumber: string): number {
+  const match = /^INV-\d{4}-(\d+)$/.exec(invoiceNumber.trim());
+  if (!match) return 0;
+  const parsed = Number.parseInt(match[1], 10);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
+
 function getStoredInvoiceCounter(): number {
   try {
     const stored = localStorage.getItem(INVOICE_COUNTER_KEY);
@@ -26,6 +33,22 @@ function getStoredInvoiceCounter(): number {
   return 0;
 }
 
+function getPersistedInvoiceSequence(): number {
+  try {
+    if (window.electron?.ipcRenderer) {
+      const sequence = window.electron.ipcRenderer.sendSync('db-sync:sales:maxInvoiceSequence');
+      return Number.isFinite(Number(sequence)) ? Number(sequence) : 0;
+    }
+
+    const rawSales = localStorage.getItem(STORAGE_KEYS.SALES_LEGACY);
+    const sales = rawSales ? JSON.parse(rawSales) as Array<{ invoiceNumber?: string }> : [];
+    return sales.reduce((max, sale) => Math.max(max, extractInvoiceSequence(String(sale.invoiceNumber ?? ''))), 0);
+  } catch (e) {
+    console.error('Failed to infer invoice counter from persisted sales:', e);
+    return 0;
+  }
+}
+
 function saveInvoiceCounter(counter: number): void {
   try {
     localStorage.setItem(INVOICE_COUNTER_KEY, String(counter));
@@ -34,7 +57,7 @@ function saveInvoiceCounter(counter: number): void {
   }
 }
 
-let invoiceCounter = getStoredInvoiceCounter();
+let invoiceCounter = Math.max(getStoredInvoiceCounter(), getPersistedInvoiceSequence());
 
 function generateInvoiceNumber(): string {
   invoiceCounter++;

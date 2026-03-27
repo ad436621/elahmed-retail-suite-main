@@ -1,11 +1,13 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   addContract,
   addPaymentToContract,
   deleteContract,
+  getContracts,
+  saveContracts,
   updateContract,
 } from '@/data/installmentsData';
-import type { InstallmentDraftInput } from '@/domain/installments';
+import { buildContractFromDraft, type InstallmentDraftInput } from '@/domain/installments';
 import type { InstallmentScheduleItem } from '@/domain/types';
 
 function makeDraft(overrides: Partial<InstallmentDraftInput> = {}): InstallmentDraftInput {
@@ -33,6 +35,8 @@ function makeDraft(overrides: Partial<InstallmentDraftInput> = {}): InstallmentD
 
 beforeEach(() => {
   localStorage.clear();
+  vi.restoreAllMocks();
+  delete (window as typeof window & { electron?: unknown }).electron;
 });
 
 describe('installmentsData', () => {
@@ -103,5 +107,50 @@ describe('installmentsData', () => {
     expect(updated?.schedule[1].paidAmount).toBe(0);
     expect(updated?.payments[0].allocations).toEqual([{ scheduleItemId: 'row-1', amount: 100 }]);
     expect(updated?.remaining).toBe(200);
+  });
+
+  it('reads contracts from Electron relational storage when ipc is available', () => {
+    const contract = buildContractFromDraft(makeDraft(), {
+      id: 'electron-contract',
+      contractNumber: 'INS-0001',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    });
+    const sendSync = vi.fn((channel: string) => (channel === 'db:installments:get' ? [contract] : null));
+
+    Object.defineProperty(window, 'electron', {
+      configurable: true,
+      value: { ipcRenderer: { sendSync } },
+    });
+
+    const contracts = getContracts();
+
+    expect(sendSync).toHaveBeenCalledWith('db:installments:get');
+    expect(contracts).toHaveLength(1);
+    expect(contracts[0].id).toBe('electron-contract');
+  });
+
+  it('saves normalized contracts through Electron relational storage when ipc is available', () => {
+    const contract = buildContractFromDraft(makeDraft(), {
+      id: 'electron-save',
+      contractNumber: 'INS-0002',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      updatedAt: '2026-01-01T00:00:00.000Z',
+    });
+    const sendSync = vi.fn(() => []);
+
+    Object.defineProperty(window, 'electron', {
+      configurable: true,
+      value: { ipcRenderer: { sendSync } },
+    });
+
+    saveContracts([contract]);
+
+    expect(sendSync).toHaveBeenCalledTimes(1);
+    expect(sendSync).toHaveBeenCalledWith('db:installments:replaceAll', expect.any(Array));
+    const payload = sendSync.mock.calls[0][1];
+    expect(Array.isArray(payload)).toBe(true);
+    expect(payload[0].contractNumber).toBe('INS-0002');
+    expect(payload[0].remaining).toBe(1000);
   });
 });

@@ -95,7 +95,6 @@ export default function MobileNavBar() {
                             {hasPermission('cars') && <DrawerLink to="/cars" icon={Car} label="السيارات" onClick={() => setMenuOpen(false)} />}
                             {hasPermission('used') && <DrawerLink to="/used-inventory" icon={Package} label="المستعمل" onClick={() => setMenuOpen(false)} />}
                             {hasPermission('warehouse') && <DrawerLink to="/warehouse" icon={Warehouse} label="المستودع" onClick={() => setMenuOpen(false)} />}
-                            {hasPermission('stocktake') && <DrawerLink to="/stocktake" icon={PackageSearch} label="جرد المخزون" onClick={() => setMenuOpen(false)} />}
                             {hasPermission('inventory') && <DrawerLink to="/barcodes" icon={Barcode} label="طباعة الباركود" onClick={() => setMenuOpen(false)} />}
 
                             {/* الخدمات والحسابات */}
@@ -116,7 +115,6 @@ export default function MobileNavBar() {
                             {hasPermission('customers') && <DrawerLink to="/customers" icon={UserCheck} label="العملاء" onClick={() => setMenuOpen(false)} />}
                             {hasPermission('employees') && <DrawerLink to="/employees" icon={Users} label="الموظفون والرواتب" onClick={() => setMenuOpen(false)} />}
                             {hasPermission('suppliers') && <DrawerLink to="/suppliers" icon={Truck} label="الموردون" onClick={() => setMenuOpen(false)} />}
-                            {hasPermission('partners') && <DrawerLink to="/partners" icon={Handshake} label="الشركاء" onClick={() => setMenuOpen(false)} />}
 
                             {/* أدوات */}
                             <div className="border-t border-border/30 mt-3 pt-1" />

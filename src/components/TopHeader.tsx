@@ -45,8 +45,6 @@ const ROUTE_TITLES: Record<string, string> = {
     '/shift-closing': 'إقفال الوردية',
     '/purchase-invoices': 'فواتير الشراء',
     '/reports': 'التقارير والإحصاءات',
-    '/partners': 'الشركاء',
-    '/stocktake': 'جرد المخزون',
     '/diagnostics': 'تشخيص النظام',
 };
 

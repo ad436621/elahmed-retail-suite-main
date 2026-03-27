@@ -17,7 +17,22 @@ import { STORAGE_KEYS } from '@/config';
 const KEY = STORAGE_KEYS.INSTALLMENTS;
 const SEQUENCE_KEY = `${KEY}_sequence`;
 
+function hasElectronInstallmentsDb(): boolean {
+  return typeof window !== 'undefined' && !!window.electron?.ipcRenderer;
+}
+
 function readContracts(): InstallmentContract[] {
+  if (hasElectronInstallmentsDb()) {
+    try {
+      const contracts = window.electron.ipcRenderer.sendSync('db:installments:get');
+      if (Array.isArray(contracts)) {
+        return contracts as InstallmentContract[];
+      }
+    } catch {
+      // Fall back to legacy storage below.
+    }
+  }
+
   return getStorageItem<InstallmentContract[]>(KEY, []);
 }
 
@@ -26,7 +41,18 @@ export function getContracts(): InstallmentContract[] {
 }
 
 export function saveContracts(contracts: InstallmentContract[]): void {
-  setStorageItem(KEY, contracts.map(normalizeContract));
+  const normalized = contracts.map(normalizeContract);
+
+  if (hasElectronInstallmentsDb()) {
+    try {
+      window.electron.ipcRenderer.sendSync('db:installments:replaceAll', normalized);
+      return;
+    } catch {
+      // Fall back to legacy storage below.
+    }
+  }
+
+  setStorageItem(KEY, normalized);
 }
 
 function getNextContractSequence(contracts: InstallmentContract[]): number {

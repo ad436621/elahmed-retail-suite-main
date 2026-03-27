@@ -169,21 +169,35 @@ export async function syncRepairsToLegacy(): Promise<void> {
 // -- TICKETS --
 export async function getRepairTickets(filters?: { status?: string, customerId?: string, search?: string }): Promise<RepairTicket[]> {
     const ipc = getIpc();
-    if (!ipc) return [] as RepairTicket[];
+    if (!ipc) {
+        let tickets = getStorageItem<RepairTicket[]>('gx_repairs', []);
+        if (filters?.status && filters.status !== 'all') tickets = tickets.filter(t => t.status === filters.status);
+        if (filters?.customerId) tickets = tickets.filter(t => t.client_id === filters.customerId || t.customer_id === filters.customerId);
+        if (filters?.search) tickets = tickets.filter(t => t.customer_name.includes(filters.search!) || t.ticket_no.includes(filters.search!));
+        return tickets;
+    }
     const result = await ipc.invoke('db:repairs:getTickets', filters);
     return (result || []) as RepairTicket[];
 }
 
 export async function getRepairTicket(id: string): Promise<RepairTicket | null> {
     const ipc = getIpc();
-    if (!ipc) return null;
+    if (!ipc) {
+        return getStorageItem<RepairTicket[]>('gx_repairs', []).find(t => t.id === id) || null;
+    }
     const result = await ipc.invoke('db:repairs:getTicket', id);
     return (result || null) as RepairTicket | null;
 }
 
 export async function addRepairTicket(ticket: Partial<RepairTicket>): Promise<RepairTicket> {
     const ipc = getIpc();
-    if (!ipc) throw new Error("IPC not found");
+    if (!ipc) {
+        const tickets = getStorageItem<RepairTicket[]>('gx_repairs', []);
+        const newTicket = { id: crypto.randomUUID(), ticket_no: `TKT-${Date.now()}`, createdAt: new Date().toISOString(), ...ticket } as RepairTicket;
+        tickets.push(newTicket);
+        setStorageItem('gx_repairs', tickets);
+        return newTicket;
+    }
     const result = await ipc.invoke('db:repairs:addTicket', ticket);
     await syncRepairsToLegacy();
     return result as RepairTicket;
@@ -191,7 +205,16 @@ export async function addRepairTicket(ticket: Partial<RepairTicket>): Promise<Re
 
 export async function updateRepairTicket(id: string, updates: Partial<RepairTicket>): Promise<RepairTicket> {
     const ipc = getIpc();
-    if (!ipc) throw new Error("IPC not found");
+    if (!ipc) {
+        const tickets = getStorageItem<RepairTicket[]>('gx_repairs', []);
+        const idx = tickets.findIndex(t => t.id === id);
+        if (idx !== -1) {
+            tickets[idx] = { ...tickets[idx], ...updates, updatedAt: new Date().toISOString() };
+            setStorageItem('gx_repairs', tickets);
+            return tickets[idx];
+        }
+        throw new Error("Ticket not found");
+    }
     const result = await ipc.invoke('db:repairs:updateTicket', id, updates);
     await syncRepairsToLegacy();
     return result as RepairTicket;
@@ -199,7 +222,12 @@ export async function updateRepairTicket(id: string, updates: Partial<RepairTick
 
 export async function deleteRepairTicket(id: string): Promise<boolean> {
     const ipc = getIpc();
-    if (!ipc) throw new Error("IPC not found");
+    if (!ipc) {
+        let tickets = getStorageItem<RepairTicket[]>('gx_repairs', []);
+        tickets = tickets.filter(t => t.id !== id);
+        setStorageItem('gx_repairs', tickets);
+        return true;
+    }
     const result = await ipc.invoke('db:repairs:deleteTicket', id);
     await syncRepairsToLegacy();
     return !!result;
@@ -252,14 +280,22 @@ export async function updateRepairPart(id: string, updates: Partial<RepairPart>)
 // -- TICKET PARTS --
 export async function getTicketParts(ticketId: string): Promise<RepairTicketPart[]> {
     const ipc = getIpc();
-    if (!ipc) return [] as RepairTicketPart[];
+    if (!ipc) {
+        return getStorageItem<RepairTicketPart[]>('gx_repair_parts', []).filter(p => p.ticket_id === ticketId);
+    }
     const result = await ipc.invoke('db:repairs:getTicketParts', ticketId);
     return (result || []) as RepairTicketPart[];
 }
 
 export async function addTicketPart(ticketPart: Partial<RepairTicketPart>): Promise<RepairTicketPart> {
     const ipc = getIpc();
-    if (!ipc) throw new Error("IPC not found");
+    if (!ipc) {
+        const parts = getStorageItem<RepairTicketPart[]>('gx_repair_parts', []);
+        const newPart = { id: crypto.randomUUID(), createdAt: new Date().toISOString(), ...ticketPart } as RepairTicketPart;
+        parts.push(newPart);
+        setStorageItem('gx_repair_parts', parts);
+        return newPart;
+    }
     const result = await ipc.invoke('db:repairs:addTicketPart', ticketPart);
     await syncRepairsToLegacy();
     return result as RepairTicketPart;
@@ -267,7 +303,12 @@ export async function addTicketPart(ticketPart: Partial<RepairTicketPart>): Prom
 
 export async function removeTicketPart(id: string): Promise<boolean> {
     const ipc = getIpc();
-    if (!ipc) throw new Error("IPC not found");
+    if (!ipc) {
+        let parts = getStorageItem<RepairTicketPart[]>('gx_repair_parts', []);
+        parts = parts.filter(p => p.id !== id);
+        setStorageItem('gx_repair_parts', parts);
+        return true;
+    }
     const result = await ipc.invoke('db:repairs:removeTicketPart', id);
     await syncRepairsToLegacy();
     return !!result;
