@@ -434,7 +434,7 @@ export default function Dashboard() {
             from: 'from-cyan-500/20', border: 'border-cyan-500/30', iconBg: 'bg-cyan-500/15', ic: 'text-cyan-500', badge: 'bg-cyan-500',
             options: [
               { label: 'الكل', sub: 'كل الموبيلات', go: () => navigate('/mobiles', { state: { filter: 'all' } }) },
-              { label: 'الإكسسوارات', sub: 'إكسسوارات الموبايل', go: () => navigate('/mobiles', { state: { filter: 'accessory' } }) },
+              { label: 'الإكسسوارات', sub: 'إكسسوارات الموبايل', go: () => navigate('/mobiles/accessories') },
               { label: 'مستعمل', sub: 'الموبيلات المستعملة', go: () => navigate('/mobiles', { state: { filter: 'used' } }) },
             ],
           },
@@ -443,7 +443,7 @@ export default function Dashboard() {
             from: 'from-indigo-500/20', border: 'border-indigo-500/30', iconBg: 'bg-indigo-500/15', ic: 'text-indigo-500', badge: 'bg-indigo-500',
             options: [
               { label: 'الكل', sub: 'كل الكمبيوترات', go: () => navigate('/computers', { state: { filter: 'all' } }) },
-              { label: 'الإكسسوارات', sub: 'إكسسوارات الكمبيوتر', go: () => navigate('/computers', { state: { filter: 'accessory' } }) },
+              { label: 'الإكسسوارات', sub: 'إكسسوارات الكمبيوتر', go: () => navigate('/computers/accessories') },
               { label: 'مستعمل', sub: 'الكمبيوترات المستعملة', go: () => navigate('/computers', { state: { filter: 'used' } }) },
             ],
           },
@@ -452,7 +452,7 @@ export default function Dashboard() {
             from: 'from-amber-500/20', border: 'border-amber-500/30', iconBg: 'bg-amber-500/15', ic: 'text-amber-500', badge: 'bg-amber-500',
             options: [
               { label: 'الكل', sub: 'كل الأجهزة', go: () => navigate('/devices', { state: { filter: 'all' } }) },
-              { label: 'الإكسسوارات', sub: 'إكسسوارات الأجهزة', go: () => navigate('/devices', { state: { filter: 'accessory' } }) },
+              { label: 'الإكسسوارات', sub: 'إكسسوارات الأجهزة', go: () => navigate('/devices/accessories') },
               { label: 'مستعمل', sub: 'الأجهزة المستعملة', go: () => navigate('/devices', { state: { filter: 'used' } }) },
             ],
           },

@@ -52,6 +52,7 @@ import { useSettings } from '@/contexts/SettingsContext';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import type { Permission } from '@/data/usersData';
+import { APP_CONFIG } from '@/config/appConfig';
 
 // ─── Types ──────────────────────────────────────────────────
 
@@ -591,7 +592,7 @@ const AppSidebar = () => {
             </button>
 
             <p className="text-[9px] text-sidebar-foreground/25 text-center mt-2">
-              الإصدار 3.1.0 • {new Date().getFullYear()}
+              الإصدار {APP_CONFIG.VERSION} • {new Date().getFullYear()}
             </p>
           </>
         ) : (

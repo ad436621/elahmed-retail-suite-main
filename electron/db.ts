@@ -705,6 +705,7 @@ export function initializeDatabase() {
       device_passcode TEXT,
       status TEXT NOT NULL DEFAULT 'received',
       package_price REAL,
+      final_cost REAL DEFAULT 0,
       warranty_days INTEGER,
       assigned_tech_name TEXT,
       tech_bonus_type TEXT,

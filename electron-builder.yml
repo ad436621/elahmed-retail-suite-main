@@ -1,0 +1,43 @@
+appId: com.elahmed.retail
+productName: El-Ahmed Retail Suite
+copyright: Copyright © 2024 El-Ahmed
+
+asar: true
+
+files:
+  - dist/**/*
+  - dist-electron/main.js
+  - dist-electron/preload.js
+  - node_modules/**/*
+  - "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}"
+  - "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}"
+  - "!**/node_modules/*.d.ts"
+  - "!**/node_modules/.bin"
+
+extraMetadata:
+  main: dist-electron/main.js
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: portable
+      arch:
+        - x64
+  requestedExecutionLevel: asInvoker
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: El-Ahmed Retail Suite
+  installerLanguages:
+    - ar
+    - en_US
+  language: 1025
+
+directories:
+  output: release

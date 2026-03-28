@@ -4,6 +4,22 @@ import Database from 'better-sqlite3';
 type DB = ReturnType<typeof Database>;
 
 export function setupRepairHandlers(db: DB) {
+  const SPARE_PART_TYPES = ['mobile_spare_part', 'device_spare_part', 'computer_spare_part'] as const;
+
+  const getExpectedInventoryType = (deviceCategory?: string | null): string | null => {
+    switch (deviceCategory) {
+      case 'mobile':
+      case 'tablet':
+        return 'mobile_spare_part';
+      case 'device':
+        return 'device_spare_part';
+      case 'computer':
+      case 'laptop':
+        return 'computer_spare_part';
+      default:
+        return null;
+    }
+  };
 
   // ── Repair Tickets ──────────────────────────────────────────────────────────
 
@@ -43,10 +59,10 @@ export function setupRepairHandlers(db: DB) {
         id, ticket_no, client_id, customer_name, customer_phone,
         device_category, device_brand, device_model, imei_or_serial,
         issue_description, accessories_received, device_passcode,
-        status, package_price, warranty_days,
+        status, package_price, final_cost, warranty_days,
         assigned_tech_name, tech_bonus_type, tech_bonus_value,
         createdAt, createdBy, updatedAt, updatedBy
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       id,
       ticketNo,
@@ -62,6 +78,7 @@ export function setupRepairHandlers(db: DB) {
       ticket.device_passcode || ticket.password || null,
       ticket.status || 'received',
       ticket.package_price ?? ticket.expectedCost ?? null,
+      ticket.final_cost ?? null,
       ticket.warranty_days ?? null,
       ticket.assigned_tech_name || ticket.techName || null,
       ticket.tech_bonus_type || null,
@@ -76,12 +93,20 @@ export function setupRepairHandlers(db: DB) {
   });
 
   ipcMain.handle('db:repairs:updateTicket', (_, id: string, data: any) => {
-    const EXCLUDED = ['id', 'createdAt', 'createdBy', 'ticket_no'];
+    // ALLOWLIST: only columns that actually exist in repair_tickets table
+    const VALID_COLUMNS = new Set([
+      'client_id', 'customer_name', 'customer_phone',
+      'device_category', 'device_brand', 'device_model', 'imei_or_serial',
+      'issue_description', 'accessories_received', 'device_passcode',
+      'status', 'package_price', 'final_cost', 'warranty_days',
+      'assigned_tech_name', 'tech_bonus_type', 'tech_bonus_value',
+      'updatedBy'
+    ]);
     const sets: string[] = [];
     const values: any[] = [];
 
     for (const [key, val] of Object.entries(data)) {
-      if (!EXCLUDED.includes(key)) {
+      if (VALID_COLUMNS.has(key)) {
         sets.push(`${key} = ?`);
         values.push(val === undefined ? null : val);
       }
@@ -228,8 +253,13 @@ export function setupRepairHandlers(db: DB) {
 
   ipcMain.handle('db:repairs:getTicketParts', (_, ticketId: string) => {
     return db.prepare(`
-      SELECT tp.*, rp.name as partName FROM repair_ticket_parts tp
+      SELECT tp.*, 
+        COALESCE(rp.name, acc.name) as partName,
+        COALESCE(rp.unit_cost, acc.costPrice, acc.newCostPrice) as partCostPrice,
+        COALESCE(rp.selling_price, acc.salePrice) as partSellingPrice
+      FROM repair_ticket_parts tp
       LEFT JOIN repair_parts rp ON tp.part_id = rp.id
+      LEFT JOIN accessories acc ON tp.part_id = acc.id
       WHERE tp.ticket_id = ?
     `).all(ticketId);
   });
@@ -237,33 +267,68 @@ export function setupRepairHandlers(db: DB) {
   ipcMain.handle('db:repairs:addTicketPart', (_, tpart: any) => {
     const id = tpart.id || crypto.randomUUID();
     const now = new Date().toISOString();
+    const qty = Math.max(1, Number(tpart.qty || tpart.quantity || 1));
+    const ticket = db.prepare('SELECT id, ticket_no, device_category FROM repair_tickets WHERE id = ?').get(tpart.ticket_id) as
+      | { id: string; ticket_no: string; device_category: string }
+      | undefined;
+
+    if (!ticket) {
+      throw new Error('طلب الصيانة غير موجود.');
+    }
+
+    const expectedInventoryType = getExpectedInventoryType(ticket.device_category);
+    const accessoryPart = db.prepare('SELECT id, name, quantity, inventoryType FROM accessories WHERE id = ?').get(tpart.part_id) as
+      | { id: string; name: string; quantity: number; inventoryType: string }
+      | undefined;
+    const repairPart = accessoryPart
+      ? undefined
+      : (db.prepare('SELECT id, name, qty FROM repair_parts WHERE id = ?').get(tpart.part_id) as
+          | { id: string; name: string; qty: number }
+          | undefined);
+
+    if (accessoryPart) {
+      if (!SPARE_PART_TYPES.includes(accessoryPart.inventoryType as (typeof SPARE_PART_TYPES)[number])) {
+        throw new Error('القطعة المختارة ليست من مخزون قطع الغيار.');
+      }
+      if (expectedInventoryType && accessoryPart.inventoryType !== expectedInventoryType) {
+        throw new Error('يجب اختيار قطعة من مخزون نفس نوع الجهاز الجاري إصلاحه.');
+      }
+      if (Number(accessoryPart.quantity || 0) < qty) {
+        throw new Error(`الكمية المتاحة من ${accessoryPart.name} هي ${accessoryPart.quantity} فقط.`);
+      }
+    } else if (repairPart && Number(repairPart.qty || 0) < qty) {
+      throw new Error(`الكمية المتاحة من ${repairPart.name} هي ${repairPart.qty} فقط.`);
+    }
 
     db.prepare(`
       INSERT INTO repair_ticket_parts (id, ticket_id, part_id, qty, unit_cost, status, createdAt, updatedAt)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       id, tpart.ticket_id, tpart.part_id,
-      tpart.qty || tpart.quantity || 1,
+      qty,
       tpart.unit_cost || tpart.cost_price || 0,
       tpart.status || 'used',
       now, now
     );
 
-    // Decrease stock from repair_parts
-    db.prepare('UPDATE repair_parts SET qty = MAX(0, qty - ?) WHERE id = ?').run(
-      tpart.qty || tpart.quantity || 1,
-      tpart.part_id
-    );
+    // Deduct from the correct inventory based on source
+    if (accessoryPart) {
+      db.prepare('UPDATE accessories SET quantity = MAX(0, quantity - ?) WHERE id = ?').run(qty, tpart.part_id);
+    } else if (repairPart) {
+      db.prepare('UPDATE repair_parts SET qty = MAX(0, qty - ?) WHERE id = ?').run(qty, tpart.part_id);
+    }
 
-    // Log movement
-    db.prepare(`
+    if (accessoryPart || repairPart) {
+      db.prepare(`
       INSERT INTO repair_parts_movements (id, part_id, ticket_id, type, qty, unit_cost, note, createdAt)
       VALUES (?, ?, ?, 'usage', ?, ?, ?, ?)
     `).run(
       crypto.randomUUID(), tpart.part_id, tpart.ticket_id,
-      tpart.qty || 1, tpart.unit_cost || 0,
+      qty, tpart.unit_cost || 0,
       `استخدام في تذكرة ${tpart.ticket_id}`, now
     );
+
+    }
 
     return db.prepare('SELECT * FROM repair_ticket_parts WHERE id = ?').get(id);
   });
@@ -271,8 +336,12 @@ export function setupRepairHandlers(db: DB) {
   ipcMain.handle('db:repairs:removeTicketPart', (_, id: string) => {
     const tpart = db.prepare('SELECT * FROM repair_ticket_parts WHERE id = ?').get(id) as any;
     if (tpart) {
-      // Restore stock
-      db.prepare('UPDATE repair_parts SET qty = qty + ? WHERE id = ?').run(tpart.qty, tpart.part_id);
+      const accessoryPart = db.prepare('SELECT id FROM accessories WHERE id = ?').get(tpart.part_id);
+      if (accessoryPart) {
+        db.prepare('UPDATE accessories SET quantity = quantity + ? WHERE id = ?').run(tpart.qty, tpart.part_id);
+      } else if (db.prepare('SELECT id FROM repair_parts WHERE id = ?').get(tpart.part_id)) {
+        db.prepare('UPDATE repair_parts SET qty = qty + ? WHERE id = ?').run(tpart.qty, tpart.part_id);
+      }
     }
     return db.prepare('DELETE FROM repair_ticket_parts WHERE id = ?').run(id).changes > 0;
   });
@@ -349,6 +418,19 @@ export function setupRepairHandlers(db: DB) {
     db.prepare('UPDATE repair_parts SET qty = MAX(0, qty + ?) WHERE id = ?').run(delta, movement.part_id);
 
     return db.prepare('SELECT * FROM repair_parts_movements WHERE id = ?').get(id);
+  });
+
+  // ── Accessory Spare Parts (for repair integration) ────────────────────────────
+
+  ipcMain.handle('db:repairs:getAccessoryParts', (_, inventoryType?: string) => {
+    const query = `
+      SELECT * FROM accessories 
+      WHERE inventoryType IN ('mobile_spare_part', 'device_spare_part', 'computer_spare_part')
+      ${inventoryType ? 'AND inventoryType = ?' : ''}
+      AND (isArchived IS NULL OR isArchived = 0)
+      ORDER BY name ASC
+    `;
+    return inventoryType ? db.prepare(query).all(inventoryType) : db.prepare(query).all();
   });
 
   // ── Dashboard Stats ───────────────────────────────────────────────────────────

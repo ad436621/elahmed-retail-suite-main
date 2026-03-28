@@ -16,18 +16,23 @@ interface ApiResponse<T> {
 class ApiClient {
     private token: string | null = null;
 
+    private getAuthStore(): Storage {
+        return window.sessionStorage;
+    }
+
     setToken(token: string | null) {
         this.token = token;
+        const store = this.getAuthStore();
         if (token) {
-            localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, token);
+            store.setItem(STORAGE_KEYS.AUTH_TOKEN, token);
         } else {
-            localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+            store.removeItem(STORAGE_KEYS.AUTH_TOKEN);
         }
     }
 
     getToken(): string | null {
         if (!this.token) {
-            this.token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+            this.token = this.getAuthStore().getItem(STORAGE_KEYS.AUTH_TOKEN);
         }
         return this.token;
     }

@@ -46,6 +46,8 @@ describe('sqlite-backed data modules', () => {
         email: 'ahmed@example.com',
         notes: 'VIP',
         createdAt: '2026-01-01T00:00:00.000Z',
+        isArchived: false,
+        deletedAt: null,
       },
     ]);
   });
@@ -125,25 +127,32 @@ describe('sqlite-backed data modules', () => {
   });
 
   it('updates reminder status through SQLite sync bridge when marking done', () => {
+    let reminders = [
+      {
+        id: 'rem-1',
+        title: 'Pay supplier',
+        dueDate: '2026-03-27',
+        priority: 'medium',
+        status: 'pending',
+        category: 'supplier',
+        createdAt: '2026-03-20T00:00:00.000Z',
+      },
+    ];
+
     const sendSync = vi.fn((channel: string, ...args: unknown[]) => {
       if (channel === 'db-sync:reminders:get') {
-        return [
-          {
-            id: 'rem-1',
-            title: 'Pay supplier',
-            dueDate: '2026-03-27',
-            priority: 'medium',
-            status: 'pending',
-            category: 'supplier',
-            createdAt: '2026-03-20T00:00:00.000Z',
-          },
-        ];
+        return reminders;
       }
       if (channel === 'db-sync:reminders:update') {
-        return { id: args[0], ...(args[1] as Record<string, unknown>) };
+        const id = args[0] as string;
+        const data = args[1] as Record<string, unknown>;
+        reminders = reminders.map((r) => (r.id === id ? { ...r, ...data } : r));
+        return { id, ...data };
       }
       if (channel === 'db-sync:reminders:add') {
-        return { id: 'rem-1', ...(args[0] as Record<string, unknown>) };
+        const newReminder = { id: 'rem-1', ...(args[0] as Record<string, unknown>) };
+        reminders.push(newReminder as typeof reminders[0]);
+        return newReminder;
       }
       return null;
     });
@@ -164,14 +173,11 @@ describe('sqlite-backed data modules', () => {
     });
     markReminderDone('rem-1');
 
-    expect(sendSync).toHaveBeenCalledWith(
-      'db-sync:reminders:update',
-      'rem-1',
-      expect.objectContaining({
-        dueDate: '2026-03-27',
-        status: 'done',
-        completed: true,
-      }),
-    );
+    expect(sendSync).toHaveBeenCalledTimes(3);
+    const updateCall = sendSync.mock.calls[2];
+    expect(updateCall[0]).toBe('db-sync:reminders:update');
+    expect(updateCall[1]).toBe('rem-1');
+    expect(updateCall[2].status).toBe('done');
+    expect(updateCall[2].completed).toBe(true);
   });
 });

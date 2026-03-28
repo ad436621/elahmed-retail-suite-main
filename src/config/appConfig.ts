@@ -8,7 +8,7 @@ export const APP_CONFIG = {
     // ─── App Identity ───────────────────────────────────────────
     APP_NAME: 'ElAhmed Retail Suite',
     APP_PREFIX: 'gx_',
-    VERSION: '1.0.0',
+    VERSION: '3.1.1',
 
     // ─── API ────────────────────────────────────────────────────
     API_BASE_URL: import.meta.env.VITE_API_URL || 'http://localhost:3001/api',

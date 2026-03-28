@@ -48,3 +48,10 @@ Thumbs.db
 # Large extracted resources (from Electron app extraction)
 resources.zip
 resources_extracted/
+
+# Desktop build artifacts
+release/
+dist-electron/*.jsc
+dist-electron/main-loader.cjs
+tsconfig.tsbuildinfo
+nul

@@ -36,6 +36,25 @@ export default defineConfig(({ mode }) => ({
       overlay: false,
     },
   },
+  build: {
+    // Use terser for aggressive minification & obfuscation of the renderer bundle
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        passes: 3,         // Multiple compression passes
+        drop_console: true, // Remove all console.log in production
+        drop_debugger: true,
+        pure_funcs: ['console.log', 'console.warn', 'console.info'],
+      },
+      mangle: {
+        toplevel: true,    // Mangle top-level variable/function names
+        eval: true,
+      },
+      format: {
+        comments: false,   // Remove all comments
+      },
+    },
+  },
   plugins: [
     copyLogoPlugin(),
     react(),

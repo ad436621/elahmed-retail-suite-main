@@ -15,8 +15,9 @@ export interface RepairTicket {
     issue_description: string;
     accessories_received?: string;
     device_passcode?: string;
-    status: 'received' | 'diagnosing' | 'waiting_parts' | 'repairing' | 'ready' | 'delivered' | 'cancelled' | 'pending' | 'in_progress' | 'waiting_for_parts' | 'completed';
+    status: 'received' | 'diagnosing' | 'waiting_parts' | 'repairing' | 'testing' | 'ready' | 'delivered' | 'cancelled' | 'pending' | 'in_progress' | 'waiting_for_parts' | 'completed';
     package_price?: number;
+    final_cost?: number;
     warranty_days?: number;
     assigned_tech_name?: string;
     tech_bonus_type?: string;
@@ -99,16 +100,64 @@ export interface RepairTicketPart {
     cost_price?: number;
 }
 
+export interface AccessoryRepairPart {
+    id: string;
+    name: string;
+    quantity: number;
+    minStock?: number;
+    costPrice: number;
+    salePrice: number;
+    inventoryType: string;
+    source: 'accessories';
+    barcode?: string;
+    category?: string;
+    brand?: string;
+}
+
 // ----------------------------------------------------
 // IPC Wrapper (React side)
 // ----------------------------------------------------
 import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
 import { STORAGE_KEYS } from '@/config';
 import { MaintenanceOrder } from '@/domain/types';
+import { deleteOtherRevenue, upsertOtherRevenue } from '@/data/otherRevenueData';
 
 function getIpc() {
   // @ts-ignore - ContextBridge from Electron
   return window.electron?.ipcRenderer;
+}
+
+const REPAIR_REVENUE_PREFIX = 'repair-revenue-';
+
+function getRepairRevenueId(ticketId: string): string {
+    return `${REPAIR_REVENUE_PREFIX}${ticketId}`;
+}
+
+function getRepairRevenueAmount(ticket: Partial<RepairTicket>): number {
+    const finalCost = Number(ticket.final_cost ?? 0);
+    if (finalCost > 0) return finalCost;
+    return Number(ticket.package_price ?? ticket.expected_cost ?? 0) || 0;
+}
+
+function syncRepairRevenue(ticket: RepairTicket | null): void {
+    if (!ticket) return;
+
+    const amount = getRepairRevenueAmount(ticket);
+    const revenueId = getRepairRevenueId(ticket.id);
+
+    if (amount <= 0) {
+        deleteOtherRevenue(revenueId);
+        return;
+    }
+
+    upsertOtherRevenue({
+        id: revenueId,
+        date: String(ticket.updatedAt || ticket.createdAt || new Date().toISOString()).slice(0, 10),
+        description: `إيراد صيانة ${ticket.ticket_no} - ${ticket.customer_name}`,
+        amount,
+        category: 'إيراد صيانة',
+        addedBy: ticket.updatedBy || ticket.createdBy || 'system',
+    });
 }
 
 /** 
@@ -116,8 +165,13 @@ function getIpc() {
  * for compatibility with Dashboard/Reports 
  */
 function mapToLegacy(t: RepairTicket, parts: RepairTicketPart[]): MaintenanceOrder {
-    const totalCost = parts.reduce((s, p) => s + ((p.unit_cost || p.cost_price || 0) * (p.qty || p.quantity || 0)), 0);
-    const totalSale = t.package_price || t.expected_cost || 0;
+    // Use actual cost from inventory join (partCostPrice) for profit calculation
+    const totalCost = parts.reduce((s, p) => {
+        const costPerUnit = (p as any).partCostPrice || p.unit_cost || p.cost_price || 0;
+        const qty = p.qty || p.quantity || 0;
+        return s + (costPerUnit * qty);
+    }, 0);
+    const totalSale = getRepairRevenueAmount(t);
     
     return {
         id: t.id,
@@ -125,17 +179,17 @@ function mapToLegacy(t: RepairTicket, parts: RepairTicketPart[]): MaintenanceOrd
         customerName: t.customer_name,
         customerPhone: t.customer_phone || '',
         date: (t.createdAt || t.created_at || '').slice(0, 10),
-        deviceName: t.device_model || t.device_type || t.device_category || 'Unknown',
+        deviceName: t.device_model ?? t.device_type ?? t.device_category ?? 'Unknown',
         deviceCategory: (t.device_category || 'other') as MaintenanceOrder['deviceCategory'],
-        issueDescription: t.issue_description || t.problem_desc || '',
-        status: ['received', 'diagnosing', 'repairing', 'ready', 'in_progress', 'pending'].includes(t.status) ? 'in_progress' : 
+        issueDescription: t.issue_description ?? t.problem_desc ?? '',
+        status: ['received', 'diagnosing', 'repairing', 'waiting_parts', 'pending', 'in_progress', 'testing'].includes(t.status) ? 'in_progress' : 
                 ['delivered', 'completed'].includes(t.status) ? 'done' : 'pending',
         spareParts: parts.map(p => ({
-            name: p.partName || p.name || 'قطعة غيار',
-            costPrice: p.unit_cost || p.cost_price || 0,
-            salePrice: p.unit_cost || p.unit_price || 0
+            name: p.partName ?? p.name ?? 'قطعة غيار',
+            costPrice: (p as any).partCostPrice || p.unit_cost || p.cost_price || 0,
+            salePrice: (p as any).partSellingPrice || p.unit_cost || p.unit_price || 0
         })),
-        description: t.issue_description || t.problem_desc || '',
+        description: t.issue_description ?? t.problem_desc ?? '',
         totalCost: totalCost,
         totalSale: totalSale,
         netProfit: totalSale - totalCost,
@@ -196,9 +250,11 @@ export async function addRepairTicket(ticket: Partial<RepairTicket>): Promise<Re
         const newTicket = { id: crypto.randomUUID(), ticket_no: `TKT-${Date.now()}`, createdAt: new Date().toISOString(), ...ticket } as RepairTicket;
         tickets.push(newTicket);
         setStorageItem('gx_repairs', tickets);
+        syncRepairRevenue(newTicket);
         return newTicket;
     }
     const result = await ipc.invoke('db:repairs:addTicket', ticket);
+    syncRepairRevenue(result as RepairTicket);
     await syncRepairsToLegacy();
     return result as RepairTicket;
 }
@@ -211,11 +267,13 @@ export async function updateRepairTicket(id: string, updates: Partial<RepairTick
         if (idx !== -1) {
             tickets[idx] = { ...tickets[idx], ...updates, updatedAt: new Date().toISOString() };
             setStorageItem('gx_repairs', tickets);
+            syncRepairRevenue(tickets[idx]);
             return tickets[idx];
         }
         throw new Error("Ticket not found");
     }
     const result = await ipc.invoke('db:repairs:updateTicket', id, updates);
+    syncRepairRevenue(result as RepairTicket);
     await syncRepairsToLegacy();
     return result as RepairTicket;
 }
@@ -226,9 +284,11 @@ export async function deleteRepairTicket(id: string): Promise<boolean> {
         let tickets = getStorageItem<RepairTicket[]>('gx_repairs', []);
         tickets = tickets.filter(t => t.id !== id);
         setStorageItem('gx_repairs', tickets);
+        deleteOtherRevenue(getRepairRevenueId(id));
         return true;
     }
     const result = await ipc.invoke('db:repairs:deleteTicket', id);
+    deleteOtherRevenue(getRepairRevenueId(id));
     await syncRepairsToLegacy();
     return !!result;
 }
@@ -312,4 +372,24 @@ export async function removeTicketPart(id: string): Promise<boolean> {
     const result = await ipc.invoke('db:repairs:removeTicketPart', id);
     await syncRepairsToLegacy();
     return !!result;
+}
+
+// -- ACCESSORY SPARE PARTS (for repair integration) --
+export async function getAccessoryPartsForRepair(inventoryType?: string): Promise<AccessoryRepairPart[]> {
+    const ipc = getIpc();
+    if (!ipc) return [];
+    const result = await ipc.invoke('db:repairs:getAccessoryParts', inventoryType);
+    return ((result || []) as Array<Record<string, unknown>>).map((part) => ({
+        id: String(part.id ?? ''),
+        name: String(part.name ?? ''),
+        quantity: Number(part.quantity ?? 0) || 0,
+        minStock: Number(part.minStock ?? 0) || 0,
+        costPrice: Number(part.costPrice ?? part.newCostPrice ?? 0) || 0,
+        salePrice: Number(part.salePrice ?? 0) || 0,
+        inventoryType: String(part.inventoryType ?? ''),
+        source: 'accessories',
+        barcode: typeof part.barcode === 'string' ? part.barcode : undefined,
+        category: typeof part.category === 'string' ? part.category : undefined,
+        brand: typeof part.brand === 'string' ? part.brand : undefined,
+    }));
 }

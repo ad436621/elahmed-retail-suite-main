@@ -129,6 +129,8 @@ export const STORAGE_KEYS = {
     EMAIL_QUEUE: 'email_queue',
     SMS_QUEUE: 'sms_queue',
     WHATSAPP_QUEUE: 'whatsapp_queue',
+    AI_NOTIFICATIONS: 'gx_ai_notifications',
+    AI_NOTIFICATIONS_META: 'gx_ai_notifications_meta',
     PRINT_HISTORY: 'print_history',
     SMS_PROVIDER: 'sms_provider',
     SMS_CONFIG: 'sms_config',

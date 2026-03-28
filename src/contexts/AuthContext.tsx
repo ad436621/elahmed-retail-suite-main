@@ -47,29 +47,34 @@ const SESSION_TIMEOUT_MS = 8 * 60 * 60 * 1000; // #22: 8 hours
 const SESSION_TS_KEY = 'gx_session_ts';
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+function getSessionStore(): Storage {
+  return window.sessionStorage;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(() => {
     // Try backend first if enabled
     if (USE_BACKEND) {
-      const token = localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN);
+      const token = getSessionStore().getItem(STORAGE_KEYS.AUTH_TOKEN);
       if (token) {
         // Will verify on mount
         return null;
       }
     }
 
-    // Fallback to localStorage
+    // Fallback to sessionStorage so every new app launch requires login
     try {
-      const stored = localStorage.getItem(SESSION_KEY);
+      const store = getSessionStore();
+      const stored = store.getItem(SESSION_KEY);
       if (!stored) return null;
 
       // #22 FIX: Check session timeout
-      const sessionTs = localStorage.getItem(SESSION_TS_KEY);
+      const sessionTs = store.getItem(SESSION_TS_KEY);
       if (sessionTs) {
         const elapsed = Date.now() - Number(sessionTs);
         if (elapsed > SESSION_TIMEOUT_MS) {
-          localStorage.removeItem(SESSION_KEY);
-          localStorage.removeItem(SESSION_TS_KEY);
+          store.removeItem(SESSION_KEY);
+          store.removeItem(SESSION_TS_KEY);
           return null;
         }
       }
@@ -77,7 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const parsed = JSON.parse(stored) as AuthUser;
       const live = getUserById(parsed.id);
       if (!live || !live.active) {
-        localStorage.removeItem(SESSION_KEY);
+        store.removeItem(SESSION_KEY);
         return null;
       }
       return {
@@ -89,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         lastLogin: parsed.lastLogin,
       };
     } catch {
-      localStorage.removeItem(SESSION_KEY);
+      getSessionStore().removeItem(SESSION_KEY);
       return null;
     }
   });
@@ -97,6 +102,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [allUsers, setAllUsers] = useState<AppUser[]>(() => getUsers());
 
   // Verify token with backend on mount
+  useEffect(() => {
+    // Clear any old persistent auth from previous builds so the app always starts logged out.
+    localStorage.removeItem(SESSION_KEY);
+    localStorage.removeItem(SESSION_TS_KEY);
+    localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.AUTH_USER);
+  }, []);
+
   useEffect(() => {
     if (USE_BACKEND && !user) {
       const verifyBackendAuth = async () => {
@@ -117,17 +130,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    const store = getSessionStore();
     if (user) {
       if (USE_BACKEND) {
         // Token is handled by api client
       } else {
-        localStorage.setItem(SESSION_KEY, JSON.stringify(user));
+        store.setItem(SESSION_KEY, JSON.stringify(user));
         // #22: Update session timestamp
-        localStorage.setItem(SESSION_TS_KEY, String(Date.now()));
+        store.setItem(SESSION_TS_KEY, String(Date.now()));
       }
     } else {
-      localStorage.removeItem(SESSION_KEY);
-      localStorage.removeItem(SESSION_TS_KEY);
+      store.removeItem(SESSION_KEY);
+      store.removeItem(SESSION_TS_KEY);
     }
   }, [user]);
 

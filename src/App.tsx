@@ -10,6 +10,7 @@ import { preloadDashboardData } from '@/hooks/useFastData';
 import { migrateLegacyDataToBatches } from '@/domain/batchMigration';
 import { migrateUsedMerge } from "@/domain/migrationUsedMerge";
 import { syncRepairsToLegacy } from "@/data/repairsData";
+import { runAiNotificationsAnalysis } from '@/services/aiNotificationsService';
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
@@ -149,6 +150,24 @@ function DataMigrationRunner(): React.ReactElement | null {
   return null;
 }
 
+function AiNotificationsRunner(): React.ReactElement | null {
+  const { isAuthenticated } = useAuth();
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const run = () => {
+      runAiNotificationsAnalysis().catch(console.error);
+    };
+
+    run();
+    const interval = setInterval(run, 30 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated]);
+
+  return null;
+}
+
 const AppRoutes = () => (
   <Suspense fallback={<PageLoader />}>
     <Routes>
@@ -222,6 +241,7 @@ const App = () => (
                 <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
                   <AutoBackupRunner />
                   <DataMigrationRunner />
+                  <AiNotificationsRunner />
                   <AppRoutes />
                 </BrowserRouter>
               </TooltipProvider>

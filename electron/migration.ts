@@ -690,6 +690,10 @@ function repairProductBatchesSchema(db: DB): void {
 }
 
 function repairOperationalSchemas(db: DB): void {
+  if (tableExists(db, 'repair_tickets')) {
+    ensureColumn(db, 'repair_tickets', 'final_cost', 'REAL DEFAULT 0');
+  }
+
   if (tableExists(db, 'blacklist')) {
     ensureColumn(db, 'blacklist', 'imei', 'TEXT');
     ensureColumn(db, 'blacklist', 'deviceName', "TEXT NOT NULL DEFAULT ''");
@@ -2337,12 +2341,12 @@ function migrateRepairs(db: DB) {
   const stmt = db.prepare(`
     INSERT OR IGNORE INTO repair_tickets (
       id, ticket_no, customer_name, customer_phone, device_category, device_model,
-      issue_description, status, package_price, createdAt, updatedAt
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      issue_description, status, package_price, final_cost, createdAt, updatedAt
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   db.transaction(() => {
     for (const r of data) {
-      const status = ['received', 'diagnosing', 'repairing', 'ready', 'delivered', 'cancelled'].includes(r.status)
+      const status = ['received', 'diagnosing', 'repairing', 'waiting_parts', 'testing', 'ready', 'delivered', 'cancelled', 'pending', 'in_progress', 'waiting_for_parts', 'completed'].includes(r.status)
         ? r.status
         : r.status === 'done'
           ? 'delivered'
@@ -2360,6 +2364,7 @@ function migrateRepairs(db: DB) {
         r.issueDescription || r.issue_description || r.problem_desc || '',
         status,
         r.totalSale || r.package_price || 0,
+        r.final_cost || r.totalSale || r.package_price || 0,
         r.createdAt || r.created_at || new Date().toISOString(),
         r.updatedAt || r.updated_at || new Date().toISOString(),
       );

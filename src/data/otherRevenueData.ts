@@ -106,6 +106,33 @@ export function addOtherRevenue(item: Omit<OtherRevenue, 'id' | 'createdAt'>): O
   return newItem;
 }
 
+export function upsertOtherRevenue(item: Omit<OtherRevenue, 'createdAt'>): OtherRevenue {
+  const existing = getOtherRevenues().find((revenue) => revenue.id === item.id);
+
+  if (existing) {
+    updateOtherRevenue(item.id, item);
+    return {
+      ...existing,
+      ...item,
+      createdAt: existing.createdAt,
+    };
+  }
+
+  const created = normalizeOtherRevenue({
+    ...item,
+    createdAt: new Date().toISOString(),
+  });
+
+  if (hasElectronIpc()) {
+    const saved = callElectronSync<OtherRevenueRow>('db-sync:other_revenue:add', toOtherRevenueRow(created));
+    emitDataChange(KEY);
+    return normalizeOtherRevenue(saved ?? created);
+  }
+
+  saveOtherRevenues([...loadLocalOtherRevenue(), created]);
+  return created;
+}
+
 export function updateOtherRevenue(id: string, updates: Partial<OtherRevenue>): void {
   if (hasElectronIpc()) {
     callElectronSync('db-sync:other_revenue:update', id, {

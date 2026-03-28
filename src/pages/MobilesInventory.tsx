@@ -1168,15 +1168,17 @@ export default function MobilesInventory() {
                                 </div>
                             </div>
                             
-                            <div className="grid grid-cols-1">
-                                <div>
-                                    <label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase">المخزن *</label>
-                                    <select value={f.warehouseId} onChange={e => setF(p => ({ ...p, warehouseId: e.target.value }))} className={IC}>
-                                        <option value="">-- الافتراضي --</option>
-                                        {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
-                                    </select>
+                            {editId && (
+                                <div className="grid grid-cols-1">
+                                    <div>
+                                        <label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase">المخزن *</label>
+                                        <select value={f.warehouseId} onChange={e => setF(p => ({ ...p, warehouseId: e.target.value }))} className={IC}>
+                                            <option value="">-- الافتراضي --</option>
+                                            {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                                        </select>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
                             <div className="border-t border-border/50" />
 
@@ -1302,8 +1304,13 @@ export default function MobilesInventory() {
                                 <textarea value={f.description} onChange={e => setF(p => ({ ...p, description: e.target.value }))} rows={2} className={`${IC} resize-none`} />
                             </div>
 
-                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                                <div><label className="mb-1 block text-xs font-bold text-muted-foreground uppercase">الكمية</label><input type="number" min={0} value={f.quantity} onChange={e => setF(p => ({ ...p, quantity: +e.target.value }))} className={IC} /></div>
+                            <div className={`grid gap-3 ${editId ? 'grid-cols-2 sm:grid-cols-4' : 'grid-cols-1 sm:grid-cols-3'}`}>
+                                {editId && (
+                                    <div>
+                                        <label className="mb-1 block text-xs font-bold text-muted-foreground uppercase">الكمية</label>
+                                        <input type="number" min={0} value={f.quantity} onChange={e => setF(p => ({ ...p, quantity: +e.target.value }))} className={IC} />
+                                    </div>
+                                )}
                                 <div><label className="mb-1 block text-xs font-bold text-muted-foreground uppercase">سعر الشراء</label><input type="number" min={0} value={f.newCostPrice} onChange={e => setCostPriceValue(+e.target.value)} className={IC} /></div>
                                 <div><label className="mb-1 block text-xs font-bold text-primary uppercase">سعر البيع</label><input type="number" min={0} value={f.salePrice} onChange={e => setSalePriceValue(+e.target.value)} className={`${IC} border-primary/40 focus:ring-primary`} /></div>
                                 <div><label className="mb-1 block text-xs font-bold text-muted-foreground uppercase">هامش الربح</label><input type="number" min={0} value={f.profitMargin} onChange={e => setProfitMarginValue(+e.target.value)} className={IC} /></div>

@@ -466,7 +466,7 @@ export interface MaintenanceOrder {
   customerPhone: string;
   date: string;
   deviceName: string;
-  deviceCategory: 'mobile' | 'tablet' | 'computer' | 'laptop' | 'other';
+  deviceCategory: 'mobile' | 'tablet' | 'computer' | 'laptop' | 'device' | 'other';
   issueDescription: string;
   spareParts: SparePart[];
   totalCost: number;

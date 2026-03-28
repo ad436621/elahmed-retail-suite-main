@@ -7,6 +7,14 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Moon, Sun, ChevronRight } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
+import { NotificationBell } from '@/components/NotificationBell';
+import { STORAGE_KEYS } from '@/config';
+import {
+    getAiNotifications,
+    getAiNotificationsMeta,
+    markAiNotificationRead,
+    markAllAiNotificationsRead,
+} from '@/data/aiNotificationsData';
 
 const ROUTE_TITLES: Record<string, string> = {
     '/': 'الرئيسية',
@@ -62,9 +70,30 @@ export default function TopHeader() {
     const navigate = useNavigate();
     const { theme, toggleTheme } = useTheme();
     const now = useLiveClock();
+    const [notifications, setNotifications] = useState(() => getAiNotifications());
+    const [lastRunAt, setLastRunAt] = useState(() => getAiNotificationsMeta().lastRunAt);
 
     const pageTitle = ROUTE_TITLES[location.pathname] || 'الرئيسية';
     const isRoot = location.pathname === '/';
+    const unreadCount = notifications.filter((item) => !item.read).length;
+
+    useEffect(() => {
+        const refreshNotifications = () => {
+            setNotifications(getAiNotifications());
+            setLastRunAt(getAiNotificationsMeta().lastRunAt);
+        };
+
+        const handleStorageEvent = (event: Event) => {
+            const key = (event as CustomEvent<{ key?: string }>).detail?.key;
+            if (!key || key === STORAGE_KEYS.AI_NOTIFICATIONS || key === STORAGE_KEYS.AI_NOTIFICATIONS_META) {
+                refreshNotifications();
+            }
+        };
+
+        refreshNotifications();
+        window.addEventListener('local-storage', handleStorageEvent as EventListener);
+        return () => window.removeEventListener('local-storage', handleStorageEvent as EventListener);
+    }, []);
 
     const timeStr = now.toLocaleTimeString('ar-EG', {
         hour: '2-digit',
@@ -103,6 +132,20 @@ export default function TopHeader() {
                         {dateStr}
                     </span>
                 </div>
+
+                <NotificationBell
+                    notifications={notifications}
+                    unreadCount={unreadCount}
+                    lastRunAt={lastRunAt}
+                    onMarkAsRead={(id) => {
+                        markAiNotificationRead(id);
+                        setNotifications(getAiNotifications());
+                    }}
+                    onMarkAllAsRead={() => {
+                        markAllAiNotificationsRead();
+                        setNotifications(getAiNotifications());
+                    }}
+                />
 
                 {/* Back button */}
                 {!isRoot && (
