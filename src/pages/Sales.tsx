@@ -1,7 +1,8 @@
-import { Search, Ban, ChevronLeft, ChevronRight, Download } from 'lucide-react';
+import { Search, Ban, ChevronLeft, ChevronRight, Download, RotateCcw, ExternalLink } from 'lucide-react';
 import { exportToExcel, SALES_COLUMNS, prepareSalesForExport } from '@/services/excelService';
 import { useState, useMemo, useEffect, useDeferredValue } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { getAllSales, saveSale } from '@/repositories/saleRepository';
 import { saveAuditEntries } from '@/repositories/auditRepository';
@@ -12,6 +13,13 @@ import { reverseSalePayment } from '@/data/walletsData';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useConfirm } from '@/components/ConfirmDialog';
+import { Sale } from '@/domain/types';
+
+// NEW: Quick return dialog imports
+import { getReturnedQuantitiesBySaleId, addReturnRecord } from '@/data/returnsData';
+import { processReturn } from '@/domain/returns';
+import { restoreBatchQty } from '@/data/batchesData';
+import { Check, X } from 'lucide-react';
 
 const PAGE_SIZE = 20;
 
@@ -21,16 +29,168 @@ const paymentLabels: Record<string, string> = {
   split: 'مختلط',
 };
 
+const IC = "w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all";
+
+// NEW: Quick Return Dialog component
+function QuickReturnDialog({ sale, onClose, onDone }: { sale: Sale; onClose: () => void; onDone: () => void }) {
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
+
+  const returnedQtys = getReturnedQuantitiesBySaleId(sale.id);
+  const [items, setItems] = useState(
+    sale.items.map(item => {
+      const already = returnedQtys[item.productId] ?? 0;
+      return {
+        productId: item.productId,
+        name: item.name,
+        soldQty: item.qty,
+        availableQty: Math.max(0, item.qty - already),
+        price: item.price,
+        returnQty: 0,
+        reason: '',
+        batches: item.batches,
+      };
+    })
+  );
+  const [returnDate] = useState(new Date().toISOString().slice(0, 10));
+
+  const updateItem = (idx: number, key: 'returnQty' | 'reason', value: string | number) => {
+    setItems(prev => prev.map((it, i) => i === idx ? { ...it, [key]: value } : it));
+  };
+
+  const handleConfirm = () => {
+    const toReturn = items.filter(i => i.returnQty > 0);
+    if (toReturn.length === 0) {
+      toast({ title: 'خطأ', description: 'حدد كمية مرتجعة لمنتج واحد على الأقل', variant: 'destructive' });
+      return;
+    }
+
+    const inventoryProducts = getAllInventoryProducts();
+    const currentProductQuantities = Object.fromEntries(inventoryProducts.map(p => [p.id, p.quantity]));
+    const reason = toReturn.map(i => i.reason.trim() ? `${i.name}: ${i.reason.trim()}` : i.name).join(' | ') || 'مرتجع مبيعات';
+
+    const { returnRecord, stockMovements, auditEntries } = processReturn(
+      sale,
+      toReturn.map(i => ({ productId: i.productId, qty: i.returnQty })),
+      reason,
+      user?.id || 'system',
+      currentProductQuantities
+    );
+
+    toReturn.forEach(item => {
+      if (item.batches && item.batches.length > 0) {
+        let qty = item.returnQty;
+        for (const batch of [...item.batches].reverse()) {
+          if (qty <= 0) break;
+          const amt = Math.min(qty, batch.qtyFromBatch);
+          restoreBatchQty(batch.batchId, amt);
+          qty -= amt;
+        }
+      }
+    });
+
+    saveMovements(stockMovements);
+    saveAuditEntries(auditEntries);
+    stockMovements.forEach(m => updateProductQuantity(m.productId, m.newQuantity));
+    addReturnRecord({
+      originalInvoiceNumber: sale.invoiceNumber,
+      originalSaleId: sale.id,
+      date: returnDate,
+      items: toReturn.map(i => ({ productId: i.productId, name: i.name, qty: i.returnQty, price: i.price, reason: i.reason })),
+      totalRefund: returnRecord.totalRefund,
+      reason,
+      processedBy: user?.id || 'system',
+    });
+
+    toast({ title: '✅ تم تسجيل المرتجع', description: `استرداد: ${returnRecord.totalRefund.toLocaleString()} ج.م` });
+    onDone();
+    onClose();
+  };
+
+  const totalRefund = items.reduce((s, i) => s + i.returnQty * i.price, 0);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4" onClick={onClose}>
+      <div className="w-full max-w-md rounded-2xl border border-border bg-card p-5 shadow-2xl animate-scale-in max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()} dir="rtl">
+        {/* Header */}
+        <div className="flex items-center gap-3 mb-4">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-rose-100 dark:bg-rose-500/15">
+            <RotateCcw className="h-5 w-5 text-rose-600" />
+          </div>
+          <div className="flex-1">
+            <h3 className="font-bold text-foreground">إرجاع سريع</h3>
+            <p className="text-xs text-muted-foreground">{sale.invoiceNumber}</p>
+          </div>
+          <button onClick={onClose} className="rounded-lg p-1.5 hover:bg-muted transition-colors"><X className="h-4 w-4" /></button>
+        </div>
+
+        {/* Items */}
+        <div className="space-y-3 mb-4">
+          {items.map((item, i) => (
+            <div key={item.productId} className="rounded-xl border border-border bg-muted/20 p-3 space-y-2">
+              <div className="flex justify-between items-start">
+                <p className="text-sm font-medium text-foreground">{item.name}</p>
+                <span className="text-xs text-muted-foreground">متاح: {item.availableQty}</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">كمية الإرجاع</label>
+                  <input
+                    type="number" min={0} max={item.availableQty} value={item.returnQty}
+                    onChange={e => updateItem(i, 'returnQty', Math.max(0, Math.min(item.availableQty, +e.target.value)))}
+                    className={IC} disabled={item.availableQty === 0}
+                  />
+                </div>
+                <div>
+                  <label className="text-xs text-muted-foreground mb-1 block">السبب</label>
+                  <input value={item.reason} onChange={e => updateItem(i, 'reason', e.target.value)} placeholder="عيب، تغيير..." className={IC} />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Total */}
+        {totalRefund > 0 && (
+          <div className="rounded-xl bg-rose-50 dark:bg-rose-500/10 border border-rose-200 dark:border-rose-500/20 p-3 flex justify-between items-center mb-4">
+            <span className="text-sm text-rose-700 dark:text-rose-300">إجمالي الاسترداد</span>
+            <span className="font-bold text-rose-700 dark:text-rose-300">{totalRefund.toLocaleString()} ج.م</span>
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="flex gap-2">
+          <button onClick={handleConfirm} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-rose-600 hover:bg-rose-500 py-2.5 text-sm font-semibold text-white transition-all">
+            <Check className="h-4 w-4" /> تأكيد الإرجاع
+          </button>
+          <button
+            onClick={() => { onClose(); navigate(`/returns?invoice=${sale.invoiceNumber}`); }}
+            className="flex items-center justify-center gap-1.5 rounded-xl border border-border px-3 py-2.5 text-xs font-medium hover:bg-muted transition-colors"
+            title="فتح في صفحة المرتجعات"
+          >
+            <ExternalLink className="h-3.5 w-3.5" /> صفحة المرتجعات
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 const Sales = () => {
   const { t } = useLanguage();
   const { user, isOwner } = useAuth();
   const { toast } = useToast();
   const { confirm } = useConfirm();
+  const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [refreshKey, setRefreshKey] = useState(0);
   const [showVoided, setShowVoided] = useState(false);
   const [page, setPage] = useState(1);
   const deferredSearch = useDeferredValue(search);
+
+  // NEW: quick return dialog state
+  const [quickReturnSale, setQuickReturnSale] = useState<Sale | null>(null);
 
   useEffect(() => {
     const handleStorage = (e: StorageEvent | CustomEvent) => {
@@ -50,37 +210,23 @@ const Sales = () => {
   const visibleSales = showVoided ? allSales : activeSales;
   const hiddenVoidedCount = allSales.length - activeSales.length;
 
-  const filtered = useMemo(
-    () => {
-      const normalizedSearch = deferredSearch.trim().toLowerCase();
-      return visibleSales.filter((sale) => {
-        if (!normalizedSearch) {
-          return true;
-        }
+  const filtered = useMemo(() => {
+    const normalizedSearch = deferredSearch.trim().toLowerCase();
+    return visibleSales.filter((sale) => {
+      if (!normalizedSearch) return true;
+      return sale.invoiceNumber.toLowerCase().includes(normalizedSearch) ||
+        sale.employee.toLowerCase().includes(normalizedSearch);
+    }).sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''));
+  }, [deferredSearch, visibleSales]);
 
-        return sale.invoiceNumber.toLowerCase().includes(normalizedSearch) ||
-          sale.employee.toLowerCase().includes(normalizedSearch);
-      }).sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''));
-    },
-    [deferredSearch, visibleSales]
-  );
-
-  // Pagination
   const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
   const paged = useMemo(() => filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE), [filtered, page]);
   const emptyStateMessage = useMemo(() => {
-    if (showVoided || hiddenVoidedCount === 0) {
-      return 'لا توجد فواتير';
-    }
-
-    if (search.trim()) {
-      return `لا توجد فواتير مطابقة. يوجد ${hiddenVoidedCount} فاتورة ملغاة مخفية من العرض الحالي.`;
-    }
-
+    if (showVoided || hiddenVoidedCount === 0) return 'لا توجد فواتير';
+    if (search.trim()) return `لا توجد فواتير مطابقة. يوجد ${hiddenVoidedCount} فاتورة ملغاة مخفية من العرض الحالي.`;
     return `لا توجد فواتير نشطة. يوجد ${hiddenVoidedCount} فاتورة ملغاة ويمكن عرضها من الفلتر.`;
   }, [hiddenVoidedCount, search, showVoided]);
 
-  // Reset page when search changes
   useEffect(() => { setPage(1); }, [search, showVoided]);
   useEffect(() => { setPage((current) => Math.min(current, totalPages)); }, [totalPages]);
 
@@ -92,22 +238,13 @@ const Sales = () => {
     try {
       const sale = allSales.find(s => s.id === showVoidDialog.saleId);
       if (!sale) return;
-      const productMap = Object.fromEntries(
-        getAllInventoryProducts().map((product) => [product.id, product])
-      );
-      const { voidedSale, auditEntry, stockMovements } = voidSale(
-        sale,
-        voidReason.trim(),
-        user?.id || 'admin',
-        productMap
-      );
+      const productMap = Object.fromEntries(getAllInventoryProducts().map((product) => [product.id, product]));
+      const { voidedSale, auditEntry, stockMovements } = voidSale(sale, voidReason.trim(), user?.id || 'admin', productMap);
       saveSale(voidedSale);
       saveMovements(stockMovements);
       saveAuditEntries([auditEntry]);
       stockMovements.forEach((movement) => updateProductQuantity(movement.productId, movement.newQuantity));
-      try {
-        await reverseSalePayment(sale);
-      } catch {
+      try { await reverseSalePayment(sale); } catch {
         toast({ title: 'تم إلغاء الفاتورة مع ملاحظة', description: 'تعذر عكس الحركة المالية من الخزنة.' });
       }
       setRefreshKey(k => k + 1);
@@ -126,8 +263,7 @@ const Sales = () => {
         <h1 className="text-2xl font-bold text-foreground">{t('sales.title')}</h1>
         <div className="flex items-center gap-2">
           <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer select-none">
-            <input type="checkbox" checked={showVoided} onChange={e => setShowVoided(e.target.checked)}
-              className="rounded border-border" />
+            <input type="checkbox" checked={showVoided} onChange={e => setShowVoided(e.target.checked)} className="rounded border-border" />
             عرض الملغية
           </label>
           <button onClick={() => exportToExcel({ data: prepareSalesForExport(allSales), columns: SALES_COLUMNS, fileName: 'المبيعات' })}
@@ -140,12 +276,8 @@ const Sales = () => {
       <div className="flex items-center gap-3 flex-wrap">
         <div className="relative flex-1 max-w-md">
           <Search className="absolute start-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="بحث في الفواتير..."
-            className="w-full rounded-lg border border-input bg-card ps-10 pe-4 py-2 text-sm text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-          />
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="بحث في الفواتير..."
+            className="w-full rounded-lg border border-input bg-card ps-10 pe-4 py-2 text-sm text-card-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring" />
         </div>
         <p className="text-xs text-muted-foreground">{filtered.length} فاتورة</p>
       </div>
@@ -174,10 +306,7 @@ const Sales = () => {
               {paged.length === 0 ? (
                 <tr><td colSpan={7} className="py-12 text-center text-muted-foreground">لا توجد فواتير</td></tr>
               ) : paged.map(sale => (
-                <tr key={sale.id} className={cn(
-                  'border-b border-border last:border-0 hover:bg-muted/30 transition-colors',
-                  sale.voidedAt && 'opacity-50 line-through'
-                )}>
+                <tr key={sale.id} className={cn('border-b border-border last:border-0 hover:bg-muted/30 transition-colors', sale.voidedAt && 'opacity-50 line-through')}>
                   <td className="px-4 py-3 font-mono text-xs font-semibold text-primary">
                     {sale.invoiceNumber}
                     {sale.voidedAt && <span className="ms-2 text-[10px] text-destructive font-bold no-underline">(ملغية)</span>}
@@ -185,9 +314,7 @@ const Sales = () => {
                   <td className="px-4 py-3 text-muted-foreground">{new Date(sale.date).toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</td>
                   <td className="px-4 py-3">
                     <div className="space-y-0.5">
-                      {sale.items.map((item, i) => (
-                        <p key={i} className="text-xs text-card-foreground">{item.qty}× {item.name}</p>
-                      ))}
+                      {sale.items.map((item, i) => (<p key={i} className="text-xs text-card-foreground">{item.qty}× {item.name}</p>))}
                     </div>
                   </td>
                   <td className="px-4 py-3 text-end">
@@ -195,12 +322,9 @@ const Sales = () => {
                     <p className="text-xs text-chart-3">+{sale.grossProfit.toFixed(2)} ج.م</p>
                   </td>
                   <td className="px-4 py-3 text-center">
-                    <span className={cn(
-                      'rounded-full px-2.5 py-0.5 text-xs font-medium',
+                    <span className={cn('rounded-full px-2.5 py-0.5 text-xs font-medium',
                       sale.paymentMethod === 'cash' ? 'bg-chart-3/10 text-chart-3' :
-                        sale.paymentMethod === 'card' ? 'bg-primary/10 text-primary' :
-                          'bg-warning/10 text-warning'
-                    )}>
+                        sale.paymentMethod === 'card' ? 'bg-primary/10 text-primary' : 'bg-warning/10 text-warning')}>
                       {paymentLabels[sale.paymentMethod] || sale.paymentMethod}
                     </span>
                   </td>
@@ -208,11 +332,32 @@ const Sales = () => {
                   {isOwner() && (
                     <td className="px-4 py-3 text-center">
                       {!sale.voidedAt && (
-                        <button onClick={() => { setShowVoidDialog({ saleId: sale.id, invoiceNumber: sale.invoiceNumber }); setVoidReason(''); }}
-                          title="إلغاء الفاتورة"
-                          className="rounded-lg p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all">
-                          <Ban className="h-4 w-4" />
-                        </button>
+                        <div className="flex items-center justify-center gap-1">
+                          {/* NEW: Quick return button */}
+                          <button
+                            onClick={() => setQuickReturnSale(sale)}
+                            title="إرجاع سريع"
+                            className="rounded-lg p-1.5 text-muted-foreground hover:text-rose-600 hover:bg-rose-100 dark:hover:bg-rose-500/15 transition-all"
+                          >
+                            <RotateCcw className="h-4 w-4" />
+                          </button>
+                          {/* NEW: Navigate to returns page */}
+                          <button
+                            onClick={() => navigate(`/returns?invoice=${sale.invoiceNumber}`)}
+                            title="فتح في صفحة المرتجعات"
+                            className="rounded-lg p-1.5 text-muted-foreground hover:text-blue-600 hover:bg-blue-100 dark:hover:bg-blue-500/15 transition-all"
+                          >
+                            <ExternalLink className="h-4 w-4" />
+                          </button>
+                          {/* Existing void button */}
+                          <button
+                            onClick={() => { setShowVoidDialog({ saleId: sale.id, invoiceNumber: sale.invoiceNumber }); setVoidReason(''); }}
+                            title="إلغاء الفاتورة"
+                            className="rounded-lg p-1.5 text-muted-foreground hover:text-destructive hover:bg-destructive/10 transition-all"
+                          >
+                            <Ban className="h-4 w-4" />
+                          </button>
+                        </div>
                       )}
                     </td>
                   )}
@@ -222,7 +367,6 @@ const Sales = () => {
           </table>
         </div>
 
-        {/* Pagination */}
         {totalPages > 1 && (
           <div className="flex items-center justify-between px-4 py-3 border-t border-border bg-muted/20">
             <button onClick={() => setPage(p => Math.max(1, p - 1))} disabled={page === 1}
@@ -238,7 +382,7 @@ const Sales = () => {
         )}
       </div>
 
-      {/* Void Sale Dialog */}
+      {/* Void Dialog */}
       {showVoidDialog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4" onClick={() => setShowVoidDialog(null)}>
           <div className="w-full max-w-sm rounded-2xl border border-border bg-card p-6 shadow-2xl animate-scale-in" onClick={e => e.stopPropagation()}>
@@ -253,9 +397,7 @@ const Sales = () => {
             </div>
             <div className="mb-4">
               <label className="mb-1.5 block text-xs font-semibold text-muted-foreground">سبب الإلغاء *</label>
-              <input value={voidReason} onChange={e => setVoidReason(e.target.value)}
-                placeholder="أدخل سبب إلغاء الفاتورة..."
-                autoFocus
+              <input value={voidReason} onChange={e => setVoidReason(e.target.value)} placeholder="أدخل سبب إلغاء الفاتورة..." autoFocus
                 className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30" />
             </div>
             <div className="flex gap-2">
@@ -263,13 +405,21 @@ const Sales = () => {
                 className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-red-600 hover:bg-red-700 disabled:opacity-40 py-2.5 text-sm font-bold text-white transition-all">
                 <Ban className="h-4 w-4" /> تأكيد الإلغاء
               </button>
-              <button onClick={() => setShowVoidDialog(null)}
-                className="flex-1 rounded-xl border border-border py-2.5 text-sm font-medium hover:bg-muted transition-colors">
+              <button onClick={() => setShowVoidDialog(null)} className="flex-1 rounded-xl border border-border py-2.5 text-sm font-medium hover:bg-muted transition-colors">
                 تراجع
               </button>
             </div>
           </div>
         </div>
+      )}
+
+      {/* NEW: Quick Return Dialog */}
+      {quickReturnSale && (
+        <QuickReturnDialog
+          sale={quickReturnSale}
+          onClose={() => setQuickReturnSale(null)}
+          onDone={() => setRefreshKey(k => k + 1)}
+        />
       )}
     </div>
   );

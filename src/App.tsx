@@ -1,7 +1,6 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-// #10 FIX: Removed @tanstack/react-query — was installed but never used in any page
 import { BrowserRouter, HashRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useEffect, lazy, Suspense } from 'react';
 import { ErrorBoundary } from "@/components/ErrorBoundary";
@@ -11,6 +10,8 @@ import { migrateLegacyDataToBatches } from '@/domain/batchMigration';
 import { migrateUsedMerge } from "@/domain/migrationUsedMerge";
 import { syncRepairsToLegacy } from "@/data/repairsData";
 import { runAiNotificationsAnalysis } from '@/services/aiNotificationsService';
+// NEW: import storage migration
+import { runStorageMigration } from '@/utils/storageMigration';
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
@@ -37,8 +38,6 @@ const Installments = lazy(() => import("@/pages/Installments"));
 const Expenses = lazy(() => import("@/pages/Expenses"));
 const UsersManagement = lazy(() => import("@/pages/UsersManagement"));
 const BarcodePrintPage = lazy(() => import("@/pages/BarcodePrintPage"));
-// #06 FIX: Direct import — NOT lazy — because PermGuard/OwnerGuard render it
-// outside their own Suspense boundary, which would cause a React crash.
 import UnauthorizedPage from "@/pages/UnauthorizedPage";
 const DamagedItemsPage = lazy(() => import("@/pages/DamagedItemsPage"));
 const CarsInventory = lazy(() => import("@/pages/CarsInventory"));
@@ -65,8 +64,6 @@ const ComputerSparePartsPage = lazy(() => import("@/pages/ComputerSparePartsPage
 const DeviceAccessoriesPage = lazy(() => import("@/pages/DeviceAccessoriesPage"));
 const DeviceSparePartsPage = lazy(() => import("@/pages/DeviceSparePartsPage"));
 
-// Loading fallback
-
 function PageLoader() {
   return (
     <div className="flex items-center justify-center min-h-[400px]">
@@ -75,7 +72,6 @@ function PageLoader() {
   );
 }
 
-// Redirect to login if not authenticated
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
   const location = useLocation();
@@ -83,88 +79,60 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-// Redirect to home if already logged in
 function AuthRedirect({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuth();
   if (isAuthenticated) return <Navigate to="/" replace />;
   return <>{children}</>;
 }
 
-// Route guard: checks specific permission
 function PermGuard({ perm, children }: { perm: Permission; children: React.ReactNode }) {
   const { hasPermission } = useAuth();
   if (!hasPermission(perm)) return <UnauthorizedPage />;
   return <>{children}</>;
 }
 
-// Owner-only route guard
 function OwnerGuard({ children }: { children: React.ReactNode }) {
   const { isOwner } = useAuth();
   if (!isOwner()) return <UnauthorizedPage />;
   return <>{children}</>;
 }
 
-// Background task to run auto backups
 function AutoBackupRunner(): React.ReactElement | null {
   const { isAuthenticated } = useAuth();
-
   useEffect(() => {
     if (!isAuthenticated) return;
-
-    // Preload dashboard data in background for instant load
     preloadDashboardData();
-
-    // #24 FIX: Run backup immediately on first login, not just every 5 min
     executeAutoBackupIfDue();
-
-    // Then check every 5 minutes
-    const interval = setInterval(() => {
-      executeAutoBackupIfDue();
-    }, 5 * 60 * 1000);
-
+    const interval = setInterval(() => { executeAutoBackupIfDue(); }, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, [isAuthenticated]);
-
   return null;
 }
 
-// Background task to run data migration to batches system
 function DataMigrationRunner(): React.ReactElement | null {
   const { isAuthenticated } = useAuth();
-
   useEffect(() => {
     if (!isAuthenticated) return;
-    try {
-      migrateLegacyDataToBatches();
-    } catch (e) { console.error(e) }
 
-    try {
-      migrateUsedMerge();
-    } catch (e) { console.error(e) }
+    // NEW: run storage key migration first (elahmed_* → gx_*)
+    try { runStorageMigration(); } catch (e) { console.error(e); }
 
-    try {
-      syncRepairsToLegacy();
-    } catch (e) { console.error(e) }
+    try { migrateLegacyDataToBatches(); } catch (e) { console.error(e); }
+    try { migrateUsedMerge(); } catch (e) { console.error(e); }
+    try { syncRepairsToLegacy(); } catch (e) { console.error(e); }
   }, [isAuthenticated]);
-
   return null;
 }
 
 function AiNotificationsRunner(): React.ReactElement | null {
   const { isAuthenticated } = useAuth();
-
   useEffect(() => {
     if (!isAuthenticated) return;
-
-    const run = () => {
-      runAiNotificationsAnalysis().catch(console.error);
-    };
-
+    const run = () => { runAiNotificationsAnalysis().catch(console.error); };
     run();
     const interval = setInterval(run, 30 * 60 * 1000);
     return () => clearInterval(interval);
   }, [isAuthenticated]);
-
   return null;
 }
 
@@ -173,13 +141,11 @@ const AppRoutes = () => (
     <Routes>
       <Route path="/login" element={<AuthRedirect><LoginPage /></AuthRedirect>} />
       <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
-        {/* Main */}
         <Route path="/" element={<PermGuard perm="dashboard"><Dashboard /></PermGuard>} />
         <Route path="/pos" element={<PermGuard perm="pos"><POS /></PermGuard>} />
         <Route path="/inventory" element={<PermGuard perm="inventory"><Inventory /></PermGuard>} />
         <Route path="/sales" element={<PermGuard perm="sales"><Sales /></PermGuard>} />
         <Route path="/returns" element={<PermGuard perm="returns"><ReturnsPage /></PermGuard>} />
-        {/* Inventory */}
         <Route path="/mobiles" element={<PermGuard perm="mobiles"><MobilesInventory /></PermGuard>} />
         <Route path="/mobiles/accessories" element={<PermGuard perm="mobiles"><MobileAccessoriesPage /></PermGuard>} />
         <Route path="/mobiles/spare-parts" element={<PermGuard perm="mobiles"><MobileSparePartsPage /></PermGuard>} />
@@ -194,32 +160,25 @@ const AppRoutes = () => (
         <Route path="/cars/oils" element={<PermGuard perm="cars"><CarOilsPage /></PermGuard>} />
         <Route path="/warehouse" element={<PermGuard perm="warehouse"><WarehousePage /></PermGuard>} />
         <Route path="/used-inventory" element={<PermGuard perm="used"><UsedInventory /></PermGuard>} />
-        {/* Services */}
         <Route path="/maintenance" element={<PermGuard perm="maintenance"><Maintenance /></PermGuard>} />
         <Route path="/maintenance/parts" element={<PermGuard perm="maintenance"><RepairPartsPage /></PermGuard>} />
         <Route path="/installments" element={<PermGuard perm="installments"><Installments /></PermGuard>} />
         <Route path="/expenses" element={<PermGuard perm="expenses"><Expenses /></PermGuard>} />
         <Route path="/damaged" element={<PermGuard perm="damaged"><DamagedItemsPage /></PermGuard>} />
         <Route path="/other-revenue" element={<PermGuard perm="otherRevenue"><OtherRevenuePage /></PermGuard>} />
-        {/* System */}
         <Route path="/settings" element={<PermGuard perm="settings"><SettingsPage /></PermGuard>} />
         <Route path="/users" element={<OwnerGuard><UsersManagement /></OwnerGuard>} />
         <Route path="/barcodes" element={<PermGuard perm="inventory"><BarcodePrintPage /></PermGuard>} />
-        {/* New features */}
         <Route path="/customers" element={<PermGuard perm="customers"><CustomersPage /></PermGuard>} />
         <Route path="/wallets" element={<PermGuard perm="wallets"><WalletsPage /></PermGuard>} />
         <Route path="/employees" element={<PermGuard perm="employees"><EmployeesPage /></PermGuard>} />
         <Route path="/help" element={<HelpPage />} />
-        {/* People */}
         <Route path="/suppliers" element={<PermGuard perm="suppliers"><SuppliersPage /></PermGuard>} />
-        {/* Tools */}
         <Route path="/blacklist" element={<PermGuard perm="blacklist"><BlacklistPage /></PermGuard>} />
         <Route path="/reminders" element={<PermGuard perm="reminders"><RemindersPage /></PermGuard>} />
-        {/* Finance */}
         <Route path="/shift-closing" element={<PermGuard perm="shiftClosing"><ShiftClosingPage /></PermGuard>} />
         <Route path="/purchase-invoices" element={<PermGuard perm="purchaseInvoices"><PurchaseInvoicesPage /></PermGuard>} />
         <Route path="/reports" element={<PermGuard perm="dashboard"><ReportsPage /></PermGuard>} />
-        {/* Diagnostics — owner only */}
         <Route path="/diagnostics" element={<OwnerGuard><DiagnosticsPage /></OwnerGuard>} />
       </Route>
       <Route path="/unauthorized" element={<UnauthorizedPage />} />

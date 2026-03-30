@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom';
-import { Search, X, RotateCcw, Check, AlertCircle } from 'lucide-react';
+import { Search, X, RotateCcw, Check, AlertCircle, History, ChevronDown, ChevronUp } from 'lucide-react';
 import { Sale } from '@/domain/types';
 import { restoreBatchQty } from '@/data/batchesData';
-import { getReturnedQuantitiesBySaleId, addReturnRecord } from '@/data/returnsData';
+// NEW: import getReturnRecords for history table
+import { getReturnedQuantitiesBySaleId, addReturnRecord, getReturnRecords, StoredReturnRecord } from '@/data/returnsData';
 import { processReturn } from '@/domain/returns';
 import { saveAuditEntries } from '@/repositories/auditRepository';
 import { getAllInventoryProducts, updateProductQuantity } from '@/repositories/productRepository';
@@ -22,7 +23,7 @@ interface ReturnedItem {
   price: number;
   returnQty: number;
   reason: string;
-  batches?: BatchSaleResult['batches']; // Stored original batches to restore
+  batches?: BatchSaleResult['batches'];
 }
 
 const IC = "w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all";
@@ -37,20 +38,22 @@ export default function ReturnsPage() {
   const [returnDate, setReturnDate] = useState(new Date().toISOString().slice(0, 10));
   const [notFound, setNotFound] = useState(false);
 
-  // Read initial invoice from route state/query and trigger search
-  useEffect(() => {
-    const params = new URLSearchParams(location.search);
-    const initialInvoice = location.state?.invoiceNumber || params.get('invoice');
-    if (initialInvoice) {
-      setInvoiceSearch(initialInvoice);
-      // Wait for state to update, then search
-      setTimeout(() => {
-        handleSearchFor(initialInvoice);
-      }, 0);
-    }
-  }, [location.state, location.search]);
+  // NEW: history state
+  const [returnHistory, setReturnHistory] = useState<StoredReturnRecord[]>([]);
+  const [showHistory, setShowHistory] = useState(true);
+  const [historyFilter, setHistoryFilter] = useState<'today' | 'week' | 'all'>('today');
 
-  const handleSearchFor = (inv: string) => {
+  // Load history on mount and after each return
+  const refreshHistory = useCallback(() => {
+    setReturnHistory(getReturnRecords());
+  }, []);
+
+  useEffect(() => {
+    refreshHistory();
+  }, [refreshHistory]);
+
+  // FIX: wrap handleSearchFor in useCallback so useEffect dependency is stable
+  const handleSearchFor = useCallback((inv: string) => {
     setNotFound(false);
     setFoundSale(null);
     setReturnItems([]);
@@ -74,10 +77,8 @@ export default function ReturnsPage() {
           batches: item.batches,
         };
       });
-
       setFoundSale(sale);
       setReturnItems(mappedItems);
-
       if (mappedItems.every((item) => item.availableQty === 0)) {
         toast({
           title: 'الفاتورة مسترجعة بالكامل',
@@ -87,49 +88,20 @@ export default function ReturnsPage() {
     } else {
       setNotFound(true);
     }
-  };
+  }, [toast]);
 
+  // Read initial invoice from route state/query and trigger search
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const initialInvoice = location.state?.invoiceNumber || params.get('invoice');
+    if (initialInvoice) {
+      setInvoiceSearch(initialInvoice);
+      setTimeout(() => { handleSearchFor(initialInvoice); }, 0);
+    }
+  }, [location.state, location.search, handleSearchFor]);
+
+  // FIX: single handleSearch — no more duplicate
   const handleSearch = () => handleSearchFor(invoiceSearch);
-
-
-  const handleSearch = () => {
-    setNotFound(false);
-    setFoundSale(null);
-    setReturnItems([]);
-    const sales = getActiveSales();
-    const sale = sales.find(s =>
-      s.invoiceNumber.toLowerCase() === invoiceSearch.trim().toLowerCase() ||
-      s.id === invoiceSearch.trim()
-    );
-    if (sale) {
-      const returnedQuantities = getReturnedQuantitiesBySaleId(sale.id);
-      const mappedItems = sale.items.map(item => {
-        const alreadyReturned = returnedQuantities[item.productId] ?? 0;
-        return {
-          productId: item.productId,
-          name: item.name,
-          soldQty: item.qty,
-          availableQty: Math.max(0, item.qty - alreadyReturned),
-          price: item.price,
-          returnQty: 0,
-          reason: '',
-          batches: item.batches,
-        };
-      });
-
-      setFoundSale(sale);
-      setReturnItems(mappedItems);
-
-      if (mappedItems.every((item) => item.availableQty === 0)) {
-        toast({
-          title: 'الفاتورة مسترجعة بالكامل',
-          description: 'تم استرجاع كل الكميات في هذه الفاتورة من قبل',
-        });
-      }
-    } else {
-      setNotFound(true);
-    }
-  };
 
   const updateItem = (idx: number, key: 'returnQty' | 'reason', value: string | number) => {
     setReturnItems(items => items.map((item, i) => i === idx ? { ...item, [key]: value } : item));
@@ -141,7 +113,6 @@ export default function ReturnsPage() {
       toast({ title: 'خطأ', description: 'حدد كمية مرتجعة لمنتج واحد على الأقل', variant: 'destructive' });
       return;
     }
-
     if (!foundSale) {
       toast({ title: 'خطأ', description: 'لم يتم العثور على الفاتورة', variant: 'destructive' });
       return;
@@ -180,11 +151,9 @@ export default function ReturnsPage() {
     itemsToReturn.forEach(item => {
       if (item.batches && item.batches.length > 0) {
         let qtyToRestore = item.returnQty;
-
         const reversedBatches = [...item.batches].reverse();
         for (const batch of reversedBatches) {
           if (qtyToRestore <= 0) break;
-
           const restoreAmount = Math.min(qtyToRestore, batch.qtyFromBatch);
           restoreBatchQty(batch.batchId, restoreAmount);
           qtyToRestore -= restoreAmount;
@@ -210,23 +179,20 @@ export default function ReturnsPage() {
     setFoundSale(null);
     setReturnItems([]);
     setInvoiceSearch('');
+    // NEW: refresh history after adding
+    refreshHistory();
   };
 
   const handleFullReturn = () => {
     if (!foundSale) return;
+    if (!confirm('هل أنت متأكد من رغبتك في إرجاع الفاتورة كاملة؟ سيتم إرجاع جميع القطع للمخزون وحذف الفاتورة.')) return;
 
-    if (!confirm('هل أنت متأكد من رغبتك في إرجاع الفاتورة كاملة؟ سيتم إرجاع جميع القطع للمخزون وحذف الفاتورة.')) {
-      return;
-    }
-
-    // Set all items to full available quantity
     const fullyReturnedItems = returnItems.map(item => ({
       ...item,
       returnQty: item.availableQty,
       reason: 'إرجاع كامل للفاتورة'
     })).filter(item => item.returnQty > 0);
 
-    // If nothing to return (already returned previously)
     if (fullyReturnedItems.length === 0) {
       toast({ title: 'تنبيه', description: 'جميع عناصر هذه الفاتورة تم استرجاعها مسبقاً' });
       return;
@@ -244,7 +210,6 @@ export default function ReturnsPage() {
         currentProductQuantities
       );
 
-      // Restore batches
       fullyReturnedItems.forEach(item => {
         if (item.batches && item.batches.length > 0) {
           let qtyToRestore = item.returnQty;
@@ -258,9 +223,7 @@ export default function ReturnsPage() {
         }
       });
 
-      // Mark Invoice as Deleted
       const { deletedSale, auditEntry: deleteAudit } = deleteInvoice(foundSale, 'إرجاع كامل للفاتورة', user?.id || 'system');
-      
       saveSale(deletedSale);
       saveMovements(stockMovements);
       saveAuditEntries([...returnAuditEntries, deleteAudit]);
@@ -281,20 +244,61 @@ export default function ReturnsPage() {
       setFoundSale(null);
       setReturnItems([]);
       setInvoiceSearch('');
-    } catch (e: any) {
-      toast({ title: 'خطأ', description: e.message, variant: 'destructive' });
+      // NEW: refresh history after adding
+      refreshHistory();
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : 'حدث خطأ غير متوقع';
+      toast({ title: 'خطأ', description: msg, variant: 'destructive' });
     }
   };
 
+  // NEW: filter history by date
+  const filteredHistory = returnHistory.filter(r => {
+    if (historyFilter === 'all') return true;
+    const today = new Date().toISOString().slice(0, 10);
+    if (historyFilter === 'today') return (r.date ?? r.createdAt ?? '').startsWith(today);
+    if (historyFilter === 'week') {
+      const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+      return (r.date ?? r.createdAt ?? '') >= weekAgo;
+    }
+    return true;
+  });
+
+  const todayTotal = returnHistory
+    .filter(r => (r.date ?? r.createdAt ?? '').startsWith(new Date().toISOString().slice(0, 10)))
+    .reduce((sum, r) => sum + (r.totalRefund ?? 0), 0);
+
+  const todayCount = returnHistory.filter(r =>
+    (r.date ?? r.createdAt ?? '').startsWith(new Date().toISOString().slice(0, 10))
+  ).length;
+
   return (
     <div className="space-y-5 animate-fade-in" dir="rtl">
+      {/* Header */}
       <div className="flex items-center gap-3">
         <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-100 dark:bg-rose-500/15 border border-rose-200 dark:border-rose-500/20">
           <RotateCcw className="h-5 w-5 text-rose-600 dark:text-rose-400" />
         </div>
         <div>
           <h1 className="text-2xl font-bold text-foreground">المرتجعات</h1>
-          <p className="text-xs text-muted-foreground">ابحث برقم الفاتورة</p>
+          <p className="text-xs text-muted-foreground">ابحث برقم الفاتورة أو راجع سجل المرتجعات</p>
+        </div>
+      </div>
+
+      {/* NEW: today summary cards */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="rounded-xl border border-rose-200 dark:border-rose-500/20 bg-rose-50 dark:bg-rose-500/10 p-3 flex items-center justify-between">
+          <div>
+            <p className="text-xs text-rose-600 dark:text-rose-400 font-medium">مرتجعات اليوم</p>
+            <p className="text-xl font-bold text-rose-700 dark:text-rose-300">{todayCount}</p>
+          </div>
+          <RotateCcw className="h-7 w-7 text-rose-300" />
+        </div>
+        <div className="rounded-xl border border-amber-200 dark:border-amber-500/20 bg-amber-50 dark:bg-amber-500/10 p-3 flex items-center justify-between">
+          <div>
+            <p className="text-xs text-amber-600 dark:text-amber-400 font-medium">إجمالي الاسترداد اليوم</p>
+            <p className="text-xl font-bold text-amber-700 dark:text-amber-300">{todayTotal.toLocaleString()} ج.م</p>
+          </div>
         </div>
       </div>
 
@@ -329,7 +333,6 @@ export default function ReturnsPage() {
       {/* Found Sale */}
       {foundSale && (
         <div className="space-y-4">
-          {/* Invoice summary */}
           <div className="rounded-2xl border border-border bg-card p-4">
             <div className="flex items-start justify-between flex-wrap gap-2">
               <div>
@@ -350,7 +353,6 @@ export default function ReturnsPage() {
 
           <p className="text-sm font-semibold text-foreground">اختر المنتجات المرتجعة:</p>
 
-          {/* Items */}
           <div className="space-y-3">
             {returnItems.map((item, i) => (
               <div key={item.productId} className="rounded-2xl border border-border bg-card p-4 space-y-3">
@@ -369,36 +371,24 @@ export default function ReturnsPage() {
                   <div>
                     <label className="mb-1 block text-xs text-muted-foreground">كمية الإرجاع</label>
                     <input
-                      type="number"
-                      min={0}
-                      max={item.availableQty}
-                      value={item.returnQty}
+                      type="number" min={0} max={item.availableQty} value={item.returnQty}
                       onChange={e => updateItem(i, 'returnQty', Math.max(0, Math.min(item.availableQty, +e.target.value)))}
-                      className={IC}
-                      disabled={item.availableQty === 0}
+                      className={IC} disabled={item.availableQty === 0}
                     />
                   </div>
                   <div>
                     <label className="mb-1 block text-xs text-muted-foreground">سبب الإرجاع</label>
-                    <input
-                      value={item.reason}
-                      onChange={e => updateItem(i, 'reason', e.target.value)}
-                      placeholder="مثال: عيب مصنعي"
-                      className={IC}
-                    />
+                    <input value={item.reason} onChange={e => updateItem(i, 'reason', e.target.value)} placeholder="مثال: عيب مصنعي" className={IC} />
                   </div>
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Summary */}
           {returnItems.some(i => i.returnQty > 0) && (
             <div className="rounded-2xl border border-rose-200 dark:border-rose-500/20 bg-rose-50 dark:bg-rose-500/10 p-4 flex justify-between items-center">
               <div>
-                <p className="text-sm font-semibold text-foreground">
-                  {returnItems.filter(i => i.returnQty > 0).length} منتج مرتجع
-                </p>
+                <p className="text-sm font-semibold text-foreground">{returnItems.filter(i => i.returnQty > 0).length} منتج مرتجع</p>
                 <p className="text-xs text-muted-foreground">سيتم إرجاع المنتجات للمخزن تلقائياً</p>
               </div>
               <p className="text-xl font-extrabold text-rose-700">
@@ -408,27 +398,101 @@ export default function ReturnsPage() {
           )}
 
           <div className="flex gap-3">
-            <button
-              onClick={handleReturn}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-rose-600 py-3 text-sm font-semibold text-white hover:bg-rose-500 transition-all shadow-md"
-            >
+            <button onClick={handleReturn} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-rose-600 py-3 text-sm font-semibold text-white hover:bg-rose-500 transition-all shadow-md">
               <Check className="h-4 w-4" /> تأكيد الإرجاع الجزئي
             </button>
-            <button
-              onClick={handleFullReturn}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-rose-600 py-3 text-sm font-semibold text-white hover:bg-rose-500 transition-all shadow-md"
-            >
+            <button onClick={handleFullReturn} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-rose-600 py-3 text-sm font-semibold text-white hover:bg-rose-500 transition-all shadow-md">
               <RotateCcw className="h-4 w-4" /> إرجاع كامل للفاتورة
             </button>
-            <button
-              onClick={() => { setFoundSale(null); setReturnItems([]); setInvoiceSearch(''); }}
-              className="rounded-xl flex items-center justify-center border border-border py-3 px-5 text-sm font-medium min-h-[48px] hover:bg-muted transition-colors active:scale-95"
-            >
+            <button onClick={() => { setFoundSale(null); setReturnItems([]); setInvoiceSearch(''); }} className="rounded-xl flex items-center justify-center border border-border py-3 px-5 text-sm font-medium min-h-[48px] hover:bg-muted transition-colors active:scale-95">
               <X className="h-5 w-5" />
             </button>
           </div>
         </div>
       )}
+
+      {/* NEW: Returns History Table */}
+      <div className="rounded-2xl border border-border bg-card overflow-hidden">
+        <button
+          onClick={() => setShowHistory(h => !h)}
+          className="w-full flex items-center justify-between px-4 py-3 hover:bg-muted/40 transition-colors"
+        >
+          <div className="flex items-center gap-2">
+            <History className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-semibold text-foreground">سجل المرتجعات</span>
+            <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded-full">{returnHistory.length}</span>
+          </div>
+          {showHistory ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+        </button>
+
+        {showHistory && (
+          <>
+            {/* Filter tabs */}
+            <div className="flex gap-1 px-4 pb-3 border-b border-border">
+              {(['today', 'week', 'all'] as const).map(f => (
+                <button
+                  key={f}
+                  onClick={() => setHistoryFilter(f)}
+                  className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-colors ${historyFilter === f ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
+                >
+                  {f === 'today' ? 'اليوم' : f === 'week' ? 'الأسبوع' : 'الكل'}
+                </button>
+              ))}
+            </div>
+
+            {filteredHistory.length === 0 ? (
+              <p className="text-center text-sm text-muted-foreground py-8">لا توجد مرتجعات في هذه الفترة</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm min-w-[600px]">
+                  <thead>
+                    <tr className="border-b border-border bg-muted/30">
+                      <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs">رقم المرتجع</th>
+                      <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs">رقم الفاتورة</th>
+                      <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs">التاريخ</th>
+                      <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs">المنتجات</th>
+                      <th className="px-4 py-2.5 text-right font-medium text-muted-foreground text-xs">السبب</th>
+                      <th className="px-4 py-2.5 text-left font-medium text-muted-foreground text-xs">المبلغ</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredHistory.map(record => (
+                      <tr key={record.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
+                        <td className="px-4 py-3 font-mono text-xs font-semibold text-primary">{record.returnNumber}</td>
+                        <td className="px-4 py-3 text-xs text-muted-foreground">{record.originalInvoiceNumber}</td>
+                        <td className="px-4 py-3 text-xs text-muted-foreground">
+                          {new Date(record.date ?? record.createdAt ?? '').toLocaleDateString('ar-EG', { year: 'numeric', month: 'short', day: 'numeric' })}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="space-y-0.5">
+                            {record.items.map((item, i) => (
+                              <p key={i} className="text-xs text-foreground">{item.qty}× {item.name}</p>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 text-xs text-muted-foreground max-w-[150px] truncate">{record.reason ?? '—'}</td>
+                        <td className="px-4 py-3 text-left font-semibold text-rose-600 dark:text-rose-400 text-sm">
+                          {(record.totalRefund ?? 0).toLocaleString()} ج.م
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot>
+                    <tr className="bg-muted/30 border-t border-border">
+                      <td colSpan={5} className="px-4 py-2 text-xs font-semibold text-foreground text-right">
+                        الإجمالي ({filteredHistory.length} مرتجع)
+                      </td>
+                      <td className="px-4 py-2 text-left font-bold text-rose-600 dark:text-rose-400">
+                        {filteredHistory.reduce((s, r) => s + (r.totalRefund ?? 0), 0).toLocaleString()} ج.م
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }
