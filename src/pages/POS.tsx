@@ -31,6 +31,7 @@ import POSProductGrid from '@/components/pos/POSProductGrid';
 import CheckoutSidebar from '@/components/pos/CheckoutSidebar';
 import TransferTab from '@/components/pos/TransferTab';
 import HeldInvoicesPanel from '@/components/pos/HeldInvoicesPanel';
+import CustomerSelector, { CASH_CUSTOMER, SelectedCustomer } from '@/components/pos/CustomerSelector';
 
 // Brand chips for mobile devices (from supplier field)
 const MOBILE_BRANDS = ['Apple', 'Samsung', 'Oppo', 'Xiaomi', 'Realme', 'Vivo', 'Huawei', 'Nokia', 'أخرى'];
@@ -90,6 +91,7 @@ export default function POS() {
   const [now, setNow] = useState(new Date());
   const [refreshKey, setRefreshKey] = useState(0);
   const deferredSearchTerm = useDeferredValue(searchTerm);
+  const [selectedCustomer, setSelectedCustomer] = useState<SelectedCustomer>(CASH_CUSTOMER);
 
   // Checkout trigger ref (injected by CheckoutSidebar via callback)
   const checkoutTriggerRef = useRef<(() => void) | null>(null);
@@ -294,13 +296,27 @@ export default function POS() {
   // ── Products ────────────────────────────────────────────────
   const allProducts = useMemo(() => getAllInventoryProducts(), [refreshKey]);
   const mobileCategories = useMemo(() => getCategoriesBySection('mobile'), []);
+  const computerCategories = useMemo(() => getCategoriesBySection('computer'), []);
   const deviceCategories = useMemo(() => getCategoriesBySection('device'), []);
 
   // Category chips per tab
   const chips = useMemo<string[]>(() => {
     if (selectedTab === 'mobiles') {
       if (subMode === 'main') return ['الكل', ...MOBILE_BRANDS];
+      if (subMode === 'spare_parts') {
+        const spCats = mobileCategories.filter(c => c.type === 'spare_part');
+        return ['الكل', ...spCats.map(c => c.name)];
+      }
       const accCats = mobileCategories.filter(c => c.type === 'accessory');
+      return ['الكل', ...accCats.map(c => c.name)];
+    }
+    if (selectedTab === 'computers') {
+      if (subMode === 'main') return [];
+      if (subMode === 'spare_parts') {
+        const spCats = computerCategories.filter(c => c.type === 'spare_part');
+        return ['الكل', ...spCats.map(c => c.name)];
+      }
+      const accCats = computerCategories.filter(c => c.type === 'accessory');
       return ['الكل', ...accCats.map(c => c.name)];
     }
     if (selectedTab === 'devices') {
@@ -308,33 +324,57 @@ export default function POS() {
         const devCats = deviceCategories.filter(c => c.type === 'device');
         return ['الكل', ...devCats.map(c => c.name)];
       }
+      if (subMode === 'spare_parts') {
+        const spCats = deviceCategories.filter(c => c.type === 'spare_part');
+        return ['الكل', ...spCats.map(c => c.name)];
+      }
       const accCats = deviceCategories.filter(c => c.type === 'accessory');
       return ['الكل', ...accCats.map(c => c.name)];
     }
     return [];
-  }, [selectedTab, subMode, mobileCategories, deviceCategories]);
+  }, [selectedTab, subMode, mobileCategories, computerCategories, deviceCategories]);
 
-  // Filtered products
+  // Filtered products — DECOUPLED per section
   const filteredProducts = useMemo<Product[]>(() => {
     if (selectedTab === 'transfers') return [];
     let prods = allProducts;
 
+    // ── MOBILES: only mobile source ──
     if (selectedTab === 'mobiles') {
       if (subMode === 'main') {
-        prods = prods.filter(p => p.source === 'mobile' || p.source === 'computer');
+        prods = prods.filter(p => p.source === 'mobile');
         if (conditionFilter !== 'all') prods = prods.filter(p => p.condition === conditionFilter);
         if (selectedChip !== 'الكل') {
           const cl = selectedChip.toLowerCase();
           prods = prods.filter(p => p.supplier?.toLowerCase().includes(cl) || p.name.toLowerCase().includes(cl));
         }
-      } else {
-        prods = prods.filter(p => p.source === 'mobile_acc' || p.source === 'computer_acc');
+      } else if (subMode === 'accessories') {
+        prods = prods.filter(p => p.source === 'mobile_acc');
         if (selectedChip !== 'الكل') {
           const cl = selectedChip.toLowerCase();
           prods = prods.filter(p => p.category.toLowerCase().includes(cl) || p.name.toLowerCase().includes(cl));
         }
+      } else {
+        prods = prods.filter(p => p.source === 'mobile_spare');
       }
-    } else if (selectedTab === 'devices') {
+    }
+    // ── COMPUTERS: only computer source ──
+    else if (selectedTab === 'computers') {
+      if (subMode === 'main') {
+        prods = prods.filter(p => p.source === 'computer');
+        if (conditionFilter !== 'all') prods = prods.filter(p => p.condition === conditionFilter);
+      } else if (subMode === 'accessories') {
+        prods = prods.filter(p => p.source === 'computer_acc');
+        if (selectedChip !== 'الكل') {
+          const cl = selectedChip.toLowerCase();
+          prods = prods.filter(p => p.category.toLowerCase().includes(cl) || p.name.toLowerCase().includes(cl));
+        }
+      } else {
+        prods = prods.filter(p => p.source === 'computer_spare');
+      }
+    }
+    // ── DEVICES: only device source ──
+    else if (selectedTab === 'devices') {
       if (subMode === 'main') {
         prods = prods.filter(p => p.source === 'device');
         if (conditionFilter !== 'all') prods = prods.filter(p => p.condition === conditionFilter);
@@ -342,16 +382,27 @@ export default function POS() {
           const cl = selectedChip.toLowerCase();
           prods = prods.filter(p => p.category.toLowerCase().includes(cl) || p.name.toLowerCase().includes(cl));
         }
-      } else {
+      } else if (subMode === 'accessories') {
         prods = prods.filter(p => p.source === 'device_acc');
         if (selectedChip !== 'الكل') {
           const cl = selectedChip.toLowerCase();
           prods = prods.filter(p => p.category.toLowerCase().includes(cl) || p.name.toLowerCase().includes(cl));
         }
+      } else {
+        prods = prods.filter(p => p.source === 'device_spare');
       }
-    } else if (selectedTab === 'cars') {
-      prods = prods.filter(p => p.source === 'car');
-      if (conditionFilter !== 'all') prods = prods.filter(p => p.condition === conditionFilter);
+    }
+    // ── CARS: main + spare_parts + oils ──
+    else if (selectedTab === 'cars') {
+      if (subMode === 'main') {
+        prods = prods.filter(p => p.source === 'car');
+        if (conditionFilter !== 'all') prods = prods.filter(p => p.condition === conditionFilter);
+      } else if (subMode === 'spare_parts') {
+        prods = prods.filter(p => p.source === 'car_spare');
+      } else {
+        // accessories sub-mode used for oils in cars tab
+        prods = prods.filter(p => p.source === 'car_oils');
+      }
     }
 
     if (deferredSearchTerm.trim()) prods = searchProducts(prods, deferredSearchTerm, undefined, 40);
@@ -489,6 +540,12 @@ export default function POS() {
             filteredCount={filteredProducts.length}
           />
 
+          {/* Search bar with barcode scanner support — with customer selector above */}
+          {!isTransferTab && (
+            <div className="mb-2">
+              <CustomerSelector selected={selectedCustomer} onChange={setSelectedCustomer} />
+            </div>
+          )}
           {/* Search bar with barcode scanner support */}
           {!isTransferTab && (
             <div className="flex gap-2 mb-3">
@@ -637,6 +694,7 @@ export default function POS() {
           grandTotal={grandTotal}
           heldInvoices={heldInvoices}
           onCheckoutReady={handleCheckoutReady}
+          selectedCustomer={selectedCustomer}
         />
       </main>
 

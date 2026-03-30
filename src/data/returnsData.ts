@@ -44,12 +44,14 @@ function setReturnsState(records: StoredReturnRecord[]): void {
 }
 
 function loadReturns(): StoredReturnRecord[] {
-  return sortRecords(getStorageItem<StoredReturnRecord[]>(STORAGE_KEY, []).map(normalizeRecord));
+  const saved = getStorageItem<StoredReturnRecord[]>(STORAGE_KEY, []);
+  return sortRecords((Array.isArray(saved) ? saved : []).map(normalizeRecord));
 }
 
 function refreshElectronReturns(): StoredReturnRecord[] {
   const rows = readElectronSync<StoredReturnRecord[]>('db-sync:returns:get', []);
-  setReturnsState(rows.map(normalizeRecord));
+  const rowsArray = Array.isArray(rows) ? rows : [];
+  setReturnsState(rowsArray.map(normalizeRecord));
   return returnsCache ?? [];
 }
 

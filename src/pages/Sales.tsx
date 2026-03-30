@@ -1,4 +1,4 @@
-import { Search, Ban, ChevronLeft, ChevronRight, Download, RotateCcw, ExternalLink } from 'lucide-react';
+import { Search, Ban, ChevronLeft, ChevronRight, Download, RotateCcw, ExternalLink, Printer } from 'lucide-react';
 import { exportToExcel, SALES_COLUMNS, prepareSalesForExport } from '@/services/excelService';
 import { useState, useMemo, useEffect, useDeferredValue } from 'react';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -9,6 +9,7 @@ import { saveAuditEntries } from '@/repositories/auditRepository';
 import { updateProductQuantity, getAllInventoryProducts } from '@/repositories/productRepository';
 import { saveMovements } from '@/repositories/stockRepository';
 import { voidSale } from '@/services/saleService';
+import { printInvoice } from '@/services/invoicePrinter';
 import { reverseSalePayment } from '@/data/walletsData';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -333,6 +334,19 @@ const Sales = () => {
                     <td className="px-4 py-3 text-center">
                       {!sale.voidedAt && (
                         <div className="flex items-center justify-center gap-1">
+                          <button
+                            onClick={() => {
+                              try {
+                                printInvoice(sale);
+                              } catch (err: any) {
+                                toast({ title: 'خطأ', description: err.message || 'فشلت الطباعة', variant: 'destructive' });
+                              }
+                            }}
+                            title="طباعة الفاتورة"
+                            className="rounded-lg p-1.5 text-muted-foreground hover:text-emerald-600 hover:bg-emerald-100 dark:hover:bg-emerald-500/15 transition-all"
+                          >
+                            <Printer className="h-4 w-4" />
+                          </button>
                           {/* NEW: Quick return button */}
                           <button
                             onClick={() => setQuickReturnSale(sale)}

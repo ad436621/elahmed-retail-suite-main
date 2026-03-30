@@ -3,7 +3,7 @@ import { callElectronSync, emitDataChange, hasElectronIpc, readElectronSync } fr
 import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
 
 export type CategorySection = 'mobile' | 'computer' | 'device';
-export type CategoryType = 'device' | 'accessory';
+export type CategoryType = 'device' | 'accessory' | 'spare_part';
 
 export interface DynamicCategory {
   id: string;
@@ -34,6 +34,14 @@ const DEFAULT_DYNAMIC_CATEGORIES: DynamicCategory[] = [
   { id: 'cat-dev-1', section: 'device', name: 'شاشات', type: 'device' },
   { id: 'cat-dev-2', section: 'device', name: 'أجهزة ألعاب', type: 'device' },
   { id: 'cat-dacc-1', section: 'device', name: 'أذرع تحكم', type: 'accessory' },
+  // Spare parts defaults
+  { id: 'cat-msp-1', section: 'mobile', name: 'شاشات موبايل', type: 'spare_part' },
+  { id: 'cat-msp-2', section: 'mobile', name: 'بطاريات', type: 'spare_part' },
+  { id: 'cat-csp-1', section: 'computer', name: 'رامات', type: 'spare_part' },
+  { id: 'cat-csp-2', section: 'computer', name: 'هاردات', type: 'spare_part' },
+  { id: 'cat-csp-3', section: 'computer', name: 'معالجات', type: 'spare_part' },
+  { id: 'cat-dsp-1', section: 'device', name: 'بطاريات أجهزة', type: 'spare_part' },
+  { id: 'cat-dsp-2', section: 'device', name: 'شاشات أجهزة', type: 'spare_part' },
 ];
 
 const DEFAULT_LEGACY_CATEGORIES: string[] = [
@@ -54,7 +62,7 @@ function parseInventoryType(value: unknown): { section: CategorySection; type: C
   const normalized = String(value ?? 'mobile_device').trim();
   const [rawSection, rawType] = normalized.split('_');
   const section = rawSection === 'computer' || rawSection === 'device' ? rawSection : 'mobile';
-  const type = rawType === 'accessory' ? 'accessory' : 'device';
+  const type: CategoryType = rawType === 'accessory' ? 'accessory' : rawType === 'spare_part' ? 'spare_part' : 'device';
   return { section, type };
 }
 
@@ -77,7 +85,7 @@ function normalizeDynamicCategory(category: Partial<DynamicCategory>): DynamicCa
     id: String(category.id ?? crypto.randomUUID()),
     section: category.section === 'computer' || category.section === 'device' ? category.section : 'mobile',
     name: String(category.name ?? '').trim(),
-    type: category.type === 'accessory' ? 'accessory' : 'device',
+    type: category.type === 'accessory' ? 'accessory' : category.type === 'spare_part' ? 'spare_part' : 'device',
   };
 }
 
@@ -138,16 +146,19 @@ function setStringListState(key: string, values: string[]): void {
 
 function loadLocalDynamicCategories(): DynamicCategory[] {
   const stored = getStorageItem<DynamicCategory[] | null>(DYNAMIC_CATEGORIES_KEY, null);
-  return stored ? normalizeDynamicCategories(stored) : [];
+  const storedArray = Array.isArray(stored) ? stored : null;
+  return storedArray ? normalizeDynamicCategories(storedArray) : [];
 }
 
 function loadLocalStringList(key: string, defaults: string[]): string[] {
-  return normalizeStringList(getStorageItem<string[]>(key, [...defaults]));
+  const stored = getStorageItem<string[]>(key, [...defaults]);
+  return Array.isArray(stored) ? normalizeStringList(stored) : normalizeStringList(defaults);
 }
 
 function refreshElectronCategories(): DynamicCategory[] {
   const rows = readElectronSync<CategoryRow[]>('db-sync:categories:get', []);
-  setCategoriesState(rows.map(normalizeCategoryRow));
+  const rowsArray = Array.isArray(rows) ? rows : [];
+  setCategoriesState(rowsArray.map(normalizeCategoryRow));
   return categoriesCache ?? [];
 }
 

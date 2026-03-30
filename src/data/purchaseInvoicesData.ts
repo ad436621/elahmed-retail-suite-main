@@ -125,12 +125,14 @@ function setInvoicesState(invoices: PurchaseInvoice[]): void {
 }
 
 function loadLocalInvoices(): PurchaseInvoice[] {
-  return sortInvoices(getStorageItem<PurchaseInvoice[]>(KEY, []).map(normalizeInvoice));
+  const saved = getStorageItem<PurchaseInvoice[]>(KEY, []);
+  return sortInvoices((Array.isArray(saved) ? saved : []).map(normalizeInvoice));
 }
 
 function refreshElectronInvoices(): PurchaseInvoice[] {
   const rows = readElectronSync<PurchaseInvoiceRow[]>('db-sync:purchase_invoices:get', []);
-  setInvoicesState(rows.map(normalizeInvoice));
+  const rowsArray = Array.isArray(rows) ? rows : [];
+  setInvoicesState(rowsArray.map(normalizeInvoice));
   return invoicesCache ?? [];
 }
 

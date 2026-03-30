@@ -79,13 +79,13 @@ export default function RemindersPage() {
                     <p className="text-xs text-red-600 dark:text-red-400">متأخر وعاجل</p>
                     <p className="text-2xl font-bold text-red-700 dark:text-red-400 mt-1">{overdue.length}</p>
                 </div>
-                <div className="rounded-2xl border border-amber-200 bg-amber-50 dark:bg-amber-900/10 p-4 text-center">
-                    <p className="text-xs text-amber-600">اليوم</p>
-                    <p className="text-2xl font-bold text-amber-700 mt-1">{todayReminders}</p>
+                <div className="rounded-2xl border border-amber-200 dark:border-amber-500/20 bg-amber-50 dark:bg-amber-900/10 p-4 text-center">
+                    <p className="text-xs text-amber-600 dark:text-amber-400">اليوم</p>
+                    <p className="text-2xl font-bold text-amber-700 dark:text-amber-400 mt-1">{todayReminders}</p>
                 </div>
-                <div className="rounded-2xl border border-blue-200 bg-blue-50 dark:bg-blue-900/10 p-4 text-center">
-                    <p className="text-xs text-blue-600">هذا الأسبوع</p>
-                    <p className="text-2xl font-bold text-blue-700 mt-1">{weekReminders}</p>
+                <div className="rounded-2xl border border-blue-200 dark:border-blue-500/20 bg-blue-50 dark:bg-blue-900/10 p-4 text-center">
+                    <p className="text-xs text-blue-600 dark:text-blue-400">هذا الأسبوع</p>
+                    <p className="text-2xl font-bold text-blue-700 dark:text-blue-400 mt-1">{weekReminders}</p>
                 </div>
             </div>
 
@@ -134,10 +134,10 @@ export default function RemindersPage() {
                                     <button onClick={() => { markReminderDone(r.id); refresh(); }}
                                         className="rounded-xl bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 p-2 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-colors" title="تم"><Check className="h-3.5 w-3.5" /></button>
                                     <button onClick={() => { updateReminder(r.id, { status: 'dismissed' }); refresh(); }}
-                                        className="rounded-xl bg-gray-50 border border-gray-200 p-2 text-gray-600 hover:bg-gray-100 transition-colors" title="تجاهل"><X className="h-3.5 w-3.5" /></button>
+                                        className="rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 p-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors" title="تجاهل"><X className="h-3.5 w-3.5" /></button>
                                 </>}
                                 <button onClick={async () => { const ok = await confirm({ title: 'حذف تذكير', message: `هل أنت متأكد من حذف التذكير "${r.title}"؟`, confirmLabel: 'حذف', danger: true }); if (ok) { deleteReminder(r.id); refresh(); } }}
-                                    className="rounded-xl bg-red-50 dark:bg-red-500/10 p-2 text-destructive hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
+                                    className="rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 p-2 text-destructive hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
                             </div>
                         </div>
                     </div>

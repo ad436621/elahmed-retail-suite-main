@@ -180,11 +180,14 @@ export function normalizeInventoryAccessoryRow(row: Partial<InventoryAccessoryRo
 export function getProductRows(source: string, storageKey: string): InventoryProductRow[] {
   if (hasElectronIpc()) {
     const rows = readElectronSync<InventoryProductRow[]>('db-sync:products:get', [], source);
-    return sortByCreatedAtDesc(rows.map((row) => normalizeInventoryProductRow(row, source)));
+    const rowsArray = Array.isArray(rows) ? rows : [];
+    return sortByCreatedAtDesc(rowsArray.map((row) => normalizeInventoryProductRow(row, source)));
   }
 
+  const saved = getStorageItem<InventoryProductRow[]>(storageKey, []);
+  const rows = Array.isArray(saved) ? saved : [];
   return sortByCreatedAtDesc(
-    getStorageItem<InventoryProductRow[]>(storageKey, []).map((row) => normalizeInventoryProductRow(row, source)),
+    rows.map((row) => normalizeInventoryProductRow(row, source)),
   );
 }
 
@@ -267,11 +270,14 @@ export function deleteProductRow(source: string, storageKey: string, id: string)
 export function getAccessoryRows(inventoryType: string, storageKey: string): InventoryAccessoryRow[] {
   if (hasElectronIpc()) {
     const rows = readElectronSync<InventoryAccessoryRow[]>('db-sync:accessories:get', [], inventoryType);
-    return sortByCreatedAtDesc(rows.map((row) => normalizeInventoryAccessoryRow(row, inventoryType)));
+    const rowsArray = Array.isArray(rows) ? rows : [];
+    return sortByCreatedAtDesc(rowsArray.map((row) => normalizeInventoryAccessoryRow(row, inventoryType)));
   }
 
+  const saved = getStorageItem<InventoryAccessoryRow[]>(storageKey, []);
+  const rows = Array.isArray(saved) ? saved : [];
   return sortByCreatedAtDesc(
-    getStorageItem<InventoryAccessoryRow[]>(storageKey, []).map((row) => normalizeInventoryAccessoryRow(row, inventoryType)),
+    rows.map((row) => normalizeInventoryAccessoryRow(row, inventoryType)),
   );
 }
 

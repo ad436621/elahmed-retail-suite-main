@@ -5,6 +5,8 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { CartItem, Product, PaymentMethod } from '@/domain/types';
 import { getCartTotals } from '@/services/saleService';
+import { STORAGE_KEYS } from '@/config';
+import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
 
 interface CartTotals {
     subtotal: number;
@@ -38,40 +40,24 @@ export interface HeldInvoice {
     heldAt: string;
 }
 
-const CART_KEY = 'gx_current_cart';
-const HELD_INVOICES_KEY = 'gx_held_invoices';
+const CART_KEY = STORAGE_KEYS.CURRENT_CART;
+const HELD_INVOICES_KEY = STORAGE_KEYS.HELD_INVOICES;
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [cart, setCart] = useState<CartItem[]>(() => {
-        try {
-            const saved = localStorage.getItem(CART_KEY);
-            return saved ? JSON.parse(saved) : [];
-        } catch {
-            return [];
-        }
-    });
-
-    const [heldInvoices, setHeldInvoices] = useState<HeldInvoice[]>(() => {
-        try {
-            const saved = localStorage.getItem(HELD_INVOICES_KEY);
-            return saved ? JSON.parse(saved) : [];
-        } catch {
-            return [];
-        }
-    });
-
+    const [cart, setCart] = useState<CartItem[]>(() => getStorageItem(CART_KEY, []));
+    const [heldInvoices, setHeldInvoices] = useState<HeldInvoice[]>(() => getStorageItem(HELD_INVOICES_KEY, []));
     const [invoiceDiscount, setInvoiceDiscount] = useState(0);
 
     // Persist cart to localStorage
     useEffect(() => {
-        localStorage.setItem(CART_KEY, JSON.stringify(cart));
+        setStorageItem(CART_KEY, cart);
     }, [cart]);
 
     // Persist held invoices
     useEffect(() => {
-        localStorage.setItem(HELD_INVOICES_KEY, JSON.stringify(heldInvoices));
+        setStorageItem(HELD_INVOICES_KEY, heldInvoices);
     }, [heldInvoices]);
 
     const addToCart = useCallback((product: Product, qty: number = 1) => {
@@ -124,7 +110,14 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }, []);
 
     const getTotals = useCallback((): CartTotals => {
-        return getCartTotals(cart, invoiceDiscount) as CartTotals;
+        const totals = getCartTotals(cart, invoiceDiscount);
+        const lineDiscountTotal = cart.reduce((sum, item) => sum + ((item.lineDiscount || 0) * item.qty), 0);
+        return {
+            subtotal: totals.subtotal,
+            discount: invoiceDiscount + lineDiscountTotal,
+            total: totals.total,
+            itemCount: cart.reduce((count, item) => count + item.qty, 0)
+        };
     }, [cart, invoiceDiscount]);
 
     const holdInvoice = useCallback((

@@ -32,8 +32,10 @@ interface CustomerRow {
   createdAt?: string | null;
 }
 
+import { generateId as genId } from '@/lib/idGenerator';
+
 function generateId(): string {
-  return `cust_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  return genId('cust');
 }
 
 function normalizeCustomer(row: Partial<CustomerRow>): Customer {
@@ -66,7 +68,8 @@ function toCustomerRow(customer: Customer): CustomerRow {
 }
 
 function loadLocalCustomers(): Customer[] {
-  return getStorageItem<Customer[]>(KEY, []).map(normalizeCustomer);
+  const saved = getStorageItem<Customer[]>(KEY, []);
+  return (Array.isArray(saved) ? saved : []).map(normalizeCustomer);
 }
 
 function persistElectronCustomers(customers: Customer[]): void {

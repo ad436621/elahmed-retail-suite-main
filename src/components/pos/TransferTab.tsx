@@ -14,7 +14,7 @@ import { cn } from '@/lib/utils';
 import { STORAGE_KEYS } from '@/config';
 
 // #08 FIX: Use STORAGE_KEYS.TRANSFERS unified key
-const TRANSFER_KEY = STORAGE_KEYS.TRANSFERS ?? 'elos_transfers';
+const TRANSFER_KEY = STORAGE_KEYS.TRANSFERS;
 
 const TRANSFER_TYPES = [
     { label: 'فودافون كاش', icon: '📱' },

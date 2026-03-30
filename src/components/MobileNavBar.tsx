@@ -5,7 +5,7 @@ import {
     Wrench, FileText, TrendingDown, RotateCcw, Monitor, Tv,
     Users, Barcode, Settings, X, Car, Warehouse, Wallet,
     UserCheck, Truck, ShieldAlert, Bell, ClipboardCheck,
-    BarChart3, Package, Handshake, PackageSearch,
+    BarChart3,
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -93,7 +93,7 @@ export default function MobileNavBar() {
                             {hasPermission('computers') && <DrawerLink to="/computers" icon={Monitor} label="الكمبيوترات" onClick={() => setMenuOpen(false)} />}
                             {hasPermission('devices') && <DrawerLink to="/devices" icon={Tv} label="الأجهزة" onClick={() => setMenuOpen(false)} />}
                             {hasPermission('cars') && <DrawerLink to="/cars" icon={Car} label="السيارات" onClick={() => setMenuOpen(false)} />}
-                            {hasPermission('used') && <DrawerLink to="/used-inventory" icon={Package} label="المستعمل" onClick={() => setMenuOpen(false)} />}
+
                             {hasPermission('warehouse') && <DrawerLink to="/warehouse" icon={Warehouse} label="المستودع" onClick={() => setMenuOpen(false)} />}
                             {hasPermission('inventory') && <DrawerLink to="/barcodes" icon={Barcode} label="طباعة الباركود" onClick={() => setMenuOpen(false)} />}
 

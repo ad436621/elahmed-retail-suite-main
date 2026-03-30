@@ -91,12 +91,14 @@ function setCarsState(items: CarItem[]): void {
 }
 
 function loadLocalCars(): CarItem[] {
-  return sortCars(getStorageItem<CarItem[]>(KEY, []).map(normalizeCar));
+  const saved = getStorageItem<CarItem[]>(KEY, []);
+  return sortCars((Array.isArray(saved) ? saved : []).map(normalizeCar));
 }
 
 function refreshElectronCars(): CarItem[] {
   const rows = readElectronSync<CarRow[]>('db-sync:cars:get', []);
-  setCarsState(rows.map(normalizeCar));
+  const rowsArray = Array.isArray(rows) ? rows : [];
+  setCarsState(rowsArray.map(normalizeCar));
   return carsCache ?? [];
 }
 

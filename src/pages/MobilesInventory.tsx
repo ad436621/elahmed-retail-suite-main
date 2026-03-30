@@ -4,6 +4,7 @@
 // ============================================================
 
 import { useState, useEffect, useMemo } from 'react';
+import { generateBarcode as genBarcode } from '@/lib/idGenerator';
 import { createPortal } from 'react-dom';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -687,7 +688,7 @@ export default function MobilesInventory() {
             }
             validUnits.forEach(u => {
                 addMobile({
-                    name: f.name, barcode: u.barcode || `MOB-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                    name: f.name, barcode: u.barcode || genBarcode('MOB'),
                     deviceType: 'mobile', category: f.category, condition: f.condition,
                     quantity: 1, storage: f.storage, ram: f.ram, color: u.color || f.color, model: f.model,
                     brand: f.brand, supplier: f.supplier, oldCostPrice: f.oldCostPrice, newCostPrice: f.newCostPrice,
@@ -820,7 +821,7 @@ export default function MobilesInventory() {
             validUnits.forEach((unit, index) => {
                 addMobile({
                     name,
-                    barcode: unit.barcode || `MOB-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 6)}`,
+                    barcode: unit.barcode || genBarcode('MOB'),
                     deviceType: 'mobile',
                     category,
                     condition: f.condition,
@@ -1301,7 +1302,7 @@ export default function MobilesInventory() {
                         </div>
 
                         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                            <ImageUpload value={f.image} onChange={v => setF(p => ({ ...p, image: v }))} />
+                            <ImageUpload value={f.image ?? ''} onChange={v => setF(p => ({ ...p, image: v ?? '' }))} />
 
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="col-span-2 sm:col-span-1">

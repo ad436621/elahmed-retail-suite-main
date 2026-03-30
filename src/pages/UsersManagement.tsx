@@ -74,7 +74,7 @@ export default function UsersManagement() {
 
     const openAdd = () => { setForm(emptyForm); setEditId(null); setShowPass(false); setShowForm(true); };
     const openEdit = (u: AppUser) => {
-        setForm({ fullName: u.fullName, username: u.username, password: u.password, role: u.role, permissions: [...u.permissions], active: u.active });
+        setForm({ fullName: u.fullName, username: u.username, password: '', role: u.role, permissions: [...u.permissions], active: u.active });
         setEditId(u.id); setShowPass(false); setShowForm(true);
     };
     const togglePermission = (perm: Permission) =>
@@ -82,20 +82,30 @@ export default function UsersManagement() {
     const selectAll = () => setForm(f => ({ ...f, permissions: [...ALL_PERMISSIONS] }));
     const clearAll = () => setForm(f => ({ ...f, permissions: [] }));
 
-    const handleSubmit = () => {
-        if (!form.fullName.trim() || !form.username.trim() || !form.password.trim()) {
+    const handleSubmit = async () => {
+        if (!form.fullName.trim() || !form.username.trim() || (!editId && !form.password.trim())) {
             toast({ title: 'خطأ', description: 'الاسم واسم المستخدم وكلمة المرور مطلوبة', variant: 'destructive' }); return;
         }
-        if (form.password.length < 4) {
+        if (form.password && form.password.length < 4) {
             toast({ title: 'خطأ', description: 'كلمة المرور 4 أحرف على الأقل', variant: 'destructive' }); return;
         }
         const existing = allUsers.find(u => u.username.toLowerCase() === form.username.toLowerCase());
         if (!editId && existing) {
             toast({ title: 'خطأ', description: 'اسم المستخدم موجود بالفعل', variant: 'destructive' }); return;
         }
-        if (editId) { updateUser(editId, form); toast({ title: '✅ تم التعديل', description: form.fullName }); }
-        else { addUser(form); toast({ title: '✅ تمت الإضافة', description: form.fullName }); }
-        refreshUsers(); setShowForm(false); setEditId(null);
+        try {
+            if (editId) { 
+                await updateUser(editId, form); 
+                toast({ title: '✅ تم التعديل', description: form.fullName }); 
+            } else { 
+                await addUser(form); 
+                toast({ title: '✅ تمت الإضافة', description: form.fullName }); 
+            }
+            refreshUsers(); setShowForm(false); setEditId(null);
+        } catch (error) {
+            console.error('Error saving user:', error);
+            toast({ title: 'خطأ', description: 'حدث خطأ أثناء حفظ المستخدم', variant: 'destructive' });
+        }
     };
 
     const handleDelete = (u: AppUser) => {
@@ -169,7 +179,7 @@ export default function UsersManagement() {
                                 <div className="relative">
                                     <input type={showPass ? 'text' : 'password'} value={form.password}
                                         onChange={e => setForm(f => ({ ...f, password: e.target.value }))}
-                                        placeholder="4 أحرف على الأقل"
+                                        placeholder={editId ? "اتركه فارغاً للاحتفاظ بكلمة المرور الحالية" : "4 أحرف على الأقل"}
                                         className={`${inputClass} pl-10`} />
                                     <button type="button" onClick={() => setShowPass(s => !s)} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
                                         {showPass ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -347,8 +357,8 @@ export default function UsersManagement() {
                                         <td className="px-4 py-3 text-xs text-muted-foreground uppercase">{log.entityType}</td>
                                         <td className="px-4 py-3 text-xs text-muted-foreground">
                                             <code className="bg-muted px-1 py-0.5 rounded text-[10px] break-all max-w-[150px] inline-block truncate" title={log.entityId}>{log.entityId}</code>
-                                            {log.afterState?.reason && (
-                                                <span className="mr-2 text-destructive font-semibold">سبب: {log.afterState.reason as string}</span>
+                                            {log.afterState?.reason != null && (
+                                                <span className="mr-2 text-destructive font-semibold">سبب: {String(log.afterState.reason)}</span>
                                             )}
                                         </td>
                                     </tr>

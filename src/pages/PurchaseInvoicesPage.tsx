@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { generateId as genId } from '@/lib/idGenerator';
 import { FileText, Plus, X, Check, Search, Trash2, ChevronLeft, AlertCircle } from 'lucide-react';
 import {
     getPurchaseInvoices, addPurchaseInvoice, applyPayment, deletePurchaseInvoice, getTotalUnpaid,
@@ -20,7 +21,7 @@ const PAYMENT_METHODS: { value: PaymentMethod; label: string }[] = [
 ];
 
 const emptyItem = (): PurchaseInvoiceItem => ({
-    id: `item_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
+    id: genId('item'),
     productName: '', category: '', quantity: 1, unitPrice: 0, totalPrice: 0, notes: '',
 });
 

@@ -107,7 +107,8 @@ function toReminderRow(reminder: Reminder): ReminderRow {
 }
 
 function loadLocalReminders(): Reminder[] {
-  return getStorageItem<Reminder[]>(KEY, []).map(normalizeReminder);
+  const saved = getStorageItem<Reminder[]>(KEY, []);
+  return (Array.isArray(saved) ? saved : []).map(normalizeReminder);
 }
 
 function persistElectronReminders(reminders: Reminder[]): void {

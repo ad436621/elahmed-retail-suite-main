@@ -90,7 +90,13 @@ function setSalesState(sales: Sale[]): void {
 }
 
 function loadSales(): Sale[] {
-  return sortSales(getStorageItem<Sale[]>(STORAGE_KEY, []).map(normalizeSale));
+  try {
+    const saved = getStorageItem<Sale[]>(STORAGE_KEY, []);
+    if (!Array.isArray(saved)) return [];
+    return sortSales(saved.map(normalizeSale));
+  } catch {
+    return [];
+  }
 }
 
 function persistSales(sales: Sale[]): void {
@@ -99,7 +105,8 @@ function persistSales(sales: Sale[]): void {
 
 function refreshElectronSales(activeOnly = false): Sale[] {
   const rows = readElectronSync<SaleRow[]>('db-sync:sales:get', [], activeOnly);
-  const normalized = sortSales(rows.map(normalizeSale));
+  const rowsArray = Array.isArray(rows) ? rows : [];
+  const normalized = sortSales(rowsArray.map(normalizeSale));
   if (!activeOnly) {
     salesCache = normalized;
   }

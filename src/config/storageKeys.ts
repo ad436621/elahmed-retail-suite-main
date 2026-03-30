@@ -1,150 +1,95 @@
-// ============================================================
-// Centralized localStorage Keys — مفاتيح التخزين المركزية
-// ============================================================
-// غيّر أي مفتاح هنا وهيتغير في المشروع كله تلقائياً
-// Change any key here and it updates everywhere automatically
+// ======================================================
+// GX GLEAMEX — Unified Storage Keys
+// المفاتيح الموحدة لـ localStorage
+// ======================================================
 
 export const STORAGE_KEYS = {
-    // ─── Auth & Session ─────────────────────────────────────────
-    AUTH_TOKEN: 'gx_auth_token',
-    AUTH_USER: 'gx_auth_user',
-    SESSION: 'gx_session',
-    RECOVERY_CODE: 'gx_recovery_code',
+  // ─── Auth & Users ───────────────────────────────────
+  AUTH_USER:          'gx_auth_user',
+  AUTH_TOKEN:         'gx_auth_token',
+  USERS:              'gx_users',
+  RECOVERY_CODE:      'gx_recovery_code_v1',
 
-    // ─── Users ──────────────────────────────────────────────────
-    USERS: 'gx_users',
+  // ─── Products / Inventory ──────────────────────────
+  MOBILES:            'gx_mobiles_v2',
+  DEVICES:            'gx_devices_v2',
+  COMPUTERS:          'gx_computers_v2',
+  CARS:               'gx_cars',
+  CAR_OILS:           'gx_car_oils',
+  CAR_SPARE_PARTS:    'gx_car_spare_parts',
+  USED_DEVICES:       'gx_used_devices_v1',
+  CATEGORIES:         'gx_categories_v1',
+  LEGACY_CATEGORIES:  'gx_legacy_categories',
+  BATCHES:            'gx_product_batches_v1',
+  WAREHOUSE:          'gx_warehouse_items',
+  MOBILE_ACCESSORIES: 'gx_mobile_accessories_v1',
+  COMPUTER_ACCESSORIES: 'gx_computer_accessories_v1',
+  COMPUTER_ACCESSORIES_SA: 'gx_computer_accessories_v1',
+  DEVICE_ACCESSORIES: 'gx_device_accessories_v1',
+  DEVICE_ACCESSORIES_SA: 'gx_device_accessories_v1',
+  MOBILE_SPARE_PARTS: 'gx_mobile_spare_parts_v1',
+  COMPUTER_SPARE_PARTS: 'gx_computer_spare_parts_v1',
+  DEVICE_SPARE_PARTS: 'gx_device_spare_parts_v1',
+  PRODUCTS:           'gx_products',
 
-    // ─── Inventory: Mobiles ─────────────────────────────────────
-    MOBILES: 'gx_mobiles_v2',
-    MOBILE_ACCESSORIES: 'gx_mobile_accessories',
+  // ─── Sales & Transactions ──────────────────────────
+  SALES:              'gx_sales_v2',           // ✅ مُهاجَر من elahmed_sales
+  SALES_LEGACY:       'elahmed_sales',
+  RETURNS:            'gx_returns_v2',
+  INVOICE_COUNTER:    'gx_invoice_counter',
+  TRANSFERS:          'gx_transfers_v2',        // ✅ يستخدمه POS.tsx أيضاً
+  HELD_INVOICES:      'gx_held_invoices',
 
-    // ─── Inventory: Devices ─────────────────────────────────────
-    DEVICES: 'gx_devices_v2',
-    DEVICE_ACCESSORIES: 'gx_device_accessories',
+  // ─── Cart ──────────────────────────────────────────
+  CURRENT_CART:       'gx_current_cart',        // ✅ مضاف
 
-    // ─── Inventory: Computers ───────────────────────────────────
-    COMPUTERS: 'gx_computers_v2',
-    COMPUTER_ACCESSORIES: 'gx_computer_accessories',
+  // ─── Finance ───────────────────────────────────────
+  EXPENSES:           'gx_expenses_v1',
+  OTHER_REVENUE:      'gx_other_revenue_v1',
+  DAMAGED:            'gx_damaged_items_v1',
+  WALLETS:            'gx_wallets',
 
-    // ─── Inventory: Used Devices ────────────────────────────────
-    USED_DEVICES: 'gx_used_devices',
+  // ─── Maintenance & Service ─────────────────────────
+  MAINTENANCE:        'gx_maintenance_orders_v1',
+  INSTALLMENTS:       'gx_installments_v1',
 
-    // ─── Inventory: Cars ────────────────────────────────────────
-    CARS: 'gx_cars',
-    CAR_SPARE_PARTS: 'gx_car_spare_parts',
-    CAR_OILS: 'gx_car_oils',
+  // ─── CRM ───────────────────────────────────────────
+  CUSTOMERS:          'gx_customers',
+  SUPPLIERS:          'gx_suppliers',           // ✅ مضاف
+  SUPPLIER_TRANSACTIONS: 'gx_supplier_transactions', // ✅ مضاف
+  EMPLOYEES:          'gx_employees',
+  PARTNERS:           'gx_partners',            // ✅ مضاف
+  BLACKLIST:          'gx_blacklist',           // ✅ مضاف
+  REMINDERS:          'gx_reminders',           // ✅ مضاف
 
-    // ─── Inventory: Mobile Sub-sections ─────────────────────────
-    MOBILE_SPARE_PARTS: 'gx_mobile_spare_parts',
+  // ─── Shift & Operations ───────────────────────────
+  SHIFT_CLOSINGS:     'gx_shift_closings',      // ✅ مضاف
+  PURCHASE_INVOICES:  'gx_purchase_invoices',   // ✅ مضاف
 
-    // ─── Inventory: Computer Sub-sections ───────────────────────
-    COMPUTER_ACCESSORIES_SA: 'gx_computer_accessories_sa',
-    COMPUTER_SPARE_PARTS: 'gx_computer_spare_parts',
+  // ─── Stock ─────────────────────────────────────────
+  STOCK_MOVEMENTS:    'gx_stock_movements_v2',  // ✅ مُهاجَر
+  AUDIT_LOGS:         'gx_audit_logs_v2',       // ✅ مُهاجَر من elahmed_audit_logs
+  STOCKTAKE:          'gx_stocktake_sessions',  // ✅ مضاف
 
-    // ─── Inventory: Device Sub-sections ─────────────────────────
-    DEVICE_ACCESSORIES_SA: 'gx_device_accessories_sa',
-    DEVICE_SPARE_PARTS: 'gx_device_spare_parts',
+  // ─── Settings & App ───────────────────────────────
+  APP_SETTINGS:       'app_settings',
+  THEME:              'elahmed-theme',
+  LANGUAGE:           'elahmed-lang',
+  BACKUP_SETTINGS:    'gx_backup_settings',
+  BACKUP_DB:          'gx_backup_db',
+  FONT_SIZE:          'gx_font_size',
+  INVOICE_SETTINGS:   'gx_invoice_settings',
+  NOTIFICATIONS_SETTINGS: 'gx_notif_settings',
+  TRANSFER_SETTINGS:  'gx_transfer_settings',
 
+  // ─── AI Notifications ───────────────────────────────
+  AI_NOTIFICATIONS:       'gx_ai_notifications',
+  AI_NOTIFICATIONS_META: 'gx_ai_notifications_meta',
 
-    // ─── Inventory: Warehouse ───────────────────────────────────
-    WAREHOUSE: 'gx_warehouse',
-
-    // ─── Product Batches (FIFO) ─────────────────────────────────
-    BATCHES: 'gx_product_batches_v1',
-
-    // ─── Categories ─────────────────────────────────────────────
-    CATEGORIES: 'gx_categories_v1',
-    LEGACY_CATEGORIES: 'elahmed-categories',
-
-    // ─── Legacy Products & Repositories ─────────────────────────
-    PRODUCTS: 'elahmed-products',
-    SALES_LEGACY: 'gx_sales_v1', // MODIFIED
-    AUDIT_LOGS: 'gx_audit_logs', // MODIFIED
-
-    // ─── Sales & Finance ────────────────────────────────────────
-    INVOICE_COUNTER: 'gx_invoice_counter',
-    RETURNS: 'gx_returns_v2',
-    STOCK_MOVEMENTS: 'gx_stock_movements',
-    EXPENSES: 'gx_expenses',
-    OTHER_REVENUE: 'gx_other_revenue',
-    INSTALLMENTS: 'gx_installments_v2',
-
-    // ─── Wallets ────────────────────────────────────────────────
-    WALLETS: 'gx_wallets',
-    WALLET_TRANSACTIONS: 'gx_wallet_transactions',
-
-    // ─── People ─────────────────────────────────────────────────
-    CUSTOMERS: 'gx_customers',
-    EMPLOYEES: 'gx_employees',
-    SALARY_RECORDS: 'gx_salary_records',
-    ADVANCES: 'gx_advances',
-
-    // ─── Operations ─────────────────────────────────────────────
-    DAMAGED_ITEMS: 'gx_damaged_items',
-    MAINTENANCE: 'gx_maintenance_v2',
-
-    // ─── #07 FIX: Keys that were hardcoded in data files ────────
-    BLACKLIST: 'gx_blacklist',
-    REMINDERS: 'gx_reminders',
-    SHIFT_CLOSINGS: 'gx_shift_closings',
-    SUPPLIERS: 'gx_suppliers',
-    SUPPLIER_TRANSACTIONS: 'gx_supplier_transactions',
-    PURCHASE_INVOICES: 'gx_purchase_invoices',
-    CURRENT_CART: 'gx_current_cart',
-    PARTNERS: 'gx_partners',
-    STOCKTAKE: 'gx_stocktake',
-
-    // ─── Settings & System ──────────────────────────────────────
-    APP_SETTINGS: 'app_settings',
-    BACKUP_SETTINGS: 'gx_backup_settings',
-    MONTHLY_RESET_SETTINGS: 'gx_monthly_reset_settings',
-    MONTHLY_ARCHIVE: 'gx_monthly_archive',
-
-    // ─── POS / Settings Page Specific ───────────────────────────
-    HELD_INVOICES: 'elos_held_invoices',
-    TRANSFERS: 'elos_transfers',
-    WALLETS_SETTINGS: 'elos_wallets',
-    INVOICE_SETTINGS: 'elos_invoice_settings',
-    TRANSFER_SETTINGS: 'elos_transfer_settings',
-    NOTIFICATIONS_SETTINGS: 'elos_notifications_settings',
-
-    // ─── Migration Flags ────────────────────────────────────────
-    MIGRATION_BATCHES_DONE: 'gx_batches_migrated_v1',
-    MIGRATION_USED_MERGE_DONE: 'gx_used_merge_migrated_v1',
-
-    // ─── UI / App Preferences ───────────────────────────────────
-    THEME: 'elahmed-theme',
-    LANGUAGE: 'elahmed-lang',
-    FONT_SIZE: 'elos_font_size',
-    MACHINE_ID: 'elahmed-machine-id',
-
-    // ─── Payment Gateway Transactions ──────────────────────────
-    FAWRY_TRANSACTIONS: 'fawry_transactions',
-    ACCEPT_TRANSACTIONS: 'accept_transactions',
-    CASH_TRANSACTIONS: 'cash_transactions',
-    PAYMENT_PROVIDER: 'payment_provider',
-    PAYMENT_CONFIG: 'payment_config',
-
-    // ─── Notification Queues & Config ───────────────────────────
-    EMAIL_QUEUE: 'email_queue',
-    SMS_QUEUE: 'sms_queue',
-    WHATSAPP_QUEUE: 'whatsapp_queue',
-    AI_NOTIFICATIONS: 'gx_ai_notifications',
-    AI_NOTIFICATIONS_META: 'gx_ai_notifications_meta',
-    PRINT_HISTORY: 'print_history',
-    SMS_PROVIDER: 'sms_provider',
-    SMS_CONFIG: 'sms_config',
-    EMAIL_PROVIDER: 'email_provider',
-    EMAIL_CONFIG: 'email_config',
-    BUSINESS_INFO: 'business_info',
-
-    // ─── Settings Page — Wallet split keys ─────────────────────
-    WALLETS_E: 'elos_wallets_e',
-    WALLETS_B: 'elos_wallets_b',
-
-    // ─── IndexedDB Names ───────────────────────────────────────
-    BACKUP_DB_NAME: 'gx_backup_db',
+  // ─── Migration flags ───────────────────────────────
+  MIGRATION_V1:       'gx_migration_v1_done',
+  MIGRATION_V2:       'gx_migration_v2_done',
+  PASSWORDS_MIGRATED: 'gx_passwords_migrated_v1',
 } as const;
 
-// Type helper: gets the value type of any storage key
-export type StorageKeyValue = typeof STORAGE_KEYS[keyof typeof STORAGE_KEYS];
+export type StorageKey = typeof STORAGE_KEYS[keyof typeof STORAGE_KEYS];

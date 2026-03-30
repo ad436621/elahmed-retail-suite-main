@@ -27,6 +27,7 @@ export type ProductSource =
   | 'device_spare'
   | 'car'
   | 'car_spare'
+  | 'car_oils'
   | 'legacy';
 
 export type ProductCondition = 'new' | 'like_new' | 'used' | 'broken';
@@ -83,7 +84,10 @@ export interface Sale {
   grossProfit: number;
   marginPct: number;
   paymentMethod: PaymentMethod;
+  /** @deprecated — kept for backward compatibility with old sales */
   employee: string;
+  customerId?: string;
+  customerName?: string;
   status?: 'active' | 'deleted';
   voidedAt: string | null;
   voidReason: string | null;

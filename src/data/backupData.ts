@@ -12,6 +12,7 @@ const BACKUP_SETTINGS_KEY = 'gx_backup_settings';
 
 import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
 import { STORAGE_KEYS } from '@/config';
+import { toast } from 'sonner';
 
 export function getBackupSettings(): BackupSettings {
     return getStorageItem<BackupSettings>(BACKUP_SETTINGS_KEY, { autoBackupEnabled: false, intervalHours: 12, lastBackupDate: null });
@@ -119,6 +120,8 @@ export async function clearDirHandle(): Promise<void> {
 
 // ─── Auto Backup Execution ───────────────────────────────────
 
+let _permissionToastShown = false;
+
 export async function executeAutoBackupIfDue(): Promise<boolean> {
     const settings = getBackupSettings();
     if (!settings.autoBackupEnabled) return false;
@@ -139,8 +142,28 @@ export async function executeAutoBackupIfDue(): Promise<boolean> {
         // Using any since TypeScript DOM lib might not have queryPermission yet fully typed in all configs
         const permOptions = { mode: 'readwrite' };
         if ((await (dirHandle as any).queryPermission(permOptions)) !== 'granted') {
-            const requestStatus = await (dirHandle as any).requestPermission(permOptions);
-            if (requestStatus !== 'granted') return false;
+            if (_permissionToastShown) return false;
+            
+            _permissionToastShown = true;
+            toast.error('أذونات النسخ الاحتياطي التلقائي', {
+                description: 'يرجى إعطاء الصلاحية حتى يتمكن النظام من حفظ النسخة الاحتياطية تلقائياً.',
+                action: {
+                    label: 'منح الصلاحية',
+                    onClick: async () => {
+                        try {
+                            const requestStatus = await (dirHandle as any).requestPermission(permOptions);
+                            if (requestStatus === 'granted') {
+                                toast.success('تم منح الصلاحية بنجاح! سيتم استئناف النسخ الاحتياطي.');
+                                executeAutoBackupIfDue();
+                            }
+                        } catch (e) {
+                            console.error('Failed to grant permission manually', e);
+                        }
+                    }
+                },
+                duration: 15000,
+            });
+            return false;
         }
 
         const fileName = `GX_AutoBackup_${new Date().toISOString().replace(/[:.]/g, '-')}.json`;

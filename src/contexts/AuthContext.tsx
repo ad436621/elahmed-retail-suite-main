@@ -3,14 +3,10 @@ import {
   AppUser, Permission, getUsers, updateUser, changePassword, findUserByUsername,
   getUserById, isPasswordHashed, verifyPassword, migratePasswordToHash,
 } from '@/data/usersData';
-import api from '@/lib/api';
 import { STORAGE_KEYS } from '@/config';
 
 export type { AppUser, Permission };
 export { ALL_PERMISSIONS, PERMISSION_LABELS } from '@/data/usersData';
-
-// Check if backend is available
-const USE_BACKEND = import.meta.env.VITE_USE_BACKEND === 'true';
 
 // ---------- types ----------
 export interface AuthUser {
@@ -42,7 +38,7 @@ interface AuthContextType {
   resetUserPassword: (username: string, newPassword: string) => Promise<boolean>;
 }
 
-const SESSION_KEY = STORAGE_KEYS.SESSION;
+const SESSION_KEY = STORAGE_KEYS.AUTH_USER;
 const SESSION_TIMEOUT_MS = 8 * 60 * 60 * 1000; // #22: 8 hours
 const SESSION_TS_KEY = 'gx_session_ts';
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -53,14 +49,6 @@ function getSessionStore(): Storage {
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(() => {
-    // Try backend first if enabled
-    if (USE_BACKEND) {
-      const token = getSessionStore().getItem(STORAGE_KEYS.AUTH_TOKEN);
-      if (token) {
-        // Will verify on mount
-        return null;
-      }
-    }
 
     // Fallback to sessionStorage so every new app launch requires login
     try {
@@ -101,9 +89,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const [allUsers, setAllUsers] = useState<AppUser[]>(() => getUsers());
 
-  // Verify token with backend on mount
+  // Clear old persistent auth so it only uses sessionStorage
   useEffect(() => {
-    // Clear any old persistent auth from previous builds so the app always starts logged out.
     localStorage.removeItem(SESSION_KEY);
     localStorage.removeItem(SESSION_TS_KEY);
     localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
@@ -111,34 +98,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    if (USE_BACKEND && !user) {
-      const verifyBackendAuth = async () => {
-        const result = await api.verifyToken();
-        if (result.data) {
-          setUser({
-            id: result.data.id,
-            username: result.data.username,
-            role: result.data.role as AppUser['role'],
-            fullName: result.data.fullName,
-            permissions: result.data.permissions as Permission[],
-          });
-        }
-      };
-      verifyBackendAuth();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  useEffect(() => {
     const store = getSessionStore();
     if (user) {
-      if (USE_BACKEND) {
-        // Token is handled by api client
-      } else {
-        store.setItem(SESSION_KEY, JSON.stringify(user));
-        // #22: Update session timestamp
-        store.setItem(SESSION_TS_KEY, String(Date.now()));
-      }
+      store.setItem(SESSION_KEY, JSON.stringify(user));
+      store.setItem(SESSION_TS_KEY, String(Date.now()));
     } else {
       store.removeItem(SESSION_KEY);
       store.removeItem(SESSION_TS_KEY);
@@ -146,25 +109,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   const login = useCallback(async (username: string, password: string) => {
-    if (USE_BACKEND) {
-      const result = await api.login(username, password);
-      if (result.error) {
-        return { success: false, error: result.error };
-      }
-      if (result.data) {
-        setUser({
-          id: result.data.user.id,
-          username: result.data.user.username,
-          role: result.data.user.role as AppUser['role'],
-          fullName: result.data.user.fullName,
-          permissions: result.data.user.permissions as Permission[],
-          lastLogin: new Date().toISOString(),
-        });
-        return { success: true };
-      }
-    }
-
-    // Fallback to localStorage
     const found = findUserByUsername(username);
     if (!found || !found.active) {
       return { success: false, error: 'اسم المستخدم أو كلمة المرور غير صحيحة' };
@@ -213,9 +157,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(() => {
-    if (USE_BACKEND) {
-      api.setToken(null);
-    }
     setUser(null);
   }, []);
 
@@ -239,9 +180,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [refreshUsers]);
 
   const resetUserPassword = useCallback(async (username: string, newPassword: string) => {
-    if (USE_BACKEND) {
-      return false;
-    }
     const changed = await changePassword(username, newPassword);
     if (!changed) {
       return false;

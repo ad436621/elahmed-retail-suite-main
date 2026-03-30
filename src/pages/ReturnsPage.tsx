@@ -12,6 +12,7 @@ import { getActiveSales, saveSale } from '@/repositories/saleRepository';
 import { saveMovements } from '@/repositories/stockRepository';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { useConfirm } from '@/components/ConfirmDialog';
 import { BatchSaleResult } from '@/domain/types';
 import { deleteInvoice } from '@/services/saleService';
 
@@ -30,6 +31,7 @@ const IC = "w-full rounded-xl border border-input bg-background px-3 py-2.5 text
 
 export default function ReturnsPage() {
   const { toast } = useToast();
+  const { confirm } = useConfirm();
   const { user } = useAuth();
   const location = useLocation();
   const [invoiceSearch, setInvoiceSearch] = useState('');
@@ -183,9 +185,15 @@ export default function ReturnsPage() {
     refreshHistory();
   };
 
-  const handleFullReturn = () => {
+  const handleFullReturn = async () => {
     if (!foundSale) return;
-    if (!confirm('هل أنت متأكد من رغبتك في إرجاع الفاتورة كاملة؟ سيتم إرجاع جميع القطع للمخزون وحذف الفاتورة.')) return;
+    const ok = await confirm({
+      title: 'إرجاع الفاتورة بالكامل',
+      message: 'هل أنت متأكد من رغبتك في إرجاع الفاتورة كاملة؟ سيتم إرجاع جميع القطع للمخزون وحذف الفاتورة.',
+      confirmLabel: 'تأكيد الإرجاع الكامل',
+      danger: true
+    });
+    if (!ok) return;
 
     const fullyReturnedItems = returnItems.map(item => ({
       ...item,
@@ -230,7 +238,6 @@ export default function ReturnsPage() {
       stockMovements.forEach((movement) => updateProductQuantity(movement.productId, movement.newQuantity));
 
       addReturnRecord({
-        id: returnRecord.id,
         originalInvoiceNumber: foundSale.invoiceNumber,
         originalSaleId: foundSale.id,
         date: returnDate,

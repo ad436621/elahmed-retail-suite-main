@@ -134,24 +134,28 @@ function setSupplierTransactionsState(transactions: SupplierTransaction[]): void
 }
 
 function loadLocalSuppliers(): Supplier[] {
-  return sortSuppliers(getStorageItem<Supplier[]>(SUP_KEY, []).map(normalizeSupplier));
+  const saved = getStorageItem<Supplier[]>(SUP_KEY, []);
+  return sortSuppliers((Array.isArray(saved) ? saved : []).map(normalizeSupplier));
 }
 
 function loadLocalSupplierTransactions(): SupplierTransaction[] {
+  const saved = getStorageItem<SupplierTransaction[]>(TXN_KEY, []);
   return sortSupplierTransactions(
-    getStorageItem<SupplierTransaction[]>(TXN_KEY, []).map(normalizeSupplierTransaction),
+    (Array.isArray(saved) ? saved : []).map(normalizeSupplierTransaction),
   );
 }
 
 function refreshElectronSuppliers(): Supplier[] {
   const rows = readElectronSync<SupplierRow[]>('db-sync:suppliers:get', []);
-  setSuppliersState(rows.map(normalizeSupplier));
+  const rowsArray = Array.isArray(rows) ? rows : [];
+  setSuppliersState(rowsArray.map(normalizeSupplier));
   return suppliersCache ?? [];
 }
 
 function refreshElectronSupplierTransactions(): SupplierTransaction[] {
   const rows = readElectronSync<SupplierTransactionRow[]>('db-sync:supplier_transactions:get', []);
-  setSupplierTransactionsState(rows.map(normalizeSupplierTransaction));
+  const rowsArray = Array.isArray(rows) ? rows : [];
+  setSupplierTransactionsState(rowsArray.map(normalizeSupplierTransaction));
   return supplierTransactionsCache ?? [];
 }
 

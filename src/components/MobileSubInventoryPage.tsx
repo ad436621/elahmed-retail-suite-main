@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { generateBarcode as genBarcode } from '@/lib/idGenerator';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -38,6 +39,8 @@ import {
   getProductConditionBadgeClass,
   getProductConditionLabel,
 } from '@/domain/productConditions';
+
+type ConditionFilter = 'all' | ProductConditionValue;
 import {
   calculateMarginPercent,
   calculateProfitAmount,
@@ -474,9 +477,9 @@ export default function MobileSubInventoryPage<T extends MobileSubInventoryRecor
 
   const stats = useMemo(() => {
     const totalTypes = filteredItems.length;
-    const totalQuantity = filteredItems.reduce((sum, item) => sum + item.quantity, 0);
-    const totalCost = filteredItems.reduce((sum, item) => sum + item.costPrice * item.quantity, 0);
-    const totalSale = filteredItems.reduce((sum, item) => sum + (item.salePrice || 0) * item.quantity, 0);
+    const totalQuantity = filteredItems.reduce((sum, item) => sum + (item.quantity ?? 0), 0);
+    const totalCost = filteredItems.reduce((sum, item) => sum + item.costPrice * (item.quantity ?? 0), 0);
+    const totalSale = filteredItems.reduce((sum, item) => sum + (item.salePrice || 0) * (item.quantity ?? 0), 0);
     return { totalTypes, totalQuantity, totalCost, totalSale };
   }, [filteredItems]);
 
@@ -544,7 +547,7 @@ export default function MobileSubInventoryPage<T extends MobileSubInventoryRecor
       barcode: item.barcode || '',
       category: item.category || '',
       condition: (item.condition as ProductConditionValue) || 'new',
-      quantity: item.quantity,
+      quantity: item.quantity ?? 0,
       subcategory: item.subcategory || '',
       model: item.model || '',
       color: item.color || '',
@@ -608,10 +611,10 @@ export default function MobileSubInventoryPage<T extends MobileSubInventoryRecor
     } as Omit<T, 'id' | 'createdAt' | 'updatedAt'>;
 
     if (editId) {
-      config.updateItem(editId, payload);
+      config.updateItem(editId, payload as Partial<T>);
       toast({ title: 'تم تحديث المنتج', description: form.name });
     } else {
-      const barcode = payload.barcode || `${config.barcodePrefix}${Date.now().toString(36).toUpperCase()}`;
+      const barcode = payload.barcode || genBarcode(config.barcodePrefix);
       config.addItem({ ...payload, barcode });
       toast({ title: 'تمت إضافة المنتج', description: form.name });
     }
@@ -774,6 +777,8 @@ export default function MobileSubInventoryPage<T extends MobileSubInventoryRecor
                 item={{
                   ...item,
                   _type: 'accessory',
+                  quantity: item.quantity ?? 0,
+                  salePrice: item.salePrice ?? 0,
                   newCostPrice: item.costPrice,
                   oldCostPrice: item.costPrice,
                   brand: item.brand,
@@ -817,7 +822,7 @@ export default function MobileSubInventoryPage<T extends MobileSubInventoryRecor
                 ) : (
                   paginatedItems.map((item, index) => {
                     const marginPercent = calculateMarginPercent(item.costPrice, item.salePrice || 0);
-                    const isLowStock = typeof item.minStock === 'number' && item.quantity <= item.minStock;
+                    const isLowStock = typeof item.minStock === 'number' && (item.quantity ?? 0) <= item.minStock;
                     return (
                       <tr
                         key={item.id}

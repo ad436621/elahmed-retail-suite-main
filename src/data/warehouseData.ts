@@ -65,12 +65,14 @@ function setWarehouseItemsState(items: WarehouseItem[]): void {
 }
 
 function loadLocalWarehouseItems(): WarehouseItem[] {
-  return sortWarehouseItems(getStorageItem<WarehouseItem[]>(KEY, []).map(normalizeWarehouseItem));
+  const saved = getStorageItem<WarehouseItem[]>(KEY, []);
+  return sortWarehouseItems((Array.isArray(saved) ? saved : []).map(normalizeWarehouseItem));
 }
 
 function refreshElectronWarehouseItems(): WarehouseItem[] {
   const rows = readElectronSync<WarehouseItemRow[]>('db-sync:warehouse_items:get', []);
-  setWarehouseItemsState(rows.map(normalizeWarehouseItem));
+  const rowsArray = Array.isArray(rows) ? rows : [];
+  setWarehouseItemsState(rowsArray.map(normalizeWarehouseItem));
   return warehouseItemsCache ?? [];
 }
 

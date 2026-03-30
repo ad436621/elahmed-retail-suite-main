@@ -20,9 +20,9 @@
     "noEmit": true,
     "jsx": "react-jsx",
     /* Linting — #03 FIX: noImplicitAny enabled for type safety */
-    "strict": false,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
     "noImplicitAny": true,
     "noFallthroughCasesInSwitch": true,
     "baseUrl": ".",

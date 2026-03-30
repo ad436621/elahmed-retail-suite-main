@@ -85,6 +85,27 @@ export default function OrderSummaryPanel({
                     />
                     <span className="text-xs text-orange-600 font-bold shrink-0">ج.م</span>
                 </div>
+                
+                {/* #18 FIX: Quick Discount Buttons */}
+                {cartLength > 0 && maxInvoiceDiscount > 0 && (
+                    <div className="flex gap-1.5 mt-2 flex-wrap">
+                        {[
+                            { label: '5%', value: Math.round((subtotal - lineDiscountsTotal) * 0.05 * 2) / 2, shortcut: 'F7' },
+                            { label: '10%', value: Math.round((subtotal - lineDiscountsTotal) * 0.10 * 2) / 2, shortcut: 'F8' },
+                            { label: '15%', value: Math.round((subtotal - lineDiscountsTotal) * 0.15 * 2) / 2, shortcut: null },
+                        ].filter(d => d.value > 0 && d.value <= maxInvoiceDiscount).map((d) => (
+                            <button
+                                key={d.label}
+                                onClick={() => onDiscountChange(d.value)}
+                                aria-label={`خصم ${d.label} (≈ ${d.value} ج.م)`}
+                                className="flex items-center gap-1 rounded-lg border border-orange-200 dark:border-orange-800/40 bg-white dark:bg-card px-2 py-1 text-[10px] font-bold text-orange-600 dark:text-orange-400 hover:bg-orange-500 hover:text-white transition-all"
+                            >
+                                {d.label}
+                                {d.shortcut && <kbd className="font-mono opacity-60 ml-0.5">{d.shortcut}</kbd>}
+                            </button>
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* Grand total */}

@@ -3,8 +3,8 @@
 // Live HH:MM:SS clock | date | back | dark mode toggle
 // ============================================================
 
-import { useLocation, useNavigate } from 'react-router-dom';
-import { Moon, Sun, ChevronRight } from 'lucide-react';
+import { useLocation, useNavigate, Link } from 'react-router-dom';
+import { Moon, Sun, ChevronRight, ChevronLeft } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { NotificationBell } from '@/components/NotificationBell';
@@ -30,7 +30,7 @@ const ROUTE_TITLES: Record<string, string> = {
     '/cars/spare-parts': 'قطع غيار السيارات',
     '/cars/oils': 'زيوت السيارات',
     '/warehouse': 'المستودع',
-    '/used-inventory': 'المخزون المستعمل',
+
     '/barcodes': 'طباعة الباركود',
     '/maintenance': 'الصيانة',
     '/installments': 'التقسيط',
@@ -52,6 +52,30 @@ const ROUTE_TITLES: Record<string, string> = {
     '/diagnostics': 'تشخيص النظام',
 };
 
+function getBreadcrumbs(pathname: string) {
+    const parts = pathname.split('/').filter(Boolean);
+    if (parts.length === 0) return [{ path: '/', title: ROUTE_TITLES['/'] }];
+    
+    const crumbs = [{ path: '/', title: ROUTE_TITLES['/'] }];
+    let currentPath = '';
+    
+    for (const part of parts) {
+        currentPath += `/${part}`;
+        if (ROUTE_TITLES[currentPath] && currentPath !== '/') {
+            crumbs.push({ path: currentPath, title: ROUTE_TITLES[currentPath] });
+        }
+    }
+    
+    // Fallback if no matching routes found except root
+    if (crumbs.length === 1 && ROUTE_TITLES[pathname]) {
+        crumbs.push({ path: pathname, title: ROUTE_TITLES[pathname] });
+    } else if (crumbs.length === 1 && !ROUTE_TITLES[pathname]) {
+        crumbs.push({ path: pathname, title: 'صفحة فرعية' });
+    }
+    
+    return crumbs;
+}
+
 function useLiveClock() {
     const [now, setNow] = useState(new Date());
     useEffect(() => {
@@ -69,7 +93,7 @@ export default function TopHeader() {
     const [notifications, setNotifications] = useState(() => getAiNotifications());
     const [lastRunAt, setLastRunAt] = useState(() => getAiNotificationsMeta().lastRunAt);
 
-    const pageTitle = ROUTE_TITLES[location.pathname] || 'الرئيسية';
+    const breadcrumbs = getBreadcrumbs(location.pathname);
     const isRoot = location.pathname === '/';
     const unreadCount = notifications.filter((item) => !item.read).length;
 
@@ -106,10 +130,23 @@ export default function TopHeader() {
     return (
         <header className="hidden md:flex items-center gap-3 px-6 py-3 bg-background/80 backdrop-blur-md border border-border/40 shadow-sm shrink-0 z-10 rounded-b-2xl mx-4 mt-2">
 
-            {/* Page title */}
-            <h1 className="text-base font-extrabold text-foreground tracking-tight flex-1 truncate">
-                {pageTitle}
-            </h1>
+            {/* Breadcrumbs */}
+            <nav className="flex items-center text-sm font-extrabold text-foreground tracking-tight flex-1 truncate" aria-label="Breadcrumb">
+                {breadcrumbs.map((crumb, idx) => (
+                    <div key={crumb.path} className="flex items-center">
+                        {idx > 0 && <ChevronLeft className="h-4 w-4 text-muted-foreground/50 mx-1.5" />}
+                        <Link 
+                            to={crumb.path}
+                            className={crumb.path === location.pathname 
+                                ? "text-foreground cursor-default" 
+                                : "text-muted-foreground hover:text-primary transition-colors"
+                            }
+                        >
+                            {crumb.title}
+                        </Link>
+                    </div>
+                ))}
+            </nav>
 
             {/* Right side */}
             <div className="flex items-center gap-2 shrink-0">

@@ -105,12 +105,14 @@ function setUsedDevicesState(items: UsedDevice[]): void {
 }
 
 function loadLocalUsedDevices(): UsedDevice[] {
-  return sortUsedDevices(getStorageItem<UsedDevice[]>(KEY, []).map(normalizeUsedDevice));
+  const saved = getStorageItem<UsedDevice[]>(KEY, []);
+  return sortUsedDevices((Array.isArray(saved) ? saved : []).map(normalizeUsedDevice));
 }
 
 function refreshElectronUsedDevices(): UsedDevice[] {
   const rows = readElectronSync<UsedDeviceRow[]>('db-sync:used_devices:get', []);
-  setUsedDevicesState(rows.map(normalizeUsedDevice));
+  const rowsArray = Array.isArray(rows) ? rows : [];
+  setUsedDevicesState(rowsArray.map(normalizeUsedDevice));
   return usedDevicesCache ?? [];
 }
 

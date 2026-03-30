@@ -61,12 +61,14 @@ function setAuditState(entries: AuditEntry[]): void {
 }
 
 function loadAuditLogs(): AuditEntry[] {
-  return sortAuditEntries(getStorageItem<AuditEntry[]>(AUDIT_STORAGE_KEY, []).map(normalizeAuditEntry));
+  const saved = getStorageItem<AuditEntry[]>(AUDIT_STORAGE_KEY, []);
+  return sortAuditEntries((Array.isArray(saved) ? saved : []).map(normalizeAuditEntry));
 }
 
 function refreshElectronAudit(): AuditEntry[] {
   const rows = readElectronSync<AuditRow[]>('db-sync:audit_logs:get', []);
-  setAuditState(rows.map(normalizeAuditEntry));
+  const rowsArray = Array.isArray(rows) ? rows : [];
+  setAuditState(rowsArray.map(normalizeAuditEntry));
   return auditStore ?? [];
 }
 

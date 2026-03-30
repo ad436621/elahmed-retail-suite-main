@@ -1,22 +1,21 @@
 // ============================================================
 // CategoryNavPanel — Unified category selection panel for POS
-// Merges: main tab buttons, sub-mode toggle, condition filter,
-// and brand/category chips into ONE component.
-// Reduces cognitive load from 4 separate UI rows → 2 rows.
+// V2: Added computers tab, spare_parts sub-mode, car sub-modes
 // ============================================================
 
-import { Smartphone, Tv, Car, Send, Headphones } from 'lucide-react';
+import { Smartphone, Monitor, Tv, Car, Send, Headphones, Wrench } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export const TABS = [
     { id: 'mobiles', label: 'الموبيلات', icon: Smartphone },
+    { id: 'computers', label: 'الكمبيوترات', icon: Monitor },
     { id: 'devices', label: 'الأجهزة', icon: Tv },
     { id: 'cars', label: 'السيارات', icon: Car },
     { id: 'transfers', label: 'تحويلات', icon: Send },
 ] as const;
 
 export type TabId = typeof TABS[number]['id'];
-export type SubMode = 'main' | 'accessories';
+export type SubMode = 'main' | 'accessories' | 'spare_parts';
 export type ConditionFilter = 'all' | 'new' | 'used';
 
 interface CategoryNavPanelProps {
@@ -43,20 +42,30 @@ export default function CategoryNavPanel({
     chips,
     selectedChip,
     onChipChange,
-    productCount,
+    productCount: _productCount,
     filteredCount,
-}: CategoryNavPanelProps) {
-    const showSubMode = selectedTab === 'mobiles' || selectedTab === 'devices';
+}: Omit<CategoryNavPanelProps, 'productCount'> & { productCount?: number }) {
+    const showSubMode = selectedTab === 'mobiles' || selectedTab === 'computers' || selectedTab === 'devices';
+    const showCarSubMode = selectedTab === 'cars';
     const showCondition =
-        (selectedTab === 'mobiles' && subMode === 'main') ||
-        (selectedTab === 'devices' && subMode === 'main') ||
-        selectedTab === 'cars';
+        ((selectedTab === 'mobiles' || selectedTab === 'computers' || selectedTab === 'devices') && subMode === 'main') ||
+        (selectedTab === 'cars' && subMode === 'main');
+
+    // Sub-mode label based on tab
+    const mainLabel = selectedTab === 'mobiles' ? 'موبيلات'
+        : selectedTab === 'computers' ? 'كمبيوترات'
+        : selectedTab === 'devices' ? 'أجهزة'
+        : 'رئيسي';
+
+    const MainIcon = selectedTab === 'mobiles' ? Smartphone
+        : selectedTab === 'computers' ? Monitor
+        : Tv;
 
     return (
         <div className="space-y-2 mb-3">
 
             {/* ── Row 1: Main category tabs ── */}
-            <div role="tablist" aria-label="فئات المنتجات" className="grid grid-cols-4 gap-1.5">
+            <div role="tablist" aria-label="فئات المنتجات" className="grid grid-cols-5 gap-1.5">
                 {TABS.map(tab => {
                     const isActive = selectedTab === tab.id;
                     return (
@@ -84,10 +93,10 @@ export default function CategoryNavPanel({
                 })}
             </div>
 
-            {/* ── Row 2: Sub-mode + Condition (combined into one row when both visible) ── */}
+            {/* ── Row 2: Sub-mode + Condition ── */}
             {selectedTab !== 'transfers' && (
                 <div className="flex gap-1.5">
-                    {/* Sub-mode: main vs accessories */}
+                    {/* Sub-mode for mobiles/computers/devices: main vs accessories vs spare_parts */}
                     {showSubMode && (
                         <div
                             role="group"
@@ -103,8 +112,8 @@ export default function CategoryNavPanel({
                                     subMode === 'main' ? 'bg-blue-600 text-white shadow-sm' : 'text-muted-foreground hover:text-foreground'
                                 )}
                             >
-                                {selectedTab === 'mobiles' ? <Smartphone className="h-3 w-3" aria-hidden="true" /> : <Tv className="h-3 w-3" aria-hidden="true" />}
-                                {selectedTab === 'mobiles' ? 'موبيلات' : 'أجهزة'}
+                                <MainIcon className="h-3 w-3" aria-hidden="true" />
+                                {mainLabel}
                             </button>
                             <button
                                 role="radio"
@@ -117,6 +126,64 @@ export default function CategoryNavPanel({
                             >
                                 <Headphones className="h-3 w-3" aria-hidden="true" />
                                 إكسسوارات
+                            </button>
+                            <button
+                                role="radio"
+                                aria-checked={subMode === 'spare_parts'}
+                                onClick={() => onSubModeChange('spare_parts')}
+                                className={cn(
+                                    'flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+                                    subMode === 'spare_parts' ? 'bg-blue-600 text-white shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                                )}
+                            >
+                                <Wrench className="h-3 w-3" aria-hidden="true" />
+                                قطع غيار
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Sub-mode for cars: main vs spare_parts vs oils */}
+                    {showCarSubMode && (
+                        <div
+                            role="group"
+                            aria-label="نوع المنتج"
+                            className="flex rounded-xl bg-muted/40 border border-border/40 p-0.5"
+                        >
+                            <button
+                                role="radio"
+                                aria-checked={subMode === 'main'}
+                                onClick={() => onSubModeChange('main')}
+                                className={cn(
+                                    'flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+                                    subMode === 'main' ? 'bg-blue-600 text-white shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                                )}
+                            >
+                                <Car className="h-3 w-3" aria-hidden="true" />
+                                سيارات
+                            </button>
+                            <button
+                                role="radio"
+                                aria-checked={subMode === 'spare_parts'}
+                                onClick={() => onSubModeChange('spare_parts')}
+                                className={cn(
+                                    'flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+                                    subMode === 'spare_parts' ? 'bg-blue-600 text-white shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                                )}
+                            >
+                                <Wrench className="h-3 w-3" aria-hidden="true" />
+                                قطع غيار
+                            </button>
+                            <button
+                                role="radio"
+                                aria-checked={subMode === 'accessories'}
+                                onClick={() => onSubModeChange('accessories')}
+                                className={cn(
+                                    'flex items-center gap-1 rounded-lg px-3 py-1.5 text-xs font-bold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+                                    subMode === 'accessories' ? 'bg-blue-600 text-white shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                                )}
+                            >
+                                <Headphones className="h-3 w-3" aria-hidden="true" />
+                                زيوت
                             </button>
                         </div>
                     )}

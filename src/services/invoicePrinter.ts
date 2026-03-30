@@ -126,7 +126,7 @@ export function printInvoice(sale: Sale) {
           <strong>الوقت:</strong> ${timeStr}
         </div>
         <div>
-          <strong>الموظف:</strong> ${sale.employee}
+          <strong>العميل:</strong> ${sale.customerName || 'عميل نقدي'}
         </div>
       </div>
 

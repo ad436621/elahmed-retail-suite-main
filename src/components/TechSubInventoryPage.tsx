@@ -1,4 +1,5 @@
 import { useMemo, useState, type ReactNode } from 'react';
+import { generateBarcode as genBarcode } from '@/lib/idGenerator';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -169,7 +170,7 @@ function buildImportedItem(row: Record<string, unknown>, barcodePrefix: string):
     category: String(row.category ?? '').trim() || undefined,
     model: String(row.model ?? '').trim() || undefined,
     color: String(row.color ?? '').trim() || undefined,
-    barcode: String(row.barcode ?? '').trim() || `${barcodePrefix}${Date.now().toString(36).toUpperCase()}`,
+    barcode: String(row.barcode ?? '').trim() || genBarcode(barcodePrefix),
     supplier: String(row.supplier ?? '').trim() || undefined,
     source: String(row.source ?? '').trim() || undefined,
     condition: normalizeCondition(row.condition),
@@ -507,9 +508,9 @@ export default function TechSubInventoryPage({ config }: { config: TechSubInvent
 
   const stats = useMemo(() => {
     const totalTypes = filteredItems.length;
-    const totalQuantity = filteredItems.reduce((sum, item) => sum + item.quantity, 0);
-    const totalCost = filteredItems.reduce((sum, item) => sum + item.costPrice * item.quantity, 0);
-    const totalSale = filteredItems.reduce((sum, item) => sum + item.salePrice * item.quantity, 0);
+    const totalQuantity = filteredItems.reduce((sum, item) => sum + (item.quantity ?? 0), 0);
+    const totalCost = filteredItems.reduce((sum, item) => sum + item.costPrice * (item.quantity ?? 0), 0);
+    const totalSale = filteredItems.reduce((sum, item) => sum + (item.salePrice ?? 0) * (item.quantity ?? 0), 0);
     return { totalTypes, totalQuantity, totalCost, totalSale };
   }, [filteredItems]);
 
@@ -566,10 +567,10 @@ export default function TechSubInventoryPage({ config }: { config: TechSubInvent
       supplier: item.supplier || '',
       source: item.source || '',
       condition: normalizeCondition(item.condition),
-      quantity: item.quantity,
+      quantity: item.quantity ?? 0,
       costPrice: item.costPrice,
-      salePrice: item.salePrice,
-      profitMargin: typeof item.profitMargin === 'number' ? item.profitMargin : calculateProfitAmount(item.costPrice, item.salePrice),
+      salePrice: item.salePrice ?? 0,
+      profitMargin: typeof item.profitMargin === 'number' ? item.profitMargin : calculateProfitAmount(item.costPrice, item.salePrice ?? 0),
       minStock: item.minStock || 0,
       notes: item.notes || '',
       description: typeof item.description === 'string' ? item.description : '',
@@ -619,7 +620,7 @@ export default function TechSubInventoryPage({ config }: { config: TechSubInvent
       config.updateItem(editId, payload);
       toast({ title: 'تم تحديث المنتج', description: form.name });
     } else {
-      const barcode = payload.barcode || `${config.barcodePrefix || 'TECH-'}${Date.now().toString(36).toUpperCase()}`;
+      const barcode = payload.barcode || genBarcode(config.barcodePrefix || 'TECH-');
       config.addItem({ ...payload, barcode });
       toast({ title: 'تمت إضافة المنتج', description: form.name });
     }
@@ -762,7 +763,7 @@ export default function TechSubInventoryPage({ config }: { config: TechSubInvent
             paginatedItems.map((item) => (
               <InventoryProductCard
                 key={item.id}
-                item={{ ...item, _type: config.section === 'accessories' ? 'accessory' : 'spare-part', newCostPrice: item.costPrice, oldCostPrice: item.costPrice, brand: item.brand, model: item.model, color: item.color, minStock: item.minStock }}
+                item={{ ...item, _type: config.section === 'accessories' ? 'accessory' : 'spare-part', quantity: item.quantity ?? 0, salePrice: item.salePrice ?? 0, newCostPrice: item.costPrice, oldCostPrice: item.costPrice, brand: item.brand, model: item.model, color: item.color, minStock: item.minStock }}
                 onEdit={() => openEdit(item)}
                 onDelete={() => handleDelete(item)}
                 onDetails={() => openDetails(item)}
@@ -796,8 +797,8 @@ export default function TechSubInventoryPage({ config }: { config: TechSubInvent
                   </tr>
                 ) : (
                   paginatedItems.map((item, index) => {
-                    const marginPercent = calculateMarginPercent(item.costPrice, item.salePrice || 0);
-                    const isLowStock = typeof item.minStock === 'number' && item.quantity <= item.minStock;
+                    const marginPercent = calculateMarginPercent(item.costPrice, item.salePrice ?? 0);
+                    const isLowStock = typeof item.minStock === 'number' && (item.quantity ?? 0) <= item.minStock;
                     return (
                       <tr key={item.id} className={cn('border-b border-border/40 transition-colors hover:bg-muted/20', index % 2 !== 0 && 'bg-muted/10')} onClick={() => openDetails(item)}>
                         <td className="w-14 px-3 py-2">
@@ -821,12 +822,12 @@ export default function TechSubInventoryPage({ config }: { config: TechSubInvent
                         <td className="px-3 py-2 text-xs text-muted-foreground">{config.section === 'accessories' ? item.supplier || item.source || '—' : item.source || '—'}</td>
                         <td className="px-3 py-2 text-center">
                           <span className={cn('inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold', isLowStock ? 'bg-red-100 text-red-600 dark:bg-red-500/15 dark:text-red-400' : 'bg-muted text-foreground')}>
-                            {item.quantity}
+                            {item.quantity ?? 0}
                             {isLowStock && <AlertTriangle className="h-3 w-3" />}
                           </span>
                         </td>
                         <td className="px-3 py-2 text-xs tabular-nums text-muted-foreground">{item.costPrice.toLocaleString('ar-EG')}</td>
-                        <td className="px-3 py-2 text-sm font-bold tabular-nums text-foreground">{item.salePrice.toLocaleString('ar-EG')}</td>
+                        <td className="px-3 py-2 text-sm font-bold tabular-nums text-foreground">{(item.salePrice ?? 0).toLocaleString('ar-EG')}</td>
                         <td className="px-3 py-2 text-xs font-bold tabular-nums">
                           <span className={cn(marginPercent >= 20 ? 'text-emerald-600' : marginPercent >= 10 ? 'text-amber-600' : 'text-red-500')}>
                             {(item.profitMargin || 0).toLocaleString('ar-EG')} ج.م • {marginPercent.toFixed(1)}%

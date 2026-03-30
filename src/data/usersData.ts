@@ -37,7 +37,7 @@ export const ALL_PERMISSIONS = [
   'mobiles',
   'computers',
   'devices',
-  'used',
+
   'cars',
   'warehouse',
   'maintenance',
@@ -56,6 +56,8 @@ export const ALL_PERMISSIONS = [
   'reminders',
   'shiftClosing',
   'purchaseInvoices',
+  'partners',
+
 ] as const;
 
 export type Permission = (typeof ALL_PERMISSIONS)[number];
@@ -68,7 +70,7 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   mobiles: 'الموبيلات وإكسسوارات',
   computers: 'الكمبيوتر وإكسسوارات',
   devices: 'الأجهزة وإكسسوارات',
-  used: 'المستعمل',
+
   cars: 'السيارات',
   warehouse: 'المستودع',
   maintenance: 'الصيانة',
@@ -87,6 +89,8 @@ export const PERMISSION_LABELS: Record<Permission, string> = {
   reminders: 'التذكيرات',
   shiftClosing: 'إقفال الوردية',
   purchaseInvoices: 'فواتير الشراء',
+  partners: 'الشركاء والموزعون',
+
 };
 
 export interface AppUser {
@@ -195,12 +199,14 @@ function setUsersState(users: AppUser[]): void {
 }
 
 function loadLocalUsers(): AppUser[] {
-  return getStorageItem<AppUser[]>(STORAGE_KEY, []).map(normalizeUser);
+  const saved = getStorageItem<AppUser[]>(STORAGE_KEY, []);
+  return (Array.isArray(saved) ? saved : []).map(normalizeUser);
 }
 
 function refreshElectronUsers(): AppUser[] {
   const rows = readElectronSync<UserRow[]>('db-sync:users:get', []);
-  setUsersState(rows.map(normalizeUser));
+  const rowsArray = Array.isArray(rows) ? rows : [];
+  setUsersState(rowsArray.map(normalizeUser));
   return usersCache ?? [];
 }
 
@@ -308,9 +314,14 @@ export function findUserByUsername(username: string): AppUser | undefined {
   return getUsers().find((user) => user.username.toLowerCase() === normalizedUsername);
 }
 
-export function addUser(data: Omit<AppUser, 'id' | 'createdAt'>): AppUser {
+export async function addUser(data: Omit<AppUser, 'id' | 'createdAt'>): Promise<AppUser> {
+  const salt = generateSalt();
+  const passwordHash = data.password ? await hashPassword(data.password, salt) : '';
+  
   const newUser = normalizeUser({
     ...data,
+    password: passwordHash,
+    salt,
     id: crypto.randomUUID(),
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -319,10 +330,23 @@ export function addUser(data: Omit<AppUser, 'id' | 'createdAt'>): AppUser {
   return newUser;
 }
 
-export function updateUser(id: string, updates: Partial<Omit<AppUser, 'id' | 'createdAt'>>): void {
-  saveUsers(getUsers().map((user) => (
+export async function updateUser(id: string, updates: Partial<Omit<AppUser, 'id' | 'createdAt'>>): Promise<void> {
+  const users = getUsers();
+  let finalUpdates = { ...updates };
+  
+  if (updates.password && updates.password.trim() !== '') {
+    const salt = generateSalt();
+    const passwordHash = await hashPassword(updates.password, salt);
+    finalUpdates.password = passwordHash;
+    finalUpdates.salt = salt;
+  } else {
+    // DO NOT overwrite existing password with empty if omitted or blank
+    delete finalUpdates.password;
+  }
+
+  saveUsers(users.map((user) => (
     user.id === id
-      ? normalizeUser({ ...user, ...updates, updatedAt: new Date().toISOString() })
+      ? normalizeUser({ ...user, ...finalUpdates, updatedAt: new Date().toISOString() })
       : user
   )));
 }
@@ -377,4 +401,25 @@ export async function migratePasswordToHash(userId: string, plaintextPassword: s
 
 export function verifyRecoveryCode(code: string): boolean {
   return code.trim().toUpperCase() === MASTER_RECOVERY_CODE.toUpperCase();
+}
+
+export async function migratePasswordsToHashed() {
+  const migrationKey = STORAGE_KEYS.PASSWORDS_MIGRATED;
+  if (localStorage.getItem(migrationKey)) return;
+
+  const users = getUsers();
+  const migrated = await Promise.all(
+    users.map(async (user) => {
+      if (user.password && !user.salt && user.password.length < 64) {
+        const salt = generateSalt();
+        const hashed = await hashPassword(user.password, salt);
+        return { ...user, password: hashed, salt };
+      }
+      return user;
+    })
+  );
+
+  saveUsers(migrated);
+  localStorage.setItem(migrationKey, 'done');
+  console.log('✅ تم تشفير جميع كلمات المرور');
 }

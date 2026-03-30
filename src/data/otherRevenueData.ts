@@ -44,7 +44,8 @@ function toOtherRevenueRow(item: OtherRevenue): OtherRevenueRow {
 }
 
 function loadLocalOtherRevenue(): OtherRevenue[] {
-  return getStorageItem<OtherRevenue[]>(KEY, []).map(normalizeOtherRevenue);
+  const saved = getStorageItem<OtherRevenue[]>(KEY, []);
+  return (Array.isArray(saved) ? saved : []).map(normalizeOtherRevenue);
 }
 
 function persistElectronOtherRevenue(items: OtherRevenue[]): void {

@@ -57,13 +57,12 @@ function saveInvoiceCounter(counter: number): void {
   }
 }
 
-let invoiceCounter = Math.max(getStoredInvoiceCounter(), getPersistedInvoiceSequence());
-
 function generateInvoiceNumber(): string {
-  invoiceCounter++;
-  saveInvoiceCounter(invoiceCounter);
+  const currentCounter = Math.max(getStoredInvoiceCounter(), getPersistedInvoiceSequence());
+  const newCounter = currentCounter + 1;
+  saveInvoiceCounter(newCounter);
   const year = new Date().getFullYear();
-  return `INV-${year}-${invoiceCounter.toString().padStart(4, '0')}`;
+  return `INV-${year}-${newCounter.toString().padStart(4, '0')}`;
 }
 
 export interface SaleResult {
@@ -78,7 +77,9 @@ export function processSale(
   invoiceDiscount: number,
   paymentMethod: PaymentMethod,
   employeeId: string,
-  employeeName: string
+  employeeName: string,
+  customerId?: string,
+  customerName?: string
 ): SaleResult {
   // 1. Validate stock for all items
   for (const item of cart) {
@@ -98,7 +99,7 @@ export function processSale(
 
   // 2. Build sale record with profit calculations using FIFO data
   const invoiceNumber = generateInvoiceNumber();
-  const sale = buildSaleRecord(cart, invoiceDiscount, paymentMethod, employeeName, invoiceNumber, fifoResults);
+  const sale = buildSaleRecord(cart, invoiceDiscount, paymentMethod, employeeName, invoiceNumber, fifoResults, customerId, customerName);
 
   // Profit/cost is inherently generated inside buildSaleRecord via fifoResults now,
   // but we can ensure marginPct is neat.

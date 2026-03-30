@@ -30,7 +30,9 @@ export function buildSaleRecord(
   paymentMethod: PaymentMethod,
   employee: string,
   invoiceNumber: string,
-  fifoResults?: BatchSaleResult[]
+  fifoResults?: BatchSaleResult[],
+  customerId?: string,
+  customerName?: string
 ): Sale {
   if (cart.length === 0) {
     throw new SaleError('Cannot create sale with empty cart');
@@ -72,6 +74,8 @@ export function buildSaleRecord(
     marginPct: Math.round(marginPct * 10) / 10,
     paymentMethod,
     employee,
+    customerId: customerId || undefined,
+    customerName: customerName || undefined,
     voidedAt: null,
     voidReason: null,
     voidedBy: null,

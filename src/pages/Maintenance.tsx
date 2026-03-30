@@ -47,19 +47,34 @@ const statusLabels: Record<string, string> = {
     completed: 'جاهز',
 };
 
-const statusStyles: Record<string, { bg: string; color: string; border: string }> = {
-    received: { bg: 'rgba(245,158,11,0.12)', color: '#f59e0b', border: 'rgba(245,158,11,0.28)' },
-    diagnosing: { bg: 'rgba(14,165,233,0.12)', color: '#0ea5e9', border: 'rgba(14,165,233,0.28)' },
-    repairing: { bg: 'rgba(59,130,246,0.12)', color: '#3b82f6', border: 'rgba(59,130,246,0.28)' },
-    waiting_parts: { bg: 'rgba(236,72,153,0.12)', color: '#ec4899', border: 'rgba(236,72,153,0.28)' },
-    testing: { bg: 'rgba(234,179,8,0.12)', color: '#ca8a04', border: 'rgba(234,179,8,0.28)' },
-    ready: { bg: 'rgba(16,185,129,0.12)', color: '#10b981', border: 'rgba(16,185,129,0.28)' },
-    delivered: { bg: 'rgba(139,92,246,0.12)', color: '#8b5cf6', border: 'rgba(139,92,246,0.28)' },
-    cancelled: { bg: 'rgba(239,68,68,0.12)', color: '#ef4444', border: 'rgba(239,68,68,0.28)' },
-    pending: { bg: 'rgba(245,158,11,0.12)', color: '#f59e0b', border: 'rgba(245,158,11,0.28)' },
-    in_progress: { bg: 'rgba(59,130,246,0.12)', color: '#3b82f6', border: 'rgba(59,130,246,0.28)' },
-    waiting_for_parts: { bg: 'rgba(236,72,153,0.12)', color: '#ec4899', border: 'rgba(236,72,153,0.28)' },
-    completed: { bg: 'rgba(16,185,129,0.12)', color: '#10b981', border: 'rgba(16,185,129,0.28)' },
+const statusClasses: Record<string, string> = {
+    received: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-500/30',
+    diagnosing: 'bg-sky-100 text-sky-700 border-sky-200 dark:bg-sky-500/20 dark:text-sky-400 dark:border-sky-500/30',
+    repairing: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/30',
+    waiting_parts: 'bg-pink-100 text-pink-700 border-pink-200 dark:bg-pink-500/20 dark:text-pink-400 dark:border-pink-500/30',
+    testing: 'bg-yellow-100 text-yellow-700 border-yellow-200 dark:bg-yellow-500/20 dark:text-yellow-400 dark:border-yellow-500/30',
+    ready: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30',
+    delivered: 'bg-violet-100 text-violet-700 border-violet-200 dark:bg-violet-500/20 dark:text-violet-400 dark:border-violet-500/30',
+    cancelled: 'bg-red-100 text-red-700 border-red-200 dark:bg-red-500/20 dark:text-red-400 dark:border-red-500/30',
+    pending: 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-500/20 dark:text-amber-400 dark:border-amber-500/30',
+    in_progress: 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-500/30',
+    waiting_for_parts: 'bg-pink-100 text-pink-700 border-pink-200 dark:bg-pink-500/20 dark:text-pink-400 dark:border-pink-500/30',
+    completed: 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-500/20 dark:text-emerald-400 dark:border-emerald-500/30',
+};
+
+const statusDotClasses: Record<string, string> = {
+    received: 'bg-amber-500',
+    diagnosing: 'bg-sky-500',
+    repairing: 'bg-blue-500',
+    waiting_parts: 'bg-pink-500',
+    testing: 'bg-yellow-500',
+    ready: 'bg-emerald-500',
+    delivered: 'bg-violet-500',
+    cancelled: 'bg-red-500',
+    pending: 'bg-amber-500',
+    in_progress: 'bg-blue-500',
+    waiting_for_parts: 'bg-pink-500',
+    completed: 'bg-emerald-500',
 };
 
 const OPEN_STATUSES = ['received', 'diagnosing', 'repairing', 'waiting_parts', 'testing', 'pending', 'in_progress', 'waiting_for_parts'];
@@ -403,7 +418,11 @@ export default function Maintenance() {
         if (win) {
             win.document.write(html);
             win.document.close();
-            win.print();
+            win.onload = () => {
+                win.focus();
+                win.print();
+                setTimeout(() => win.close(), 400);
+            };
         }
     };
 
@@ -556,14 +575,9 @@ export default function Maintenance() {
                                     <td className="px-4 py-3 align-top"><div className="font-bold text-foreground">{ticket.final_cost != null ? formatCurrency(ticket.final_cost) : '—'}</div></td>
                                     <td className="px-4 py-3 align-top">
                                         <span
-                                            className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold"
-                                            style={{
-                                                background: statusStyles[ticket.status]?.bg || 'rgba(0,0,0,0.08)',
-                                                color: statusStyles[ticket.status]?.color || '#6b7280',
-                                                border: `1px solid ${statusStyles[ticket.status]?.border || '#d1d5db'}`,
-                                            }}
+                                            className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold border ${statusClasses[ticket.status] || 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700'}`}
                                         >
-                                            <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: statusStyles[ticket.status]?.color || '#6b7280' }}></div>
+                                            <div className={`h-1.5 w-1.5 rounded-full ${statusDotClasses[ticket.status] || 'bg-gray-500'}`}></div>
                                             {statusLabels[ticket.status] || ticket.status}
                                         </span>
                                     </td>

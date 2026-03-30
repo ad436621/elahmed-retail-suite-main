@@ -60,7 +60,8 @@ function toDamagedRow(item: DamagedItem): DamagedRow {
 }
 
 function loadLocalDamagedItems(): DamagedItem[] {
-  return getStorageItem<DamagedItem[]>(KEY, []).map(normalizeDamagedItem);
+  const saved = getStorageItem<DamagedItem[]>(KEY, []);
+  return (Array.isArray(saved) ? saved : []).map(normalizeDamagedItem);
 }
 
 function persistElectronDamagedItems(items: DamagedItem[]): void {

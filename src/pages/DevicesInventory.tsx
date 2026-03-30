@@ -26,6 +26,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useConfirm } from '@/components/ConfirmDialog';
 import { useToast } from '@/hooks/use-toast';
 import { useDebounce } from '@/hooks/useDebounce';
 import { useInventoryData } from '@/hooks/useInventoryData';
@@ -289,6 +290,7 @@ function DeviceCategoriesManager({
 // Main Component
 export default function DevicesInventory() {
     const { toast } = useToast();
+    const { confirm } = useConfirm();
     const location = useLocation();
     const navigate = useNavigate();
 
@@ -322,7 +324,6 @@ export default function DevicesInventory() {
     const [showFilters, setShowFilters] = useState(true);
     // Dialogs
     const [isFormOpen, setIsFormOpen] = useState(false);
-    const [isDeleteOpen, setIsDeleteOpen] = useState(false);
     const [isExcelOpen, setIsExcelOpen] = useState(false);
     const [isBatchesOpen, setIsBatchesOpen] = useState(false);
     const [detailsDevice, setDetailsDevice] = useState<DeviceItem | null>(null);
@@ -335,10 +336,10 @@ export default function DevicesInventory() {
     // Debounce
     const debouncedSearch = useDebounce(search, 300);
 
-    const uniqueBrands = useMemo(() => Array.from(new Set(devices.map((device) => device.brand).filter(Boolean))).sort(), [devices]);
-    const uniqueSuppliers = useMemo(() => Array.from(new Set(devices.map((device) => device.supplier).filter(Boolean))).sort(), [devices]);
-    const uniqueSources = useMemo(() => Array.from(new Set(devices.map((device) => device.source).filter(Boolean))).sort(), [devices]);
-    const uniqueColors = useMemo(() => Array.from(new Set(devices.map((device) => device.color).filter(Boolean))).sort(), [devices]);
+    const uniqueBrands = useMemo(() => Array.from(new Set(devices.map((device) => device.brand).filter((b): b is string => Boolean(b)))).sort(), [devices]);
+    const uniqueSuppliers = useMemo(() => Array.from(new Set(devices.map((device) => device.supplier).filter((s): s is string => Boolean(s)))).sort(), [devices]);
+    const uniqueSources = useMemo(() => Array.from(new Set(devices.map((device) => device.source).filter((s): s is string => Boolean(s)))).sort(), [devices]);
+    const uniqueColors = useMemo(() => Array.from(new Set(devices.map((device) => device.color).filter((c): c is string => Boolean(c)))).sort(), [devices]);
 
     const filterFields = useMemo<FilterBarField[]>(() => [
         {
@@ -467,8 +468,8 @@ export default function DevicesInventory() {
             setForm({
                 name: item.name,
                 model: item.model || '',
-                barcode: item.barcode,
-                category: item.category,
+                barcode: item.barcode ?? '',
+                category: item.category || '',
                 condition: item.condition || 'new',
                 color: item.color || '',
                 brand: item.brand || '',
@@ -599,14 +600,20 @@ export default function DevicesInventory() {
         setIsFormOpen(false);
     }, [form, editingId, toast, warehouses]);
 
-    const handleDelete = useCallback(() => {
-        if (selectedProduct) {
-            deleteDevice(selectedProduct.id);
+    const handleDelete = useCallback(async (item: DeviceItem) => {
+        const ok = await confirm({
+            title: 'حذف جهاز',
+            message: `هل أنت متأكد من حذف "${item.name}"؟ لا يمكن التراجع عن هذا الإجراء.`,
+            confirmLabel: 'حذف',
+            danger: true
+        });
+
+        if (ok) {
+            deleteDevice(item.id);
             toast({ title: '✅ تم الحذف', description: 'تم حذف الجهاز بنجاح' });
-            setIsDeleteOpen(false);
             setSelectedProduct(null);
         }
-    }, [selectedProduct, toast]);
+    }, [confirm, toast]);
 
     const handleAddToCart = useCallback((item: DeviceItem) => {
         // TODO: Add to cart using CartContext
@@ -776,7 +783,7 @@ export default function DevicesInventory() {
                                         item={device}
                                         onDetails={() => setDetailsDevice(device)}
                                         onEdit={() => handleOpenForm(device)}
-                                        onDelete={() => { setSelectedProduct(device); setIsDeleteOpen(true); }}
+                                        onDelete={() => handleDelete(device)}
                                         onAddToCart={() => handleAddToCart(device)}
                                         onShowBatches={() => handleShowBatches(device)}
                                     />
@@ -836,7 +843,7 @@ export default function DevicesInventory() {
                                                             </Button>
                                                             <Button size="sm" variant="ghost"
                                                                 className="text-red-500 hover:text-red-600"
-                                                                onClick={(event) => { event.stopPropagation(); setSelectedProduct(device); setIsDeleteOpen(true); }}>
+                                                                onClick={(event) => { event.stopPropagation(); handleDelete(device); }}>
                                                                 <Trash2 className="h-3.5 w-3.5" />
                                                             </Button>
                                                         </div>
@@ -1062,20 +1069,6 @@ export default function DevicesInventory() {
                         <Button data-testid="devices-save" onClick={handleValidatedSave}>
                             {editingId ? 'حفظ التغييرات' : 'إضافة'}
                         </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            {/* Delete Confirmation Dialog */}
-            <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle>حذف جهاز</DialogTitle>
-                    </DialogHeader>
-                    <p>هل أنت متأكد من حذف "{selectedProduct?.name}"؟ لا يمكن التراجع عن هذا الإجراء.</p>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => setIsDeleteOpen(false)}>إلغاء</Button>
-                        <Button variant="destructive" onClick={handleDelete}>حذف</Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>

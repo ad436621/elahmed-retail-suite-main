@@ -88,12 +88,14 @@ function setClosingsState(closings: ShiftClosing[]): void {
 }
 
 function loadLocalClosings(): ShiftClosing[] {
-  return sortClosings(getStorageItem<ShiftClosing[]>(KEY, []).map(normalizeShiftClosing));
+  const saved = getStorageItem<ShiftClosing[]>(KEY, []);
+  return sortClosings((Array.isArray(saved) ? saved : []).map(normalizeShiftClosing));
 }
 
 function refreshElectronClosings(): ShiftClosing[] {
   const rows = readElectronSync<ShiftClosingRow[]>('db-sync:shift_closings:get', []);
-  setClosingsState(rows.map(normalizeShiftClosing));
+  const rowsArray = Array.isArray(rows) ? rows : [];
+  setClosingsState(rowsArray.map(normalizeShiftClosing));
   return closingsCache ?? [];
 }
 

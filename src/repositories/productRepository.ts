@@ -42,6 +42,8 @@ import {
   computerSparePartsDB,
   deviceAccessoriesDB,
   deviceSparePartsDB,
+  carSparePartsDB,
+  carOilsDB,
 } from '@/data/subInventoryData';
 import { getCars } from '@/data/carsData';
 import {
@@ -117,10 +119,10 @@ function productToRow(product: Product): InventoryProductRow {
   };
 }
 
+import { generateBarcode as idGenBarcode } from '@/lib/idGenerator';
+
 export function generateUniqueBarcode(): string {
-  const timestamp = Date.now().toString(36).toUpperCase();
-  const random = Math.random().toString(36).substring(2, 6).toUpperCase();
-  return `AUTO-${timestamp}-${random}`;
+  return idGenBarcode('AUTO');
 }
 
 export function isBarcodeDuplicate(barcode: string, excludeId?: string): boolean {
@@ -158,7 +160,7 @@ function getCostPrice(item: InventoryItem): number {
 
 function getSellingPrice(item: InventoryItem): number {
   if ('salePrice' in item) return item.salePrice || 0;
-  if ('sellingPrice' in item) return item.sellingPrice || 0;
+  if ('sellingPrice' in item) return (item as any).sellingPrice || 0;
   return 0;
 }
 
@@ -233,6 +235,8 @@ export function getAllInventoryProducts(): Product[] {
   const deviceSpareParts = deviceSparePartsDB.get().map((item) => mapToProduct(item, 'قطع غيار أجهزة', 'device_spare', item.condition));
 
   const cars = getCars().map((item) => mapToProduct(item, 'سيارات', 'car', item.condition));
+  const carSpareParts = carSparePartsDB.get().map((item) => mapToProduct(item, 'قطع غيار سيارات', 'car_spare', item.condition));
+  const carOils = carOilsDB.get().map((item) => mapToProduct(item, 'زيوت سيارات', 'car_oils', item.condition));
 
   return [
     ...mainProducts,
@@ -248,6 +252,8 @@ export function getAllInventoryProducts(): Product[] {
     ...deviceAccessories,
     ...deviceSpareParts,
     ...cars,
+    ...carSpareParts,
+    ...carOils,
   ];
 }
 
@@ -354,6 +360,18 @@ export function updateProductQuantity(productId: string, newQuantity: number): v
   const deviceSparePart = deviceSparePartsDB.get().find((item) => item.id === productId);
   if (deviceSparePart) {
     deviceSparePartsDB.update(productId, { quantity: newQuantity });
+    return;
+  }
+
+  const carSparePart = carSparePartsDB.get().find((item) => item.id === productId);
+  if (carSparePart) {
+    carSparePartsDB.update(productId, { quantity: newQuantity });
+    return;
+  }
+
+  const carOil = carOilsDB.get().find((item) => item.id === productId);
+  if (carOil) {
+    carOilsDB.update(productId, { quantity: newQuantity });
   }
 }
 

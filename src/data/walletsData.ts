@@ -109,7 +109,8 @@ function normalizeTransaction(row: Partial<SafeTransactionRow>): WalletTransacti
 
 function loadLocalWallets(): Wallet[] {
   const wallets = getStorageItem<Wallet[]>(WALLETS_KEY, []);
-  if (wallets.length > 0) return wallets.map(normalizeWallet);
+  const walletsArray = Array.isArray(wallets) ? wallets : [];
+  if (walletsArray.length > 0) return walletsArray.map(normalizeWallet);
   setStorageItem(WALLETS_KEY, DEFAULT_WALLETS);
   return DEFAULT_WALLETS.map(normalizeWallet);
 }
@@ -119,7 +120,8 @@ function saveLocalWallets(wallets: Wallet[]): void {
 }
 
 function loadLocalTransactions(): WalletTransaction[] {
-  return getStorageItem<WalletTransaction[]>(TRANSACTIONS_KEY, []).map(normalizeTransaction);
+  const saved = getStorageItem<WalletTransaction[]>(TRANSACTIONS_KEY, []);
+  return (Array.isArray(saved) ? saved : []).map(normalizeTransaction);
 }
 
 function saveLocalTransactions(transactions: WalletTransaction[]): void {

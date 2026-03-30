@@ -12,15 +12,20 @@ import { syncRepairsToLegacy } from "@/data/repairsData";
 import { runAiNotificationsAnalysis } from '@/services/aiNotificationsService';
 // NEW: import storage migration
 import { runStorageMigration } from '@/utils/storageMigration';
+import { LocalStorageSizeMonitor } from '@/components/LocalStorageSizeMonitor';
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
+import { UserActivityProvider } from "@/contexts/UserActivityContext";
 import { SettingsProvider } from "@/contexts/SettingsContext";
 import { CartProvider } from "@/contexts/CartContext";
+import { ConfirmProvider } from "@/components/ConfirmDialog";
 import type { Permission } from "@/data/usersData";
 import MainLayout from "@/layouts/MainLayout";
 import LoginPage from "@/pages/LoginPage";
 import NotFound from "./pages/NotFound";
+const UnauthorizedPage = lazy(() => import("@/pages/UnauthorizedPage"));
+const PartnersPage = lazy(() => import("@/pages/PartnersPage"));
 
 // Lazy load all pages for code splitting
 const Dashboard = lazy(() => import("@/pages/Dashboard"));
@@ -33,12 +38,11 @@ const MobilesInventory = lazy(() => import("@/pages/MobilesInventory"));
 const ComputersInventory = lazy(() => import("@/pages/ComputersInventory"));
 const DevicesInventory = lazy(() => import("@/pages/DevicesInventory"));
 const Maintenance = lazy(() => import("@/pages/Maintenance"));
-const RepairPartsPage = lazy(() => import("@/pages/RepairPartsPage"));
+
 const Installments = lazy(() => import("@/pages/Installments"));
 const Expenses = lazy(() => import("@/pages/Expenses"));
 const UsersManagement = lazy(() => import("@/pages/UsersManagement"));
-const BarcodePrintPage = lazy(() => import("@/pages/BarcodePrintPage"));
-import UnauthorizedPage from "@/pages/UnauthorizedPage";
+
 const DamagedItemsPage = lazy(() => import("@/pages/DamagedItemsPage"));
 const CarsInventory = lazy(() => import("@/pages/CarsInventory"));
 const WarehousePage = lazy(() => import("@/pages/WarehousePage"));
@@ -47,7 +51,7 @@ const CustomersPage = lazy(() => import("@/pages/CustomersPage"));
 const WalletsPage = lazy(() => import("@/pages/WalletsPage"));
 const EmployeesPage = lazy(() => import("@/pages/EmployeesPage"));
 const HelpPage = lazy(() => import("@/pages/HelpPage"));
-const UsedInventory = lazy(() => import("@/pages/UsedInventory"));
+
 const SuppliersPage = lazy(() => import("@/pages/SuppliersPage"));
 const BlacklistPage = lazy(() => import("@/pages/BlacklistPage"));
 const RemindersPage = lazy(() => import("@/pages/RemindersPage"));
@@ -136,6 +140,7 @@ function AiNotificationsRunner(): React.ReactElement | null {
   return null;
 }
 
+const BarcodePrintPage = lazy(() => import("@/pages/BarcodePrintPage"));
 const AppRoutes = () => (
   <Suspense fallback={<PageLoader />}>
     <Routes>
@@ -159,9 +164,9 @@ const AppRoutes = () => (
         <Route path="/cars/spare-parts" element={<PermGuard perm="cars"><CarSparePartsPage /></PermGuard>} />
         <Route path="/cars/oils" element={<PermGuard perm="cars"><CarOilsPage /></PermGuard>} />
         <Route path="/warehouse" element={<PermGuard perm="warehouse"><WarehousePage /></PermGuard>} />
-        <Route path="/used-inventory" element={<PermGuard perm="used"><UsedInventory /></PermGuard>} />
+
         <Route path="/maintenance" element={<PermGuard perm="maintenance"><Maintenance /></PermGuard>} />
-        <Route path="/maintenance/parts" element={<PermGuard perm="maintenance"><RepairPartsPage /></PermGuard>} />
+
         <Route path="/installments" element={<PermGuard perm="installments"><Installments /></PermGuard>} />
         <Route path="/expenses" element={<PermGuard perm="expenses"><Expenses /></PermGuard>} />
         <Route path="/damaged" element={<PermGuard perm="damaged"><DamagedItemsPage /></PermGuard>} />
@@ -180,6 +185,8 @@ const AppRoutes = () => (
         <Route path="/purchase-invoices" element={<PermGuard perm="purchaseInvoices"><PurchaseInvoicesPage /></PermGuard>} />
         <Route path="/reports" element={<PermGuard perm="dashboard"><ReportsPage /></PermGuard>} />
         <Route path="/diagnostics" element={<OwnerGuard><DiagnosticsPage /></OwnerGuard>} />
+        <Route path="/partners" element={<PermGuard perm="partners"><PartnersPage /></PermGuard>} />
+
       </Route>
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
       <Route path="*" element={<NotFound />} />
@@ -197,18 +204,23 @@ const App = () => (
       <ThemeProvider>
         <LanguageProvider>
           <AuthProvider>
-            <CartProvider>
-              <TooltipProvider>
-                <Toaster />
-                <Sonner />
-                <AppRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
-                  <AutoBackupRunner />
-                  <DataMigrationRunner />
-                  <AiNotificationsRunner />
-                  <AppRoutes />
-                </AppRouter>
-              </TooltipProvider>
-            </CartProvider>
+            <UserActivityProvider>
+              <CartProvider>
+                <ConfirmProvider>
+                  <TooltipProvider>
+                    <Toaster />
+                    <Sonner />
+                    <AppRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+                      <AutoBackupRunner />
+                      <DataMigrationRunner />
+                      <AiNotificationsRunner />
+                      <LocalStorageSizeMonitor />
+                      <AppRoutes />
+                    </AppRouter>
+                  </TooltipProvider>
+                </ConfirmProvider>
+              </CartProvider>
+            </UserActivityProvider>
           </AuthProvider>
         </LanguageProvider>
       </ThemeProvider>

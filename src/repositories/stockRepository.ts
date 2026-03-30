@@ -42,12 +42,14 @@ function setMovementsState(movements: StockMovement[]): void {
 }
 
 function loadMovements(): StockMovement[] {
-  return sortMovements(getStorageItem<StockMovement[]>(STORAGE_KEY, []).map(normalizeMovement));
+  const saved = getStorageItem<StockMovement[]>(STORAGE_KEY, []);
+  return sortMovements((Array.isArray(saved) ? saved : []).map(normalizeMovement));
 }
 
 function refreshElectronMovements(productId?: string): StockMovement[] {
   const rows = readElectronSync<StockMovement[]>('db-sync:stock_movements:get', [], productId);
-  const normalized = sortMovements(rows.map(normalizeMovement));
+  const rowsArray = Array.isArray(rows) ? rows : [];
+  const normalized = sortMovements(rowsArray.map(normalizeMovement));
   if (!productId) {
     movementStore = normalized;
   }

@@ -79,12 +79,14 @@ function setBatchesState(batches: ProductBatch[]): void {
 }
 
 function loadLocalBatches(): ProductBatch[] {
-  return sortBatches(getStorageItem<ProductBatch[]>(BATCHES_KEY, []).map(normalizeBatch));
+  const saved = getStorageItem<ProductBatch[]>(BATCHES_KEY, []);
+  return sortBatches((Array.isArray(saved) ? saved : []).map(normalizeBatch));
 }
 
 function refreshElectronBatches(): ProductBatch[] {
   const rows = readElectronSync<ProductBatchRow[]>('db-sync:product_batches:get', []);
-  setBatchesState(rows.map(normalizeBatch));
+  const rowsArray = Array.isArray(rows) ? rows : [];
+  setBatchesState(rowsArray.map(normalizeBatch));
   return batchesCache ?? [];
 }
 

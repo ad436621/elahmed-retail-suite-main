@@ -22,6 +22,7 @@ import OrderSummaryPanel from './OrderSummaryPanel';
 import PaymentStep, { PaymentMethodChoice } from './PaymentStep';
 import TransactionSuccess from './TransactionSuccess';
 import { HeldInvoice } from '@/contexts/CartContext';
+import type { SelectedCustomer } from './CustomerSelector';
 
 type SidebarMode = 'cart' | 'payment' | 'success';
 
@@ -49,6 +50,7 @@ interface CheckoutSidebarProps {
     heldInvoices: HeldInvoice[];
     // Pass checkout ref up for F9 keyboard shortcut
     onCheckoutReady: (trigger: () => void) => void;
+    selectedCustomer: SelectedCustomer;
 }
 
 export default function CheckoutSidebar({
@@ -67,6 +69,7 @@ export default function CheckoutSidebar({
     grandTotal,
     heldInvoices,
     onCheckoutReady,
+    selectedCustomer,
 }: CheckoutSidebarProps) {
     const navigate = useNavigate();
     const { user } = useAuth();
@@ -114,7 +117,9 @@ export default function CheckoutSidebar({
                 invoiceDiscount,
                 method,
                 user?.id ?? 'user-1',
-                user?.fullName ?? 'Admin'
+                user?.fullName ?? 'Admin',
+                selectedCustomer.id === '__cash__' ? undefined : selectedCustomer.id,
+                selectedCustomer.name
             );
             saveSale(result.sale);
             saveMovements(result.stockMovements);

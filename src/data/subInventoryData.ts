@@ -18,6 +18,8 @@ const INVENTORY_TYPE_BY_KEY: Record<string, string> = {
   [STORAGE_KEYS.COMPUTER_SPARE_PARTS]: 'computer_spare_part',
   [STORAGE_KEYS.DEVICE_ACCESSORIES_SA]: 'device_accessory',
   [STORAGE_KEYS.DEVICE_SPARE_PARTS]: 'device_spare_part',
+  [STORAGE_KEYS.CAR_SPARE_PARTS]: 'car_spare_part',
+  [STORAGE_KEYS.CAR_OILS]: 'car_oil',
 };
 
 function normalizeSubItem(item: Partial<SubItem>): SubItem {
@@ -164,3 +166,5 @@ export const computerAccessoriesDB = createSubInventory(STORAGE_KEYS.COMPUTER_AC
 export const computerSparePartsDB = createSubInventory(STORAGE_KEYS.COMPUTER_SPARE_PARTS);
 export const deviceAccessoriesDB = createSubInventory(STORAGE_KEYS.DEVICE_ACCESSORIES_SA);
 export const deviceSparePartsDB = createSubInventory(STORAGE_KEYS.DEVICE_SPARE_PARTS);
+export const carSparePartsDB = createSubInventory(STORAGE_KEYS.CAR_SPARE_PARTS);
+export const carOilsDB = createSubInventory(STORAGE_KEYS.CAR_OILS);

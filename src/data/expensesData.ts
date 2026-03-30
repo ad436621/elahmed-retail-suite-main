@@ -44,7 +44,8 @@ function toExpenseRow(expense: Expense) {
 }
 
 function loadLocalExpenses(): Expense[] {
-  return getStorageItem<Expense[]>(KEY, []).map(normalizeExpense);
+  const saved = getStorageItem<Expense[]>(KEY, []);
+  return (Array.isArray(saved) ? saved : []).map(normalizeExpense);
 }
 
 function persistElectronExpenses(expenses: Expense[]): void {

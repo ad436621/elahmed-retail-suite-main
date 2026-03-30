@@ -54,7 +54,8 @@ function sortNotifications(items: AiNotification[]): AiNotification[] {
 }
 
 export function getAiNotifications(): AiNotification[] {
-    return sortNotifications(getStorageItem<AiNotification[]>(NOTIFICATIONS_KEY, []).map(normalizeNotification));
+  const saved = getStorageItem<AiNotification[]>(NOTIFICATIONS_KEY, []);
+  return sortNotifications((Array.isArray(saved) ? saved : []).map(normalizeNotification));
 }
 
 export function getAiNotificationsMeta(): AiNotificationsMeta {

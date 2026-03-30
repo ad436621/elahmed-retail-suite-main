@@ -171,19 +171,32 @@ export default function BarcodePrintPage() {
     const handlePrint = () => {
         const content = printRef.current;
         if (!content) return;
-        const html = `<!DOCTYPE html>
-<html dir="rtl" lang="ar"><head><meta charset="UTF-8">
-<title>طباعة الباركود</title>
-<style>
+        
+        const win = window.open('', '_blank', 'width=900,height=700');
+        if (!win) return;
+        
+        win.document.title = 'طباعة الباركود';
+        win.document.documentElement.dir = 'rtl';
+        win.document.documentElement.lang = 'ar';
+        
+        const style = win.document.createElement('style');
+        style.textContent = `
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { background: white; font-family: Arial, sans-serif; }
 .grid { display: grid; grid-template-columns: repeat(${labelsPerRow}, 6cm); gap: 4px; padding: 8px; }
 @media print { @page { size: A4; margin: 10mm; } }
-</style></head><body><div class="grid">${content.innerHTML}</div></body></html>`;
-        const win = window.open('', '_blank', 'width=900,height=700');
-        if (!win) return;
-        win.document.write(html);
-        win.document.close();
+`;
+        win.document.head.appendChild(style);
+        
+        const grid = win.document.createElement('div');
+        grid.className = 'grid';
+        
+        Array.from(content.childNodes).forEach(node => {
+            grid.appendChild(win.document.importNode(node, true));
+        });
+        
+        win.document.body.appendChild(grid);
+        
         win.focus();
         setTimeout(() => { win.print(); win.close(); }, 400);
     };

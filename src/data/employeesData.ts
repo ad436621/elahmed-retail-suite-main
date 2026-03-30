@@ -221,32 +221,38 @@ function setAdvancesState(advances: Advance[]): void {
 
 function refreshElectronEmployees(): Employee[] {
   const rows = readElectronSync<EmployeeRow[]>('db-sync:employees:get', []);
-  setEmployeesState(rows.map(normalizeEmployee));
+  const rowsArray = Array.isArray(rows) ? rows : [];
+  setEmployeesState(rowsArray.map(normalizeEmployee));
   return employeesCache ?? [];
 }
 
 function refreshElectronSalaryRecords(): SalaryRecord[] {
   const rows = readElectronSync<SalaryRecordRow[]>('db-sync:employee_salaries:get', []);
-  setSalaryRecordsState(rows.map(normalizeSalaryRecord));
+  const rowsArray = Array.isArray(rows) ? rows : [];
+  setSalaryRecordsState(rowsArray.map(normalizeSalaryRecord));
   return salaryRecordsCache ?? [];
 }
 
 function refreshElectronAdvances(): Advance[] {
   const rows = readElectronSync<AdvanceRow[]>('db-sync:employee_advances:get', []);
-  setAdvancesState(rows.map(normalizeAdvance));
+  const rowsArray = Array.isArray(rows) ? rows : [];
+  setAdvancesState(rowsArray.map(normalizeAdvance));
   return advancesCache ?? [];
 }
 
 function loadLocalEmployees(): Employee[] {
-  return sortEmployees(getStorageItem<Employee[]>(EMP_KEY, []).map(normalizeEmployee));
+  const saved = getStorageItem<Employee[]>(EMP_KEY, []);
+  return sortEmployees((Array.isArray(saved) ? saved : []).map(normalizeEmployee));
 }
 
 function loadLocalSalaryRecords(): SalaryRecord[] {
-  return sortSalaryRecords(getStorageItem<SalaryRecord[]>(SAL_KEY, []).map(normalizeSalaryRecord));
+  const saved = getStorageItem<SalaryRecord[]>(SAL_KEY, []);
+  return sortSalaryRecords((Array.isArray(saved) ? saved : []).map(normalizeSalaryRecord));
 }
 
 function loadLocalAdvances(): Advance[] {
-  return sortAdvances(getStorageItem<Advance[]>(ADV_KEY, []).map(normalizeAdvance));
+  const saved = getStorageItem<Advance[]>(ADV_KEY, []);
+  return sortAdvances((Array.isArray(saved) ? saved : []).map(normalizeAdvance));
 }
 
 function persistElectronEmployees(employees: Employee[]): void {

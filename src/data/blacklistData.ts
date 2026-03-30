@@ -95,7 +95,8 @@ function toBlacklistRow(entry: BlacklistedDevice): BlacklistRow {
 }
 
 function loadLocalBlacklist(): BlacklistedDevice[] {
-  return getStorageItem<BlacklistedDevice[]>(KEY, []).map(normalizeEntry);
+  const saved = getStorageItem<BlacklistedDevice[]>(KEY, []);
+  return (Array.isArray(saved) ? saved : []).map(normalizeEntry);
 }
 
 function persistElectronBlacklist(entries: BlacklistedDevice[]): void {

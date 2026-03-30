@@ -33,11 +33,11 @@ export function isBelowMinMargin(product: Product): boolean {
   return margin < product.minimumMarginPct;
 }
 
+import { generateBarcode as idGenBarcode } from '@/lib/idGenerator';
+
 /** Generate an internal barcode if none provided */
 export function generateBarcode(): string {
-  const timestamp = Date.now().toString(36).toUpperCase();
-  const random = Math.random().toString(36).substring(2, 6).toUpperCase();
-  return `AUTO-${timestamp}-${random}`;
+  return idGenBarcode('AUTO');
 }
 
 /** Search products by term (name, barcode) — memoize-friendly pure function */
