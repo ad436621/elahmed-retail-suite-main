@@ -9,12 +9,8 @@ import { useEffect, useState } from 'react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { NotificationBell } from '@/components/NotificationBell';
 import { STORAGE_KEYS } from '@/config';
-import {
-    getAiNotifications,
-    getAiNotificationsMeta,
-    markAiNotificationRead,
-    markAllAiNotificationsRead,
-} from '@/data/aiNotificationsData';
+import { getAiNotifications, getAiNotificationsMeta, markAiNotificationRead, markAllAiNotificationsRead } from '@/data/aiNotificationsData';
+import ConnectionIndicator from '@/components/ConnectionIndicator';
 
 const ROUTE_TITLES: Record<string, string> = {
     '/': 'الرئيسية',
@@ -132,6 +128,9 @@ export default function TopHeader() {
                         {dateStr}
                     </span>
                 </div>
+
+                {/* Connection Status Indicator */}
+                <ConnectionIndicator />
 
                 <NotificationBell
                     notifications={notifications}

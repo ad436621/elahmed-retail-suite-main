@@ -37,6 +37,7 @@ interface SaleRow {
   voidedAt?: string | null;
   voidReason?: string | null;
   voidedBy?: string | null;
+  status?: string | null;
 }
 
 let salesCache: Sale[] | null = null;
@@ -73,6 +74,7 @@ function normalizeSale(row: SaleRow): Sale {
     marginPct: toNumber(row.marginPct),
     paymentMethod: (row.paymentMethod ?? 'cash') as Sale['paymentMethod'],
     employee: String(row.employee ?? 'system'),
+    status: (row.status as Sale['status']) ?? 'active',
     voidedAt: row.voidedAt ? String(row.voidedAt) : null,
     voidReason: row.voidReason ? String(row.voidReason) : null,
     voidedBy: row.voidedBy ? String(row.voidedBy) : null,
@@ -150,5 +152,5 @@ export function getActiveSales(): Sale[] {
     return refreshElectronSales(true);
   }
 
-  return getAllSales().filter((sale) => !sale.voidedAt);
+  return getAllSales().filter((sale) => !sale.voidedAt && sale.status !== 'deleted');
 }

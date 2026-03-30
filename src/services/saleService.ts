@@ -194,6 +194,35 @@ export function voidSale(
   return { voidedSale, auditEntry, stockMovements };
 }
 
+/** Mark an invoice as deleted (keeps sequence but invalidates it) */
+export function deleteInvoice(
+  sale: Sale,
+  reason: string,
+  userId: string
+): {
+  deletedSale: Sale;
+  auditEntry: ReturnType<typeof createAuditEntry>;
+} {
+  if (sale.status === 'deleted') {
+    throw new Error('Invoice is already deleted');
+  }
+
+  const deletedSale: Sale = {
+    ...sale,
+    status: 'deleted',
+    voidedAt: new Date().toISOString(),
+    voidReason: reason.trim(),
+    voidedBy: userId,
+  };
+
+  const auditEntry = createAuditEntry(userId, 'sale_deleted' as any, 'sale', sale.id, null, {
+    invoiceNumber: sale.invoiceNumber,
+    reason: reason.trim() // Audit logs record the deleted invoice number
+  });
+
+  return { deletedSale, auditEntry };
+}
+
 /** Get cart totals — delegates to pure domain function */
 export function getCartTotals(cart: CartItem[], invoiceDiscount: number) {
   return calcCartTotals(cart, invoiceDiscount);

@@ -30,6 +30,7 @@ import {
 } from '@/data/repairsData';
 import { useToast } from '@/hooks/use-toast';
 import { PaginationBar, usePagination } from '@/hooks/usePagination';
+import { getTodayPartsCost, getTodayMaintenanceNetProfit } from '@/data/maintenanceData';
 
 const statusLabels: Record<string, string> = {
     received: 'استلام',
@@ -181,6 +182,8 @@ export default function Maintenance() {
     const [categoryFilter, setCategoryFilter] = useState<'all' | string>('all');
     const [statusFilter, setStatusFilter] = useState<'all' | string>('all');
     const [deleteTarget, setDeleteTarget] = useState<RepairTicket | null>(null);
+    const [todayProfit, setTodayProfit] = useState(0);
+    const [todayPartsCost, setTodayPartsCost] = useState(0);
 
     const currentInventoryType = useMemo(() => getRepairInventoryType(form.device_category), [form.device_category]);
     const partsTotal = useMemo(
@@ -193,6 +196,8 @@ export default function Maintenance() {
         try {
             const data = await getRepairTickets({ search: search.trim() || undefined });
             setTickets(data);
+            setTodayProfit(getTodayMaintenanceNetProfit());
+            setTodayPartsCost(getTodayPartsCost());
         } catch (error) {
             console.error('Failed to load tickets', error);
             toast({ title: 'خطأ', description: 'فشل تحميل أوامر الصيانة', variant: 'destructive' });
@@ -259,6 +264,10 @@ export default function Maintenance() {
 
     const handleSubmit = async () => {
         const submitData = prepareRepairTicketForSubmit(form);
+        submitData.partsCost = partsTotal;
+        if (submitData.status === 'completed' || submitData.status === 'delivered') {
+            submitData.completedAt = submitData.completedAt || new Date().toISOString();
+        }
 
         if (!submitData.customer_name?.trim() || !String(submitData.device_model ?? '').trim()) {
             toast({ title: 'خطأ', description: 'اسم العميل واسم الجهاز مطلوبان', variant: 'destructive' });
@@ -435,6 +444,27 @@ export default function Maintenance() {
                 <button data-testid="maintenance-create-ticket" onClick={openCreateForm} className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-bold text-white hover:opacity-90 transition-opacity shadow-lg shadow-blue-500/25">
                     <Plus className="h-5 w-5" /> استلام جهاز جديد
                 </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="rounded-2xl border border-green-200 bg-green-50 p-4 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p className="text-sm font-bold text-green-700">صافي ربح الصيانة اليوم</p>
+                        <h3 className="text-2xl font-black text-green-800">{todayProfit.toLocaleString()} د.ع</h3>
+                    </div>
+                    <div className="h-12 w-12 rounded-full bg-green-100 flex items-center justify-center">
+                        <DollarSign className="h-6 w-6 text-green-600" />
+                    </div>
+                </div>
+                <div className="rounded-2xl border border-red-200 bg-red-50 p-4 shadow-sm flex items-center justify-between">
+                    <div>
+                        <p className="text-sm font-bold text-red-700">تكلفة قطع الغيار اليوم</p>
+                        <h3 className="text-2xl font-black text-red-800">{todayPartsCost.toLocaleString()} د.ع</h3>
+                    </div>
+                    <div className="h-12 w-12 rounded-full bg-red-100 flex items-center justify-center">
+                        <PackageCheck className="h-6 w-6 text-red-600" />
+                    </div>
+                </div>
             </div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-3">

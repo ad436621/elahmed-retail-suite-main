@@ -465,3 +465,56 @@ enum JobStatus {
   failed
   stuck
 }
+
+// ============================================================
+// New Models Added for Offline/Online Sync
+// ============================================================
+
+model Expense {
+  id          String   @id @default(cuid())
+  amount      Float
+  category    String
+  description String?
+  date        DateTime @default(now())
+  userId      String?
+  branchId    String?
+
+  @@map("expenses")
+}
+
+model MaintenanceJob {
+  id           String    @id @default(cuid())
+  ticketNo     String    @unique
+  customerId   String?
+  customerName String?
+  deviceType   String
+  deviceModel  String?
+  problem      String?
+  status       String    @default("pending")
+  laborCost    Float     @default(0)
+  partsCost    Float     @default(0)
+  totalCost    Float     @default(0)
+  createdAt    DateTime  @default(now())
+  completedAt  DateTime?
+
+  @@map("maintenance_jobs")
+}
+
+model Installment {
+  id              String    @id @default(cuid())
+  customerId      String
+  customerName    String
+  productId       String?
+  productName     String
+  totalAmount     Float
+  paidAmount      Float     @default(0)
+  remainingAmount Float     @default(0)
+  monthlyAmount   Float
+  startDate       DateTime
+  dueDate         DateTime?
+  status          String    @default("active")
+  notes           String?
+  createdAt       DateTime  @default(now())
+
+  @@map("installments")
+}

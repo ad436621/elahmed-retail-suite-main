@@ -54,3 +54,31 @@ export function updateMaintenanceOrder(id: string, updates: Partial<MaintenanceO
 export function deleteMaintenanceOrder(id: string): void {
     saveMaintenanceOrders(getMaintenanceOrders().filter(o => o.id !== id));
 }
+
+// ============================================================
+// Profit & Parts Cost Tracking (Uses repairsData SQLite)
+// ============================================================
+
+import { RepairTicket } from './repairsData';
+
+export function getTodayPartsCost(): number {
+    const tickets = getStorageItem<RepairTicket[]>('gx_repairs', []);
+    const today = new Date().toISOString().split('T')[0];
+    
+    return tickets
+        .filter(t => t.status === 'completed' || t.status === 'delivered')
+        .filter(t => t.createdAt?.startsWith(today) || t.updatedAt?.startsWith(today) || t.completedAt?.startsWith(today))
+        .reduce((sum, t) => sum + (Number(t.partsCost) || 0), 0);
+}
+
+export function getTodayMaintenanceNetProfit(): number {
+    const tickets = getStorageItem<RepairTicket[]>('gx_repairs', []);
+    const today = new Date().toISOString().split('T')[0];
+    
+    const todayRevenue = tickets
+        .filter(t => t.status === 'completed' || t.status === 'delivered')
+        .filter(t => t.createdAt?.startsWith(today) || t.updatedAt?.startsWith(today) || t.completedAt?.startsWith(today))
+        .reduce((sum, t) => sum + (Number(t.final_cost || t.package_price) || 0), 0);
+        
+    return todayRevenue - getTodayPartsCost();
+}

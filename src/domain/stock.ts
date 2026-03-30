@@ -91,3 +91,23 @@ export function predictDepletionDays(
   if (avgDailySales <= 0) return null;
   return Math.floor(currentQty / avgDailySales);
 }
+
+/**
+ * Return a product back to inventory.
+ * If originalBatchId is provided, restores quantity to that specific batch.
+ */
+export function returnProductToInventory(
+  productId: string,
+  quantity: number,
+  originalBatchId?: string
+): StockMovement {
+  return createStockMovement(
+    productId,
+    'return',
+    quantity,
+    0, // This should be populated by the caller with the current quantity
+    'Return product to inventory via FIFO reverse or specific batch',
+    'system',
+    originalBatchId
+  );
+}

@@ -29,20 +29,35 @@ const LoginBg = memo(() => (
 ));
 LoginBg.displayName = 'LoginBg';
 
-/* ─── Password Field ─── */
-const PasswordField = memo(({ value, onChange, disabled }: {
-  value: string; onChange: (v: string) => void; disabled: boolean;
+const PasswordField = memo(({ 
+  value, onChange, disabled, placeholder, id, autoFocus, minLength, className 
+}: {
+  value: string; onChange: (v: string) => void; disabled?: boolean; 
+  placeholder?: string; id?: string; autoFocus?: boolean; minLength?: number; className?: string;
 }) => {
   const [show, setShow] = useState(false);
   return (
-    <div className="relative group">
-      <input id="password" data-testid="login-password" type={show ? 'text' : 'password'} value={value}
-        onChange={e => onChange(e.target.value)} placeholder="أدخل كلمة المرور" required disabled={disabled}
+    <div className="relative group w-full">
+      <input 
+        id={id} 
+        type={show ? 'text' : 'password'} 
+        value={value}
+        onChange={e => onChange(e.target.value)} 
+        placeholder={placeholder || "أدخل كلمة المرور"} 
+        required 
+        disabled={disabled}
+        autoFocus={autoFocus}
+        minLength={minLength}
         autoComplete="current-password"
-        className="h-12 w-full rounded-xl border border-white/10 bg-white/5 pr-4 pl-12 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/50 transition-all duration-300 disabled:opacity-50 backdrop-blur-sm" />
-      <button type="button" tabIndex={-1} aria-label={show ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
+        className={className || "h-12 w-full rounded-xl border border-white/10 bg-white/5 pr-4 pl-12 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/50 transition-all duration-300 disabled:opacity-50 backdrop-blur-sm"} 
+      />
+      <button 
+        type="button" 
+        tabIndex={-1} 
+        aria-label={show ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور'}
         onMouseDown={e => { e.preventDefault(); setShow(s => !s); }}
-        className="absolute left-4 top-1/2 -translate-y-1/2 flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors">
+        className="absolute left-4 top-1/2 -translate-y-1/2 flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 hover:bg-primary/20 transition-colors"
+      >
         {show ? <EyeOff className="h-4 w-4 text-primary pointer-events-none" /> : <Eye className="h-4 w-4 text-primary pointer-events-none" />}
       </button>
     </div>
@@ -298,11 +313,11 @@ const LoginPage = () => {
         <form onSubmit={handleForcedPasswordChange} className="space-y-4">
           <div className="space-y-2">
             <label className="flex items-center gap-2 text-sm text-white/70 font-medium"><Lock className="h-4 w-4 text-primary" /> كلمة المرور الجديدة</label>
-            <input type="password" value={forcePass} onChange={e => setForcePass(e.target.value)} required minLength={4} autoFocus placeholder="أدخل كلمة مرور جديدة" className={fieldClass} />
+            <PasswordField value={forcePass} onChange={setForcePass} minLength={4} autoFocus placeholder="أدخل كلمة مرور جديدة" className={fieldClass} />
           </div>
           <div className="space-y-2">
             <label className="flex items-center gap-2 text-sm text-white/70 font-medium"><Lock className="h-4 w-4 text-primary" /> تأكيد كلمة المرور</label>
-            <input type="password" value={forceConfirm} onChange={e => setForceConfirm(e.target.value)} required placeholder="أعد كتابة كلمة المرور" className={fieldClass} />
+            <PasswordField value={forceConfirm} onChange={setForceConfirm} placeholder="أعد كتابة كلمة المرور" className={fieldClass} />
           </div>
           {forceError && <Alert variant="destructive" className="bg-destructive/10 border-destructive/30"><AlertTriangle className="h-4 w-4" /><AlertDescription>{forceError}</AlertDescription></Alert>}
           <button type="submit" disabled={loading} className="w-full h-11 rounded-xl bg-gradient-to-l from-primary to-primary/80 font-bold text-white hover:opacity-90 transition-all shadow-lg shadow-primary/20 disabled:opacity-50 flex items-center justify-center gap-2">
@@ -352,8 +367,8 @@ const LoginPage = () => {
               <p className="text-xs text-amber-300/50 mt-1">للمستخدم: <span className="font-mono font-bold text-amber-300/80">{fpUsername}</span></p>
             </div>
             <div className="space-y-2"><label className="flex items-center gap-2 text-sm text-white/70 font-medium"><ShieldCheck className="h-4 w-4 text-primary" /> كود الاسترداد</label><input value={fpCode} onChange={e => setFpCode(e.target.value)} required autoFocus placeholder="أدخل الكود" className={`${fieldClass} text-center font-mono tracking-widest text-lg`} /></div>
-            <div className="space-y-2"><label className="flex items-center gap-2 text-sm text-white/70 font-medium"><Lock className="h-4 w-4 text-primary" /> كلمة المرور الجديدة</label><input type="password" value={fpPass} onChange={e => setFpPass(e.target.value)} required minLength={4} placeholder="4 أحرف على الأقل" className={fieldClass} /></div>
-            <div className="space-y-2"><label className="flex items-center gap-2 text-sm text-white/70 font-medium"><Lock className="h-4 w-4 text-primary" /> تأكيد كلمة المرور</label><input type="password" value={fpConfirm} onChange={e => setFpConfirm(e.target.value)} required placeholder="أعد كتابة كلمة المرور" className={fieldClass} /></div>
+            <div className="space-y-2"><label className="flex items-center gap-2 text-sm text-white/70 font-medium"><Lock className="h-4 w-4 text-primary" /> كلمة المرور الجديدة</label><PasswordField value={fpPass} onChange={setFpPass} minLength={4} placeholder="4 أحرف على الأقل" className={fieldClass} /></div>
+            <div className="space-y-2"><label className="flex items-center gap-2 text-sm text-white/70 font-medium"><Lock className="h-4 w-4 text-primary" /> تأكيد كلمة المرور</label><PasswordField value={fpConfirm} onChange={setFpConfirm} placeholder="أعد كتابة كلمة المرور" className={fieldClass} /></div>
             {fpError && <Alert variant="destructive" className="bg-destructive/10 border-destructive/30"><AlertTriangle className="h-4 w-4" /><AlertDescription>{fpError}</AlertDescription></Alert>}
             <button type="submit" className="w-full h-11 rounded-xl bg-gradient-to-l from-primary to-primary/80 font-bold text-white hover:opacity-90 transition-all shadow-lg shadow-primary/20">تغيير كلمة المرور</button>
             <button type="button" onClick={() => { setFpStep(1); setFpError(''); }} className="w-full h-10 rounded-xl text-sm text-white/50 hover:text-white hover:bg-white/5 transition-all">رجوع</button>

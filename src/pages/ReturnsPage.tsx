@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Search, X, RotateCcw, Check, AlertCircle } from 'lucide-react';
 import { Sale } from '@/domain/types';
 import { restoreBatchQty } from '@/data/batchesData';
@@ -6,11 +7,12 @@ import { getReturnedQuantitiesBySaleId, addReturnRecord } from '@/data/returnsDa
 import { processReturn } from '@/domain/returns';
 import { saveAuditEntries } from '@/repositories/auditRepository';
 import { getAllInventoryProducts, updateProductQuantity } from '@/repositories/productRepository';
-import { getActiveSales } from '@/repositories/saleRepository';
+import { getActiveSales, saveSale } from '@/repositories/saleRepository';
 import { saveMovements } from '@/repositories/stockRepository';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { BatchSaleResult } from '@/domain/types';
+import { deleteInvoice } from '@/services/saleService';
 
 interface ReturnedItem {
   productId: string;
@@ -28,11 +30,67 @@ const IC = "w-full rounded-xl border border-input bg-background px-3 py-2.5 text
 export default function ReturnsPage() {
   const { toast } = useToast();
   const { user } = useAuth();
+  const location = useLocation();
   const [invoiceSearch, setInvoiceSearch] = useState('');
   const [foundSale, setFoundSale] = useState<Sale | null>(null);
   const [returnItems, setReturnItems] = useState<ReturnedItem[]>([]);
   const [returnDate, setReturnDate] = useState(new Date().toISOString().slice(0, 10));
   const [notFound, setNotFound] = useState(false);
+
+  // Read initial invoice from route state/query and trigger search
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const initialInvoice = location.state?.invoiceNumber || params.get('invoice');
+    if (initialInvoice) {
+      setInvoiceSearch(initialInvoice);
+      // Wait for state to update, then search
+      setTimeout(() => {
+        handleSearchFor(initialInvoice);
+      }, 0);
+    }
+  }, [location.state, location.search]);
+
+  const handleSearchFor = (inv: string) => {
+    setNotFound(false);
+    setFoundSale(null);
+    setReturnItems([]);
+    const sales = getActiveSales();
+    const sale = sales.find(s =>
+      s.invoiceNumber.toLowerCase() === inv.trim().toLowerCase() ||
+      s.id === inv.trim()
+    );
+    if (sale) {
+      const returnedQuantities = getReturnedQuantitiesBySaleId(sale.id);
+      const mappedItems = sale.items.map(item => {
+        const alreadyReturned = returnedQuantities[item.productId] ?? 0;
+        return {
+          productId: item.productId,
+          name: item.name,
+          soldQty: item.qty,
+          availableQty: Math.max(0, item.qty - alreadyReturned),
+          price: item.price,
+          returnQty: 0,
+          reason: '',
+          batches: item.batches,
+        };
+      });
+
+      setFoundSale(sale);
+      setReturnItems(mappedItems);
+
+      if (mappedItems.every((item) => item.availableQty === 0)) {
+        toast({
+          title: 'الفاتورة مسترجعة بالكامل',
+          description: 'تم استرجاع كل الكميات في هذه الفاتورة من قبل',
+        });
+      }
+    } else {
+      setNotFound(true);
+    }
+  };
+
+  const handleSearch = () => handleSearchFor(invoiceSearch);
+
 
   const handleSearch = () => {
     setNotFound(false);
@@ -152,6 +210,80 @@ export default function ReturnsPage() {
     setFoundSale(null);
     setReturnItems([]);
     setInvoiceSearch('');
+  };
+
+  const handleFullReturn = () => {
+    if (!foundSale) return;
+
+    if (!confirm('هل أنت متأكد من رغبتك في إرجاع الفاتورة كاملة؟ سيتم إرجاع جميع القطع للمخزون وحذف الفاتورة.')) {
+      return;
+    }
+
+    // Set all items to full available quantity
+    const fullyReturnedItems = returnItems.map(item => ({
+      ...item,
+      returnQty: item.availableQty,
+      reason: 'إرجاع كامل للفاتورة'
+    })).filter(item => item.returnQty > 0);
+
+    // If nothing to return (already returned previously)
+    if (fullyReturnedItems.length === 0) {
+      toast({ title: 'تنبيه', description: 'جميع عناصر هذه الفاتورة تم استرجاعها مسبقاً' });
+      return;
+    }
+
+    try {
+      const inventoryProducts = getAllInventoryProducts();
+      const currentProductQuantities = Object.fromEntries(inventoryProducts.map((product) => [product.id, product.quantity]));
+
+      const { returnRecord, stockMovements, auditEntries: returnAuditEntries } = processReturn(
+        foundSale,
+        fullyReturnedItems.map((item) => ({ productId: item.productId, qty: item.returnQty })),
+        'إرجاع كامل للفاتورة',
+        user?.id || 'system',
+        currentProductQuantities
+      );
+
+      // Restore batches
+      fullyReturnedItems.forEach(item => {
+        if (item.batches && item.batches.length > 0) {
+          let qtyToRestore = item.returnQty;
+          const reversedBatches = [...item.batches].reverse();
+          for (const batch of reversedBatches) {
+            if (qtyToRestore <= 0) break;
+            const restoreAmount = Math.min(qtyToRestore, batch.qtyFromBatch);
+            restoreBatchQty(batch.batchId, restoreAmount);
+            qtyToRestore -= restoreAmount;
+          }
+        }
+      });
+
+      // Mark Invoice as Deleted
+      const { deletedSale, auditEntry: deleteAudit } = deleteInvoice(foundSale, 'إرجاع كامل للفاتورة', user?.id || 'system');
+      
+      saveSale(deletedSale);
+      saveMovements(stockMovements);
+      saveAuditEntries([...returnAuditEntries, deleteAudit]);
+      stockMovements.forEach((movement) => updateProductQuantity(movement.productId, movement.newQuantity));
+
+      addReturnRecord({
+        id: returnRecord.id,
+        originalInvoiceNumber: foundSale.invoiceNumber,
+        originalSaleId: foundSale.id,
+        date: returnDate,
+        items: fullyReturnedItems.map(i => ({ productId: i.productId, name: i.name, qty: i.returnQty, price: i.price, reason: i.reason })),
+        totalRefund: returnRecord.totalRefund,
+        reason: 'إرجاع كامل للفاتورة',
+        processedBy: user?.id || 'system',
+      });
+
+      toast({ title: '✅ تم الإرجاع بالكامل', description: 'تم إرجاع المخزون وحذف الفاتورة بنجاح.' });
+      setFoundSale(null);
+      setReturnItems([]);
+      setInvoiceSearch('');
+    } catch (e: any) {
+      toast({ title: 'خطأ', description: e.message, variant: 'destructive' });
+    }
   };
 
   return (
@@ -280,7 +412,13 @@ export default function ReturnsPage() {
               onClick={handleReturn}
               className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-rose-600 py-3 text-sm font-semibold text-white hover:bg-rose-500 transition-all shadow-md"
             >
-              <Check className="h-4 w-4" /> تأكيد الإرجاع
+              <Check className="h-4 w-4" /> تأكيد الإرجاع الجزئي
+            </button>
+            <button
+              onClick={handleFullReturn}
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-rose-600 py-3 text-sm font-semibold text-white hover:bg-rose-500 transition-all shadow-md"
+            >
+              <RotateCcw className="h-4 w-4" /> إرجاع كامل للفاتورة
             </button>
             <button
               onClick={() => { setFoundSale(null); setReturnItems([]); setInvoiceSearch(''); }}

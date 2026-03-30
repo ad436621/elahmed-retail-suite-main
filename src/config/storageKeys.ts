@@ -58,8 +58,8 @@ export const STORAGE_KEYS = {
 
     // ─── Legacy Products & Repositories ─────────────────────────
     PRODUCTS: 'elahmed-products',
-    SALES_LEGACY: 'elahmed_sales',
-    AUDIT_LOGS: 'elahmed_audit_logs',
+    SALES_LEGACY: 'gx_sales_v1', // MODIFIED
+    AUDIT_LOGS: 'gx_audit_logs', // MODIFIED
 
     // ─── Sales & Finance ────────────────────────────────────────
     INVOICE_COUNTER: 'gx_invoice_counter',

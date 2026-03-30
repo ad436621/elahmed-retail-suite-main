@@ -84,6 +84,7 @@ export interface Sale {
   marginPct: number;
   paymentMethod: PaymentMethod;
   employee: string;
+  status?: 'active' | 'deleted';
   voidedAt: string | null;
   voidReason: string | null;
   voidedBy: string | null;
@@ -668,3 +669,5 @@ export interface OtherRevenue {
   addedBy: string;
   createdAt: string;
 }
+
+

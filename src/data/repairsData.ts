@@ -17,6 +17,7 @@ export interface RepairTicket {
     device_passcode?: string;
     status: 'received' | 'diagnosing' | 'waiting_parts' | 'repairing' | 'testing' | 'ready' | 'delivered' | 'cancelled' | 'pending' | 'in_progress' | 'waiting_for_parts' | 'completed';
     package_price?: number;
+    partsCost?: number; // MODIFIED: For profit tracking
     final_cost?: number;
     warranty_days?: number;
     assigned_tech_name?: string;
@@ -26,6 +27,7 @@ export interface RepairTicket {
     createdBy?: string;
     updatedAt: string;
     updatedBy?: string;
+    completedAt?: string;
     
     // Legacy support fields mapping (so we don't break UI immediately)
     ticket_type?: string;
@@ -91,6 +93,7 @@ export interface RepairTicketPart {
     createdAt: string;
     updatedAt: string;
     partName?: string;
+    source?: string;
     
     // Legacy mapping
     name?: string;
