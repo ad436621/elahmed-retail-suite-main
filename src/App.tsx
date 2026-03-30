@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 // #10 FIX: Removed @tanstack/react-query — was installed but never used in any page
-import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
+import { BrowserRouter, HashRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { useEffect, lazy, Suspense } from 'react';
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { executeAutoBackupIfDue } from '@/data/backupData';
@@ -228,6 +228,10 @@ const AppRoutes = () => (
   </Suspense>
 );
 
+const AppRouter = typeof window !== 'undefined' && window.location.protocol === 'file:'
+  ? HashRouter
+  : BrowserRouter;
+
 const App = () => (
   <ErrorBoundary>
     <SettingsProvider>
@@ -238,12 +242,12 @@ const App = () => (
               <TooltipProvider>
                 <Toaster />
                 <Sonner />
-                <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+                <AppRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
                   <AutoBackupRunner />
                   <DataMigrationRunner />
                   <AiNotificationsRunner />
                   <AppRoutes />
-                </BrowserRouter>
+                </AppRouter>
               </TooltipProvider>
             </CartProvider>
           </AuthProvider>

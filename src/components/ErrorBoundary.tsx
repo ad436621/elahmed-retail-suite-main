@@ -72,7 +72,7 @@ export class ErrorBoundary extends Component<Props, State> {
         const analysis = analyzeError(error, errorInfo);
 
         return (
-            <div className="min-h-screen flex items-center justify-center p-6 bg-background" dir="rtl">
+            <div className="min-h-screen flex items-center justify-center p-6 bg-background" dir="rtl" data-testid="error-boundary">
                 <div className="w-full max-w-2xl">
                     <div className="flex items-start gap-4 mb-6">
                         <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-destructive/10 shrink-0">

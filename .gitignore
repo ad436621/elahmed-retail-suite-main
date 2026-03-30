@@ -55,3 +55,5 @@ dist-electron/*.jsc
 dist-electron/main-loader.cjs
 tsconfig.tsbuildinfo
 nul
+playwright-report/
+test-results/

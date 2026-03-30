@@ -221,7 +221,7 @@ function DeviceCategoriesManager({
     };
 
     return createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4" onClick={onClose}>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/72 px-4" onClick={onClose}>
             <div className="w-full max-w-md rounded-2xl border border-border bg-card shadow-2xl animate-scale-in overflow-hidden" onClick={e => e.stopPropagation()}>
                 <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-muted/30">
                     <div className="flex items-center gap-2">
@@ -538,6 +538,67 @@ export default function DevicesInventory() {
         setIsFormOpen(false);
     }, [form, editingId, toast, warehouses]);
 
+    const handleValidatedSave = useCallback(() => {
+        const normalizedName = form.name.trim();
+        const normalizedCategory = form.category.trim();
+        const normalizedBarcode = form.barcode.trim();
+        const normalizedModel = form.model.trim();
+        const normalizedColor = form.color.trim();
+        const normalizedBrand = form.brand.trim();
+        const normalizedSupplier = form.supplier.trim();
+        const normalizedSource = form.source.trim();
+        const normalizedNotes = form.notes.trim();
+        const normalizedDescription = form.description.trim();
+
+        if (!normalizedName || !normalizedCategory) {
+            toast({ title: 'خطأ', description: 'الاسم والفئة مطلوبة', variant: 'destructive' });
+            return;
+        }
+
+        if ([form.quantity, form.newCostPrice, form.salePrice].some((value) => !Number.isFinite(value) || value < 0)) {
+            toast({ title: 'خطأ', description: 'القيم الرقمية لا يمكن أن تكون سالبة', variant: 'destructive' });
+            return;
+        }
+
+        if (normalizedBarcode && isBarcodeDuplicate(normalizedBarcode, editingId || '')) {
+            toast({ title: 'خطأ', description: 'الباركود مستخدم من قبل', variant: 'destructive' });
+            return;
+        }
+
+        const purchaseCost = normalizeCostPrice(form.newCostPrice, form.oldCostPrice);
+
+        const payload: Omit<DeviceItem, 'id' | 'createdAt' | 'updatedAt'> = {
+            name: normalizedName,
+            model: normalizedModel,
+            barcode: normalizedBarcode || undefined,
+            category: normalizedCategory,
+            condition: form.condition,
+            color: normalizedColor,
+            brand: normalizedBrand || undefined,
+            supplier: normalizedSupplier || undefined,
+            source: normalizedSource || undefined,
+            quantity: form.quantity,
+            oldCostPrice: purchaseCost,
+            newCostPrice: purchaseCost,
+            salePrice: form.salePrice,
+            profitMargin: calculateProfitAmount(purchaseCost, form.salePrice),
+            notes: normalizedNotes,
+            description: normalizedDescription,
+            image: form.image,
+            warehouseId: form.warehouseId || warehouses.find((warehouse) => warehouse.isDefault)?.id || '',
+        };
+
+        if (editingId) {
+            updateDevice(editingId, payload);
+            toast({ title: '✅ تم التحديث', description: 'تم تعديل الجهاز بنجاح' });
+        } else {
+            addDevice(payload);
+            toast({ title: '✅ تم الإضافة', description: 'تم إضافة الجهاز بنجاح' });
+        }
+
+        setIsFormOpen(false);
+    }, [form, editingId, toast, warehouses]);
+
     const handleDelete = useCallback(() => {
         if (selectedProduct) {
             deleteDevice(selectedProduct.id);
@@ -603,7 +664,7 @@ export default function DevicesInventory() {
                                 <Download className="h-4 w-4 mr-2" />
                                 تصدير Excel
                             </Button>
-                            <Button onClick={() => handleOpenForm()}>
+                            <Button data-testid="devices-create-product" onClick={() => handleOpenForm()}>
                                 <Plus className="h-4 w-4 mr-2" />
                                 إضافة جهاز
                             </Button>
@@ -801,7 +862,7 @@ export default function DevicesInventory() {
 
             {/* Add/Edit Form Dialog */}
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
-                <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogContent data-testid="devices-form-modal" className="max-w-2xl max-h-[92vh] overflow-y-auto">
                     <DialogHeader>
                         <DialogTitle>{editingId ? 'تعديل جهاز' : 'إضافة جهاز جديد'}</DialogTitle>
                     </DialogHeader>
@@ -809,6 +870,7 @@ export default function DevicesInventory() {
                         <div className="col-span-2">
                             <label className="text-sm font-medium mb-1.5 block">اسم الجهاز *</label>
                             <Input
+                                data-testid="devices-name"
                                 value={form.name}
                                 onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))}
                                 placeholder="مثل: تلفزيون سامسونج 55 بوصة"
@@ -828,6 +890,7 @@ export default function DevicesInventory() {
                             <label className="text-sm font-medium mb-1.5 block">الباركود</label>
                             <div className="flex gap-2">
                                 <Input
+                                    data-testid="devices-barcode"
                                     value={form.barcode}
                                     onChange={(e) => setForm(f => ({ ...f, barcode: e.target.value }))}
                                     placeholder=" barcode"
@@ -841,7 +904,7 @@ export default function DevicesInventory() {
                         <div>
                             <label className="text-sm font-medium mb-1.5 block">الفئة *</label>
                             <Select value={form.category} onValueChange={(v) => setForm(f => ({ ...f, category: v }))}>
-                                <SelectTrigger>
+                                <SelectTrigger data-testid="devices-category">
                                     <SelectValue placeholder="اختر الفئة" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -855,7 +918,7 @@ export default function DevicesInventory() {
                         <div>
                             <label className="text-sm font-medium mb-1.5 block">المخزن *</label>
                             <Select value={form.warehouseId} onValueChange={(v) => setForm(f => ({ ...f, warehouseId: v }))}>
-                                <SelectTrigger>
+                                <SelectTrigger data-testid="devices-warehouse">
                                     <SelectValue placeholder="-- الافتراضي --" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -931,6 +994,7 @@ export default function DevicesInventory() {
                         <div>
                             <label className="text-sm font-medium mb-1.5 block">الكمية *</label>
                             <Input
+                                data-testid="devices-quantity"
                                 type="number"
                                 min="0"
                                 value={form.quantity}
@@ -941,6 +1005,7 @@ export default function DevicesInventory() {
                         <div>
                             <label className="text-sm font-medium mb-1.5 block">سعر الشراء</label>
                             <Input
+                                data-testid="devices-cost"
                                 type="number"
                                 min="0"
                                 value={normalizeCostPrice(form.newCostPrice, form.oldCostPrice)}
@@ -954,6 +1019,7 @@ export default function DevicesInventory() {
                         <div>
                             <label className="text-sm font-medium mb-1.5 block">سعر البيع *</label>
                             <Input
+                                data-testid="devices-sale"
                                 type="number"
                                 min="0"
                                 value={form.salePrice}
@@ -993,7 +1059,7 @@ export default function DevicesInventory() {
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setIsFormOpen(false)}>إلغاء</Button>
-                        <Button onClick={handleSave}>
+                        <Button data-testid="devices-save" onClick={handleValidatedSave}>
                             {editingId ? 'حفظ التغييرات' : 'إضافة'}
                         </Button>
                     </DialogFooter>

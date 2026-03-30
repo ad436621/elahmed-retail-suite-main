@@ -5,30 +5,35 @@ import { componentTagger } from "lovable-tagger";
 import { copyFileSync, existsSync, mkdirSync } from "fs";
 import electron from "vite-plugin-electron/simple";
 
-// Custom plugin: copies the GX GLEAMEX logo to public/logo.png on startup
 function copyLogoPlugin() {
   return {
     name: "copy-logo",
     buildStart() {
-      const src = path.resolve(
-        __dirname,
-        "لوجو أنيق مودرن بيج واسود لمنظم حدث.png"
-      );
+      const legacySource = path.resolve(__dirname, "ظ„ظˆط¬ظˆ ط£ظ†ظٹظ‚ ظ…ظˆط¯ط±ظ† ط¨ظٹط¬ ظˆط§ط³ظˆط¯ ظ„ظ…ظ†ط¸ظ… ط­ط¯ط«.png");
       const destDir = path.resolve(__dirname, "public");
       const dest = path.resolve(destDir, "logo.png");
-      if (existsSync(src)) {
-        if (!existsSync(destDir)) mkdirSync(destDir, { recursive: true });
-        copyFileSync(src, dest);
-        console.log("\x1b[32m✓ GX GLEAMEX logo copied to public/logo.png\x1b[0m");
-      } else {
-        console.warn("\x1b[33m⚠ Logo file not found, skipping copy\x1b[0m");
+
+      if (existsSync(legacySource)) {
+        if (!existsSync(destDir)) {
+          mkdirSync(destDir, { recursive: true });
+        }
+        copyFileSync(legacySource, dest);
+        console.log("\x1b[32m✓ App logo copied to public/logo.png\x1b[0m");
+        return;
       }
+
+      if (existsSync(dest)) {
+        console.log("\x1b[36mℹ Using existing public/logo.png\x1b[0m");
+        return;
+      }
+
+      console.warn("\x1b[33m⚠ Logo file not found, skipping copy\x1b[0m");
     },
   };
 }
 
-// https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  base: mode === "e2e" ? "/" : "./",
   server: {
     host: "::",
     port: 8081,
@@ -37,21 +42,20 @@ export default defineConfig(({ mode }) => ({
     },
   },
   build: {
-    // Use terser for aggressive minification & obfuscation of the renderer bundle
-    minify: 'terser',
+    minify: "terser",
     terserOptions: {
       compress: {
-        passes: 3,         // Multiple compression passes
-        drop_console: true, // Remove all console.log in production
+        passes: 3,
+        drop_console: true,
         drop_debugger: true,
-        pure_funcs: ['console.log', 'console.warn', 'console.info'],
+        pure_funcs: ["console.log", "console.warn", "console.info"],
       },
       mangle: {
-        toplevel: true,    // Mangle top-level variable/function names
+        toplevel: true,
         eval: true,
       },
       format: {
-        comments: false,   // Remove all comments
+        comments: false,
       },
     },
   },
@@ -65,20 +69,20 @@ export default defineConfig(({ mode }) => ({
         vite: {
           build: {
             rollupOptions: {
-              external: ['electron', 'better-sqlite3', 'fs', 'path', 'url'],
-            }
-          }
-        }
+              external: ["electron", "better-sqlite3", "fs", "path", "url"],
+            },
+          },
+        },
       },
       preload: {
         input: path.join(__dirname, "electron/preload.ts"),
         vite: {
           build: {
             rollupOptions: {
-              external: ['electron'],
-            }
-          }
-        }
+              external: ["electron"],
+            },
+          },
+        },
       },
       renderer: {},
     }),
@@ -88,11 +92,8 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  // Prevent Vite from scanning resources_extracted/ (old Electron HTML/JS files)
-  // which causes React to be bundled twice (dual-instance useState error)
   optimizeDeps: {
     entries: ["src/**/*.{ts,tsx}"],
     exclude: ["resources_extracted"],
   },
 }));
-

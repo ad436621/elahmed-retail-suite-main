@@ -36,7 +36,7 @@ const PasswordField = memo(({ value, onChange, disabled }: {
   const [show, setShow] = useState(false);
   return (
     <div className="relative group">
-      <input id="password" type={show ? 'text' : 'password'} value={value}
+      <input id="password" data-testid="login-password" type={show ? 'text' : 'password'} value={value}
         onChange={e => onChange(e.target.value)} placeholder="أدخل كلمة المرور" required disabled={disabled}
         autoComplete="current-password"
         className="h-12 w-full rounded-xl border border-white/10 bg-white/5 pr-4 pl-12 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/50 transition-all duration-300 disabled:opacity-50 backdrop-blur-sm" />
@@ -366,7 +366,7 @@ const LoginPage = () => {
   /* ── MAIN LOGIN ── */
   return (
     <GlassCard>
-      <div className="p-6">
+      <div className="p-6" data-testid="login-page">
         {/* Logo & Title */}
         <div className="flex flex-col items-center gap-1 pt-2 pb-5 text-center">
           <div className="relative mb-3">
@@ -389,7 +389,7 @@ const LoginPage = () => {
               <User className="h-4 w-4 text-primary" /> اسم المستخدم
             </label>
             <div className="relative">
-              <input id="username" value={username} onChange={e => setUsername(e.target.value)}
+              <input id="username" data-testid="login-username" value={username} onChange={e => setUsername(e.target.value)}
                 placeholder="أدخل اسم المستخدم" required autoFocus autoComplete="username"
                 disabled={loading || isLocked}
                 className="h-12 w-full rounded-xl border border-white/10 bg-white/5 pr-12 pl-4 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary/50 transition-all duration-300 disabled:opacity-50 backdrop-blur-sm" />
@@ -435,7 +435,7 @@ const LoginPage = () => {
           )}
 
           {/* Submit */}
-          <button type="submit" disabled={loading || isLocked}
+          <button type="submit" data-testid="login-submit" disabled={loading || isLocked}
             className="w-full h-12 rounded-xl bg-gradient-to-l from-primary to-primary/80 font-bold text-base text-white hover:opacity-90 transition-all duration-300 shadow-lg shadow-primary/25 disabled:opacity-50 flex items-center justify-center gap-2 btn-ripple">
             {loading
               ? <><Loader2 className="h-5 w-5 animate-spin" /> جاري تسجيل الدخول...</>

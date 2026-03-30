@@ -2,8 +2,66 @@ import Database from 'better-sqlite3';
 import path from 'path';
 import { app } from 'electron';
 
+function tableExists(db: Database.Database, table: string): boolean {
+  const row = db
+    .prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?")
+    .get(table) as { name: string } | undefined;
+
+  return Boolean(row?.name);
+}
+
+function getTableColumns(db: Database.Database, table: string): string[] {
+  if (!tableExists(db, table)) {
+    return [];
+  }
+
+  return (db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>).map((column) => column.name);
+}
+
+function createIndexIfColumnsExist(
+  db: Database.Database,
+  indexName: string,
+  table: string,
+  columns: string[],
+) {
+  const tableColumns = new Set(getTableColumns(db, table));
+  if (!columns.every((column) => tableColumns.has(column))) {
+    return;
+  }
+
+  db.exec(`CREATE INDEX IF NOT EXISTS ${indexName} ON ${table}(${columns.join(', ')})`);
+}
+
+function ensureSchemaIndexes(db: Database.Database) {
+  createIndexIfColumnsExist(db, 'idx_products_barcode', 'products', ['barcode']);
+  createIndexIfColumnsExist(db, 'idx_expenses_date', 'expenses', ['date']);
+  createIndexIfColumnsExist(db, 'idx_employee_salaries_employee_month', 'employee_salaries', ['employeeId', 'month']);
+  createIndexIfColumnsExist(db, 'idx_employee_advances_employee_date', 'employee_advances', ['employeeId', 'date']);
+  createIndexIfColumnsExist(db, 'idx_product_batches_productId', 'product_batches', ['productId']);
+  createIndexIfColumnsExist(db, 'idx_sale_items_saleId', 'sale_items', ['saleId']);
+  createIndexIfColumnsExist(db, 'idx_customers_phone', 'customers', ['phone']);
+  createIndexIfColumnsExist(db, 'idx_customers_nationalId', 'customers', ['nationalId']);
+  createIndexIfColumnsExist(db, 'idx_blacklist_imei_status', 'blacklist', ['imei', 'status']);
+  createIndexIfColumnsExist(db, 'idx_damaged_items_date', 'damaged_items', ['date']);
+  createIndexIfColumnsExist(db, 'idx_installments_customerId', 'installments', ['customerId']);
+  createIndexIfColumnsExist(db, 'idx_installments_productId', 'installments', ['productId']);
+  createIndexIfColumnsExist(db, 'idx_installments_status', 'installments', ['status']);
+  createIndexIfColumnsExist(db, 'idx_installments_createdAt', 'installments', ['createdAt']);
+  createIndexIfColumnsExist(db, 'idx_installment_schedules_contract_month', 'installment_schedules', ['contractId', 'monthNumber']);
+  createIndexIfColumnsExist(db, 'idx_installment_schedules_due_paid', 'installment_schedules', ['dueDate', 'paid']);
+  createIndexIfColumnsExist(db, 'idx_installment_payments_contract_date', 'installment_payments', ['contractId', 'date']);
+  createIndexIfColumnsExist(db, 'idx_installment_allocations_payment', 'installment_payment_allocations', ['paymentId']);
+  createIndexIfColumnsExist(db, 'idx_installment_allocations_schedule', 'installment_payment_allocations', ['scheduleItemId']);
+  createIndexIfColumnsExist(db, 'idx_supplier_transactions_supplier_created', 'supplier_transactions', ['supplierId', 'createdAt']);
+  createIndexIfColumnsExist(db, 'idx_other_revenue_date', 'other_revenue', ['date']);
+  createIndexIfColumnsExist(db, 'idx_reminders_due_status', 'reminders', ['dueDate', 'status', 'completed']);
+  createIndexIfColumnsExist(db, 'idx_safe_transactions_wallet_created', 'safe_transactions', ['walletId', 'createdAt']);
+  createIndexIfColumnsExist(db, 'idx_repair_tickets_status_created', 'repair_tickets', ['status', 'createdAt']);
+  createIndexIfColumnsExist(db, 'idx_used_devices_serial_status', 'used_devices', ['serialNumber', 'status']);
+}
+
 export function initializeDatabase() {
-  const isDev = process.env.NODE_ENV !== 'production';
+  const isDev = !app.isPackaged;
   const userDataPath = app.getPath('userData');
   const dbPath = path.join(userDataPath, isDev ? 'retail_dev.sqlite' : 'retail_prod.sqlite');
   
@@ -826,32 +884,9 @@ export function initializeDatabase() {
       FOREIGN KEY(invoice_id) REFERENCES repair_invoices(id) ON DELETE CASCADE
     );
 
-    CREATE INDEX IF NOT EXISTS idx_products_barcode ON products(barcode);
-    CREATE INDEX IF NOT EXISTS idx_expenses_date ON expenses(date);
-    CREATE INDEX IF NOT EXISTS idx_employee_salaries_employee_month ON employee_salaries(employeeId, month);
-    CREATE INDEX IF NOT EXISTS idx_employee_advances_employee_date ON employee_advances(employeeId, date);
-    CREATE INDEX IF NOT EXISTS idx_product_batches_productId ON product_batches(productId);
-    CREATE INDEX IF NOT EXISTS idx_sale_items_saleId ON sale_items(saleId);
-    CREATE INDEX IF NOT EXISTS idx_customers_phone ON customers(phone);
-    CREATE INDEX IF NOT EXISTS idx_customers_nationalId ON customers(nationalId);
-    CREATE INDEX IF NOT EXISTS idx_blacklist_imei_status ON blacklist(imei, status);
-    CREATE INDEX IF NOT EXISTS idx_damaged_items_date ON damaged_items(date);
-    CREATE INDEX IF NOT EXISTS idx_installments_customerId ON installments(customerId);
-    CREATE INDEX IF NOT EXISTS idx_installments_productId ON installments(productId);
-    CREATE INDEX IF NOT EXISTS idx_installments_status ON installments(status);
-    CREATE INDEX IF NOT EXISTS idx_installments_createdAt ON installments(createdAt);
-    CREATE INDEX IF NOT EXISTS idx_installment_schedules_contract_month ON installment_schedules(contractId, monthNumber);
-    CREATE INDEX IF NOT EXISTS idx_installment_schedules_due_paid ON installment_schedules(dueDate, paid);
-    CREATE INDEX IF NOT EXISTS idx_installment_payments_contract_date ON installment_payments(contractId, date);
-    CREATE INDEX IF NOT EXISTS idx_installment_allocations_payment ON installment_payment_allocations(paymentId);
-    CREATE INDEX IF NOT EXISTS idx_installment_allocations_schedule ON installment_payment_allocations(scheduleItemId);
-    CREATE INDEX IF NOT EXISTS idx_supplier_transactions_supplier_created ON supplier_transactions(supplierId, createdAt);
-    CREATE INDEX IF NOT EXISTS idx_other_revenue_date ON other_revenue(date);
-    CREATE INDEX IF NOT EXISTS idx_reminders_due_status ON reminders(dueDate, status, completed);
-    CREATE INDEX IF NOT EXISTS idx_safe_transactions_wallet_created ON safe_transactions(walletId, createdAt);
-    CREATE INDEX IF NOT EXISTS idx_repair_tickets_status_created ON repair_tickets(status, createdAt);
-    CREATE INDEX IF NOT EXISTS idx_used_devices_serial_status ON used_devices(serialNumber, status);
   `);
+
+  ensureSchemaIndexes(db);
 
   return db;
 }

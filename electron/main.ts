@@ -20,38 +20,133 @@ let db: ReturnType<typeof initializeDatabase> | null = null;
 
 let mainWindow: BrowserWindow | null = null;
 
+function isDevelopmentMode(): boolean {
+  return !app.isPackaged;
+}
+
+function writeStartupLog(message: string, error?: unknown) {
+  try {
+    const logDir = app.isReady() ? app.getPath('userData') : path.join(process.cwd(), 'logs');
+    fs.mkdirSync(logDir, { recursive: true });
+    const logPath = path.join(logDir, 'startup.log');
+    const details = error instanceof Error ? `${error.stack ?? error.message}` : error ? JSON.stringify(error) : '';
+    fs.appendFileSync(logPath, `[${new Date().toISOString()}] ${message}${details ? `\n${details}` : ''}\n`);
+  } catch (logError) {
+    console.error('Failed to write startup log', logError);
+  }
+}
+
+function resolvePreloadPath() {
+  const candidates = ['preload.js', 'preload.cjs', 'preload.mjs'];
+
+  for (const fileName of candidates) {
+    const candidate = path.join(__dirname, fileName);
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  return path.join(__dirname, 'preload.js');
+}
+
+function resolveWindowIconPath() {
+  const candidates = isDevelopmentMode()
+    ? [path.join(__dirname, '../public/logo.png')]
+    : [path.join(__dirname, '../dist/logo.png'), path.join(process.resourcesPath, 'app.asar.unpacked/dist/logo.png')];
+
+  for (const candidate of candidates) {
+    if (fs.existsSync(candidate)) {
+      return candidate;
+    }
+  }
+
+  return undefined;
+}
+
 function createWindow() {
+  const preloadPath = resolvePreloadPath();
+  const iconPath = resolveWindowIconPath();
+  let revealFallbackTimer: NodeJS.Timeout | null = null;
+  writeStartupLog(`Creating main window with preload at ${preloadPath}`);
+
   mainWindow = new BrowserWindow({
     width: 1280,
     height: 800,
     minWidth: 900,
     minHeight: 600,
-    icon: path.join(__dirname, '../public/logo.png'),
+    show: false,
+    icon: iconPath,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
-      preload: path.join(__dirname, 'preload.cjs'),
+      preload: preloadPath,
     },
   });
 
-  const isDev = process.env.NODE_ENV !== 'production';
+  const isDev = isDevelopmentMode();
 
   if (isDev && process.env.VITE_DEV_SERVER_URL) {
+    writeStartupLog(`Loading renderer URL ${process.env.VITE_DEV_SERVER_URL}`);
     mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
     mainWindow.webContents.openDevTools();
   } else {
-    mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
-    
-    // Open DevTools even in production for debugging as requested by user
-    mainWindow.webContents.openDevTools();
-
-    // DevTools blocking removed for debugging phase
-    /*
-    mainWindow.webContents.on('devtools-opened', () => {
-      mainWindow?.webContents.closeDevTools();
-    });
-    */
+    const rendererPath = path.join(__dirname, '../dist/index.html');
+    writeStartupLog(`Loading renderer file ${rendererPath}`);
+    mainWindow.loadFile(rendererPath);
   }
+
+  mainWindow.once('ready-to-show', () => {
+    writeStartupLog('Main window emitted ready-to-show');
+    if (revealFallbackTimer) {
+      clearTimeout(revealFallbackTimer);
+      revealFallbackTimer = null;
+    }
+    mainWindow?.show();
+    mainWindow?.focus();
+  });
+
+  mainWindow.webContents.on('did-finish-load', () => {
+    writeStartupLog('Main window emitted did-finish-load');
+    if (revealFallbackTimer) {
+      clearTimeout(revealFallbackTimer);
+      revealFallbackTimer = null;
+    }
+
+    if (!mainWindow?.isVisible()) {
+      mainWindow?.show();
+      mainWindow?.focus();
+    }
+  });
+
+  mainWindow.webContents.on('did-fail-load', (_event, errorCode, errorDescription, validatedURL) => {
+    console.error('Renderer failed to load', { errorCode, errorDescription, validatedURL });
+    writeStartupLog(`Renderer failed to load (${errorCode}) ${validatedURL ?? 'unknown url'}: ${errorDescription}`);
+    if (revealFallbackTimer) {
+      clearTimeout(revealFallbackTimer);
+      revealFallbackTimer = null;
+    }
+    if (!mainWindow?.isVisible()) {
+      mainWindow?.show();
+    }
+  });
+
+  mainWindow.on('closed', () => {
+    writeStartupLog('Main window closed');
+    if (revealFallbackTimer) {
+      clearTimeout(revealFallbackTimer);
+      revealFallbackTimer = null;
+    }
+    mainWindow = null;
+  });
+
+  revealFallbackTimer = setTimeout(() => {
+    if (!mainWindow?.isVisible()) {
+      console.warn('Renderer did not trigger ready-to-show in time, revealing window fallback.');
+      writeStartupLog('Renderer did not trigger ready-to-show in time, revealing window fallback');
+      mainWindow?.show();
+      mainWindow?.focus();
+    }
+  }, 3000);
 
   // Hide menu bar to prevent tampering
   mainWindow.setMenuBarVisibility(false);
@@ -100,33 +195,58 @@ ipcMain.on('store-delete', (event, key: string) => {
 });
 
 app.whenReady().then(() => {
-  db = initializeDatabase();
-  runDataMigration(db);
-  setupIpcHandlers(db);
-  setupRepairHandlers(db);
+  try {
+    writeStartupLog('Electron app is ready');
+    db = initializeDatabase();
+    writeStartupLog('Database initialized');
+    runDataMigration(db);
+    writeStartupLog('Data migration completed');
+    setupIpcHandlers(db);
+    writeStartupLog('IPC handlers registered');
+    setupRepairHandlers(db);
+    writeStartupLog('Repair handlers registered');
 
-  // Register local-img:// to serve images saved by the save-image IPC handler
-  const userDataPath = app.getPath('userData');
-  const imagesDir = path.join(userDataPath, 'images');
-  protocol.handle('local-img', (request) => {
-    const fileName = request.url.slice('local-img://'.length).split('?')[0];
-    const filePath = path.join(imagesDir, decodeURIComponent(fileName));
-    return net.fetch(`file://${filePath}`);
-  });
+    // Register local-img:// to serve images saved by the save-image IPC handler
+    const userDataPath = app.getPath('userData');
+    const imagesDir = path.join(userDataPath, 'images');
+    protocol.handle('local-img', (request) => {
+      const fileName = request.url.slice('local-img://'.length).split('?')[0];
+      const filePath = path.join(imagesDir, decodeURIComponent(fileName));
+      return net.fetch(`file://${filePath}`);
+    });
+    writeStartupLog('local-img protocol handler registered');
 
-  createWindow();
+    createWindow();
 
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
-    }
-  });
+    app.on('activate', () => {
+      if (BrowserWindow.getAllWindows().length === 0) {
+        writeStartupLog('App activated with no windows, recreating main window');
+        createWindow();
+      }
+    });
+  } catch (error) {
+    writeStartupLog('Fatal startup error', error);
+    dialog.showErrorBox(
+      'تعذر تشغيل البرنامج',
+      error instanceof Error ? error.message : 'حدث خطأ غير متوقع أثناء تشغيل البرنامج.'
+    );
+    app.quit();
+  }
 });
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
+});
+
+process.on('uncaughtException', (error) => {
+  writeStartupLog('Uncaught exception', error);
+  dialog.showErrorBox('خطأ غير متوقع', error.message);
+});
+
+process.on('unhandledRejection', (reason) => {
+  writeStartupLog('Unhandled rejection', reason);
 });
 
 // IPC Handler example
@@ -167,7 +287,7 @@ ipcMain.handle('save-image', async (event, base64Data: string) => {
 ipcMain.handle('db:backup', async () => {
   try {
     const userDataPath = app.getPath('userData');
-    const isDev = process.env.NODE_ENV !== 'production';
+    const isDev = isDevelopmentMode();
     const dbFile = path.join(userDataPath, isDev ? 'retail_dev.sqlite' : 'retail_prod.sqlite');
 
     const { canceled, filePath: savePath } = await dialog.showSaveDialog({
@@ -197,7 +317,7 @@ ipcMain.handle('db:restore', async () => {
     if (canceled || !filePaths.length) return { success: false, reason: 'canceled' };
 
     const userDataPath = app.getPath('userData');
-    const isDev = process.env.NODE_ENV !== 'production';
+    const isDev = isDevelopmentMode();
     const dbFile = path.join(userDataPath, isDev ? 'retail_dev.sqlite' : 'retail_prod.sqlite');
     const backupPath = dbFile + '.bak';
 

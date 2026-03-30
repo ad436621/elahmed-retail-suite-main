@@ -13,10 +13,13 @@ const MainLayout = () => {
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {location.pathname !== '/pos' && <TopHeader />}
         {/* pb-16 to clear the bottom nav on mobile */}
-        <main className={cn(
-          "flex-1 overflow-y-auto relative w-full",
-          location.pathname === '/pos' ? "p-0" : "p-4 md:p-8 pb-20 md:pb-8"
-        )}>
+        <main
+          data-testid="app-main"
+          className={cn(
+            "flex-1 overflow-y-auto relative w-full",
+            location.pathname === '/pos' ? "p-0" : "p-4 md:p-8 pb-20 md:pb-8"
+          )}
+        >
           <div key={location.pathname} className={cn(
             "animate-fade-in h-full mx-auto",
             location.pathname === '/pos' ? "w-full max-w-none" : "max-w-screen-2xl"

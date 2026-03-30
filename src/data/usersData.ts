@@ -286,7 +286,10 @@ export function saveUsers(users: AppUser[]): void {
 
   if (hasElectronIpc()) {
     const rows = callElectronSync<UserRow[]>('db-sync:users:replaceAll', normalized.map(toUserRow));
-    setUsersState(Array.isArray(rows) ? rows.map(normalizeUser) : normalized);
+    const persistedUsers = Array.isArray(rows) && (rows.length > 0 || normalized.length === 0)
+      ? rows.map(normalizeUser)
+      : normalized;
+    setUsersState(persistedUsers);
     emitDataChange(STORAGE_KEY);
     return;
   }

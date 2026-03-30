@@ -421,7 +421,7 @@ export default function Maintenance() {
     const { paginatedItems, page, totalPages, totalItems, pageSize, nextPage, prevPage, setPage } = usePagination(filteredTickets, 20);
 
     return (
-        <div className="space-y-5 animate-fade-in pb-12" dir="rtl">
+        <div className="space-y-5 animate-fade-in pb-12" dir="rtl" data-testid="maintenance-page">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                     <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/20">
@@ -432,7 +432,7 @@ export default function Maintenance() {
                         <p className="text-sm font-medium text-muted-foreground">{tickets.length} أمر صيانة مسجل</p>
                     </div>
                 </div>
-                <button onClick={openCreateForm} className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-bold text-white hover:opacity-90 transition-opacity shadow-lg shadow-blue-500/25">
+                <button data-testid="maintenance-create-ticket" onClick={openCreateForm} className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-sm font-bold text-white hover:opacity-90 transition-opacity shadow-lg shadow-blue-500/25">
                     <Plus className="h-5 w-5" /> استلام جهاز جديد
                 </button>
             </div>
@@ -443,6 +443,7 @@ export default function Maintenance() {
                     return (
                         <button
                             key={card.id}
+                            data-testid={`maintenance-status-${card.id}`}
                             onClick={() => setStatusFilter(card.id)}
                             className={`rounded-2xl border p-4 text-right transition-all ${active ? 'border-primary bg-primary/10 shadow-lg shadow-primary/10' : 'border-border bg-card hover:border-primary/30 hover:bg-muted/40'}`}
                         >
@@ -480,7 +481,7 @@ export default function Maintenance() {
 
                 <div className="relative w-full lg:w-80 shrink-0">
                     <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="رقم الطلب، العميل، الهاتف..." className={`${IC} pr-9 transition-all hover:border-primary/50 focus:border-primary`} />
+                    <input data-testid="maintenance-search" value={search} onChange={(e) => setSearch(e.target.value)} placeholder="رقم الطلب، العميل، الهاتف..." className={`${IC} pr-9 transition-all hover:border-primary/50 focus:border-primary`} />
                 </div>
             </div>
 
@@ -502,7 +503,7 @@ export default function Maintenance() {
                             ) : paginatedItems.length === 0 ? (
                                 <tr><td colSpan={8} className="py-16 text-center text-muted-foreground">لا توجد أوامر صيانة مطابقة للفلتر الحالي</td></tr>
                             ) : paginatedItems.map((ticket) => (
-                                <tr key={ticket.id} className="border-b border-border/40 hover:bg-muted/30 transition-colors group">
+                                <tr key={ticket.id} data-testid={`maintenance-ticket-${ticket.id}`} className="border-b border-border/40 hover:bg-muted/30 transition-colors group">
                                     <td className="px-4 py-3 align-top">
                                         <div className="font-mono text-sm font-bold text-primary">{ticket.ticket_no}</div>
                                         <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
@@ -539,7 +540,7 @@ export default function Maintenance() {
                                     <td className="px-4 py-3 align-top">
                                         <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity justify-end">
                                             <button onClick={() => printReceipt(ticket)} title="طباعة الإيصال" className="rounded-lg p-2 bg-card border border-border hover:bg-muted text-muted-foreground transition-all shadow-sm"><Printer className="h-4 w-4" /></button>
-                                            <button onClick={() => void startEdit(ticket)} title="تعديل" className="rounded-lg p-2 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 hover:bg-blue-100 dark:hover:bg-blue-500/20 text-blue-600 transition-all shadow-sm"><Pencil className="h-4 w-4" /></button>
+                                            <button data-testid={`maintenance-edit-${ticket.id}`} onClick={() => void startEdit(ticket)} title="تعديل" className="rounded-lg p-2 bg-blue-50 dark:bg-blue-500/10 border border-blue-200 dark:border-blue-500/20 hover:bg-blue-100 dark:hover:bg-blue-500/20 text-blue-600 transition-all shadow-sm"><Pencil className="h-4 w-4" /></button>
                                             <button onClick={() => setDeleteTarget(ticket)} title="حذف" className="rounded-lg p-2 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 hover:bg-red-100 dark:hover:bg-red-500/20 text-destructive transition-all shadow-sm"><Trash2 className="h-4 w-4" /></button>
                                         </div>
                                     </td>
@@ -555,7 +556,7 @@ export default function Maintenance() {
 
             {showForm && createPortal(
                 <div className="fixed inset-0 z-[9999] flex items-start justify-center overflow-y-auto bg-black/60 backdrop-blur-sm px-4 py-4 sm:px-6 sm:py-8 animate-fade-in" onClick={closeForm}>
-                    <div className="my-auto flex max-h-[calc(100vh-2rem)] w-full max-w-5xl flex-col overflow-hidden rounded-3xl border border-border bg-background shadow-2xl animate-scale-in sm:max-h-[calc(100vh-4rem)]" onClick={(e) => e.stopPropagation()}>
+                    <div data-testid="maintenance-form-modal" className="my-auto flex max-h-[calc(100vh-2rem)] w-full max-w-5xl flex-col overflow-hidden rounded-3xl border border-border bg-background shadow-2xl animate-scale-in sm:max-h-[calc(100vh-4rem)]" onClick={(e) => e.stopPropagation()}>
                         <div className="flex shrink-0 items-center justify-between px-6 py-4 border-b border-border bg-card">
                             <h2 className="text-xl font-black text-foreground truncate pl-4">{editId ? `تذكرة رقم #${form.ticket_no}` : 'استلام جهاز صيانة جديد'}</h2>
                             <button onClick={closeForm} className="rounded-full shrink-0 p-2 hover:bg-muted transition-colors"><X className="h-5 w-5 text-muted-foreground" /></button>
@@ -565,27 +566,27 @@ export default function Maintenance() {
                             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                                 <div className="space-y-4">
                                     <h3 className="text-sm font-bold text-primary flex items-center gap-2 border-b border-border pb-2"><AlignLeft className="h-4 w-4" /> بيانات العميل</h3>
-                                    <div><label className="mb-1.5 block text-xs font-bold text-muted-foreground">اسم العميل *</label><input value={form.customer_name || ''} onChange={(e) => setForm({ ...form, customer_name: e.target.value })} className={IC} /></div>
-                                    <div><label className="mb-1.5 block text-xs font-bold text-muted-foreground">رقم الهاتف</label><input value={form.customer_phone || ''} onChange={(e) => setForm({ ...form, customer_phone: e.target.value })} className={IC} /></div>
+                                    <div><label className="mb-1.5 block text-xs font-bold text-muted-foreground">اسم العميل *</label><input data-testid="maintenance-customer-name" value={form.customer_name || ''} onChange={(e) => setForm({ ...form, customer_name: e.target.value })} className={IC} /></div>
+                                    <div><label className="mb-1.5 block text-xs font-bold text-muted-foreground">رقم الهاتف</label><input data-testid="maintenance-customer-phone" value={form.customer_phone || ''} onChange={(e) => setForm({ ...form, customer_phone: e.target.value })} className={IC} /></div>
                                     <div><label className="mb-1.5 block text-xs font-bold text-muted-foreground">الملحقات المستلمة</label><input value={form.accessories_received ?? ''} onChange={(e) => setForm({ ...form, accessories_received: e.target.value })} className={IC} /></div>
                                 </div>
 
                                 <div className="space-y-4">
                                     <h3 className="text-sm font-bold text-primary flex items-center gap-2 border-b border-border pb-2"><PenTool className="h-4 w-4" /> بيانات الجهاز</h3>
-                                    <div><label className="mb-1.5 block text-xs font-bold text-muted-foreground">موديل الجهاز *</label><input value={form.device_model ?? ''} onChange={(e) => setForm({ ...form, device_model: e.target.value })} className={IC} placeholder="مثال: iPhone 13 Pro Max" /></div>
+                                    <div><label className="mb-1.5 block text-xs font-bold text-muted-foreground">موديل الجهاز *</label><input data-testid="maintenance-device-model" value={form.device_model ?? ''} onChange={(e) => setForm({ ...form, device_model: e.target.value })} className={IC} placeholder="مثال: iPhone 13 Pro Max" /></div>
                                     <div className="grid grid-cols-2 gap-2">
-                                        <div><label className="mb-1.5 block text-xs font-bold text-muted-foreground">براند الجهاز</label><input value={form.device_brand || ''} onChange={(e) => setForm({ ...form, device_brand: e.target.value })} className={IC} placeholder="مثال: Apple" /></div>
+                                        <div><label className="mb-1.5 block text-xs font-bold text-muted-foreground">براند الجهاز</label><input data-testid="maintenance-device-brand" value={form.device_brand || ''} onChange={(e) => setForm({ ...form, device_brand: e.target.value })} className={IC} placeholder="مثال: Apple" /></div>
                                         <div>
                                             <label className="mb-1.5 block text-xs font-bold text-muted-foreground">التصنيف</label>
-                                            <select value={form.device_category || 'mobile'} onChange={(e) => setForm({ ...form, device_category: e.target.value })} className={IC}>
+                                            <select data-testid="maintenance-device-category" value={form.device_category || 'mobile'} onChange={(e) => setForm({ ...form, device_category: e.target.value })} className={IC}>
                                                 <option value="mobile">موبايل</option><option value="tablet">تابلت</option><option value="device">جهاز</option><option value="laptop">لاب توب</option><option value="computer">كمبيوتر</option><option value="other">أخرى</option>
                                             </select>
                                         </div>
                                     </div>
-                                    <div><label className="mb-1.5 block text-xs font-bold text-muted-foreground">IMEI / SN</label><input value={form.imei_or_serial ?? ''} onChange={(e) => setForm({ ...form, imei_or_serial: e.target.value })} className={IC} /></div>
+                                    <div><label className="mb-1.5 block text-xs font-bold text-muted-foreground">IMEI / SN</label><input data-testid="maintenance-imei" value={form.imei_or_serial ?? ''} onChange={(e) => setForm({ ...form, imei_or_serial: e.target.value })} className={IC} /></div>
                                     <div>
                                         <label className="mb-1.5 block text-xs font-bold text-muted-foreground">الحالة الحالية</label>
-                                        <select value={form.status || 'received'} onChange={(e) => setForm({ ...form, status: e.target.value as RepairTicket['status'] })} className={IC}>
+                                        <select data-testid="maintenance-status" value={form.status || 'received'} onChange={(e) => setForm({ ...form, status: e.target.value as RepairTicket['status'] })} className={IC}>
                                             {Object.entries(statusLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                                         </select>
                                     </div>
@@ -594,10 +595,10 @@ export default function Maintenance() {
                                 <div className="space-y-4">
                                     <h3 className="text-sm font-bold text-primary flex items-center gap-2 border-b border-border pb-2"><DollarSign className="h-4 w-4" /> المالية والتفاصيل</h3>
                                     <div className="grid grid-cols-2 gap-2">
-                                        <div><label className="mb-1.5 block text-xs font-bold text-muted-foreground">التكلفة التقديرية</label><input type="number" value={form.package_price ?? ''} onChange={(e) => setForm({ ...form, package_price: Number(e.target.value) || 0 })} className={IC} /></div>
-                                        <div><label className="mb-1.5 block text-xs font-bold text-muted-foreground">التكلفة النهائية</label><input type="number" value={form.final_cost ?? ''} onChange={(e) => setForm({ ...form, final_cost: Number(e.target.value) || 0 })} className={IC} /></div>
+                                        <div><label className="mb-1.5 block text-xs font-bold text-muted-foreground">التكلفة التقديرية</label><input data-testid="maintenance-package-price" type="number" value={form.package_price ?? ''} onChange={(e) => setForm({ ...form, package_price: Number(e.target.value) || 0 })} className={IC} /></div>
+                                        <div><label className="mb-1.5 block text-xs font-bold text-muted-foreground">التكلفة النهائية</label><input data-testid="maintenance-final-cost" type="number" value={form.final_cost ?? ''} onChange={(e) => setForm({ ...form, final_cost: Number(e.target.value) || 0 })} className={IC} /></div>
                                     </div>
-                                    <div><label className="mb-1.5 block text-xs font-bold text-muted-foreground">وصف العطل</label><textarea value={form.issue_description ?? ''} onChange={(e) => setForm({ ...form, issue_description: e.target.value })} rows={3} className={`${IC} resize-none`} /></div>
+                                    <div><label className="mb-1.5 block text-xs font-bold text-muted-foreground">وصف العطل</label><textarea data-testid="maintenance-issue-description" value={form.issue_description ?? ''} onChange={(e) => setForm({ ...form, issue_description: e.target.value })} rows={3} className={`${IC} resize-none`} /></div>
                                     <div className="rounded-2xl border border-border bg-muted/20 p-4">
                                         <div className="text-xs font-bold text-muted-foreground mb-1">مبلغ الصيانة المسجل</div>
                                         <div className="text-lg font-black text-primary">{formatCurrency(Number(form.final_cost ?? form.package_price ?? 0))}</div>
@@ -666,7 +667,7 @@ export default function Maintenance() {
                         </div>
 
                         <div className="shrink-0 flex gap-3 px-6 py-4 bg-muted/40 border-t border-border mt-auto">
-                            <button onClick={() => void handleSubmit()} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:opacity-90 py-3 text-sm font-bold text-white transition-all shadow-md"><CheckCircle2 className="h-4 w-4" /> {editId ? 'تحديث البيانات' : 'حفظ التذكرة'}</button>
+                            <button data-testid="maintenance-save" onClick={() => void handleSubmit()} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:opacity-90 py-3 text-sm font-bold text-white transition-all shadow-md"><CheckCircle2 className="h-4 w-4" /> {editId ? 'تحديث البيانات' : 'حفظ التذكرة'}</button>
                             <button onClick={closeForm} className="flex-1 rounded-xl bg-card border border-border hover:bg-muted py-3 text-sm font-bold text-foreground transition-all">إلغاء</button>
                         </div>
                     </div>

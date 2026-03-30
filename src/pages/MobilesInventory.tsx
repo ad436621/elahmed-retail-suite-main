@@ -32,6 +32,7 @@ import { FilterBar, type FilterBarField } from '@/components/FilterBar';
 import { ProductDetailsModal, type ProductDetailsData } from '@/components/ProductDetailsModal';
 import { calculateMarginPercent, calculateProfitAmount, calculateSalePriceFromProfit, getMarginTone, normalizeCostPrice } from '@/domain/pricing';
 import { PRODUCT_CONDITION_OPTIONS, type ProductConditionValue, getProductConditionBadgeClass, getProductConditionLabel } from '@/domain/productConditions';
+import { isBarcodeDuplicate } from '@/repositories/productRepository';
 
 const IC = 'w-full rounded-xl border border-border bg-muted/30 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 transition-all';
 
@@ -78,6 +79,7 @@ interface InventoryViewItem {
 }
 
 const emptyUnit = (): UnitEntry => ({ imei1: '', imei2: '', color: '', barcode: '' });
+const normalizeIdentifier = (value: string) => value.replace(/\s+/g, '').trim();
 
 const fmt = (n: number) => n.toLocaleString('ar-EG');
 
@@ -138,7 +140,7 @@ function MobilesCategoriesManager({
     };
 
     return createPortal(
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4" onClick={onClose}>
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/72 px-4" onClick={onClose}>
             <div className="w-full max-w-md rounded-2xl border border-border bg-card shadow-2xl animate-scale-in overflow-hidden" onClick={e => e.stopPropagation()}>
                 {/* Header */}
                 <div className="flex items-center justify-between px-5 py-4 border-b border-border bg-muted/30">
@@ -701,6 +703,156 @@ export default function MobilesInventory() {
         refreshData();
     };
 
+    const handleStrictFormSubmit = () => {
+        const category = f.category.trim();
+        const name = f.name.trim();
+        const baseBarcode = f.barcode.trim();
+        const baseColor = f.color.trim();
+        const baseModel = f.model.trim();
+        const baseBrand = f.brand.trim();
+        const baseSupplier = f.supplier.trim();
+        const baseSource = f.source.trim();
+        const baseStorage = f.storage.trim();
+        const baseRam = f.ram.trim();
+        const baseBoxNumber = f.boxNumber.trim();
+        const baseDescription = f.description.trim();
+        const baseWarehouseId = f.warehouseId.trim();
+        const normalizedQuantity = Math.max(0, Math.round(Number(f.quantity) || 0));
+
+        if (!category) { toast({ title: '⚠️ اختر تصنيفاً', variant: 'destructive' }); return; }
+        if (!name) { toast({ title: '⚠️ أدخل اسم المنتج', variant: 'destructive' }); return; }
+        if ([f.newCostPrice, f.salePrice, f.profitMargin, normalizedQuantity].some((value) => !Number.isFinite(value) || value < 0)) {
+            toast({ title: '⚠️ القيم الرقمية لا يمكن أن تكون سالبة', variant: 'destructive' });
+            return;
+        }
+
+        const normalizedUnits = units.map((unit) => ({
+            imei1: normalizeIdentifier(unit.imei1),
+            imei2: normalizeIdentifier(unit.imei2),
+            color: unit.color.trim(),
+            barcode: unit.barcode.trim(),
+        }));
+
+        if (editId) {
+            const unit = normalizedUnits[0] || { imei1: '', imei2: '', color: '', barcode: '' };
+            const serialNumber = unit.imei1 || normalizeIdentifier(f.serialNumber);
+            const barcode = unit.barcode || baseBarcode;
+
+            if (!serialNumber) {
+                toast({ title: '⚠️ أدخل IMEI 1 للوحدة', variant: 'destructive' });
+                return;
+            }
+
+            if (mobiles.some((item) => item.id !== editId && normalizeIdentifier(item.serialNumber) === serialNumber)) {
+                toast({ title: '⚠️ رقم IMEI مستخدم بالفعل', variant: 'destructive' });
+                return;
+            }
+
+            if (barcode && isBarcodeDuplicate(barcode, editId)) {
+                toast({ title: '⚠️ الباركود مستخدم بالفعل', variant: 'destructive' });
+                return;
+            }
+
+            updateMobile(editId, {
+                name,
+                barcode: barcode || undefined,
+                deviceType: 'mobile',
+                category,
+                condition: f.condition,
+                quantity: normalizedQuantity,
+                storage: baseStorage,
+                ram: baseRam,
+                color: unit.color || baseColor,
+                model: baseModel || undefined,
+                brand: baseBrand || undefined,
+                supplier: baseSupplier,
+                oldCostPrice: f.oldCostPrice,
+                newCostPrice: f.newCostPrice,
+                salePrice: f.salePrice,
+                profitMargin: f.profitMargin,
+                serialNumber,
+                imei2: unit.imei2 || undefined,
+                boxNumber: baseBoxNumber || undefined,
+                source: baseSource || undefined,
+                taxExcluded: f.taxExcluded,
+                notes: '',
+                description: baseDescription,
+                image: f.image,
+                warehouseId: baseWarehouseId || undefined,
+            });
+            toast({ title: '✅ تم تعديل المنتج' });
+        } else {
+            const validUnits = normalizedUnits.filter((unit) => unit.imei1);
+            if (validUnits.length === 0) {
+                toast({ title: '⚠️ أدخل IMEI 1 لوحدة واحدة على الأقل', variant: 'destructive' });
+                return;
+            }
+
+            const seenImeis = new Set<string>();
+            for (const unit of validUnits) {
+                if (seenImeis.has(unit.imei1)) {
+                    toast({ title: '⚠️ يوجد IMEI مكرر داخل نفس العملية', variant: 'destructive' });
+                    return;
+                }
+                seenImeis.add(unit.imei1);
+            }
+
+            const seenBarcodes = new Set<string>();
+            for (const unit of validUnits) {
+                if (!unit.barcode) continue;
+                if (seenBarcodes.has(unit.barcode)) {
+                    toast({ title: '⚠️ يوجد باركود مكرر داخل نفس العملية', variant: 'destructive' });
+                    return;
+                }
+                seenBarcodes.add(unit.barcode);
+            }
+
+            if (validUnits.some((unit) => mobiles.some((item) => normalizeIdentifier(item.serialNumber) === unit.imei1))) {
+                toast({ title: '⚠️ أحد أرقام IMEI مسجل بالفعل', variant: 'destructive' });
+                return;
+            }
+
+            if (validUnits.some((unit) => unit.barcode && isBarcodeDuplicate(unit.barcode))) {
+                toast({ title: '⚠️ أحد الباركودات مستخدم بالفعل', variant: 'destructive' });
+                return;
+            }
+
+            validUnits.forEach((unit, index) => {
+                addMobile({
+                    name,
+                    barcode: unit.barcode || `MOB-${Date.now()}-${index}-${Math.random().toString(36).slice(2, 6)}`,
+                    deviceType: 'mobile',
+                    category,
+                    condition: f.condition,
+                    quantity: 1,
+                    storage: baseStorage,
+                    ram: baseRam,
+                    color: unit.color || baseColor,
+                    model: baseModel || undefined,
+                    brand: baseBrand || undefined,
+                    supplier: baseSupplier,
+                    oldCostPrice: f.oldCostPrice,
+                    newCostPrice: f.newCostPrice,
+                    salePrice: f.salePrice,
+                    profitMargin: f.profitMargin,
+                    serialNumber: unit.imei1,
+                    imei2: unit.imei2 || undefined,
+                    boxNumber: baseBoxNumber || undefined,
+                    source: baseSource || undefined,
+                    taxExcluded: f.taxExcluded,
+                    notes: '',
+                    description: baseDescription,
+                    image: f.image,
+                    warehouseId: baseWarehouseId || warehouses.find((warehouse) => warehouse.isDefault)?.id || '',
+                });
+            });
+            toast({ title: `✅ تم إضافة ${validUnits.length} وحدة` });
+        }
+
+        closeForm();
+        refreshData();
+    };
+
     const openAdd = () => {
         setEditId(null);
         setSelectedDetails(null);
@@ -820,7 +972,7 @@ export default function MobilesInventory() {
 
             {/* ─── Action Buttons Row ─── */}
             <div className="flex flex-wrap items-center gap-2 mb-4">
-                <button onClick={openAdd}
+                <button data-testid="mobiles-create-product" onClick={openAdd}
                     className="flex items-center gap-1.5 rounded-xl bg-primary px-3 py-2 text-xs font-bold text-primary-foreground hover:bg-primary/90 transition-all shadow-sm">
                     <Plus className="h-3.5 w-3.5" /> إضافة منتج
                 </button>
@@ -1137,8 +1289,8 @@ export default function MobilesInventory() {
 
             {/* ─── Product Form Modal ─── */}
             {showForm && createPortal(
-                <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 sm:p-6" onClick={closeForm}>
-                    <div className="w-full max-w-xl max-h-[90vh] flex flex-col rounded-2xl border border-border bg-card shadow-2xl animate-scale-in" onClick={e => e.stopPropagation()}>
+                <div className="fixed inset-0 z-[9999] flex items-start justify-center overflow-y-auto bg-black/72 p-4 sm:p-6" onClick={closeForm}>
+                    <div data-testid="mobiles-form-modal" className="my-2 w-full max-w-xl max-h-[92vh] flex flex-col rounded-2xl border border-border bg-card shadow-2xl animate-scale-in sm:my-4" onClick={e => e.stopPropagation()}>
                         <div className="flex-none flex items-center justify-between px-4 pt-4 pb-3 border-b border-border">
                             <h2 className="text-base font-bold text-foreground">
                                 {editId ? '✏️ تعديل المنتج' : '➕ إضافة منتج'}
@@ -1154,7 +1306,7 @@ export default function MobilesInventory() {
                             <div className="grid grid-cols-2 gap-3">
                                 <div className="col-span-2 sm:col-span-1">
                                     <label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase">التصنيف *</label>
-                                    <select value={f.category} onChange={e => setF(p => ({ ...p, category: e.target.value }))} className={IC}>
+                                    <select data-testid="mobiles-category" value={f.category} onChange={e => setF(p => ({ ...p, category: e.target.value }))} className={IC}>
                                         <option value="">-- اختر --</option>
                                         {categories.map((c, i) => <option key={i} value={c}>{c}</option>)}
                                     </select>
@@ -1172,7 +1324,7 @@ export default function MobilesInventory() {
                                 <div className="grid grid-cols-1">
                                     <div>
                                         <label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase">المخزن *</label>
-                                        <select value={f.warehouseId} onChange={e => setF(p => ({ ...p, warehouseId: e.target.value }))} className={IC}>
+                                        <select data-testid="mobiles-warehouse" value={f.warehouseId} onChange={e => setF(p => ({ ...p, warehouseId: e.target.value }))} className={IC}>
                                             <option value="">-- الافتراضي --</option>
                                             {warehouses.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
                                         </select>
@@ -1183,8 +1335,8 @@ export default function MobilesInventory() {
                             <div className="border-t border-border/50" />
 
                             <div className="grid grid-cols-2 gap-3">
-                                <div><label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase">اسم المنتج *</label><input data-validation="text-only" value={f.name} onChange={e => setF(p => ({ ...p, name: e.target.value }))} className={IC} autoFocus /></div>
-                                <div><label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase">الباركود</label><input value={f.barcode} onChange={e => setF(p => ({ ...p, barcode: e.target.value }))} placeholder="اتركه فارغاً للتوليد التلقائي" className={`${IC} font-mono`} /></div>
+                                <div><label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase">اسم المنتج *</label><input data-testid="mobiles-name" data-validation="text-only" value={f.name} onChange={e => setF(p => ({ ...p, name: e.target.value }))} className={IC} autoFocus /></div>
+                                <div><label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase">الباركود</label><input data-testid="mobiles-barcode" value={f.barcode} onChange={e => setF(p => ({ ...p, barcode: e.target.value }))} placeholder="اتركه فارغاً للتوليد التلقائي" className={`${IC} font-mono`} /></div>
                             </div>
 
                             <div className="border-t border-border/50" />
@@ -1194,7 +1346,7 @@ export default function MobilesInventory() {
                                         {/* التخزين */}
                                         <div>
                                             <label className="mb-1 block text-xs text-muted-foreground">التخزين</label>
-                                            <select value={customStorage ? '__other__' : f.storage} onChange={e => { const v = e.target.value; if (v === '__other__') { setCustomStorage(true); setF(p => ({ ...p, storage: '' })); } else { setCustomStorage(false); setF(p => ({ ...p, storage: v })); } }} className={IC}>
+                                            <select data-testid="mobiles-storage" value={customStorage ? '__other__' : f.storage} onChange={e => { const v = e.target.value; if (v === '__other__') { setCustomStorage(true); setF(p => ({ ...p, storage: '' })); } else { setCustomStorage(false); setF(p => ({ ...p, storage: v })); } }} className={IC}>
                                                 <option value="">-- اختر --</option>
                                                 {STORAGE_OPTIONS.map(s => <option key={s} value={s}>{s}</option>)}
                                                 <option value="__other__">أخرى...</option>
@@ -1206,7 +1358,7 @@ export default function MobilesInventory() {
                                         {/* الرام */}
                                         <div>
                                             <label className="mb-1 block text-xs text-muted-foreground">الرام</label>
-                                            <select value={customRam ? '__other__' : f.ram} onChange={e => { const v = e.target.value; if (v === '__other__') { setCustomRam(true); setF(p => ({ ...p, ram: '' })); } else { setCustomRam(false); setF(p => ({ ...p, ram: v })); } }} className={IC}>
+                                            <select data-testid="mobiles-ram" value={customRam ? '__other__' : f.ram} onChange={e => { const v = e.target.value; if (v === '__other__') { setCustomRam(true); setF(p => ({ ...p, ram: '' })); } else { setCustomRam(false); setF(p => ({ ...p, ram: v })); } }} className={IC}>
                                                 <option value="">-- اختر --</option>
                                                 {RAM_OPTIONS.map(r => <option key={r} value={r}>{r}</option>)}
                                                 <option value="__other__">أخرى...</option>
@@ -1217,7 +1369,7 @@ export default function MobilesInventory() {
                                         </div>
                                         {/* اللون */}
                                         <div><label className="mb-1 block text-xs text-muted-foreground">اللون</label><input data-validation="text-only" value={f.color} onChange={e => setF(p => ({ ...p, color: e.target.value }))} className={IC} /></div>
-                                        <div><label className="mb-1 block text-xs text-muted-foreground">الموديل</label><input value={f.model} onChange={e => setF(p => ({ ...p, model: e.target.value }))} className={IC} /></div>
+                                        <div><label className="mb-1 block text-xs text-muted-foreground">الموديل</label><input data-testid="mobiles-model" value={f.model} onChange={e => setF(p => ({ ...p, model: e.target.value }))} className={IC} /></div>
                                         {/* الشركة (البراند) — يدوي + datalist */}
                                         <div>
                                             <label className="mb-1 block text-xs text-muted-foreground">الشركة (البراند)</label>
@@ -1280,7 +1432,7 @@ export default function MobilesInventory() {
                                                     {units.map((u, idx) => (
                                                         <tr key={idx} className="border-b border-border/40 last:border-0">
                                                             <td className="px-2 py-1 text-center font-bold text-muted-foreground">{idx + 1}</td>
-                                                            <td className="px-1 py-1"><input value={u.imei1} onChange={e => { const v = e.target.value; setUnits(us => us.map((uu, i) => i === idx ? { ...uu, imei1: v } : uu)); }} placeholder="IMEI 1" className="w-full rounded-md border border-border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary/40" /></td>
+                                                            <td className="px-1 py-1"><input data-testid={`mobiles-unit-imei1-${idx}`} value={u.imei1} onChange={e => { const v = e.target.value; setUnits(us => us.map((uu, i) => i === idx ? { ...uu, imei1: v } : uu)); }} placeholder="IMEI 1" className="w-full rounded-md border border-border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary/40" /></td>
                                                             <td className="px-1 py-1"><input value={u.imei2} onChange={e => { const v = e.target.value; setUnits(us => us.map((uu, i) => i === idx ? { ...uu, imei2: v } : uu)); }} placeholder="اختياري" className="w-full rounded-md border border-border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary/40" /></td>
                                                             <td className="px-1 py-1"><input value={u.color} onChange={e => { const v = e.target.value; setUnits(us => us.map((uu, i) => i === idx ? { ...uu, color: v } : uu)); }} placeholder="اللون" className="w-full rounded-md border border-border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary/40" /></td>
                                                             <td className="px-1 py-1"><input value={u.barcode} onChange={e => { const v = e.target.value; setUnits(us => us.map((uu, i) => i === idx ? { ...uu, barcode: v } : uu)); }} placeholder="تلقائي" className="w-full rounded-md border border-border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-primary/40" /></td>
@@ -1311,8 +1463,8 @@ export default function MobilesInventory() {
                                         <input type="number" min={0} value={f.quantity} onChange={e => setF(p => ({ ...p, quantity: +e.target.value }))} className={IC} />
                                     </div>
                                 )}
-                                <div><label className="mb-1 block text-xs font-bold text-muted-foreground uppercase">سعر الشراء</label><input type="number" min={0} value={f.newCostPrice} onChange={e => setCostPriceValue(+e.target.value)} className={IC} /></div>
-                                <div><label className="mb-1 block text-xs font-bold text-primary uppercase">سعر البيع</label><input type="number" min={0} value={f.salePrice} onChange={e => setSalePriceValue(+e.target.value)} className={`${IC} border-primary/40 focus:ring-primary`} /></div>
+                                <div><label className="mb-1 block text-xs font-bold text-muted-foreground uppercase">سعر الشراء</label><input data-testid="mobiles-cost" type="number" min={0} value={f.newCostPrice} onChange={e => setCostPriceValue(+e.target.value)} className={IC} /></div>
+                                <div><label className="mb-1 block text-xs font-bold text-primary uppercase">سعر البيع</label><input data-testid="mobiles-sale" type="number" min={0} value={f.salePrice} onChange={e => setSalePriceValue(+e.target.value)} className={`${IC} border-primary/40 focus:ring-primary`} /></div>
                                 <div><label className="mb-1 block text-xs font-bold text-muted-foreground uppercase">هامش الربح</label><input type="number" min={0} value={f.profitMargin} onChange={e => setProfitMarginValue(+e.target.value)} className={IC} /></div>
                             </div>
                             {/* هامش الربح المحسوب */}
@@ -1337,7 +1489,7 @@ export default function MobilesInventory() {
                         </div>
 
                         <div className="flex-none flex gap-2 px-4 py-4 border-t border-border bg-muted/10 rounded-b-2xl">
-                            <button onClick={handleFormSubmit}
+                            <button data-testid="mobiles-save" onClick={handleStrictFormSubmit}
                                 className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-all shadow-md">
                                 <Check className="h-4 w-4" /> {editId ? 'حفظ التعديلات' : 'إضافة المنتج'}
                             </button>

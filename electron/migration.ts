@@ -1262,6 +1262,7 @@ export function runDataMigration(db: DB) {
   try {
     repairCategoriesSchema(db);
     repairProductBatchesSchema(db);
+    repairOperationalSchemas(db);
     migrateCustomers(db);
     migrateWallets(db);
     migrateCategories(db);
@@ -1270,7 +1271,6 @@ export function runDataMigration(db: DB) {
     const legacyInstallments = repairInstallmentsSchema(db);
     migrateInstallments(db, legacyInstallments);
     repairSafeTransactionsSchema(db);
-    repairOperationalSchemas(db);
     ensurePerformanceIndexes(db);
 
     migrateProductsInventory(db);

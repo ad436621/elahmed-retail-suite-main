@@ -336,6 +336,7 @@ const AppSidebar = () => {
 
   return (
     <aside
+      data-testid="app-sidebar"
       className={cn(
         "hidden md:flex h-screen flex-col bg-sidebar-background border-e border-sidebar-border/60 shrink-0 relative transition-all duration-300",
         isCollapsed ? "w-[56px]" : "w-[200px]"
@@ -577,6 +578,7 @@ const AppSidebar = () => {
             {/* Logout */}
             <button
               onClick={handleLogout}
+              data-testid="logout-button"
               aria-label="تسجيل الخروج"
               className={cn(
                 "flex w-full items-center justify-center gap-1 rounded-lg px-2 py-1.5 text-xs font-bold",
@@ -598,6 +600,7 @@ const AppSidebar = () => {
         ) : (
           <button
             onClick={handleLogout}
+            data-testid="logout-button"
             aria-label="تسجيل الخروج"
             className={cn(
               "flex w-full items-center justify-center p-2 rounded-lg",

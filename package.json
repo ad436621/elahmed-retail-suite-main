@@ -8,14 +8,19 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:e2e": "vite build --mode e2e",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",
     "test": "vitest run",
+    "test:all": "npm run test && npm run test:e2e",
+    "test:e2e": "npm run build:e2e && playwright test",
+    "test:e2e:ui": "playwright test --ui",
     "test:watch": "vitest",
     "dist:win": "npm run build && electron-builder --win nsis portable",
     "build:protected": "node scripts/build-protected.cjs",
-    "dist:protected": "node scripts/build-protected.cjs && npx electron-builder"
+    "dist:protected": "node scripts/build-protected.cjs && npx electron-builder",
+    "preview:e2e": "vite preview --host 127.0.0.1 --port 4173 --strictPort"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -77,6 +82,7 @@
   "devDependencies": {
     "@electron/rebuild": "^4.0.3",
     "@eslint/js": "^9.32.0",
+    "@playwright/test": "^1.58.2",
     "@tailwindcss/typography": "^0.5.16",
     "@testing-library/jest-dom": "^6.6.0",
     "@testing-library/react": "^16.0.0",

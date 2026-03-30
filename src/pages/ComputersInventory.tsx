@@ -144,7 +144,7 @@ function CategoriesManager({
   };
 
   return createPortal(
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm" onClick={onClose}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/72 px-4" onClick={onClose}>
       <div
         className="w-full max-w-md rounded-2xl border border-border bg-card shadow-2xl animate-scale-in"
         onClick={(event) => event.stopPropagation()}
@@ -568,6 +568,75 @@ export default function ComputersInventory() {
     closeForm();
   };
 
+  const handleValidatedSave = () => {
+    const normalizedName = form.name.trim();
+    const normalizedCategory = form.category.trim();
+    const normalizedBarcode = form.barcode.trim();
+    const normalizedModel = form.model.trim();
+    const normalizedColor = form.color.trim();
+    const normalizedBrand = form.brand.trim();
+    const normalizedSupplier = form.supplier.trim();
+    const normalizedSource = form.source.trim();
+    const normalizedProcessor = form.processor.trim();
+    const normalizedRam = form.ram.trim();
+    const normalizedStorage = form.storage.trim();
+    const normalizedNotes = form.notes.trim();
+    const normalizedDescription = form.description.trim();
+
+    if (!normalizedName) {
+      toast({ title: 'خطأ', description: 'اسم المنتج مطلوب', variant: 'destructive' });
+      return;
+    }
+    if (!normalizedCategory) {
+      toast({ title: 'خطأ', description: 'التصنيف مطلوب', variant: 'destructive' });
+      return;
+    }
+    if (normalizedBarcode && isBarcodeDuplicate(normalizedBarcode, editId || undefined)) {
+      toast({ title: 'خطأ', description: 'الباركود مستخدم بالفعل', variant: 'destructive' });
+      return;
+    }
+    if ([form.quantity, form.newCostPrice, form.salePrice, form.profitMargin].some((value) => !Number.isFinite(value) || value < 0)) {
+      toast({ title: 'خطأ', description: 'القيم الرقمية لا يمكن أن تكون سالبة', variant: 'destructive' });
+      return;
+    }
+
+    const costPrice = normalizeCostPrice(form.newCostPrice, form.oldCostPrice);
+    const payload: Omit<ComputerItem, 'id' | 'createdAt' | 'updatedAt'> = {
+      name: normalizedName,
+      barcode: normalizedBarcode || undefined,
+      deviceType: form.deviceType,
+      category: normalizedCategory,
+      condition: form.condition,
+      color: normalizedColor,
+      brand: normalizedBrand || undefined,
+      supplier: normalizedSupplier || undefined,
+      source: normalizedSource || undefined,
+      quantity: form.quantity,
+      processor: normalizedProcessor || undefined,
+      ram: normalizedRam || undefined,
+      storage: normalizedStorage || undefined,
+      oldCostPrice: costPrice,
+      newCostPrice: costPrice,
+      salePrice: form.salePrice,
+      profitMargin: calculateProfitAmount(costPrice, form.salePrice),
+      notes: normalizedNotes,
+      description: normalizedDescription,
+      image: form.image,
+      warehouseId: form.warehouseId || undefined,
+      model: normalizedModel,
+    };
+
+    if (editId) {
+      updateComputer(editId, payload);
+      toast({ title: 'تم تحديث الكمبيوتر', description: normalizedName });
+    } else {
+      addComputer(payload);
+      toast({ title: 'تمت إضافة الكمبيوتر', description: normalizedName });
+    }
+
+    closeForm();
+  };
+
   const handleDelete = async (item: ComputerViewItem) => {
     const ok = await confirm({
       title: 'حذف منتج',
@@ -668,7 +737,7 @@ export default function ComputersInventory() {
             <Download className="h-4 w-4" /> تصدير Excel
           </button>
 
-          <button onClick={openAdd} className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90">
+          <button data-testid="computers-create-product" onClick={openAdd} className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90">
             <Plus className="h-4 w-4" /> إضافة كمبيوتر
           </button>
         </div>
@@ -866,8 +935,8 @@ export default function ComputersInventory() {
 
       {showForm &&
         createPortal(
-          <div className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-black/50 px-4 py-4 backdrop-blur-sm" onClick={closeForm}>
-            <div className="my-8 w-full max-w-2xl rounded-2xl border border-border bg-card shadow-2xl animate-scale-in" onClick={(event) => event.stopPropagation()}>
+          <div className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-black/72 px-4 py-4 sm:py-8" onClick={closeForm}>
+            <div data-testid="computers-form-modal" className="my-2 w-full max-w-2xl max-h-[92vh] rounded-2xl border border-border bg-card shadow-2xl animate-scale-in sm:my-4 flex flex-col" onClick={(event) => event.stopPropagation()}>
               <div className="flex items-center justify-between border-b border-border px-4 pb-3 pt-4">
                 <h2 className="text-base font-bold text-foreground">{editId ? 'تعديل الكمبيوتر' : 'إضافة كمبيوتر'}</h2>
                 <button onClick={closeForm} className="rounded-xl p-2 transition-colors hover:bg-muted">
@@ -875,13 +944,13 @@ export default function ComputersInventory() {
                 </button>
               </div>
 
-              <div className="space-y-4 p-4">
+              <div className="flex-1 overflow-y-auto space-y-4 p-4">
                 <ImageUpload value={form.image} onChange={(value) => setForm((current) => ({ ...current, image: value }))} />
 
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase">التصنيف</label>
-                    <select value={form.category} onChange={(event) => setForm((current) => ({ ...current, category: event.target.value }))} className={IC}>
+                    <select data-testid="computers-category" value={form.category} onChange={(event) => setForm((current) => ({ ...current, category: event.target.value }))} className={IC}>
                       <option value="" disabled>
                         -- اختر تصنيفًا --
                       </option>
@@ -936,7 +1005,7 @@ export default function ComputersInventory() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase">اسم المنتج</label>
-                    <input value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} className={IC} autoFocus />
+                    <input data-testid="computers-name" value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} className={IC} autoFocus />
                   </div>
                   <div>
                     <label className="mb-1 block text-xs font-semibold text-muted-foreground uppercase">الباركود</label>
@@ -1008,15 +1077,15 @@ export default function ComputersInventory() {
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                   <div>
                     <label className="mb-1 block text-xs font-bold text-muted-foreground uppercase">الكمية</label>
-                    <input type="number" min={0} value={form.quantity} onChange={(event) => setForm((current) => ({ ...current, quantity: Number(event.target.value) || 0 }))} className={IC} />
+                    <input data-testid="computers-quantity" type="number" min={0} value={form.quantity} onChange={(event) => setForm((current) => ({ ...current, quantity: Number(event.target.value) || 0 }))} className={IC} />
                   </div>
                   <div>
                     <label className="mb-1 block text-xs font-bold text-muted-foreground uppercase">تكلفة الشراء</label>
-                    <input type="number" min={0} value={normalizeCostPrice(form.newCostPrice, form.oldCostPrice)} onChange={(event) => setCostPriceValue(Number(event.target.value) || 0)} className={IC} />
+                    <input data-testid="computers-cost" type="number" min={0} value={normalizeCostPrice(form.newCostPrice, form.oldCostPrice)} onChange={(event) => setCostPriceValue(Number(event.target.value) || 0)} className={IC} />
                   </div>
                   <div>
                     <label className="mb-1 block text-xs font-bold text-primary uppercase">سعر البيع</label>
-                    <input type="number" min={0} value={form.salePrice} onChange={(event) => setSalePriceValue(Number(event.target.value) || 0)} className={cn(IC, 'border-primary/40 focus:ring-primary')} />
+                    <input data-testid="computers-sale" type="number" min={0} value={form.salePrice} onChange={(event) => setSalePriceValue(Number(event.target.value) || 0)} className={cn(IC, 'border-primary/40 focus:ring-primary')} />
                   </div>
                   <div>
                     <label className="mb-1 block text-xs font-bold text-emerald-600 uppercase">هامش الربح</label>
@@ -1037,7 +1106,7 @@ export default function ComputersInventory() {
               </div>
 
               <div className="flex gap-2 border-t border-border px-4 pb-4 pt-3">
-                <button onClick={handleSave} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary/90">
+                <button data-testid="computers-save" onClick={handleValidatedSave} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-bold text-primary-foreground hover:bg-primary/90">
                   <Check className="h-4 w-4" /> {editId ? 'حفظ التعديلات' : 'إضافة الكمبيوتر'}
                 </button>
                 <button onClick={closeForm} className="rounded-xl border border-border px-5 py-2.5 text-sm font-semibold hover:bg-muted">
