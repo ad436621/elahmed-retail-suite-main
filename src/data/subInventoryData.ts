@@ -126,26 +126,12 @@ export function createSubInventory(storageKey: string) {
   };
 
   const update = (id: string, updates: Partial<SubItem>): void => {
-    updateAccessoryRow(inventoryType, storageKey, id, {
-      name: updates.name,
-      category: updates.category,
-      model: updates.model,
-      barcode: updates.barcode,
-      quantity: updates.quantity,
-      oldCostPrice: updates.costPrice,
-      newCostPrice: updates.costPrice,
-      costPrice: updates.costPrice,
-      salePrice: updates.salePrice,
-      profitMargin: updates.profitMargin,
-      minStock: updates.minStock,
-      condition: updates.condition,
-      brand: updates.brand,
-      supplier: updates.supplier,
-      source: updates.source,
-      notes: updates.notes,
-      image: updates.image,
-      updatedAt: new Date().toISOString(),
-    });
+    const payload: any = { ...updates, updatedAt: new Date().toISOString() };
+    if ('costPrice' in updates) {
+      payload.oldCostPrice = updates.costPrice;
+      payload.newCostPrice = updates.costPrice;
+    }
+    updateAccessoryRow(inventoryType, storageKey, id, payload);
   };
 
   const remove = (id: string): void => {

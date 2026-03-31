@@ -86,13 +86,34 @@ export function processSale(
     validateStock(item.product, item.qty);
   }
 
-  // Calculate FIFO for all items
+  // Calculate FIFO for all items — with fallback when no batches exist
   const fifoResults: BatchSaleResult[] = [];
   let totalFifoCost = 0;
 
   for (const item of cart) {
-    // Pass sellingPrice so FIFO knows what revenue to calculate profit against
-    const result = calculateFIFOSale(item.product.id, item.qty, item.product.sellingPrice);
+    let result: BatchSaleResult;
+    try {
+      // Try FIFO from batches first
+      result = calculateFIFOSale(item.product.id, item.qty, item.product.sellingPrice);
+    } catch {
+      // ── No batches fallback ─────────────────────────────────────────
+      // If the product has enough quantity in its own record, use it directly.
+      // This handles imported backups that lack batch records.
+      const costPerUnit = item.product.costPrice ?? 0;
+      const salePerUnit = item.product.sellingPrice ?? 0;
+      const profit = (salePerUnit - costPerUnit) * item.qty;
+      result = {
+        batches: [{
+          batchId: `auto-${item.product.id}`,
+          qtyFromBatch: item.qty,
+          costPrice: costPerUnit,
+          salePrice: salePerUnit,
+          profit,
+        }],
+        totalCost: costPerUnit * item.qty,
+        totalProfit: profit,
+      };
+    }
     fifoResults.push(result);
     totalFifoCost += result.totalCost;
   }

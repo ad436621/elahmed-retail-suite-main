@@ -294,35 +294,11 @@ export function addMobile(item: Omit<MobileItem, 'id' | 'createdAt' | 'updatedAt
 }
 
 export function updateMobile(id: string, updates: Partial<MobileItem>): void {
-  updateProductRow(MOBILE_SOURCE, MOBILES_KEY, id, {
-    barcode: updates.barcode,
-    deviceType: updates.deviceType,
-    category: updates.category,
-    condition: updates.condition,
-    storage: updates.storage,
-    ram: updates.ram,
-    color: updates.color,
-    model: updates.model,
-    brand: updates.brand,
-    description: updates.description,
-    boxNumber: updates.boxNumber,
-    taxExcluded: updates.taxExcluded,
-    quantity: updates.quantity,
-    oldCostPrice: updates.oldCostPrice,
-    newCostPrice: updates.newCostPrice ?? updates.costPrice,
-    salePrice: updates.salePrice,
-    profitMargin: updates.profitMargin,
-    supplier: updates.supplier,
-    warehouseId: updates.warehouseId,
-    serialNumber: updates.serialNumber,
-    imei2: updates.imei2,
-    isArchived: updates.isArchived,
-    notes: updates.notes,
-    image: updates.image,
-    deletedAt: updates.deletedAt,
-    updatedAt: new Date().toISOString(),
-    name: updates.name,
-  });
+  const payload: any = { ...updates, updatedAt: new Date().toISOString() };
+  if ('costPrice' in updates && !('newCostPrice' in updates)) {
+    payload.newCostPrice = updates.costPrice;
+  }
+  updateProductRow(MOBILE_SOURCE, MOBILES_KEY, id, payload);
 }
 
 export function deleteMobile(id: string): void {
@@ -357,34 +333,11 @@ export function addMobileAccessory(item: Omit<MobileAccessory, 'id' | 'createdAt
 }
 
 export function updateMobileAccessory(id: string, updates: Partial<MobileAccessory>): void {
-  updateAccessoryRow(MOBILE_ACCESSORY_TYPE, ACCESSORIES_KEY, id, {
-    name: updates.name,
-    category: updates.category,
-    subcategory: updates.subcategory,
-    model: updates.model,
-    barcode: updates.barcode,
-    quantity: updates.quantity,
-    oldCostPrice: updates.oldCostPrice,
-    newCostPrice: updates.newCostPrice ?? updates.costPrice,
-    costPrice: updates.newCostPrice ?? updates.costPrice,
-    salePrice: updates.salePrice,
-    profitMargin: updates.profitMargin,
-    minStock: updates.minStock,
-    condition: updates.condition,
-    brand: updates.brand,
-    supplier: updates.supplier,
-    source: updates.source,
-    boxNumber: updates.boxNumber,
-    taxExcluded: updates.taxExcluded,
-    color: updates.color,
-    description: updates.description,
-    warehouseId: updates.warehouseId,
-    isArchived: updates.isArchived,
-    deletedAt: updates.deletedAt,
-    notes: updates.notes,
-    image: updates.image,
-    updatedAt: new Date().toISOString(),
-  });
+  const payload: any = { ...updates, updatedAt: new Date().toISOString() };
+  if ('costPrice' in updates && !('newCostPrice' in updates)) {
+    payload.newCostPrice = updates.costPrice;
+  }
+  updateAccessoryRow(MOBILE_ACCESSORY_TYPE, ACCESSORIES_KEY, id, payload);
 }
 
 export function deleteMobileAccessory(id: string): void {
@@ -419,34 +372,11 @@ export function addMobileSparePart(item: Omit<MobileSparePart, 'id' | 'createdAt
 }
 
 export function updateMobileSparePart(id: string, updates: Partial<MobileSparePart>): void {
-  updateAccessoryRow(MOBILE_SPARE_PART_TYPE, SPARE_PARTS_KEY, id, {
-    name: updates.name,
-    category: updates.category,
-    subcategory: updates.subcategory,
-    model: updates.model,
-    barcode: updates.barcode,
-    quantity: updates.quantity,
-    oldCostPrice: updates.oldCostPrice,
-    newCostPrice: updates.newCostPrice ?? updates.costPrice,
-    costPrice: updates.newCostPrice ?? updates.costPrice,
-    salePrice: updates.salePrice,
-    profitMargin: updates.profitMargin,
-    minStock: updates.minStock,
-    condition: updates.condition,
-    brand: updates.brand,
-    supplier: updates.supplier,
-    source: updates.source,
-    boxNumber: updates.boxNumber,
-    taxExcluded: updates.taxExcluded,
-    color: updates.color,
-    description: updates.description,
-    warehouseId: updates.warehouseId,
-    isArchived: updates.isArchived,
-    deletedAt: updates.deletedAt,
-    notes: updates.notes,
-    image: updates.image,
-    updatedAt: new Date().toISOString(),
-  });
+  const payload: any = { ...updates, updatedAt: new Date().toISOString() };
+  if ('costPrice' in updates && !('newCostPrice' in updates)) {
+    payload.newCostPrice = updates.costPrice;
+  }
+  updateAccessoryRow(MOBILE_SPARE_PART_TYPE, SPARE_PARTS_KEY, id, payload);
 }
 
 export function deleteMobileSparePart(id: string): void {

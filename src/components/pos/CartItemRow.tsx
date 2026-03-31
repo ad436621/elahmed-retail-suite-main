@@ -82,8 +82,13 @@ export default function CartItemRow({ item, onUpdateQty, onRemove, onLineDiscoun
     }, [item.product.id, item.qty, onUpdateQty, onRemove, editingQty]);
 
     const commitQty = () => {
-        const n = parseInt(qtyInput, 10);
+        let n = parseInt(qtyInput, 10);
         if (!isNaN(n) && n > 0) {
+            // Prevent barcode scanners from typing huge numbers like 18014398509481984 into quantity
+            if (n > 9999) {
+                n = 9999;
+                setQtyInput('9999');
+            }
             onUpdateQty(item.product.id, n);
         } else {
             setQtyInput(String(item.qty));

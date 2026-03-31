@@ -142,13 +142,15 @@ function getSupplier(item: InventoryItem): string {
 }
 
 function getCostPrice(item: InventoryItem): number {
+  // Prefer newCostPrice (latest purchase cost) for accurate profit calculation
+  if ('newCostPrice' in item) {
+    const newCost = item.newCostPrice;
+    if (newCost && newCost > 0) return newCost;
+  }
+
   if ('oldCostPrice' in item) {
     const oldCost = item.oldCostPrice;
     if (oldCost && oldCost > 0) return oldCost;
-  }
-
-  if ('newCostPrice' in item) {
-    return item.newCostPrice || 0;
   }
 
   if ('costPrice' in item) {

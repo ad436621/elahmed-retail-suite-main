@@ -16,11 +16,9 @@ import {
 
 // ─── Helpers ──────────────────────────────────────────────────
 export const fmt = (n: number) =>
-    n >= 1_000_000
-        ? (n / 1_000_000).toLocaleString('ar-EG', { maximumFractionDigits: 1 }) + ' م'
-        : n >= 1_000
-            ? (n / 1_000).toLocaleString('ar-EG', { maximumFractionDigits: 1 }) + ' ك'
-            : n.toLocaleString('ar-EG');
+    Math.abs(n) >= 1_000_000
+        ? (n / 1_000_000).toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' م'
+        : n.toLocaleString('ar-EG', { maximumFractionDigits: 2 });
 
 export const fmtFull = (n: number) => n.toLocaleString('ar-EG');
 export const pct = (a: number, b: number) => (b ? ((a / b) * 100).toFixed(1) : '0');

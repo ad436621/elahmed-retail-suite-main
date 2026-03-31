@@ -213,33 +213,11 @@ export function addComputer(item: Omit<ComputerItem, 'id' | 'createdAt' | 'updat
 }
 
 export function updateComputer(id: string, updates: Partial<ComputerItem>): void {
-  updateProductRow(COMPUTER_SOURCE, COMPUTERS_KEY, id, {
-    name: updates.name,
-    model: updates.model,
-    barcode: updates.barcode,
-    deviceType: updates.deviceType,
-    category: updates.category,
-    condition: updates.condition,
-    color: updates.color,
-    brand: updates.brand,
-    description: updates.description,
-    quantity: updates.quantity,
-    oldCostPrice: updates.oldCostPrice,
-    newCostPrice: updates.newCostPrice ?? updates.costPrice,
-    salePrice: updates.salePrice,
-    profitMargin: updates.profitMargin,
-    minStock: updates.minStock,
-    supplier: updates.supplier,
-    warehouseId: updates.warehouseId,
-    processor: updates.processor,
-    storage: updates.storage,
-    ram: updates.ram,
-    isArchived: updates.isArchived,
-    notes: updates.notes,
-    image: updates.image,
-    deletedAt: updates.deletedAt,
-    updatedAt: new Date().toISOString(),
-  });
+  const payload: any = { ...updates, updatedAt: new Date().toISOString() };
+  if ('costPrice' in updates && !('newCostPrice' in updates)) {
+    payload.newCostPrice = updates.costPrice;
+  }
+  updateProductRow(COMPUTER_SOURCE, COMPUTERS_KEY, id, payload);
 }
 
 export function deleteComputer(id: string): void {
@@ -274,32 +252,11 @@ export function addComputerAccessory(item: Omit<ComputerAccessory, 'id' | 'creat
 }
 
 export function updateComputerAccessory(id: string, updates: Partial<ComputerAccessory>): void {
-  updateAccessoryRow(COMPUTER_ACCESSORY_TYPE, ACCESSORIES_KEY, id, {
-    name: updates.name,
-    category: updates.category,
-    subcategory: updates.subcategory,
-    model: updates.model,
-    barcode: updates.barcode,
-    quantity: updates.quantity,
-    oldCostPrice: updates.oldCostPrice,
-    newCostPrice: updates.newCostPrice ?? updates.costPrice,
-    costPrice: updates.newCostPrice ?? updates.costPrice,
-    salePrice: updates.salePrice,
-    profitMargin: updates.profitMargin,
-    minStock: updates.minStock,
-    condition: updates.condition,
-    brand: updates.brand,
-    supplier: updates.supplier,
-    source: updates.source,
-    color: updates.color,
-    description: updates.description,
-    warehouseId: updates.warehouseId,
-    isArchived: updates.isArchived,
-    deletedAt: updates.deletedAt,
-    notes: updates.notes,
-    image: updates.image,
-    updatedAt: new Date().toISOString(),
-  });
+  const payload: any = { ...updates, updatedAt: new Date().toISOString() };
+  if ('costPrice' in updates && !('newCostPrice' in updates)) {
+    payload.newCostPrice = updates.costPrice;
+  }
+  updateAccessoryRow(COMPUTER_ACCESSORY_TYPE, ACCESSORIES_KEY, id, payload);
 }
 
 export function deleteComputerAccessory(id: string): void {

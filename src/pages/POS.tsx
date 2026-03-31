@@ -1,19 +1,12 @@
 // ============================================================
 // نقطة البيع — POS Page V5 — Enterprise UX Redesign
-// Changes vs V4:
-//   - ENHANCED keyboard shortcuts (F1-F12, arrows, numpad)
-//   - Cart keyboard navigation (+/-/Delete/Enter)
-//   - Quick discount buttons inline
-//   - Barcode scanner support with instant add
-//   - Optimized quantity input
-//   - Focus trap for accessibility
-//   - Performance optimizations
+// التصنيفات تُقرأ مباشرة من مفاتيح localStorage الخاصة بالمخازن
 // ============================================================
 
 import { useState, useRef, useEffect, useCallback, useMemo, useDeferredValue } from 'react';
 import {
   Search, Moon, Sun, Clock, Barcode, Download,
-  Send, ArrowLeft, Package, AlertTriangle, Calculator,
+  Send, ArrowLeft, Package, AlertTriangle,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/contexts/ThemeContext';
@@ -22,7 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Product } from '@/domain/types';
 import { searchProducts } from '@/services/productService';
 import { getAllInventoryProducts } from '@/repositories/productRepository';
-import { getCategoriesBySection } from '@/data/categoriesData';
+import { loadCats } from '@/data/categoriesData';
 import { useCart } from '@/contexts/CartContext';
 
 // Sub-components
@@ -33,22 +26,11 @@ import TransferTab from '@/components/pos/TransferTab';
 import HeldInvoicesPanel from '@/components/pos/HeldInvoicesPanel';
 import CustomerSelector, { CASH_CUSTOMER, SelectedCustomer } from '@/components/pos/CustomerSelector';
 
-// Brand chips for mobile devices (from supplier field)
-const MOBILE_BRANDS = ['Apple', 'Samsung', 'Oppo', 'Xiaomi', 'Realme', 'Vivo', 'Huawei', 'Nokia', 'أخرى'];
-
-// Quick discount presets
+// Quick discount presets (shown as buttons in the toolbar)
 const QUICK_DISCOUNTS = [
-  { label: '5%', value: 5, key: 'F7' },
+  { label: '5%',  value: 5,  key: 'F7' },
   { label: '10%', value: 10, key: 'F8' },
   { label: '15%', value: 15, key: null },
-];
-
-// Quick amount presets for payment
-const QUICK_AMOUNTS = [
-  { label: '50', value: 50 },
-  { label: '100', value: 100 },
-  { label: '200', value: 200 },
-  { label: '500', value: 500 },
 ];
 
 // ── Main POS ─────────────────────────────────────────────────
@@ -63,45 +45,41 @@ export default function POS() {
     holdInvoice, heldInvoices, restoreInvoice, removeHeldInvoice,
   } = useCart();
 
-  // ── Delta-to-absolute adapter for CheckoutSidebar / CartItemRow ──
-  // CheckoutSidebar calls onUpdateQty(id, delta) e.g. +1 or -1
-  // CartContext.updateCartItemQty(id, absoluteQty)
+  // Delta-to-absolute adapter for CheckoutSidebar
   const updateQtyByDelta = useCallback((productId: string, delta: number) => {
     const item = cart.find(i => i.product.id === productId);
     if (!item) return;
     updateCartItemQty(productId, item.qty + delta);
   }, [cart, updateCartItemQty]);
 
-  // -- Computed cart values --
-  const subtotal = cart.reduce((s, i) => s + i.product.sellingPrice * i.qty, 0);
-
+  // Computed cart values
+  const subtotal           = cart.reduce((s, i) => s + i.product.sellingPrice * i.qty, 0);
   const lineDiscountsTotal = cart.reduce((s, i) => s + (i.lineDiscount ?? 0), 0);
-  const totalCost = cart.reduce((s, i) => s + i.product.costPrice * i.qty, 0);
+  const totalCost          = cart.reduce((s, i) => s + i.product.costPrice * i.qty, 0);
   const maxInvoiceDiscount = Math.max(0, subtotal - lineDiscountsTotal - totalCost);
-  const grandTotal = Math.max(0, subtotal - lineDiscountsTotal - invoiceDiscount);
+  const grandTotal         = Math.max(0, subtotal - lineDiscountsTotal - invoiceDiscount);
 
   // ── Local state ─────────────────────────────────────────────
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedTab, setSelectedTab] = useState<TabId>('mobiles');
-  const [selectedChip, setSelectedChip] = useState('الكل');
-  const [subMode, setSubMode] = useState<SubMode>('main');
+  const [searchTerm, setSearchTerm]           = useState('');
+  const [selectedTab, setSelectedTab]         = useState<TabId>('mobiles');
+  const [selectedChip, setSelectedChip]       = useState('الكل');
+  const [subMode, setSubMode]                 = useState<SubMode>('main');
   const [conditionFilter, setConditionFilter] = useState<ConditionFilter>('all');
-  const [showHeld, setShowHeld] = useState(false);
-  const [now, setNow] = useState(new Date());
-  const [refreshKey, setRefreshKey] = useState(0);
-  const deferredSearchTerm = useDeferredValue(searchTerm);
+  const [showHeld, setShowHeld]               = useState(false);
+  const [now, setNow]                         = useState(new Date());
+  const [refreshKey, setRefreshKey]           = useState(0);
+  const deferredSearchTerm                    = useDeferredValue(searchTerm);
   const [selectedCustomer, setSelectedCustomer] = useState<SelectedCustomer>(CASH_CUSTOMER);
 
-  // Checkout trigger ref (injected by CheckoutSidebar via callback)
+  // Checkout trigger ref (injected by CheckoutSidebar)
   const checkoutTriggerRef = useRef<(() => void) | null>(null);
 
-  // ── Stable refs for keyboard handler closure (avoids stale state) ──
-  // filteredProducts is declared later — we use refs so handler always
-  // reads the latest values without re-registering the listener.
+  // Stable refs for keyboard handler
   const filteredProductsRef = useRef<Product[]>([]);
-  const grandTotalRef = useRef<number>(0);
-  const searchTermRef = useRef(searchTerm);
+  const grandTotalRef       = useRef<number>(0);
+  const searchTermRef       = useRef(searchTerm);
+
   const handleCheckoutReady = useCallback((trigger: () => void) => {
     checkoutTriggerRef.current = trigger;
   }, []);
@@ -112,14 +90,14 @@ export default function POS() {
     return () => clearInterval(t);
   }, []);
 
+  // Listen for storage changes from inventory pages
   useEffect(() => {
     const handleStorage = (e: StorageEvent | CustomEvent) => {
       const key = 'key' in e ? e.key : (e as CustomEvent).detail?.key;
-      if (key && (key.startsWith('gx_') || key.startsWith('elahmed_'))) {
-        setRefreshKey((current) => current + 1);
+      if (key && (key.startsWith('gx_') || key.startsWith('elahmed_') || key.includes('_cats'))) {
+        setRefreshKey(k => k + 1);
       }
     };
-
     window.addEventListener('storage', handleStorage as EventListener);
     window.addEventListener('local-storage', handleStorage as EventListener);
     return () => {
@@ -142,42 +120,33 @@ export default function POS() {
   }, [subMode]);
 
   // ── Keyboard Shortcuts ──────────────────────────────────────
-  // ENHANCED: Full keyboard-first workflow with numpad and cart support
   useEffect(() => {
     const fn = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement).tagName;
       const inInput = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT';
-      const isFKey = e.key.startsWith('F') && !isNaN(Number(e.key.slice(1)));
-
-      // Allow navigation keys in inputs
+      const isFKey  = e.key.startsWith('F') && !isNaN(Number(e.key.slice(1)));
       const isNavKey = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Tab'].includes(e.key);
 
-      // Escape always blurs and clears search
+      // Escape blurs and clears search
       if (e.key === 'Escape') {
         e.preventDefault();
         (e.target as HTMLElement).blur?.();
         searchInputRef.current?.blur();
-        if (searchTermRef.current) {
-          setSearchTerm('');
-        }
+        if (searchTermRef.current) setSearchTerm('');
         return;
       }
 
-      // Block non-F-key shortcuts when inside an input (except nav)
+      // Block non-F-key shortcuts inside inputs
       if (inInput && !isFKey && !isNavKey) {
-        // Allow +/- and Delete for cart in inputs
-        if (!['+', '-', 'Delete', 'Backspace'].includes(e.key)) {
-          return;
-        }
+        if (!['+', '-', 'Delete', 'Backspace'].includes(e.key)) return;
       }
 
-      // Numpad number keys for quick product selection (1-9)
+      // Numpad 1-9: quick add product by position
       const numMatch = e.key.match(/^(\d|Numpad\d)$/);
       if (numMatch && !inInput) {
         const num = parseInt(e.key.replace('Numpad', ''), 10);
         if (num >= 1 && num <= 9) {
           e.preventDefault();
-          // Quick add product by number position — read from ref (always fresh)
           const product = filteredProductsRef.current[num - 1];
           if (product && product.quantity > 0) {
             addToCart(product);
@@ -217,7 +186,6 @@ export default function POS() {
           break;
         case 'F7':
           e.preventDefault();
-          // Quick 5% discount on grand total — read from ref (always fresh)
           if (grandTotalRef.current > 0) {
             applyInvoiceDiscount(Math.round(grandTotalRef.current * 0.05 * 2) / 2);
             toast({ title: '💰 تم تطبيق خصم 5%' });
@@ -225,7 +193,6 @@ export default function POS() {
           break;
         case 'F8':
           e.preventDefault();
-          // Quick 10% discount on grand total — read from ref (always fresh)
           if (grandTotalRef.current > 0) {
             applyInvoiceDiscount(Math.round(grandTotalRef.current * 0.10 * 2) / 2);
             toast({ title: '💰 تم تطبيق خصم 10%' });
@@ -252,29 +219,26 @@ export default function POS() {
           break;
         case '+':
         case '=':
-          // Increase first cart item quantity
           if (cart.length > 0 && !inInput) {
             e.preventDefault();
-            const firstItem = cart[0];
-            updateCartItemQty(firstItem.product.id, firstItem.qty + 1);
+            const first = cart[0];
+            updateCartItemQty(first.product.id, first.qty + 1);
           }
           break;
         case '-':
         case '_':
-          // Decrease first cart item quantity
           if (cart.length > 0 && !inInput) {
             e.preventDefault();
-            const firstItem = cart[0];
-            updateCartItemQty(firstItem.product.id, firstItem.qty - 1);
+            const first = cart[0];
+            updateCartItemQty(first.product.id, first.qty - 1);
           }
           break;
         case 'Delete':
         case 'Backspace':
-          // Remove first cart item if not in input
           if (cart.length > 0 && !inInput) {
             e.preventDefault();
-            const firstItem = cart[0];
-            removeFromCart(firstItem.product.id);
+            const first = cart[0];
+            removeFromCart(first.product.id);
             toast({ title: '🗑️ تم حذف المنتج من السلة' });
           }
           break;
@@ -295,113 +259,138 @@ export default function POS() {
 
   // ── Products ────────────────────────────────────────────────
   const allProducts = useMemo(() => getAllInventoryProducts(), [refreshKey]);
-  const mobileCategories = useMemo(() => getCategoriesBySection('mobile'), []);
-  const computerCategories = useMemo(() => getCategoriesBySection('computer'), []);
-  const deviceCategories = useMemo(() => getCategoriesBySection('device'), []);
 
-  // Category chips per tab
+  // ── قراءة التصنيفات مباشرة من localStorage — نفس مفاتيح المخازن ──
+  const mobileMainCats    = useMemo(() => loadCats('mobiles_main_cats',              ['موبايلات', 'تابلت', 'ساعات ذكية']), [refreshKey]);
+  const mobileAccCats     = useMemo(() => loadCats('mobiles_acc_cats',               ['سماعات سلك', 'سماعات بلوتوث', 'شواحن', 'كابلات', 'باور بنك', 'سكرينات', 'جرابات']), [refreshKey]);
+  const mobileSpareCats   = useMemo(() => loadCats('mobiles_spare_cats',             ['شاشات موبايل', 'بطاريات', 'إيرفون', 'ميكروفونات', 'مكبرات صوت', 'أخرى']), [refreshKey]);
+  const computerMainCats  = useMemo(() => loadCats('computers_cats',                 ['لابتوبات', 'كمبيوتر مكتبي', 'شاشات', 'جيمينج', 'ملحقات عرض']), [refreshKey]);
+  const computerAccCats   = useMemo(() => loadCats('computer_accessories_cats_v2',   ['ماوسات', 'كيبوردات', 'هيدسيت', 'ويب كام', 'راوترات', 'أدابتر', 'أخرى']), [refreshKey]);
+  const computerSpareCats = useMemo(() => loadCats('computer_spare_parts_cats_v2',   ['رامات', 'هاردات', 'معالجات', 'كروت شاشة', 'مراوح', 'أخرى']), [refreshKey]);
+  const deviceMainCats    = useMemo(() => loadCats('devices_cats',                   ['شاشات', 'ريسيفرات', 'راوترات']), [refreshKey]);
+  const deviceAccCats     = useMemo(() => loadCats('gx_device_accessories_sa__cats', ['ريموت', 'كابلات HDMI', 'حوامل', 'فلاتر', 'أخرى']), [refreshKey]);
+  const deviceSpareCats   = useMemo(() => loadCats('gx_device_spare_parts__cats',    ['بورد تليفزيون', 'الباور', 'شاشات', 'سبيكر', 'LED Strips', 'ريموت', 'أخرى']), [refreshKey]);
+  const carMainCats       = useMemo(() => loadCats('cars_cats',                       ['سيدان', 'SUV', 'هاتشباك', 'نقل', 'ميكروباص']), [refreshKey]);
+  const carSpareCats      = useMemo(() => loadCats('gx_car_spare_parts__cats',        ['محرك', 'فرامل', 'كهرباء', 'تعليق', 'تكييف', 'عادم', 'ترانسميشن', 'هيكل', 'زجاج', 'أخرى']), [refreshKey]);
+  const carOilCats        = useMemo(() => loadCats('gx_car_oils__cats',               ['زيت محرك', 'زيت فتيس', 'زيت دركسيون', 'زيت فرامل', 'مياه راديتر', 'أخرى']), [refreshKey]);
+
+  // Chips per tab — مباشرة من نفس مفاتيح المخازن
   const chips = useMemo<string[]>(() => {
     if (selectedTab === 'mobiles') {
-      if (subMode === 'main') return ['الكل', ...MOBILE_BRANDS];
-      if (subMode === 'spare_parts') {
-        const spCats = mobileCategories.filter(c => c.type === 'spare_part');
-        return ['الكل', ...spCats.map(c => c.name)];
-      }
-      const accCats = mobileCategories.filter(c => c.type === 'accessory');
-      return ['الكل', ...accCats.map(c => c.name)];
+      if (subMode === 'main')        return ['الكل', ...mobileMainCats];
+      if (subMode === 'accessories') return ['الكل', ...mobileAccCats];
+      /* spare_parts */              return ['الكل', ...mobileSpareCats];
     }
     if (selectedTab === 'computers') {
-      if (subMode === 'main') return [];
-      if (subMode === 'spare_parts') {
-        const spCats = computerCategories.filter(c => c.type === 'spare_part');
-        return ['الكل', ...spCats.map(c => c.name)];
-      }
-      const accCats = computerCategories.filter(c => c.type === 'accessory');
-      return ['الكل', ...accCats.map(c => c.name)];
+      if (subMode === 'main')        return ['الكل', ...computerMainCats];
+      if (subMode === 'accessories') return ['الكل', ...computerAccCats];
+      /* spare_parts */              return ['الكل', ...computerSpareCats];
     }
     if (selectedTab === 'devices') {
-      if (subMode === 'main') {
-        const devCats = deviceCategories.filter(c => c.type === 'device');
-        return ['الكل', ...devCats.map(c => c.name)];
-      }
-      if (subMode === 'spare_parts') {
-        const spCats = deviceCategories.filter(c => c.type === 'spare_part');
-        return ['الكل', ...spCats.map(c => c.name)];
-      }
-      const accCats = deviceCategories.filter(c => c.type === 'accessory');
-      return ['الكل', ...accCats.map(c => c.name)];
+      if (subMode === 'main')        return ['الكل', ...deviceMainCats];
+      if (subMode === 'accessories') return ['الكل', ...deviceAccCats];
+      /* spare_parts */              return ['الكل', ...deviceSpareCats];
+    }
+    if (selectedTab === 'cars') {
+      if (subMode === 'main')        return ['الكل', ...carMainCats];
+      if (subMode === 'spare_parts') return ['الكل', ...carSpareCats];
+      /* accessories = oils */       return ['الكل', ...carOilCats];
     }
     return [];
-  }, [selectedTab, subMode, mobileCategories, computerCategories, deviceCategories]);
+  }, [selectedTab, subMode, mobileMainCats, mobileAccCats, mobileSpareCats, computerMainCats, computerAccCats, computerSpareCats, deviceMainCats, deviceAccCats, deviceSpareCats, carMainCats, carSpareCats, carOilCats]);
 
-  // Filtered products — DECOUPLED per section
+  // ── Filtered products ────────────────────────────────────────
   const filteredProducts = useMemo<Product[]>(() => {
     if (selectedTab === 'transfers') return [];
     let prods = allProducts;
 
-    // ── MOBILES: only mobile source ──
     if (selectedTab === 'mobiles') {
       if (subMode === 'main') {
         prods = prods.filter(p => p.source === 'mobile');
         if (conditionFilter !== 'all') prods = prods.filter(p => p.condition === conditionFilter);
         if (selectedChip !== 'الكل') {
           const cl = selectedChip.toLowerCase();
-          prods = prods.filter(p => p.supplier?.toLowerCase().includes(cl) || p.name.toLowerCase().includes(cl));
+          prods = prods.filter(p =>
+            p.category?.toLowerCase().includes(cl) ||
+            p.name.toLowerCase().includes(cl)
+          );
         }
       } else if (subMode === 'accessories') {
         prods = prods.filter(p => p.source === 'mobile_acc');
         if (selectedChip !== 'الكل') {
           const cl = selectedChip.toLowerCase();
-          prods = prods.filter(p => p.category.toLowerCase().includes(cl) || p.name.toLowerCase().includes(cl));
+          prods = prods.filter(p => p.category?.toLowerCase().includes(cl) || p.name.toLowerCase().includes(cl));
         }
       } else {
         prods = prods.filter(p => p.source === 'mobile_spare');
+        if (selectedChip !== 'الكل') {
+          const cl = selectedChip.toLowerCase();
+          prods = prods.filter(p => p.category?.toLowerCase().includes(cl) || p.name.toLowerCase().includes(cl));
+        }
       }
-    }
-    // ── COMPUTERS: only computer source ──
-    else if (selectedTab === 'computers') {
+    } else if (selectedTab === 'computers') {
       if (subMode === 'main') {
         prods = prods.filter(p => p.source === 'computer');
         if (conditionFilter !== 'all') prods = prods.filter(p => p.condition === conditionFilter);
+        if (selectedChip !== 'الكل') {
+          const cl = selectedChip.toLowerCase();
+          prods = prods.filter(p => p.category?.toLowerCase().includes(cl) || p.name.toLowerCase().includes(cl));
+        }
       } else if (subMode === 'accessories') {
         prods = prods.filter(p => p.source === 'computer_acc');
         if (selectedChip !== 'الكل') {
           const cl = selectedChip.toLowerCase();
-          prods = prods.filter(p => p.category.toLowerCase().includes(cl) || p.name.toLowerCase().includes(cl));
+          prods = prods.filter(p => p.category?.toLowerCase().includes(cl) || p.name.toLowerCase().includes(cl));
         }
       } else {
         prods = prods.filter(p => p.source === 'computer_spare');
+        if (selectedChip !== 'الكل') {
+          const cl = selectedChip.toLowerCase();
+          prods = prods.filter(p => p.category?.toLowerCase().includes(cl) || p.name.toLowerCase().includes(cl));
+        }
       }
-    }
-    // ── DEVICES: only device source ──
-    else if (selectedTab === 'devices') {
+    } else if (selectedTab === 'devices') {
       if (subMode === 'main') {
         prods = prods.filter(p => p.source === 'device');
         if (conditionFilter !== 'all') prods = prods.filter(p => p.condition === conditionFilter);
         if (selectedChip !== 'الكل') {
           const cl = selectedChip.toLowerCase();
-          prods = prods.filter(p => p.category.toLowerCase().includes(cl) || p.name.toLowerCase().includes(cl));
+          prods = prods.filter(p => p.category?.toLowerCase().includes(cl) || p.name.toLowerCase().includes(cl));
         }
       } else if (subMode === 'accessories') {
         prods = prods.filter(p => p.source === 'device_acc');
         if (selectedChip !== 'الكل') {
           const cl = selectedChip.toLowerCase();
-          prods = prods.filter(p => p.category.toLowerCase().includes(cl) || p.name.toLowerCase().includes(cl));
+          prods = prods.filter(p => p.category?.toLowerCase().includes(cl) || p.name.toLowerCase().includes(cl));
         }
       } else {
         prods = prods.filter(p => p.source === 'device_spare');
+        if (selectedChip !== 'الكل') {
+          const cl = selectedChip.toLowerCase();
+          prods = prods.filter(p => p.category?.toLowerCase().includes(cl) || p.name.toLowerCase().includes(cl));
+        }
       }
-    }
-    // ── CARS: main + spare_parts + oils ──
-    else if (selectedTab === 'cars') {
+    } else if (selectedTab === 'cars') {
       if (subMode === 'main') {
         prods = prods.filter(p => p.source === 'car');
         if (conditionFilter !== 'all') prods = prods.filter(p => p.condition === conditionFilter);
+        if (selectedChip !== 'الكل') {
+          const cl = selectedChip.toLowerCase();
+          prods = prods.filter(p => p.category?.toLowerCase().includes(cl) || p.name.toLowerCase().includes(cl));
+        }
       } else if (subMode === 'spare_parts') {
         prods = prods.filter(p => p.source === 'car_spare');
+        if (selectedChip !== 'الكل') {
+          const cl = selectedChip.toLowerCase();
+          prods = prods.filter(p => p.category?.toLowerCase().includes(cl) || p.name.toLowerCase().includes(cl));
+        }
       } else {
-        // accessories sub-mode used for oils in cars tab
+        // accessories = oils
         prods = prods.filter(p => p.source === 'car_oils');
+        if (selectedChip !== 'الكل') {
+          const cl = selectedChip.toLowerCase();
+          prods = prods.filter(p => p.category?.toLowerCase().includes(cl) || p.name.toLowerCase().includes(cl));
+        }
       }
     }
 
@@ -409,23 +398,20 @@ export default function POS() {
     return prods;
   }, [allProducts, selectedTab, subMode, conditionFilter, selectedChip, deferredSearchTerm]);
 
-  // Set of product IDs in cart for highlighting
-  const cartProductIds = useMemo(() => new Set(cart.map(i => i.product.id)), [cart]);
+  // Cart product IDs for highlighting
+  const cartProductIds = useMemo(() => new Set(cart.map((i: { product: { id: string } }) => i.product.id)), [cart]);
 
-  // ── Keep refs in sync with computed values so the keyboard handler
-  // always reads the latest filteredProducts and grandTotal.
+  // Keep refs in sync
   useEffect(() => { filteredProductsRef.current = filteredProducts; }, [filteredProducts]);
   useEffect(() => { grandTotalRef.current = grandTotal; }, [grandTotal]);
   useEffect(() => { searchTermRef.current = searchTerm; }, [searchTerm]);
 
-  // ── Count metrics ───────────────────────────────────────────
+  // Count metrics
   const { availableCount, lowStockCount } = useMemo(() => (
-    filteredProducts.reduce((summary, product) => {
+    filteredProducts.reduce((summary: { availableCount: number; lowStockCount: number }, product: Product) => {
       if (product.quantity > 0) {
         summary.availableCount += 1;
-        if (product.quantity <= 3) {
-          summary.lowStockCount += 1;
-        }
+        if (product.quantity <= 3) summary.lowStockCount += 1;
       }
       return summary;
     }, { availableCount: 0, lowStockCount: 0 })
@@ -445,7 +431,7 @@ export default function POS() {
           <h1 className="text-lg font-black">نقطة البيع</h1>
         </div>
 
-        {/* Center: clock + search shortcut + quick nav buttons */}
+        {/* Center: clock + tab buttons */}
         <div className="hidden lg:flex flex-1 items-center justify-center gap-2">
           <div className="flex items-center gap-1.5 rounded-lg bg-blue-50 dark:bg-blue-500/10 px-3 py-1.5 text-xs font-bold text-blue-700 dark:text-blue-400 border border-blue-100 dark:border-blue-500/20">
             <Clock className="h-3.5 w-3.5" aria-hidden="true" />
@@ -456,7 +442,7 @@ export default function POS() {
             </time>
           </div>
 
-          {/* F-key hints visible in header */}
+          {/* Tab quick-nav buttons */}
           <div className="flex items-center gap-1">
             {TABS.map((tab, i) => (
               <button
@@ -525,7 +511,7 @@ export default function POS() {
           id={`tabpanel-${selectedTab}`}
           aria-labelledby={`tab-${selectedTab}`}
         >
-          {/* Category nav (unified: tabs + sub-mode + condition + chips) */}
+          {/* Category nav */}
           <CategoryNavPanel
             selectedTab={selectedTab}
             onTabChange={setSelectedTab}
@@ -540,13 +526,14 @@ export default function POS() {
             filteredCount={filteredProducts.length}
           />
 
-          {/* Search bar with barcode scanner support — with customer selector above */}
+          {/* Customer selector */}
           {!isTransferTab && (
             <div className="mb-2">
               <CustomerSelector selected={selectedCustomer} onChange={setSelectedCustomer} />
             </div>
           )}
-          {/* Search bar with barcode scanner support */}
+
+          {/* Search bar */}
           {!isTransferTab && (
             <div className="flex gap-2 mb-3">
               <div className="relative flex-1">
@@ -555,35 +542,19 @@ export default function POS() {
                 <input
                   ref={searchInputRef}
                   value={searchTerm}
-                  onChange={e => {
-                    const value = e.target.value;
-                    setSearchTerm(value);
-
-                    // Barcode scanner detection: if input ends with Enter and looks like barcode
-                    // (typically 8-14 digits), auto-search and add
-                    if (value.length >= 8 && value.length <= 20) {
-                      // Will be handled by Enter key
-                    }
-                  }}
+                  onChange={e => setSearchTerm(e.target.value)}
                   onKeyDown={e => {
-                    // Enter in search = add first available product
-                    // OR if barcode detected, add directly
                     if (e.key === 'Enter') {
                       e.preventDefault();
-
-                      // First try to find exact barcode match
                       const barcodeMatch = allProducts.find(p =>
                         p.barcode?.toLowerCase() === searchTerm.toLowerCase()
                       );
-
                       if (barcodeMatch && barcodeMatch.quantity > 0) {
                         addToCart(barcodeMatch);
                         toast({ title: '✅ تمت الإضافة via باركود', description: barcodeMatch.name });
                         setSearchTerm('');
                         return;
                       }
-
-                      // Otherwise add first available product
                       const firstAvail = filteredProducts.find(p => p.quantity > 0);
                       if (firstAvail) {
                         addToCart(firstAvail);
@@ -593,11 +564,9 @@ export default function POS() {
                   }}
                   className="w-full h-10 bg-muted/30 border border-border/60 rounded-xl pr-9 pl-10 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/50 focus:bg-white dark:focus:bg-card transition-all"
                   placeholder="ابحث أو امسح باركود... (F1)"
-                  aria-label="بحث عن منتج — امسح باركود أو اكتب اسم — F1 للتركيز — Enter للإضافة"
-                  aria-controls={`tabpanel-${selectedTab}`}
+                  aria-label="بحث عن منتج — F1 للتركيز — Enter للإضافة"
                   autoComplete="off"
                 />
-                {/* Quick keyboard shortcut hint */}
                 <kbd className="absolute left-14 top-1/2 -translate-y-1/2 hidden md:inline-flex h-5 items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
                   <span className="text-xs">F1</span>
                 </kbd>
@@ -651,7 +620,7 @@ export default function POS() {
             )}
           </div>
 
-          {/* Compact stats bar — replaces the 3 large gradient stat cards */}
+          {/* Stats bar */}
           {!isTransferTab && (
             <div className="flex items-center gap-4 border-t border-border/40 pt-2 mt-2 text-xs font-bold text-muted-foreground">
               <span className="flex items-center gap-1">
@@ -677,7 +646,7 @@ export default function POS() {
           )}
         </div>
 
-        {/* ── Right Panel: Cart / Payment / Success ── */}
+        {/* ── Right Panel: Cart / Payment ── */}
         <CheckoutSidebar
           cart={cart}
           onUpdateQty={updateQtyByDelta}

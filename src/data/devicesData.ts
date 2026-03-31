@@ -206,30 +206,11 @@ export function addDevice(item: Omit<DeviceItem, 'id' | 'createdAt' | 'updatedAt
 }
 
 export function updateDevice(id: string, updates: Partial<DeviceItem>): void {
-  updateProductRow(DEVICE_SOURCE, DEVICES_KEY, id, {
-    name: updates.name,
-    model: updates.model,
-    barcode: updates.barcode,
-    category: updates.category,
-    condition: updates.condition,
-    color: updates.color,
-    brand: updates.brand,
-    description: updates.description,
-    quantity: updates.quantity,
-    oldCostPrice: updates.oldCostPrice,
-    newCostPrice: updates.newCostPrice ?? updates.costPrice,
-    salePrice: updates.salePrice,
-    profitMargin: updates.profitMargin,
-    minStock: updates.minStock,
-    supplier: updates.supplier,
-    source: updates.source,
-    warehouseId: updates.warehouseId,
-    isArchived: updates.isArchived,
-    notes: updates.notes,
-    image: updates.image,
-    deletedAt: updates.deletedAt,
-    updatedAt: new Date().toISOString(),
-  });
+  const payload: any = { ...updates, updatedAt: new Date().toISOString() };
+  if ('costPrice' in updates && !('newCostPrice' in updates)) {
+    payload.newCostPrice = updates.costPrice;
+  }
+  updateProductRow(DEVICE_SOURCE, DEVICES_KEY, id, payload);
 }
 
 export function deleteDevice(id: string): void {
@@ -264,32 +245,11 @@ export function addDeviceAccessory(item: Omit<DeviceAccessory, 'id' | 'createdAt
 }
 
 export function updateDeviceAccessory(id: string, updates: Partial<DeviceAccessory>): void {
-  updateAccessoryRow(DEVICE_ACCESSORY_TYPE, ACCESSORIES_KEY, id, {
-    name: updates.name,
-    category: updates.category,
-    subcategory: updates.subcategory,
-    model: updates.model,
-    barcode: updates.barcode,
-    quantity: updates.quantity,
-    oldCostPrice: updates.oldCostPrice,
-    newCostPrice: updates.newCostPrice ?? updates.costPrice,
-    costPrice: updates.newCostPrice ?? updates.costPrice,
-    salePrice: updates.salePrice,
-    profitMargin: updates.profitMargin,
-    minStock: updates.minStock,
-    condition: updates.condition,
-    brand: updates.brand,
-    supplier: updates.supplier,
-    source: updates.source,
-    color: updates.color,
-    description: updates.description,
-    warehouseId: updates.warehouseId,
-    isArchived: updates.isArchived,
-    deletedAt: updates.deletedAt,
-    notes: updates.notes,
-    image: updates.image,
-    updatedAt: new Date().toISOString(),
-  });
+  const payload: any = { ...updates, updatedAt: new Date().toISOString() };
+  if ('costPrice' in updates && !('newCostPrice' in updates)) {
+    payload.newCostPrice = updates.costPrice;
+  }
+  updateAccessoryRow(DEVICE_ACCESSORY_TYPE, ACCESSORIES_KEY, id, payload);
 }
 
 export function deleteDeviceAccessory(id: string): void {

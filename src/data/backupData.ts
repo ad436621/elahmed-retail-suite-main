@@ -36,13 +36,48 @@ export function generateBackupData(): string {
     return JSON.stringify(data);
 }
 
-/** Restores JSON string into localStorage */
+/** Restores JSON string into localStorage — supports BOTH native-dump format AND structured backup format */
 export function restoreBackupData(jsonString: string): boolean {
     try {
-        const data = JSON.parse(jsonString);
-        if (typeof data !== 'object' || data === null) return false;
+        const parsed = JSON.parse(jsonString);
+        if (typeof parsed !== 'object' || parsed === null) return false;
 
-        // Optionally clear existing business keys first so deleted items don't linger
+        // ── Detect format ─────────────────────────────────────────
+        // Native format: all values are strings (raw localStorage dump)
+        // Structured format: values are arrays or objects (user-friendly JSON)
+        const isNativeFormat = Object.values(parsed).every(v => typeof v === 'string');
+
+        if (isNativeFormat) {
+            // ── Native localStorage dump ──────────────────────────
+            for (let i = localStorage.length - 1; i >= 0; i--) {
+                const key = localStorage.key(i);
+                if (key && (key.startsWith('gx_') || key.startsWith('elahmed') || key === 'categories') && key !== 'app_settings' && key !== BACKUP_SETTINGS_KEY) {
+                    localStorage.removeItem(key);
+                }
+            }
+            Object.keys(parsed).forEach(key => {
+                if (key.startsWith('gx_') || key.startsWith('elahmed') || key === 'categories' || key === 'app_settings') {
+                    localStorage.setItem(key, parsed[key]);
+                }
+            });
+            return true;
+        }
+
+        // ── Structured/Legacy format — map fields to localStorage keys ──
+        return importStructuredBackup(parsed);
+
+    } catch {
+        return false;
+    }
+}
+
+/**
+ * Maps structured backup JSON (with mobiles[], computers[], sales[]...)
+ * to the correct localStorage keys used by the app.
+ */
+export function importStructuredBackup(data: Record<string, unknown>): boolean {
+    try {
+        // Clear existing business data first
         for (let i = localStorage.length - 1; i >= 0; i--) {
             const key = localStorage.key(i);
             if (key && (key.startsWith('gx_') || key.startsWith('elahmed') || key === 'categories') && key !== 'app_settings' && key !== BACKUP_SETTINGS_KEY) {
@@ -50,13 +85,103 @@ export function restoreBackupData(jsonString: string): boolean {
             }
         }
 
-        Object.keys(data).forEach(key => {
-            if (key.startsWith('gx_') || key.startsWith('elahmed') || key === 'categories' || key === 'app_settings') {
-                localStorage.setItem(key, data[key]);
+        // Helper to write an array to a storage key
+        const write = (key: string, value: unknown) => {
+            if (value !== undefined && value !== null) {
+                localStorage.setItem(key, JSON.stringify(value));
             }
-        });
+        };
+
+        // ── Inventory ──────────────────────────────────────────────
+        write(STORAGE_KEYS.MOBILES,             data.mobiles);
+        write(STORAGE_KEYS.COMPUTERS,           data.computers);
+        write(STORAGE_KEYS.DEVICES,             data.devices);
+        write(STORAGE_KEYS.CARS,                data.cars);
+        write(STORAGE_KEYS.CAR_OILS,            data.carOils);
+        write(STORAGE_KEYS.CAR_SPARE_PARTS,     data.carSpareParts);
+        write(STORAGE_KEYS.USED_DEVICES,        data.usedDevices);
+        write(STORAGE_KEYS.MOBILE_ACCESSORIES,  data.mobileAccessories);
+        write(STORAGE_KEYS.COMPUTER_ACCESSORIES, data.computerAccessories);
+        write(STORAGE_KEYS.DEVICE_ACCESSORIES,  data.deviceAccessories);
+        write(STORAGE_KEYS.MOBILE_SPARE_PARTS,  data.mobileSpareParts);
+        write(STORAGE_KEYS.COMPUTER_SPARE_PARTS, data.computerSpareParts);
+        write(STORAGE_KEYS.DEVICE_SPARE_PARTS,  data.deviceSpareParts);
+        write(STORAGE_KEYS.WAREHOUSE,           data.warehouseItems);
+        write(STORAGE_KEYS.BATCHES,             data.batches);
+        write(STORAGE_KEYS.PRODUCTS,            data.products);
+
+        // ── Sales & Finance ────────────────────────────────────────
+        // Recalculate grossProfit for any sales where it's missing or zero
+        let salesData = data.sales;
+        if (Array.isArray(salesData)) {
+            salesData = (salesData as any[]).map((sale: any) => {
+                // Fix grossProfit if missing/zero but items exist with cost info
+                if ((!sale.grossProfit || sale.grossProfit === 0) && Array.isArray(sale.items) && sale.items.length > 0) {
+                    const totalCost = sale.items.reduce((sum: number, item: any) => {
+                        const cost = item.cost || item.costPrice || 0;
+                        const qty = item.qty || item.quantity || 1;
+                        return sum + (cost * qty);
+                    }, 0);
+                    const total = sale.total || sale.subtotal || 0;
+                    const grossProfit = total - totalCost;
+                    return { ...sale, totalCost, grossProfit };
+                }
+                return sale;
+            });
+        }
+        write(STORAGE_KEYS.SALES,               salesData);
+        write(STORAGE_KEYS.RETURNS,             data.returns);
+        write(STORAGE_KEYS.EXPENSES,            data.expenses);
+        write(STORAGE_KEYS.OTHER_REVENUE,       data.otherRevenue);
+        write(STORAGE_KEYS.DAMAGED,             data.damagedItems);
+        write(STORAGE_KEYS.WALLETS,             data.wallets ?? []);
+        write('gx_wallet_transactions',         data.walletTransactions);
+        write(STORAGE_KEYS.PURCHASE_INVOICES,   data.purchaseInvoices);
+        write(STORAGE_KEYS.SHIFT_CLOSINGS,      data.shiftClosings);
+        write(STORAGE_KEYS.STOCK_MOVEMENTS,     data.stockMovements);
+        write(STORAGE_KEYS.AUDIT_LOGS,          data.auditLogs);
+
+        // ── CRM ───────────────────────────────────────────────────
+        write(STORAGE_KEYS.CUSTOMERS,           data.customers);
+        write(STORAGE_KEYS.SUPPLIERS,           data.suppliers);
+        write(STORAGE_KEYS.SUPPLIER_TRANSACTIONS, data.supplierTransactions);
+        write(STORAGE_KEYS.EMPLOYEES,           data.employees);
+        write(STORAGE_KEYS.PARTNERS,            data.partners);
+        write(STORAGE_KEYS.BLACKLIST,           data.blacklist);
+        write(STORAGE_KEYS.REMINDERS,           data.reminders);
+
+        // ── Payroll ───────────────────────────────────────────────
+        write('gx_salary_records',              data.salaryRecords);
+        write('gx_advances',                    data.advances);
+
+        // ── Maintenance & Installments ────────────────────────────
+        write(STORAGE_KEYS.MAINTENANCE,         data.maintenances);
+        write(STORAGE_KEYS.INSTALLMENTS,        data.installments);
+        write('gx_repair_tickets',              data.repairTickets);
+        write('gx_repair_parts',                data.repairParts);
+
+        // ── Users ─────────────────────────────────────────────────
+        if (Array.isArray(data.users) && (data.users as any[]).length > 0) {
+            write(STORAGE_KEYS.USERS, data.users);
+        }
+
+        // ── Settings ──────────────────────────────────────────────
+        if (Array.isArray(data.settings)) {
+            const settingsObj: Record<string, string> = {};
+            (data.settings as { key: string; value: string }[]).forEach(s => {
+                settingsObj[s.key] = s.value;
+            });
+            write('app_settings', settingsObj);
+        }
+
+        // ── Categories ────────────────────────────────────────────
+        if (Array.isArray(data.categories) && (data.categories as any[]).length > 0) {
+            write(STORAGE_KEYS.CATEGORIES, data.categories);
+        }
+
         return true;
-    } catch {
+    } catch (err) {
+        console.error('[importStructuredBackup] failed:', err);
         return false;
     }
 }
