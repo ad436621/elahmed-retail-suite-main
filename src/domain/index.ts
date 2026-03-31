@@ -24,7 +24,7 @@ export { validateStock, calculateNewQuantity, createStockMovement, applyStockMov
 export { calculateFIFOSale, commitFIFOSaleFromBatches, bulkCommitFIFOSales, getActiveSalePrice, getOldestCostPrice, getAvailableBatchesCount, BatchError } from './batchLogic';
 
 // Returns domain
-export { processReturn, ReturnError } from './returns';
+export { processReturn, ReturnError, calculateAlreadyReturnedQty } from './returns';
 export type { ReturnRecord, ReturnItem } from './returns';
 
 // Audit domain

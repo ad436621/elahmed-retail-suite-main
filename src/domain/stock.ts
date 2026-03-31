@@ -95,17 +95,22 @@ export function predictDepletionDays(
 /**
  * Return a product back to inventory.
  * If originalBatchId is provided, restores quantity to that specific batch.
+ *
+ * FIX NEW-07: previousQuantity must be passed by the caller — the old
+ *             hardcoded 0 made every return movement show previousQty=0
+ *             in the audit log, making stock history impossible to trace.
  */
 export function returnProductToInventory(
   productId: string,
   quantity: number,
+  currentQuantity: number,
   originalBatchId?: string
 ): StockMovement {
   return createStockMovement(
     productId,
     'return',
     quantity,
-    0, // This should be populated by the caller with the current quantity
+    currentQuantity,
     'Return product to inventory via FIFO reverse or specific batch',
     'system',
     originalBatchId

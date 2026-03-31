@@ -1,9 +1,14 @@
 // ============================================================
 // ELAHMED RETAIL OS — Returns Domain Logic
 // Full/partial returns with stock restoration and audit
+//
+// FIX: Added existingReturns parameter + calculateAlreadyReturnedQty
+//      to prevent double-return fraud: a cashier can no longer call
+//      processReturn multiple times on the same invoice to receive
+//      multiple cash refunds and multiple inventory credits.
 // ============================================================
 
-import { Sale, SaleItem, StockMovement } from './types';
+import { Sale, StockMovement } from './types';
 import { createStockMovement } from './stock';
 import { createAuditEntry } from './audit';
 
@@ -33,12 +38,51 @@ export interface ReturnRecord {
   processedBy: string;
 }
 
+/**
+ * Minimal shape needed to check already-returned quantities.
+ * Compatible with both ReturnRecord and StoredReturnRecord from returnsData.ts.
+ */
+interface ReturnRecordLike {
+  saleId?: string;
+  originalSaleId?: string; // StoredReturnRecord uses this field name
+  items: Array<{ productId: string; qty: number }>;
+}
+
+/**
+ * Calculate how many units of each product have already been returned
+ * for a given sale, across all prior return records.
+ *
+ * Supports both domain ReturnRecord (saleId) and data-layer StoredReturnRecord
+ * (originalSaleId) field names.
+ */
+export function calculateAlreadyReturnedQty(
+  saleId: string,
+  existingReturns: ReturnRecordLike[]
+): Map<string, number> {
+  const returned = new Map<string, number>();
+  for (const ret of existingReturns) {
+    // Support both field name conventions
+    const retSaleId = ret.saleId ?? (ret as { originalSaleId?: string }).originalSaleId;
+    if (retSaleId !== saleId) continue;
+    for (const item of ret.items) {
+      returned.set(item.productId, (returned.get(item.productId) ?? 0) + item.qty);
+    }
+  }
+  return returned;
+}
+
 export function processReturn(
   sale: Sale,
   returnItems: { productId: string; qty: number }[],
   reason: string,
   userId: string,
-  currentProductQuantities: Record<string, number>
+  currentProductQuantities: Record<string, number>,
+  /**
+   * Pass ALL existing return records for this sale to prevent double-return fraud.
+   * Accepts both domain ReturnRecord[] and data-layer StoredReturnRecord[].
+   * If omitted (legacy callers), fraud guard is skipped — update callers!
+   */
+  existingReturns: ReturnRecordLike[] = []
 ): {
   returnRecord: ReturnRecord;
   stockMovements: StockMovement[];
@@ -52,19 +96,40 @@ export function processReturn(
     throw new ReturnError('لا يمكن إرجاع فاتورة ملغاة');
   }
 
+  if (returnItems.length === 0) {
+    throw new ReturnError('يجب تحديد منتج واحد على الأقل للإرجاع');
+  }
+
+  // ── Fraud guard: calculate already-returned quantities ──────────
+  const alreadyReturned = calculateAlreadyReturnedQty(sale.id, existingReturns);
+
   const items: ReturnItem[] = [];
   const stockMovements: StockMovement[] = [];
 
   for (const ri of returnItems) {
+    if (ri.qty <= 0) {
+      throw new ReturnError('الكمية يجب أن تكون أكبر من صفر');
+    }
+
     const saleItem = sale.items.find(si => si.productId === ri.productId);
     if (!saleItem) {
       throw new ReturnError(`المنتج ${ri.productId} غير موجود في الفاتورة`);
     }
-    if (ri.qty > saleItem.qty) {
-      throw new ReturnError(`لا يمكن إرجاع كمية أكبر من المُباعة لـ ${saleItem.name}`);
+
+    const previouslyReturned = alreadyReturned.get(ri.productId) ?? 0;
+    const maxReturnable = saleItem.qty - previouslyReturned;
+
+    if (maxReturnable <= 0) {
+      throw new ReturnError(
+        `تم إرجاع "${saleItem.name}" بالكامل مسبقاً — لا يمكن إرجاعه مرة أخرى`
+      );
     }
-    if (ri.qty <= 0) {
-      throw new ReturnError('الكمية يجب أن تكون أكبر من صفر');
+    if (ri.qty > maxReturnable) {
+      throw new ReturnError(
+        `لا يمكن إرجاع ${ri.qty} من "${saleItem.name}". ` +
+        `الحد الأقصى المتاح للإرجاع: ${maxReturnable} ` +
+        `(المُباع: ${saleItem.qty}، المُرجَع سابقاً: ${previouslyReturned})`
+      );
     }
 
     items.push({

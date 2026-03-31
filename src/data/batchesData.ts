@@ -23,22 +23,67 @@ interface ProductBatchRow {
 
 let batchesCache: ProductBatch[] | null = null;
 
+/**
+ * Clears the in-memory cache.
+ * Exported so batchLogic.ts can force a fresh read before committing sales.
+ */
+export function invalidateBatchesCache(): void {
+  batchesCache = null;
+}
+
+// Cross-tab cache invalidation: when another browser tab writes BATCHES_KEY
+// to localStorage, our in-memory cache becomes stale. Clear it so the next
+// call to getBatches() reads fresh data from localStorage.
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (event: StorageEvent) => {
+    if (event.key === BATCHES_KEY) {
+      invalidateBatchesCache();
+    }
+  });
+}
+
 function toNumber(value: unknown): number {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+/**
+ * Sort batches oldest-first for FIFO depletion.
+ * Uses Date objects — NOT string comparison — to correctly handle
+ * locale-formatted dates (e.g. "04/03/2025" on Arabic Windows).
+ */
 function sortBatches(batches: ProductBatch[]): ProductBatch[] {
-  return [...batches].sort((left, right) => (
-    left.purchaseDate.localeCompare(right.purchaseDate)
-    || left.createdAt.localeCompare(right.createdAt)
-    || left.id.localeCompare(right.id)
-  ));
+  return [...batches].sort((left, right) => {
+    const timeLeft = new Date(left.purchaseDate).getTime();
+    const timeRight = new Date(right.purchaseDate).getTime();
+    // If purchaseDates are equal or both invalid, fall back to createdAt
+    if (timeLeft !== timeRight) return timeLeft - timeRight;
+    const createdLeft = new Date(left.createdAt).getTime();
+    const createdRight = new Date(right.createdAt).getTime();
+    if (createdLeft !== createdRight) return createdLeft - createdRight;
+    return left.id.localeCompare(right.id); // stable tie-break
+  });
 }
 
 function normalizeBatch(row: Partial<ProductBatchRow> | Partial<ProductBatch>): ProductBatch {
-  const purchaseDate = String((row as ProductBatchRow).purchaseDate ?? (row as ProductBatch).purchaseDate ?? new Date().toISOString());
-  const createdAt = String((row as ProductBatchRow).createdAt ?? (row as ProductBatch).createdAt ?? purchaseDate);
+  // Validate purchaseDate — a null/invalid date silently assigned to "now" would
+  // sort the batch as the NEWEST instead of the oldest, breaking FIFO order.
+  // Use epoch (Jan 1 1970) as fallback so broken records sort first and are
+  // visible in audit, rather than hiding silently in the middle of the queue.
+  const rawPurchaseDate = (row as ProductBatchRow).purchaseDate ?? (row as ProductBatch).purchaseDate;
+  let purchaseDate: string;
+  if (rawPurchaseDate && Number.isFinite(new Date(rawPurchaseDate).getTime())) {
+    purchaseDate = new Date(rawPurchaseDate).toISOString();
+  } else {
+    purchaseDate = new Date(0).toISOString(); // epoch fallback — surfaces in sort order
+    if (import.meta.env.DEV && rawPurchaseDate !== undefined && rawPurchaseDate !== null) {
+      console.warn('[batchesData] Invalid purchaseDate on batch', row.id, rawPurchaseDate);
+    }
+  }
+  const rawCreatedAt = (row as ProductBatchRow).createdAt ?? (row as ProductBatch).createdAt;
+  const createdAt = rawCreatedAt && Number.isFinite(new Date(rawCreatedAt).getTime())
+    ? new Date(rawCreatedAt).toISOString()
+    : purchaseDate;
   return {
     id: String(row.id ?? crypto.randomUUID()),
     productId: String(row.productId ?? ''),

@@ -17,7 +17,7 @@ import { useConfirm } from '@/components/ConfirmDialog';
 import { Sale } from '@/domain/types';
 
 // NEW: Quick return dialog imports
-import { getReturnedQuantitiesBySaleId, addReturnRecord } from '@/data/returnsData';
+import { getReturnedQuantitiesBySaleId, addReturnRecord, getReturnsBySaleId } from '@/data/returnsData';
 import { processReturn } from '@/domain/returns';
 import { restoreBatchQty } from '@/data/batchesData';
 import { Check, X } from 'lucide-react';
@@ -71,12 +71,16 @@ function QuickReturnDialog({ sale, onClose, onDone }: { sale: Sale; onClose: () 
     const currentProductQuantities = Object.fromEntries(inventoryProducts.map(p => [p.id, p.quantity]));
     const reason = toReturn.map(i => i.reason.trim() ? `${i.name}: ${i.reason.trim()}` : i.name).join(' | ') || 'مرتجع مبيعات';
 
+    // Fraud guard: fetch existing returns for this sale before calling processReturn
+    const existingReturns = getReturnsBySaleId(sale.id);
+
     const { returnRecord, stockMovements, auditEntries } = processReturn(
       sale,
       toReturn.map(i => ({ productId: i.productId, qty: i.returnQty })),
       reason,
       user?.id || 'system',
-      currentProductQuantities
+      currentProductQuantities,
+      existingReturns
     );
 
     toReturn.forEach(item => {

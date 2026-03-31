@@ -24,7 +24,9 @@ import type { Permission } from "@/data/usersData";
 import MainLayout from "@/layouts/MainLayout";
 import LoginPage from "@/pages/LoginPage";
 import NotFound from "./pages/NotFound";
-const UnauthorizedPage = lazy(() => import("@/pages/UnauthorizedPage"));
+// UnauthorizedPage is a tiny error screen — direct import so PermGuard
+// never triggers a Suspense boundary when redirecting unauthorized users.
+import UnauthorizedPage from '@/pages/UnauthorizedPage';
 const PartnersPage = lazy(() => import("@/pages/PartnersPage"));
 
 // Lazy load all pages for code splitting
