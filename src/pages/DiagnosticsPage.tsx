@@ -2,7 +2,7 @@
 // DiagnosticsPage — نظام تشخيص الأخطاء التلقائي
 // Scans all data sources and reports issues with fix buttons
 // ============================================================
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useCallback } from 'react';
 import { AlertTriangle, CheckCircle2, XCircle, RefreshCw, Wrench, Database, TrendingDown, Package, CreditCard, Activity, Info, Shield, Zap } from 'lucide-react';
 import { getAllSales } from '@/repositories/saleRepository';
 import { getDamagedItems } from '@/data/damagedData';
@@ -90,12 +90,30 @@ function IssueCard({ issue, onFix }: { issue: DiagnosticIssue; onFix?: () => voi
 
 export default function DiagnosticsPage() {
     const [refreshKey, setRefreshKey] = useState(0);
+    const [isScanning, setIsScanning] = useState(false);
+    const [lastScanTime, setLastScanTime] = useState<Date | null>(null);
+
+    const handleScan = useCallback(() => {
+        setIsScanning(true);
+        setRefreshKey(k => k + 1);
+        // Simulate scan delay for animation effect
+        setTimeout(() => {
+            setLastScanTime(new Date());
+            setIsScanning(false);
+        }, 800);
+    }, []);
+
+    useEffect(() => {
+        // Initial scan on mount
+        setLastScanTime(new Date());
+    }, []);
 
     useEffect(() => {
         const handleStorage = (e: StorageEvent | CustomEvent) => {
             const key = 'key' in e ? e.key : (e as CustomEvent).detail?.key;
             if (key && (key.startsWith('gx_') || key.startsWith('elahmed_'))) {
                 setRefreshKey((current) => current + 1);
+                setLastScanTime(new Date());
             }
         };
 
@@ -452,14 +470,18 @@ export default function DiagnosticsPage() {
                     </div>
                     <div>
                         <h1 className="text-2xl font-bold text-foreground">تشخيص النظام</h1>
-                        <p className="text-xs text-muted-foreground">{total} فحص • آخر تحديث: الآن</p>
+                        <p className="text-xs text-muted-foreground">
+                            {total} فحص • آخر تحديث: {lastScanTime ? lastScanTime.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }) : 'الآن'}
+                        </p>
                     </div>
                 </div>
                 <button
-                    onClick={() => setRefreshKey(k => k + 1)}
-                    className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-all shadow-sm"
+                    onClick={handleScan}
+                    disabled={isScanning}
+                    className={`flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-all shadow-sm ${isScanning ? 'opacity-70 cursor-wait' : ''}`}
                 >
-                    <RefreshCw className="h-4 w-4" /> فحص الآن
+                    <RefreshCw className={`h-4 w-4 ${isScanning ? 'animate-spin' : ''}`} />
+                    {isScanning ? 'جاري الفحص...' : 'فحص الآن'}
                 </button>
             </div>
 
