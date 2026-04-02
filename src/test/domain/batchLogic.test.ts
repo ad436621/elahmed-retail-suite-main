@@ -164,3 +164,85 @@ describe('getAvailableBatchesCount', () => {
         expect(getAvailableBatchesCount('prod-1')).toBe(0);
     });
 });
+
+// ─── Input Validation ───────────────────────────────────────────
+
+describe('calculateFIFOSale input validation', () => {
+    it('should throw on zero quantity', async () => {
+        await setMockBatches([makeBatch()]);
+        expect(() => calculateFIFOSale('prod-1', 0)).toThrow(BatchError);
+    });
+
+    it('should throw on negative quantity', async () => {
+        await setMockBatches([makeBatch()]);
+        expect(() => calculateFIFOSale('prod-1', -1)).toThrow(BatchError);
+    });
+
+    it('should throw on fractional quantity', async () => {
+        await setMockBatches([makeBatch()]);
+        expect(() => calculateFIFOSale('prod-1', 1.5)).toThrow(BatchError);
+    });
+
+    it('should throw on Infinity', async () => {
+        await setMockBatches([makeBatch()]);
+        expect(() => calculateFIFOSale('prod-1', Infinity)).toThrow(BatchError);
+    });
+
+    it('should throw on NaN', async () => {
+        await setMockBatches([makeBatch()]);
+        expect(() => calculateFIFOSale('prod-1', NaN)).toThrow(BatchError);
+    });
+});
+
+// ─── Edge Cases ─────────────────────────────────────────
+
+describe('calculateFIFOSale edge cases', () => {
+    it('should handle single batch exactly matching requested qty', async () => {
+        await setMockBatches([
+            makeBatch({ id: 'b1', remainingQty: 5 }),
+        ]);
+        const result = calculateFIFOSale('prod-1', 5);
+        expect(result.batches).toHaveLength(1);
+        expect(result.batches[0].qtyFromBatch).toBe(5);
+        expect(result.totalCost).toBe(5 * 1000);
+    });
+
+    it('should handle product with zero remaining batches', async () => {
+        await setMockBatches([
+            makeBatch({ id: 'b1', remainingQty: 0 }),
+        ]);
+        // Filtered out when remainingQty = 0
+        expect(() => calculateFIFOSale('prod-1', 1)).toThrow(BatchError);
+    });
+
+    it('should calculate profit correctly with override price', async () => {
+        await setMockBatches([
+            makeBatch({ id: 'b1', costPrice: 800, salePrice: 1200, remainingQty: 10 }),
+        ]);
+        // Override to higher price
+        const result = calculateFIFOSale('prod-1', 2, 2000);
+        expect(result.totalProfit).toBe((2000 - 800) * 2); // 2400 profit
+    });
+
+    it('should calculate loss correctly with discounted override price', async () => {
+        await setMockBatches([
+            makeBatch({ id: 'b1', costPrice: 1000, salePrice: 1500, remainingQty: 10 }),
+        ]);
+        // Override to lower than cost price
+        const result = calculateFIFOSale('prod-1', 2, 500);
+        expect(result.totalProfit).toBe((500 - 1000) * 2); // -1000 loss
+    });
+});
+
+// ─── Large Quantities ─────────────────────────────────────
+
+describe('calculateFIFOSale large quantities', () => {
+    it('should handle large quantity multiplication correctly', async () => {
+        await setMockBatches([
+            makeBatch({ id: 'b1', costPrice: 100, salePrice: 200, remainingQty: 1000 }),
+        ]);
+        const result = calculateFIFOSale('prod-1', 500);
+        expect(result.totalCost).toBe(500 * 100); // 50000
+        expect(result.totalProfit).toBe((200 - 100) * 500); // 50000
+    });
+});

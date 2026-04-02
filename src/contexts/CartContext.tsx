@@ -114,7 +114,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const getTotals = useCallback((): CartTotals => {
         const totals = getCartTotals(cart, invoiceDiscount);
-        const lineDiscountTotal = cart.reduce((sum, item) => sum + ((item.lineDiscount || 0) * item.qty), 0);
+        const lineDiscountTotal = cart.reduce((sum, item) => sum + (item.lineDiscount || 0), 0);
         return {
             subtotal: totals.subtotal,
             discount: invoiceDiscount + lineDiscountTotal,

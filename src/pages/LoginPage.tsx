@@ -29,17 +29,19 @@ const LoginBg = memo(() => (
 ));
 LoginBg.displayName = 'LoginBg';
 
-const PasswordField = memo(({ 
-  value, onChange, disabled, placeholder, id, autoFocus, minLength, className 
+const PasswordField = memo(({
+  value, onChange, disabled, placeholder, id, autoFocus, minLength, className, dataTestId
 }: {
-  value: string; onChange: (v: string) => void; disabled?: boolean; 
+  value: string; onChange: (v: string) => void; disabled?: boolean;
   placeholder?: string; id?: string; autoFocus?: boolean; minLength?: number; className?: string;
+  dataTestId?: string;
 }) => {
   const [show, setShow] = useState(false);
   return (
     <div className="relative group w-full">
       <input 
         id={id} 
+        data-testid={dataTestId}
         type={show ? 'text' : 'password'} 
         value={value}
         onChange={e => onChange(e.target.value)} 
@@ -419,7 +421,13 @@ const LoginPage = () => {
             <label htmlFor="password" className="flex items-center gap-2 text-sm font-medium text-white/70">
               <KeyRound className="h-4 w-4 text-primary" /> كلمة المرور
             </label>
-            <PasswordField value={password} onChange={setPassword} disabled={loading || isLocked} />
+            <PasswordField
+              id="password"
+              dataTestId="login-password"
+              value={password}
+              onChange={setPassword}
+              disabled={loading || isLocked}
+            />
           </div>
 
           {/* Error */}

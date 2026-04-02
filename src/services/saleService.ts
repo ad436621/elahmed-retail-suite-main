@@ -241,40 +241,47 @@ export function voidSale(
   if (sale.voidedAt) {
     throw new Error('Sale is already voided');
   }
-  if (!reason.trim()) {
+  const trimmedReason = reason.trim();
+  if (!trimmedReason) {
     throw new Error('Void reason is required');
   }
 
   const voidedSale: Sale = {
     ...sale,
     voidedAt: new Date().toISOString(),
-    voidReason: reason.trim(),
+    voidReason: trimmedReason,
     voidedBy: userId,
   };
 
-  const stockMovements = sale.items.map((item) => {
+  const validatedItems = sale.items.map((item) => {
     const currentProduct = currentProducts[item.productId];
     if (!currentProduct) {
       throw new Error(`Cannot void sale because product "${item.name}" is no longer available in inventory`);
     }
 
-    if (item.batches?.length) {
-      item.batches.forEach((batch) => restoreBatchQty(batch.batchId, batch.qtyFromBatch));
-    }
+    return { item, currentProduct };
+  });
 
-    return createStockMovement(
+  const stockMovements = validatedItems.map(({ item, currentProduct }) =>
+    createStockMovement(
       item.productId,
       'return',
       item.qty,
       currentProduct.quantity,
-      `Void sale ${sale.invoiceNumber}: ${reason.trim()}`,
+      `Void sale ${sale.invoiceNumber}: ${trimmedReason}`,
       userId,
       sale.id,
       currentProduct.warehouseId ?? item.warehouseId
-    );
+    )
+  );
+
+  validatedItems.forEach(({ item }) => {
+    if (item.batches?.length) {
+      item.batches.forEach((batch) => restoreBatchQty(batch.batchId, batch.qtyFromBatch));
+    }
   });
 
-  const auditEntry = createVoidAudit(userId, sale.id, reason);
+  const auditEntry = createVoidAudit(userId, sale.id, trimmedReason);
 
   return { voidedSale, auditEntry, stockMovements };
 }

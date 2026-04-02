@@ -54,11 +54,15 @@ export default function POS() {
   }, [cart, updateCartItemQty]);
 
   // Computed cart values - use CartContext's getTotals for accurate money calculations
-  const totals = useMemo(() => getTotals(), [cart, invoiceDiscount]);
-  const subtotal = totals.subtotal;
+  const totals = useMemo(() => getTotals(), [getTotals]);
+  const grossSubtotal = cart.reduce((sum, item) => sum + item.product.sellingPrice * item.qty, 0);
+  const netSubtotal = totals.subtotal;
   const grandTotal = totals.total;
-  const lineDiscountsTotal = totals.subtotal - cart.reduce((s, i) => s + i.product.sellingPrice * i.qty, 0);
-  const maxInvoiceDiscount = Math.max(0, subtotal - lineDiscountsTotal - cart.reduce((s, i) => s + (i.product.costPrice ?? 0) * i.qty, 0));
+  const lineDiscountsTotal = cart.reduce((sum, item) => sum + (item.lineDiscount || 0), 0);
+  const maxInvoiceDiscount = Math.max(
+    0,
+    netSubtotal - cart.reduce((sum, item) => sum + (item.product.costPrice ?? 0) * item.qty, 0)
+  );
 
   // ── Local state ─────────────────────────────────────────────
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -659,7 +663,7 @@ export default function POS() {
           invoiceDiscount={invoiceDiscount}
           maxInvoiceDiscount={maxInvoiceDiscount}
           onInvoiceDiscount={applyInvoiceDiscount}
-          subtotal={subtotal}
+          subtotal={grossSubtotal}
           lineDiscountsTotal={lineDiscountsTotal}
           grandTotal={grandTotal}
           heldInvoices={heldInvoices}

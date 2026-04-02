@@ -86,9 +86,14 @@ export async function seedApp(page: Page, options: SeedOptions = {}) {
 
 export async function loginAsOwner(page: Page) {
   await page.goto('/login');
-  await expect(page.getByTestId('login-page')).toBeVisible();
+  await expect(page.getByTestId('login-submit')).toBeVisible();
   await page.getByTestId('login-username').fill('admin');
-  await page.getByTestId('login-password').fill('admin123');
+  const passwordInput = page.getByTestId('login-password');
+  if (await passwordInput.count()) {
+    await passwordInput.fill('admin123');
+  } else {
+    await page.locator('input[type="password"]').first().fill('admin123');
+  }
   await page.getByTestId('login-submit').click();
   await expect(page).toHaveURL(/\/$/);
   await expect(page.getByTestId('app-sidebar')).toBeVisible();

@@ -1,95 +1,4 @@
-"use strict";
-const electron = require("electron");
-const path = require("path");
-const url = require("url");
-const fs = require("fs");
-const Database = require("better-sqlite3");
-var _documentCurrentScript = typeof document !== "undefined" ? document.currentScript : null;
-function tableExists$1(db2, table) {
-  const row = db2.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?").get(table);
-  return Boolean(row == null ? void 0 : row.name);
-}
-function getTableColumns$1(db2, table) {
-  if (!tableExists$1(db2, table)) {
-    return [];
-  }
-  const validTables = /* @__PURE__ */ new Set([
-    "products",
-    "sales",
-    "sale_items",
-    "customers",
-    "installments",
-    "installment_schedules",
-    "installment_payments",
-    "wallets",
-    "safe_transactions",
-    "expenses",
-    "employees",
-    "employee_salaries",
-    "employee_advances",
-    "suppliers",
-    "supplier_transactions",
-    "product_batches",
-    "blacklist",
-    "damaged_items",
-    "other_revenue",
-    "reminders",
-    "repair_tickets",
-    "repair_parts",
-    "used_devices",
-    "settings",
-    "inventory_items"
-  ]);
-  if (!validTables.has(table)) {
-    return [];
-  }
-  return db2.prepare(`PRAGMA table_info("${table}")`).all().map((column) => column.name);
-}
-function createIndexIfColumnsExist(db2, indexName, table, columns) {
-  const tableColumns = new Set(getTableColumns$1(db2, table));
-  if (!columns.every((column) => tableColumns.has(column))) {
-    return;
-  }
-  db2.exec(`CREATE INDEX IF NOT EXISTS ${indexName} ON ${table}(${columns.join(", ")})`);
-}
-function ensureSchemaIndexes(db2) {
-  createIndexIfColumnsExist(db2, "idx_products_barcode", "products", ["barcode"]);
-  createIndexIfColumnsExist(db2, "idx_expenses_date", "expenses", ["date"]);
-  createIndexIfColumnsExist(db2, "idx_employee_salaries_employee_month", "employee_salaries", ["employeeId", "month"]);
-  createIndexIfColumnsExist(db2, "idx_employee_advances_employee_date", "employee_advances", ["employeeId", "date"]);
-  createIndexIfColumnsExist(db2, "idx_product_batches_productId", "product_batches", ["productId"]);
-  createIndexIfColumnsExist(db2, "idx_sale_items_saleId", "sale_items", ["saleId"]);
-  createIndexIfColumnsExist(db2, "idx_customers_phone", "customers", ["phone"]);
-  createIndexIfColumnsExist(db2, "idx_customers_nationalId", "customers", ["nationalId"]);
-  createIndexIfColumnsExist(db2, "idx_blacklist_imei_status", "blacklist", ["imei", "status"]);
-  createIndexIfColumnsExist(db2, "idx_damaged_items_date", "damaged_items", ["date"]);
-  createIndexIfColumnsExist(db2, "idx_installments_customerId", "installments", ["customerId"]);
-  createIndexIfColumnsExist(db2, "idx_installments_productId", "installments", ["productId"]);
-  createIndexIfColumnsExist(db2, "idx_installments_status", "installments", ["status"]);
-  createIndexIfColumnsExist(db2, "idx_installments_createdAt", "installments", ["createdAt"]);
-  createIndexIfColumnsExist(db2, "idx_installment_schedules_contract_month", "installment_schedules", ["contractId", "monthNumber"]);
-  createIndexIfColumnsExist(db2, "idx_installment_schedules_due_paid", "installment_schedules", ["dueDate", "paid"]);
-  createIndexIfColumnsExist(db2, "idx_installment_payments_contract_date", "installment_payments", ["contractId", "date"]);
-  createIndexIfColumnsExist(db2, "idx_installment_allocations_payment", "installment_payment_allocations", ["paymentId"]);
-  createIndexIfColumnsExist(db2, "idx_installment_allocations_schedule", "installment_payment_allocations", ["scheduleItemId"]);
-  createIndexIfColumnsExist(db2, "idx_supplier_transactions_supplier_created", "supplier_transactions", ["supplierId", "createdAt"]);
-  createIndexIfColumnsExist(db2, "idx_other_revenue_date", "other_revenue", ["date"]);
-  createIndexIfColumnsExist(db2, "idx_reminders_due_status", "reminders", ["dueDate", "status", "completed"]);
-  createIndexIfColumnsExist(db2, "idx_safe_transactions_wallet_created", "safe_transactions", ["walletId", "createdAt"]);
-  createIndexIfColumnsExist(db2, "idx_repair_tickets_status_created", "repair_tickets", ["status", "createdAt"]);
-  createIndexIfColumnsExist(db2, "idx_used_devices_serial_status", "used_devices", ["serialNumber", "status"]);
-}
-function initializeDatabase() {
-  const isDev = !electron.app.isPackaged;
-  const userDataPath = electron.app.getPath("userData");
-  const dbPath = path.join(userDataPath, isDev ? "retail_dev.sqlite" : "retail_prod.sqlite");
-  console.log(`Initializing SQLite database at: ${dbPath}`);
-  const db2 = new Database(dbPath, {
-    verbose: isDev ? console.log : void 0
-  });
-  db2.pragma("journal_mode = WAL");
-  db2.pragma("foreign_keys = ON");
-  db2.exec(`
+"use strict";const c=require("electron"),F=require("path"),pe=require("url"),H=require("fs"),Te=require("better-sqlite3");var j=typeof document<"u"?document.currentScript:null;function me(e,a){const t=e.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?").get(a);return!!(t!=null&&t.name)}function Ae(e,a){return me(e,a)?new Set(["products","sales","sale_items","customers","installments","installment_schedules","installment_payments","wallets","safe_transactions","expenses","employees","employee_salaries","employee_advances","suppliers","supplier_transactions","product_batches","blacklist","damaged_items","other_revenue","reminders","repair_tickets","repair_parts","used_devices","settings","inventory_items"]).has(a)?e.prepare(`PRAGMA table_info("${a}")`).all().map(r=>r.name):[]:[]}function g(e,a,t,r){const n=new Set(Ae(e,t));r.every(s=>n.has(s))&&e.exec(`CREATE INDEX IF NOT EXISTS ${a} ON ${t}(${r.join(", ")})`)}function Se(e){g(e,"idx_products_barcode","products",["barcode"]),g(e,"idx_expenses_date","expenses",["date"]),g(e,"idx_employee_salaries_employee_month","employee_salaries",["employeeId","month"]),g(e,"idx_employee_advances_employee_date","employee_advances",["employeeId","date"]),g(e,"idx_product_batches_productId","product_batches",["productId"]),g(e,"idx_sale_items_saleId","sale_items",["saleId"]),g(e,"idx_customers_phone","customers",["phone"]),g(e,"idx_customers_nationalId","customers",["nationalId"]),g(e,"idx_blacklist_imei_status","blacklist",["imei","status"]),g(e,"idx_damaged_items_date","damaged_items",["date"]),g(e,"idx_installments_customerId","installments",["customerId"]),g(e,"idx_installments_productId","installments",["productId"]),g(e,"idx_installments_status","installments",["status"]),g(e,"idx_installments_createdAt","installments",["createdAt"]),g(e,"idx_installment_schedules_contract_month","installment_schedules",["contractId","monthNumber"]),g(e,"idx_installment_schedules_due_paid","installment_schedules",["dueDate","paid"]),g(e,"idx_installment_payments_contract_date","installment_payments",["contractId","date"]),g(e,"idx_installment_allocations_payment","installment_payment_allocations",["paymentId"]),g(e,"idx_installment_allocations_schedule","installment_payment_allocations",["scheduleItemId"]),g(e,"idx_supplier_transactions_supplier_created","supplier_transactions",["supplierId","createdAt"]),g(e,"idx_other_revenue_date","other_revenue",["date"]),g(e,"idx_reminders_due_status","reminders",["dueDate","status","completed"]),g(e,"idx_safe_transactions_wallet_created","safe_transactions",["walletId","createdAt"]),g(e,"idx_repair_tickets_status_created","repair_tickets",["status","createdAt"]),g(e,"idx_used_devices_serial_status","used_devices",["serialNumber","status"])}function Ne(){const e=!c.app.isPackaged,a=c.app.getPath("userData"),t=F.join(a,e?"retail_dev.sqlite":"retail_prod.sqlite");console.log(`Initializing SQLite database at: ${t}`);const r=new Te(t,{verbose:e?console.log:void 0});return r.pragma("journal_mode = WAL"),r.pragma("foreign_keys = ON"),r.exec(`
     CREATE TABLE IF NOT EXISTS settings (
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL
@@ -915,173 +824,36 @@ function initializeDatabase() {
       FOREIGN KEY(invoice_id) REFERENCES repair_invoices(id) ON DELETE CASCADE
     );
 
-  `);
-  ensureSchemaIndexes(db2);
-  return db2;
-}
-function asNumber(value, fallback = 0) {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return fallback;
-  return Math.round(Math.max(0, parsed) * 100) / 100;
-}
-function asInteger(value, fallback = 0, minimum = 0) {
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return Math.max(minimum, fallback);
-  return Math.max(minimum, Math.round(parsed));
-}
-function asText(value, fallback = "") {
-  return typeof value === "string" ? value : fallback;
-}
-function asNullableText(value) {
-  const text = asText(value).trim();
-  return text ? text : null;
-}
-function asBooleanInt(value) {
-  return value ? 1 : 0;
-}
-function normalizeStatus(value) {
-  if (value === "completed" || value === "overdue" || value === "cancelled") return value;
-  return "active";
-}
-function parseJsonArray$1(value) {
-  if (Array.isArray(value)) return value;
-  if (typeof value !== "string" || !value.trim()) return [];
-  try {
-    const parsed = JSON.parse(value);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-function serializeJson(value) {
-  if (!Array.isArray(value) || value.length === 0) return null;
-  return JSON.stringify(value);
-}
-function ensureCustomerRecord(db2, contract) {
-  const explicitCustomerId = asNullableText(contract.customerId);
-  if (explicitCustomerId) {
-    const existing = db2.prepare("SELECT id FROM customers WHERE id = ?").get(explicitCustomerId);
-    if (existing) return existing.id;
-  }
-  const customerName = asText(contract.customerName).trim();
-  if (!customerName) return null;
-  const customerPhone = asNullableText(contract.customerPhone);
-  const customerAddress = asNullableText(contract.customerAddress);
-  const customerNationalId = asNullableText(contract.customerIdCard);
-  const byPhone = customerPhone ? db2.prepare("SELECT id FROM customers WHERE phone = ? LIMIT 1").get(customerPhone) : void 0;
-  if (byPhone) {
-    db2.prepare(`
+  `),Se(r),r}function _(e,a=0){const t=Number(e);return Number.isFinite(t)?Math.round(Math.max(0,t)*100)/100:a}function q(e,a=0,t=0){const r=Number(e);return Number.isFinite(r)?Math.max(t,Math.round(r)):Math.max(t,a)}function D(e,a=""){return typeof e=="string"?e:a}function f(e){const a=D(e).trim();return a||null}function ee(e){return e?1:0}function ie(e){return e==="completed"||e==="overdue"||e==="cancelled"?e:"active"}function Le(e){if(Array.isArray(e))return e;if(typeof e!="string"||!e.trim())return[];try{const a=JSON.parse(e);return Array.isArray(a)?a:[]}catch{return[]}}function Ie(e){return!Array.isArray(e)||e.length===0?null:JSON.stringify(e)}function Re(e,a){const t=f(a.customerId);if(t){const T=e.prepare("SELECT id FROM customers WHERE id = ?").get(t);if(T)return T.id}const r=D(a.customerName).trim();if(!r)return null;const n=f(a.customerPhone),s=f(a.customerAddress),o=f(a.customerIdCard),d=n?e.prepare("SELECT id FROM customers WHERE phone = ? LIMIT 1").get(n):void 0;if(d)return e.prepare(`
       UPDATE customers
       SET name = ?, address = COALESCE(?, address), nationalId = COALESCE(?, nationalId), updatedAt = ?
       WHERE id = ?
-    `).run(customerName, customerAddress, customerNationalId, (/* @__PURE__ */ new Date()).toISOString(), byPhone.id);
-    return byPhone.id;
-  }
-  const byName = db2.prepare("SELECT id FROM customers WHERE name = ? LIMIT 1").get(customerName);
-  if (byName) {
-    db2.prepare(`
+    `).run(r,s,o,new Date().toISOString(),d.id),d.id;const E=e.prepare("SELECT id FROM customers WHERE name = ? LIMIT 1").get(r);if(E)return e.prepare(`
       UPDATE customers
       SET phone = COALESCE(?, phone), address = COALESCE(?, address), nationalId = COALESCE(?, nationalId), updatedAt = ?
       WHERE id = ?
-    `).run(customerPhone, customerAddress, customerNationalId, (/* @__PURE__ */ new Date()).toISOString(), byName.id);
-    return byName.id;
-  }
-  const id = explicitCustomerId || crypto.randomUUID();
-  const now = (/* @__PURE__ */ new Date()).toISOString();
-  db2.prepare(`
+    `).run(n,s,o,new Date().toISOString(),E.id),E.id;const m=t||crypto.randomUUID(),S=new Date().toISOString();return e.prepare(`
     INSERT INTO customers (id, name, phone, address, nationalId, notes, totalPurchases, balance, createdAt, updatedAt)
     VALUES (?, ?, ?, ?, ?, ?, 0, 0, ?, ?)
-  `).run(id, customerName, customerPhone, customerAddress, customerNationalId, "Auto-created from installment contract", now, now);
-  return id;
-}
-function ensureProductRecord(db2, contract) {
-  const productId = asNullableText(contract.productId);
-  if (!productId) return null;
-  const existing = db2.prepare("SELECT id FROM products WHERE id = ?").get(productId);
-  if (existing) return existing.id;
-  const now = (/* @__PURE__ */ new Date()).toISOString();
-  db2.prepare(`
+  `).run(m,r,n,s,o,"Auto-created from installment contract",S,S),m}function ye(e,a){const t=f(a.productId);if(!t)return null;const r=e.prepare("SELECT id FROM products WHERE id = ?").get(t);if(r)return r.id;const n=new Date().toISOString();return e.prepare(`
     INSERT INTO products (
       id, name, barcode, category, condition, quantity,
       oldCostPrice, newCostPrice, salePrice, supplier, source,
       notes, createdAt, updatedAt, deletedAt
     ) VALUES (?, ?, ?, ?, ?, 0, 0, 0, ?, NULL, ?, ?, ?, ?, NULL)
-  `).run(
-    productId,
-    asText(contract.productName, "Installment Product"),
-    productId,
-    asNullableText(contract.contractType) || "installment",
-    "new",
-    asNumber(contract.installmentPrice),
-    "installment_snapshot",
-    "Auto-created from installment contract",
-    now,
-    now
-  );
-  return productId;
-}
-function hydrateSchedules(db2) {
-  const rows = db2.prepare(`
+  `).run(t,D(a.productName,"Installment Product"),t,f(a.contractType)||"installment","new",_(a.installmentPrice),"installment_snapshot","Auto-created from installment contract",n,n),t}function _e(e){const a=e.prepare(`
     SELECT id, contractId, monthNumber, dueDate, amount, paidAmount, penalty, paid, remainingAfter, note
     FROM installment_schedules
     ORDER BY contractId ASC, monthNumber ASC, dueDate ASC
-  `).all();
-  const grouped = /* @__PURE__ */ new Map();
-  for (const row of rows) {
-    const items = grouped.get(row.contractId) || [];
-    items.push({
-      id: row.id,
-      month: row.monthNumber,
-      dueDate: row.dueDate,
-      amount: asNumber(row.amount),
-      paidAmount: asNumber(row.paidAmount),
-      penalty: asNumber(row.penalty),
-      paid: Boolean(row.paid),
-      remainingAfter: row.remainingAfter === null ? void 0 : asNumber(row.remainingAfter),
-      note: row.note || ""
-    });
-    grouped.set(row.contractId, items);
-  }
-  return grouped;
-}
-function hydratePayments(db2) {
-  const allocations = db2.prepare(`
+  `).all(),t=new Map;for(const r of a){const n=t.get(r.contractId)||[];n.push({id:r.id,month:r.monthNumber,dueDate:r.dueDate,amount:_(r.amount),paidAmount:_(r.paidAmount),penalty:_(r.penalty),paid:!!r.paid,remainingAfter:r.remainingAfter===null?void 0:_(r.remainingAfter),note:r.note||""}),t.set(r.contractId,n)}return t}function ge(e){const a=e.prepare(`
     SELECT paymentId, scheduleItemId, amount
     FROM installment_payment_allocations
     ORDER BY paymentId ASC
-  `).all();
-  const allocationsByPayment = /* @__PURE__ */ new Map();
-  for (const allocation of allocations) {
-    const items = allocationsByPayment.get(allocation.paymentId) || [];
-    items.push({
-      scheduleItemId: allocation.scheduleItemId,
-      amount: asNumber(allocation.amount)
-    });
-    allocationsByPayment.set(allocation.paymentId, items);
-  }
-  const paymentRows = db2.prepare(`
+  `).all(),t=new Map;for(const s of a){const o=t.get(s.paymentId)||[];o.push({scheduleItemId:s.scheduleItemId,amount:_(s.amount)}),t.set(s.paymentId,o)}const r=e.prepare(`
     SELECT id, contractId, amount, date, note, createdAt
     FROM installment_payments
     ORDER BY contractId ASC, date ASC, createdAt ASC
-  `).all();
-  const grouped = /* @__PURE__ */ new Map();
-  for (const row of paymentRows) {
-    const items = grouped.get(row.contractId) || [];
-    items.push({
-      id: row.id,
-      amount: asNumber(row.amount),
-      date: row.date,
-      note: row.note || "",
-      allocations: allocationsByPayment.get(row.id) || []
-    });
-    grouped.set(row.contractId, items);
-  }
-  return grouped;
-}
-function readInstallmentContracts(db2) {
-  const schedulesByContract = hydrateSchedules(db2);
-  const paymentsByContract = hydratePayments(db2);
-  const rows = db2.prepare(`
+  `).all(),n=new Map;for(const s of r){const o=n.get(s.contractId)||[];o.push({id:s.id,amount:_(s.amount),date:s.date,note:s.note||"",allocations:t.get(s.id)||[]}),n.set(s.contractId,o)}return n}function oe(e){const a=_e(e),t=ge(e);return e.prepare(`
     SELECT
       id,
       contractNumber,
@@ -1115,44 +887,7 @@ function readInstallmentContracts(db2) {
       updatedAt
     FROM installments
     ORDER BY createdAt DESC, contractNumber DESC
-  `).all();
-  return rows.map((row) => ({
-    id: row.id,
-    contractNumber: row.contractNumber,
-    contractType: row.contractType || "product",
-    customerId: row.customerId || void 0,
-    customerName: row.customerName,
-    customerIdCard: row.customerIdCard || "",
-    guarantorName: row.guarantorName || "",
-    guarantorIdCard: row.guarantorIdCard || "",
-    guarantorPhone: row.guarantorPhone || "",
-    guarantorAddress: row.guarantorAddress || "",
-    customerPhone: row.customerPhone || "",
-    customerAddress: row.customerAddress || "",
-    productName: row.productName,
-    productId: row.productId || void 0,
-    transferType: row.transferType || void 0,
-    cashPrice: asNumber(row.cashPrice),
-    installmentPrice: asNumber(row.installmentPrice),
-    downPayment: asNumber(row.downPayment),
-    months: asInteger(row.months, 1, 1),
-    monthlyInstallment: asNumber(row.monthlyInstallment),
-    firstInstallmentDate: asText(row.firstInstallmentDate),
-    schedule: schedulesByContract.get(asText(row.id)) || [],
-    payments: paymentsByContract.get(asText(row.id)) || [],
-    paidTotal: asNumber(row.paidTotal),
-    remaining: asNumber(row.remaining),
-    notes: row.notes || "",
-    customFields: parseJsonArray$1(row.customFieldsJson),
-    status: normalizeStatus(row.status),
-    settledEarly: Boolean(row.settledEarly),
-    settlementDiscount: asNumber(row.settlementDiscount),
-    createdAt: asText(row.createdAt, (/* @__PURE__ */ new Date()).toISOString()),
-    updatedAt: asText(row.updatedAt, asText(row.createdAt, (/* @__PURE__ */ new Date()).toISOString()))
-  }));
-}
-function replaceInstallmentContracts(db2, contracts) {
-  const insertContract = db2.prepare(`
+  `).all().map(n=>({id:n.id,contractNumber:n.contractNumber,contractType:n.contractType||"product",customerId:n.customerId||void 0,customerName:n.customerName,customerIdCard:n.customerIdCard||"",guarantorName:n.guarantorName||"",guarantorIdCard:n.guarantorIdCard||"",guarantorPhone:n.guarantorPhone||"",guarantorAddress:n.guarantorAddress||"",customerPhone:n.customerPhone||"",customerAddress:n.customerAddress||"",productName:n.productName,productId:n.productId||void 0,transferType:n.transferType||void 0,cashPrice:_(n.cashPrice),installmentPrice:_(n.installmentPrice),downPayment:_(n.downPayment),months:q(n.months,1,1),monthlyInstallment:_(n.monthlyInstallment),firstInstallmentDate:D(n.firstInstallmentDate),schedule:a.get(D(n.id))||[],payments:t.get(D(n.id))||[],paidTotal:_(n.paidTotal),remaining:_(n.remaining),notes:n.notes||"",customFields:Le(n.customFieldsJson),status:ie(n.status),settledEarly:!!n.settledEarly,settlementDiscount:_(n.settlementDiscount),createdAt:D(n.createdAt,new Date().toISOString()),updatedAt:D(n.updatedAt,D(n.createdAt,new Date().toISOString()))}))}function ce(e,a){const t=e.prepare(`
     INSERT INTO installments (
       id, contractNumber, contractType, customerId, customerName, customerPhone, customerAddress,
       customerIdCard, guarantorName, guarantorIdCard, guarantorPhone, guarantorAddress,
@@ -1160,210 +895,17 @@ function replaceInstallmentContracts(db2, contracts) {
       months, monthlyInstallment, paidTotal, remaining, firstInstallmentDate, notes,
       customFieldsJson, status, settledEarly, settlementDiscount, createdAt, updatedAt
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-  const insertSchedule = db2.prepare(`
+  `),r=e.prepare(`
     INSERT INTO installment_schedules (
       id, contractId, monthNumber, dueDate, amount, paidAmount, penalty, paid, remainingAfter, note
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-  const insertPayment = db2.prepare(`
+  `),n=e.prepare(`
     INSERT INTO installment_payments (id, contractId, amount, date, note, createdAt)
     VALUES (?, ?, ?, ?, ?, ?)
-  `);
-  const insertAllocation = db2.prepare(`
+  `),s=e.prepare(`
     INSERT INTO installment_payment_allocations (id, paymentId, scheduleItemId, amount)
     VALUES (?, ?, ?, ?)
-  `);
-  const now = (/* @__PURE__ */ new Date()).toISOString();
-  db2.transaction((records) => {
-    db2.prepare("DELETE FROM installment_payment_allocations").run();
-    db2.prepare("DELETE FROM installment_payments").run();
-    db2.prepare("DELETE FROM installment_schedules").run();
-    db2.prepare("DELETE FROM installments").run();
-    for (const contract of records) {
-      const contractId = asText(contract.id, crypto.randomUUID());
-      const customerId = ensureCustomerRecord(db2, contract);
-      const productId = ensureProductRecord(db2, contract);
-      const schedule = Array.isArray(contract.schedule) ? contract.schedule : [];
-      const payments = Array.isArray(contract.payments) ? contract.payments : [];
-      const createdAt = asText(contract.createdAt, now);
-      const updatedAt = asText(contract.updatedAt, createdAt);
-      insertContract.run(
-        contractId,
-        asText(contract.contractNumber, `INS-${Date.now()}`),
-        asText(contract.contractType, "product"),
-        customerId,
-        asText(contract.customerName),
-        asNullableText(contract.customerPhone),
-        asNullableText(contract.customerAddress),
-        asNullableText(contract.customerIdCard),
-        asNullableText(contract.guarantorName),
-        asNullableText(contract.guarantorIdCard),
-        asNullableText(contract.guarantorPhone),
-        asNullableText(contract.guarantorAddress),
-        productId,
-        asText(contract.productName),
-        asNullableText(contract.transferType),
-        asNumber(contract.cashPrice),
-        asNumber(contract.installmentPrice),
-        asNumber(contract.downPayment),
-        asInteger(contract.months, schedule.length || 1, 1),
-        asNumber(contract.monthlyInstallment),
-        asNumber(contract.paidTotal),
-        asNumber(contract.remaining),
-        asNullableText(contract.firstInstallmentDate),
-        asNullableText(contract.notes),
-        serializeJson(contract.customFields),
-        normalizeStatus(contract.status),
-        asBooleanInt(contract.settledEarly),
-        asNumber(contract.settlementDiscount),
-        createdAt,
-        updatedAt
-      );
-      schedule.slice().sort((left, right) => asInteger(left.month, 0, 0) - asInteger(right.month, 0, 0) || asText(left.dueDate).localeCompare(asText(right.dueDate))).forEach((item, index) => {
-        const scheduleItemId = asText(item.id, crypto.randomUUID());
-        insertSchedule.run(
-          scheduleItemId,
-          contractId,
-          asInteger(item.month, index + 1, 1),
-          asText(item.dueDate),
-          asNumber(item.amount),
-          asNumber(item.paidAmount),
-          asNumber(item.penalty),
-          asBooleanInt(item.paid),
-          item.remainingAfter === void 0 ? null : asNumber(item.remainingAfter),
-          asNullableText(item.note)
-        );
-      });
-      for (const payment of payments) {
-        const paymentId = asText(payment.id, crypto.randomUUID());
-        insertPayment.run(
-          paymentId,
-          contractId,
-          asNumber(payment.amount),
-          asText(payment.date, createdAt.slice(0, 10)),
-          asNullableText(payment.note),
-          createdAt
-        );
-        const allocations = Array.isArray(payment.allocations) ? payment.allocations : [];
-        for (const allocation of allocations) {
-          const scheduleItemId = asNullableText(allocation.scheduleItemId);
-          if (!scheduleItemId) continue;
-          insertAllocation.run(
-            crypto.randomUUID(),
-            paymentId,
-            scheduleItemId,
-            asNumber(allocation.amount)
-          );
-        }
-      }
-    }
-  })(contracts);
-  return readInstallmentContracts(db2);
-}
-function getSettingsJson(db2, key) {
-  const row = db2.prepare("SELECT value FROM settings WHERE key = ?").get(key);
-  if (!row) return null;
-  try {
-    const parsed = JSON.parse(row.value);
-    return Array.isArray(parsed) ? parsed : null;
-  } catch {
-    return null;
-  }
-}
-function tableExists(db2, table) {
-  const row = db2.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?").get(table);
-  return Boolean(row == null ? void 0 : row.name);
-}
-function tableIsEmpty(db2, table) {
-  if (!tableExists(db2, table)) return true;
-  const row = db2.prepare(`SELECT COUNT(*) as c FROM ${table}`).get();
-  return row.c === 0;
-}
-function getTableColumns(db2, table) {
-  if (!tableExists(db2, table)) return [];
-  return db2.prepare(`PRAGMA table_info(${table})`).all().map((column) => column.name);
-}
-function tableHasColumns(db2, table, columns) {
-  const tableColumns = new Set(getTableColumns(db2, table));
-  return columns.every((column) => tableColumns.has(column));
-}
-function ensureColumn(db2, table, column, definition) {
-  if (!tableExists(db2, table)) return;
-  const columns = new Set(getTableColumns(db2, table));
-  if (columns.has(column)) return;
-  db2.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
-}
-function firstText(...values) {
-  for (const value of values) {
-    if (typeof value === "string" && value.trim()) return value;
-  }
-  return "";
-}
-function firstNumber(...values) {
-  for (const value of values) {
-    const parsed = Number(value);
-    if (Number.isFinite(parsed)) {
-      return Math.round(Math.max(0, parsed) * 100) / 100;
-    }
-  }
-  return 0;
-}
-function toBoolean(value) {
-  return Boolean(value);
-}
-function parseJsonArray(value) {
-  if (Array.isArray(value)) return value;
-  if (typeof value !== "string" || !value.trim()) return [];
-  try {
-    const parsed = JSON.parse(value);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-function extractPrefixedSequence$1(value, prefix) {
-  if (typeof value !== "string") return 0;
-  const match = new RegExp(`^${prefix}-(\\d+)$`).exec(value.trim());
-  if (!match) return 0;
-  const parsed = Number.parseInt(match[1], 10);
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-function derivePurchaseInvoiceStatus$1(totalAmount, paidAmount) {
-  if (paidAmount <= 0) return "confirmed";
-  if (paidAmount >= totalAmount) return "paid";
-  return "partial";
-}
-const DEFAULT_OWNER_PERMISSIONS = [
-  "dashboard",
-  "pos",
-  "sales",
-  "inventory",
-  "mobiles",
-  "computers",
-  "devices",
-  "used",
-  "cars",
-  "warehouse",
-  "maintenance",
-  "installments",
-  "expenses",
-  "damaged",
-  "otherRevenue",
-  "returns",
-  "settings",
-  "users",
-  "customers",
-  "wallets",
-  "employees",
-  "suppliers",
-  "blacklist",
-  "reminders",
-  "shiftClosing",
-  "purchaseInvoices"
-];
-function createInstallmentsTables(db2) {
-  db2.exec(`
+  `),o=new Date().toISOString();return e.transaction(d=>{e.prepare("DELETE FROM installment_payment_allocations").run(),e.prepare("DELETE FROM installment_payments").run(),e.prepare("DELETE FROM installment_schedules").run(),e.prepare("DELETE FROM installments").run();for(const E of d){const m=D(E.id,crypto.randomUUID()),S=Re(e,E),T=ye(e,E),C=Array.isArray(E.schedule)?E.schedule:[],w=Array.isArray(E.payments)?E.payments:[],h=D(E.createdAt,o),U=D(E.updatedAt,h);t.run(m,D(E.contractNumber,`INS-${Date.now()}`),D(E.contractType,"product"),S,D(E.customerName),f(E.customerPhone),f(E.customerAddress),f(E.customerIdCard),f(E.guarantorName),f(E.guarantorIdCard),f(E.guarantorPhone),f(E.guarantorAddress),T,D(E.productName),f(E.transferType),_(E.cashPrice),_(E.installmentPrice),_(E.downPayment),q(E.months,C.length||1,1),_(E.monthlyInstallment),_(E.paidTotal),_(E.remaining),f(E.firstInstallmentDate),f(E.notes),Ie(E.customFields),ie(E.status),ee(E.settledEarly),_(E.settlementDiscount),h,U),C.slice().sort((I,v)=>q(I.month,0,0)-q(v.month,0,0)||D(I.dueDate).localeCompare(D(v.dueDate))).forEach((I,v)=>{const B=D(I.id,crypto.randomUUID());r.run(B,m,q(I.month,v+1,1),D(I.dueDate),_(I.amount),_(I.paidAmount),_(I.penalty),ee(I.paid),I.remainingAfter===void 0?null:_(I.remainingAfter),f(I.note))});for(const I of w){const v=D(I.id,crypto.randomUUID());n.run(v,m,_(I.amount),D(I.date,h.slice(0,10)),f(I.note),h);const B=Array.isArray(I.allocations)?I.allocations:[];for(const k of B){const R=f(k.scheduleItemId);R&&s.run(crypto.randomUUID(),v,R,_(k.amount))}}}})(a),oe(e)}function A(e,a){const t=e.prepare("SELECT value FROM settings WHERE key = ?").get(a);if(!t)return null;try{const r=JSON.parse(t.value);return Array.isArray(r)?r:null}catch{return null}}function N(e,a){const t=e.prepare("SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?").get(a);return!!(t!=null&&t.name)}function y(e,a){return N(e,a)?e.prepare(`SELECT COUNT(*) as c FROM ${a}`).get().c===0:!0}function Ee(e,a){return N(e,a)?e.prepare(`PRAGMA table_info(${a})`).all().map(t=>t.name):[]}function W(e,a,t){const r=new Set(Ee(e,a));return t.every(n=>r.has(n))}function l(e,a,t,r){!N(e,a)||new Set(Ee(e,a)).has(t)||e.exec(`ALTER TABLE ${a} ADD COLUMN ${t} ${r}`)}function i(...e){for(const a of e)if(typeof a=="string"&&a.trim())return a;return""}function u(...e){for(const a of e){const t=Number(a);if(Number.isFinite(t))return Math.round(Math.max(0,t)*100)/100}return 0}function P(e){return!!e}function K(e){if(Array.isArray(e))return e;if(typeof e!="string"||!e.trim())return[];try{const a=JSON.parse(e);return Array.isArray(a)?a:[]}catch{return[]}}function de(e,a){if(typeof e!="string")return 0;const t=new RegExp(`^${a}-(\\d+)$`).exec(e.trim());if(!t)return 0;const r=Number.parseInt(t[1],10);return Number.isFinite(r)?r:0}function Oe(e,a){return a<=0?"confirmed":a>=e?"paid":"partial"}const te=["dashboard","pos","sales","inventory","mobiles","computers","devices","used","cars","warehouse","maintenance","installments","expenses","damaged","otherRevenue","returns","settings","users","customers","wallets","employees","suppliers","blacklist","reminders","shiftClosing","purchaseInvoices"];function he(e){e.exec(`
     CREATE TABLE IF NOT EXISTS installments (
       id TEXT PRIMARY KEY,
       contractNumber TEXT UNIQUE NOT NULL,
@@ -1431,49 +973,10 @@ function createInstallmentsTables(db2) {
       FOREIGN KEY (paymentId) REFERENCES installment_payments(id) ON DELETE CASCADE,
       FOREIGN KEY (scheduleItemId) REFERENCES installment_schedules(id) ON DELETE CASCADE
     );
-  `);
-}
-function buildWalletDirectory(db2) {
-  const directory = /* @__PURE__ */ new Map();
-  const sources = [getSettingsJson(db2, "gx_wallets"), getSettingsJson(db2, "retail_wallets")];
-  for (const source of sources) {
-    for (const wallet of source || []) {
-      const walletId = firstText(wallet.id);
-      if (!walletId) continue;
-      directory.set(walletId, wallet);
-    }
-  }
-  return directory;
-}
-function ensureWalletRecord$1(db2, walletDirectory, walletId) {
-  if (!walletId) return;
-  const existing = db2.prepare("SELECT id FROM wallets WHERE id = ?").get(walletId);
-  if (existing) return;
-  const metadata = walletDirectory.get(walletId);
-  const now = (/* @__PURE__ */ new Date()).toISOString();
-  const walletType = firstText(metadata == null ? void 0 : metadata.type, "cash");
-  const walletIcon = firstText(
-    metadata == null ? void 0 : metadata.icon,
-    walletType === "bank" ? "🏦" : walletType === "card" ? "💳" : walletType === "transfer" ? "📲" : "💵"
-  );
-  const fallbackName = walletId === "wallet_cash" ? "الصندوق" : `Wallet ${walletId.slice(0, 8)}`;
-  db2.prepare(`
+  `)}function Ce(e){const a=new Map,t=[A(e,"gx_wallets"),A(e,"retail_wallets")];for(const r of t)for(const n of r||[]){const s=i(n.id);s&&a.set(s,n)}return a}function De(e,a,t){if(!t||e.prepare("SELECT id FROM wallets WHERE id = ?").get(t))return;const n=a.get(t),s=new Date().toISOString(),o=i(n==null?void 0:n.type,"cash"),d=i(n==null?void 0:n.icon,o==="bank"?"🏦":o==="card"?"💳":o==="transfer"?"📲":"💵"),E=t==="wallet_cash"?"الصندوق":`Wallet ${t.slice(0,8)}`;e.prepare(`
     INSERT INTO wallets (id, name, type, balance, isDefault, icon, color, notes, createdAt, updatedAt)
     VALUES (?, ?, ?, 0, ?, ?, ?, ?, ?, ?)
-  `).run(
-    walletId,
-    firstText(metadata == null ? void 0 : metadata.name, fallbackName),
-    walletType,
-    toBoolean(metadata == null ? void 0 : metadata.isDefault) ? 1 : 0,
-    walletIcon || null,
-    firstText(metadata == null ? void 0 : metadata.color) || null,
-    firstText(metadata == null ? void 0 : metadata.notes, "Auto-created to repair wallet references"),
-    firstText(metadata == null ? void 0 : metadata.createdAt, now),
-    firstText(metadata == null ? void 0 : metadata.updatedAt, now)
-  );
-}
-function createSafeTransactionsTable(db2) {
-  db2.exec(`
+  `).run(t,i(n==null?void 0:n.name,E),o,P(n==null?void 0:n.isDefault)?1:0,d||null,i(n==null?void 0:n.color)||null,i(n==null?void 0:n.notes,"Auto-created to repair wallet references"),i(n==null?void 0:n.createdAt,s),i(n==null?void 0:n.updatedAt,s))}function Ue(e){e.exec(`
     CREATE TABLE IF NOT EXISTS safe_transactions (
       id TEXT PRIMARY KEY,
       walletId TEXT NOT NULL,
@@ -1490,316 +993,22 @@ function createSafeTransactionsTable(db2) {
       createdAt TEXT,
       FOREIGN KEY (walletId) REFERENCES wallets(id) ON DELETE RESTRICT
     );
-  `);
-}
-function readLegacyInstallmentContracts(db2) {
-  if (!tableExists(db2, "installments")) return [];
-  const contractRows = db2.prepare("SELECT * FROM installments").all();
-  if (contractRows.length === 0) return [];
-  const scheduleRows = tableExists(db2, "installment_schedules") ? db2.prepare("SELECT * FROM installment_schedules").all() : [];
-  const paymentRows = tableExists(db2, "installment_payments") ? db2.prepare("SELECT * FROM installment_payments").all() : [];
-  const allocationRows = tableExists(db2, "installment_payment_allocations") ? db2.prepare("SELECT * FROM installment_payment_allocations").all() : [];
-  const schedulesByContract = /* @__PURE__ */ new Map();
-  for (const row of scheduleRows) {
-    const contractId = firstText(row.contractId);
-    if (!contractId) continue;
-    const entries = schedulesByContract.get(contractId) || [];
-    entries.push(row);
-    schedulesByContract.set(contractId, entries);
-  }
-  const allocationsByPayment = /* @__PURE__ */ new Map();
-  for (const row of allocationRows) {
-    const paymentId = firstText(row.paymentId);
-    if (!paymentId) continue;
-    const entries = allocationsByPayment.get(paymentId) || [];
-    entries.push(row);
-    allocationsByPayment.set(paymentId, entries);
-  }
-  const paymentsByContract = /* @__PURE__ */ new Map();
-  for (const row of paymentRows) {
-    const contractId = firstText(row.contractId);
-    if (!contractId) continue;
-    const entries = paymentsByContract.get(contractId) || [];
-    entries.push(row);
-    paymentsByContract.set(contractId, entries);
-  }
-  return contractRows.map((row) => {
-    var _a;
-    const contractId = firstText(row.id, crypto.randomUUID());
-    const rawSchedule = (schedulesByContract.get(contractId) || []).slice().sort((left, right) => firstNumber(left.monthNumber) - firstNumber(right.monthNumber) || firstText(left.dueDate).localeCompare(firstText(right.dueDate)));
-    const schedule = rawSchedule.map((item, index) => {
-      const amount = firstNumber(item.amount);
-      const penalty = firstNumber(item.penalty);
-      const paidAmount = firstNumber(item.paidAmount);
-      const totalDue = amount + penalty;
-      return {
-        id: firstText(item.id, crypto.randomUUID()),
-        month: Math.max(1, Math.round(firstNumber(item.monthNumber, index + 1))),
-        dueDate: firstText(item.dueDate),
-        amount,
-        paidAmount,
-        penalty,
-        paid: toBoolean(item.paid) || totalDue > 0 && paidAmount >= totalDue,
-        remainingAfter: item.remainingAfter === void 0 || item.remainingAfter === null ? void 0 : firstNumber(item.remainingAfter),
-        note: firstText(item.note)
-      };
-    });
-    const rawPayments = paymentsByContract.get(contractId) || [];
-    const payments = rawPayments.length > 0 ? rawPayments.slice().sort((left, right) => firstText(left.date).localeCompare(firstText(right.date)) || firstText(left.createdAt).localeCompare(firstText(right.createdAt))).map((payment) => ({
-      id: firstText(payment.id, crypto.randomUUID()),
-      amount: firstNumber(payment.amount),
-      date: firstText(payment.date),
-      note: firstText(payment.note),
-      allocations: (allocationsByPayment.get(firstText(payment.id)) || []).map((allocation) => ({
-        scheduleItemId: firstText(allocation.scheduleItemId),
-        amount: firstNumber(allocation.amount)
-      }))
-    })) : schedule.filter((item) => firstNumber(item.paidAmount) > 0).map((item) => {
-      var _a2;
-      return {
-        id: `legacy-payment-${firstText(item.id, crypto.randomUUID())}`,
-        amount: firstNumber(item.paidAmount),
-        date: firstText(
-          (_a2 = rawSchedule.find((rawItem) => firstText(rawItem.id) === firstText(item.id))) == null ? void 0 : _a2.paymentDate,
-          item.dueDate,
-          firstText(row.createdAt).slice(0, 10)
-        ),
-        note: "Migrated from legacy schedule data",
-        allocations: [{ scheduleItemId: firstText(item.id), amount: firstNumber(item.paidAmount) }]
-      };
-    });
-    const scheduleTotal = schedule.reduce((sum, item) => sum + firstNumber(item.amount) + firstNumber(item.penalty), 0);
-    const paymentsTotal = payments.reduce((sum, payment) => sum + firstNumber(payment.amount), 0);
-    const downPayment = firstNumber(row.downPayment);
-    const createdAt = firstText(row.createdAt, (/* @__PURE__ */ new Date()).toISOString());
-    const remaining = row.remaining !== void 0 || row.remainingAmount !== void 0 ? firstNumber(row.remaining, row.remainingAmount) : Math.max(0, Math.round((scheduleTotal - paymentsTotal) * 100) / 100);
-    return {
-      id: contractId,
-      contractNumber: firstText(row.contractNumber, `INS-${Date.now()}`),
-      contractType: firstText(row.contractType, "product"),
-      customerId: firstText(row.customerId) || void 0,
-      customerName: firstText(row.customerName),
-      customerPhone: firstText(row.customerPhone),
-      customerAddress: firstText(row.customerAddress),
-      customerIdCard: firstText(row.customerIdCard, row.customerNationalId),
-      guarantorName: firstText(row.guarantorName),
-      guarantorIdCard: firstText(row.guarantorIdCard),
-      guarantorPhone: firstText(row.guarantorPhone),
-      guarantorAddress: firstText(row.guarantorAddress),
-      productId: firstText(row.productId) || void 0,
-      productName: firstText(row.productName),
-      transferType: firstText(row.transferType) || void 0,
-      cashPrice: firstNumber(row.cashPrice, row.totalAmount),
-      installmentPrice: firstNumber(row.installmentPrice, row.totalAmount),
-      downPayment,
-      months: Math.max(1, Math.round(firstNumber(row.months, schedule.length || 1))),
-      monthlyInstallment: firstNumber(row.monthlyInstallment, row.monthlyPayment, schedule.length > 0 ? scheduleTotal / schedule.length : 0),
-      paidTotal: row.paidTotal !== void 0 ? firstNumber(row.paidTotal) : Math.round((downPayment + paymentsTotal) * 100) / 100,
-      remaining,
-      firstInstallmentDate: firstText(row.firstInstallmentDate, row.startDate, (_a = schedule[0]) == null ? void 0 : _a.dueDate),
-      schedule,
-      payments,
-      notes: firstText(row.notes),
-      customFields: parseJsonArray(row.customFieldsJson),
-      status: firstText(row.status, remaining === 0 ? "completed" : "active"),
-      settledEarly: toBoolean(row.settledEarly),
-      settlementDiscount: firstNumber(row.settlementDiscount),
-      createdAt,
-      updatedAt: firstText(row.updatedAt, createdAt)
-    };
-  });
-}
-function needsInstallmentSchemaRepair(db2) {
-  if (!tableHasColumns(db2, "installments", ["id", "contractNumber"])) return true;
-  if (!tableHasColumns(db2, "installments", [
-    "contractType",
-    "customerIdCard",
-    "guarantorIdCard",
-    "transferType",
-    "cashPrice",
-    "installmentPrice",
-    "paidTotal",
-    "remaining",
-    "customFieldsJson",
-    "updatedAt"
-  ])) {
-    return true;
-  }
-  if (tableHasColumns(db2, "installments", ["totalAmount", "remainingAmount", "monthlyPayment", "startDate", "customerNationalId"])) {
-    return true;
-  }
-  if (!tableHasColumns(db2, "installment_schedules", [
-    "id",
-    "contractId",
-    "monthNumber",
-    "dueDate",
-    "amount",
-    "paidAmount",
-    "penalty",
-    "paid",
-    "remainingAfter",
-    "note"
-  ])) {
-    return true;
-  }
-  if (!tableHasColumns(db2, "installment_payments", ["id", "contractId", "amount", "date", "createdAt"])) return true;
-  if (!tableHasColumns(db2, "installment_payment_allocations", ["id", "paymentId", "scheduleItemId", "amount"])) return true;
-  return false;
-}
-function repairInstallmentsSchema(db2) {
-  const legacyContracts = readLegacyInstallmentContracts(db2);
-  if (!needsInstallmentSchemaRepair(db2)) return legacyContracts;
-  db2.transaction(() => {
-    db2.prepare("DROP TABLE IF EXISTS installment_payment_allocations").run();
-    db2.prepare("DROP TABLE IF EXISTS installment_payments").run();
-    db2.prepare("DROP TABLE IF EXISTS installment_schedules").run();
-    db2.prepare("DROP TABLE IF EXISTS installments").run();
-    createInstallmentsTables(db2);
-  })();
-  console.log("[migration] Installments schema repaired.");
-  return legacyContracts;
-}
-function migrateInstallments(db2, legacyContracts) {
-  if (!tableExists(db2, "installments") || !tableIsEmpty(db2, "installments")) return;
-  const settingsContracts = getSettingsJson(db2, "gx_installments_v2") || [];
-  const sources = [
-    { label: "settings", data: settingsContracts },
-    { label: "legacy tables", data: legacyContracts }
-  ];
-  for (const source of sources) {
-    if (!source.data.length) continue;
-    try {
-      replaceInstallmentContracts(db2, source.data);
-      console.log(`[migration] Installments: ${source.data.length} contracts migrated from ${source.label}.`);
-      return;
-    } catch (error) {
-      console.error(`[migration] Installments migration from ${source.label} failed:`, error);
-    }
-  }
-}
-function needsSafeTransactionsRepair(db2) {
-  if (!tableHasColumns(db2, "safe_transactions", ["id", "walletId", "type", "amount", "createdAt"])) return true;
-  const foreignKeys = tableExists(db2, "safe_transactions") ? db2.prepare("PRAGMA foreign_key_list(safe_transactions)").all() : [];
-  return !foreignKeys.some((foreignKey) => foreignKey.from === "walletId" && foreignKey.table === "wallets");
-}
-function repairSafeTransactionsSchema(db2) {
-  const safeTransactions = tableExists(db2, "safe_transactions") ? db2.prepare("SELECT * FROM safe_transactions").all() : [];
-  const walletDirectory = buildWalletDirectory(db2);
-  const shouldRebuild = needsSafeTransactionsRepair(db2);
-  if (shouldRebuild) {
-    db2.transaction(() => {
-      db2.prepare("DROP TABLE IF EXISTS safe_transactions").run();
-      createSafeTransactionsTable(db2);
-    })();
-    console.log("[migration] Safe transactions schema repaired.");
-  }
-  const distinctWalletIds = [...new Set(safeTransactions.map((row) => firstText(row.walletId)).filter(Boolean))];
-  for (const walletId of distinctWalletIds) {
-    ensureWalletRecord$1(db2, walletDirectory, walletId);
-  }
-  if (!shouldRebuild || safeTransactions.length === 0 || !tableIsEmpty(db2, "safe_transactions")) return;
-  const insertTransaction = db2.prepare(`
+  `)}function fe(e){if(!N(e,"installments"))return[];const a=e.prepare("SELECT * FROM installments").all();if(a.length===0)return[];const t=N(e,"installment_schedules")?e.prepare("SELECT * FROM installment_schedules").all():[],r=N(e,"installment_payments")?e.prepare("SELECT * FROM installment_payments").all():[],n=N(e,"installment_payment_allocations")?e.prepare("SELECT * FROM installment_payment_allocations").all():[],s=new Map;for(const E of t){const m=i(E.contractId);if(!m)continue;const S=s.get(m)||[];S.push(E),s.set(m,S)}const o=new Map;for(const E of n){const m=i(E.paymentId);if(!m)continue;const S=o.get(m)||[];S.push(E),o.set(m,S)}const d=new Map;for(const E of r){const m=i(E.contractId);if(!m)continue;const S=d.get(m)||[];S.push(E),d.set(m,S)}return a.map(E=>{var k;const m=i(E.id,crypto.randomUUID()),S=(s.get(m)||[]).slice().sort((R,X)=>u(R.monthNumber)-u(X.monthNumber)||i(R.dueDate).localeCompare(i(X.dueDate))),T=S.map((R,X)=>{const G=u(R.amount),Q=u(R.penalty),z=u(R.paidAmount),Z=G+Q;return{id:i(R.id,crypto.randomUUID()),month:Math.max(1,Math.round(u(R.monthNumber,X+1))),dueDate:i(R.dueDate),amount:G,paidAmount:z,penalty:Q,paid:P(R.paid)||Z>0&&z>=Z,remainingAfter:R.remainingAfter===void 0||R.remainingAfter===null?void 0:u(R.remainingAfter),note:i(R.note)}}),C=d.get(m)||[],w=C.length>0?C.slice().sort((R,X)=>i(R.date).localeCompare(i(X.date))||i(R.createdAt).localeCompare(i(X.createdAt))).map(R=>({id:i(R.id,crypto.randomUUID()),amount:u(R.amount),date:i(R.date),note:i(R.note),allocations:(o.get(i(R.id))||[]).map(X=>({scheduleItemId:i(X.scheduleItemId),amount:u(X.amount)}))})):T.filter(R=>u(R.paidAmount)>0).map(R=>{var X;return{id:`legacy-payment-${i(R.id,crypto.randomUUID())}`,amount:u(R.paidAmount),date:i((X=S.find(G=>i(G.id)===i(R.id)))==null?void 0:X.paymentDate,R.dueDate,i(E.createdAt).slice(0,10)),note:"Migrated from legacy schedule data",allocations:[{scheduleItemId:i(R.id),amount:u(R.paidAmount)}]}}),h=T.reduce((R,X)=>R+u(X.amount)+u(X.penalty),0),U=w.reduce((R,X)=>R+u(X.amount),0),I=u(E.downPayment),v=i(E.createdAt,new Date().toISOString()),B=E.remaining!==void 0||E.remainingAmount!==void 0?u(E.remaining,E.remainingAmount):Math.max(0,Math.round((h-U)*100)/100);return{id:m,contractNumber:i(E.contractNumber,`INS-${Date.now()}`),contractType:i(E.contractType,"product"),customerId:i(E.customerId)||void 0,customerName:i(E.customerName),customerPhone:i(E.customerPhone),customerAddress:i(E.customerAddress),customerIdCard:i(E.customerIdCard,E.customerNationalId),guarantorName:i(E.guarantorName),guarantorIdCard:i(E.guarantorIdCard),guarantorPhone:i(E.guarantorPhone),guarantorAddress:i(E.guarantorAddress),productId:i(E.productId)||void 0,productName:i(E.productName),transferType:i(E.transferType)||void 0,cashPrice:u(E.cashPrice,E.totalAmount),installmentPrice:u(E.installmentPrice,E.totalAmount),downPayment:I,months:Math.max(1,Math.round(u(E.months,T.length||1))),monthlyInstallment:u(E.monthlyInstallment,E.monthlyPayment,T.length>0?h/T.length:0),paidTotal:E.paidTotal!==void 0?u(E.paidTotal):Math.round((I+U)*100)/100,remaining:B,firstInstallmentDate:i(E.firstInstallmentDate,E.startDate,(k=T[0])==null?void 0:k.dueDate),schedule:T,payments:w,notes:i(E.notes),customFields:K(E.customFieldsJson),status:i(E.status,B===0?"completed":"active"),settledEarly:P(E.settledEarly),settlementDiscount:u(E.settlementDiscount),createdAt:v,updatedAt:i(E.updatedAt,v)}})}function Xe(e){return!!(!W(e,"installments",["id","contractNumber"])||!W(e,"installments",["contractType","customerIdCard","guarantorIdCard","transferType","cashPrice","installmentPrice","paidTotal","remaining","customFieldsJson","updatedAt"])||W(e,"installments",["totalAmount","remainingAmount","monthlyPayment","startDate","customerNationalId"])||!W(e,"installment_schedules",["id","contractId","monthNumber","dueDate","amount","paidAmount","penalty","paid","remainingAfter","note"])||!W(e,"installment_payments",["id","contractId","amount","date","createdAt"])||!W(e,"installment_payment_allocations",["id","paymentId","scheduleItemId","amount"]))}function Me(e){const a=fe(e);return Xe(e)&&(e.transaction(()=>{e.prepare("DROP TABLE IF EXISTS installment_payment_allocations").run(),e.prepare("DROP TABLE IF EXISTS installment_payments").run(),e.prepare("DROP TABLE IF EXISTS installment_schedules").run(),e.prepare("DROP TABLE IF EXISTS installments").run(),he(e)})(),console.log("[migration] Installments schema repaired.")),a}function Fe(e,a){if(!N(e,"installments")||!y(e,"installments"))return;const r=[{label:"settings",data:A(e,"gx_installments_v2")||[]},{label:"legacy tables",data:a}];for(const n of r)if(n.data.length)try{ce(e,n.data),console.log(`[migration] Installments: ${n.data.length} contracts migrated from ${n.label}.`);return}catch(s){console.error(`[migration] Installments migration from ${n.label} failed:`,s)}}function ve(e){return W(e,"safe_transactions",["id","walletId","type","amount","createdAt"])?!(N(e,"safe_transactions")?e.prepare("PRAGMA foreign_key_list(safe_transactions)").all():[]).some(t=>t.from==="walletId"&&t.table==="wallets"):!0}function Pe(e){const a=N(e,"safe_transactions")?e.prepare("SELECT * FROM safe_transactions").all():[],t=Ce(e),r=ve(e);r&&(e.transaction(()=>{e.prepare("DROP TABLE IF EXISTS safe_transactions").run(),Ue(e)})(),console.log("[migration] Safe transactions schema repaired."));const n=[...new Set(a.map(o=>i(o.walletId)).filter(Boolean))];for(const o of n)De(e,t,o);if(!r||a.length===0||!y(e,"safe_transactions"))return;const s=e.prepare(`
     INSERT OR IGNORE INTO safe_transactions (
       id, walletId, type, subType, amount, category, description, paymentMethod,
       affectsCapital, affectsProfit, createdBy, relatedId, createdAt
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-  db2.transaction(() => {
-    for (const transaction of safeTransactions) {
-      insertTransaction.run(
-        firstText(transaction.id, crypto.randomUUID()),
-        firstText(transaction.walletId),
-        firstText(transaction.type),
-        firstText(transaction.subType) || null,
-        firstNumber(transaction.amount),
-        firstText(transaction.category) || null,
-        firstText(transaction.description) || null,
-        firstText(transaction.paymentMethod) || null,
-        toBoolean(transaction.affectsCapital) ? 1 : 0,
-        toBoolean(transaction.affectsProfit) ? 1 : 0,
-        firstText(transaction.createdBy) || null,
-        firstText(transaction.relatedId) || null,
-        firstText(transaction.createdAt, (/* @__PURE__ */ new Date()).toISOString())
-      );
-    }
-  })();
-}
-function normalizeCategoryInventoryType(sectionValue, typeValue, fallbackValue) {
-  const fallback = firstText(fallbackValue);
-  if (fallback) return fallback;
-  const section = firstText(sectionValue, "mobile");
-  const type = firstText(typeValue, "device");
-  return `${section}_${type}`;
-}
-function categoriesSchemaNeedsRepair(db2) {
-  if (!tableHasColumns(db2, "categories", ["id", "name", "inventoryType"])) return true;
-  const row = db2.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'categories'").get();
-  const sql = String((row == null ? void 0 : row.sql) ?? "").toLowerCase().replace(/\s+/g, " ");
-  return sql.includes("name text unique") || !sql.includes("unique(name, inventorytype)");
-}
-function repairCategoriesSchema(db2) {
-  if (!tableExists(db2, "categories") || !categoriesSchemaNeedsRepair(db2)) return;
-  const existing = db2.prepare("SELECT * FROM categories").all();
-  const deduped = /* @__PURE__ */ new Map();
-  for (const row of existing) {
-    const name = firstText(row.name);
-    const inventoryType = normalizeCategoryInventoryType(row.section, row.type, row.inventoryType);
-    if (!name || !inventoryType) continue;
-    const key = `${inventoryType}::${name.toLowerCase()}`;
-    if (deduped.has(key)) continue;
-    deduped.set(key, {
-      id: firstText(row.id, crypto.randomUUID()),
-      name,
-      inventoryType
-    });
-  }
-  db2.transaction(() => {
-    db2.prepare("DROP TABLE IF EXISTS categories").run();
-    db2.exec(`
+  `);e.transaction(()=>{for(const o of a)s.run(i(o.id,crypto.randomUUID()),i(o.walletId),i(o.type),i(o.subType)||null,u(o.amount),i(o.category)||null,i(o.description)||null,i(o.paymentMethod)||null,P(o.affectsCapital)?1:0,P(o.affectsProfit)?1:0,i(o.createdBy)||null,i(o.relatedId)||null,i(o.createdAt,new Date().toISOString()))})()}function le(e,a,t){const r=i(t);if(r)return r;const n=i(e,"mobile"),s=i(a,"device");return`${n}_${s}`}function we(e){if(!W(e,"categories",["id","name","inventoryType"]))return!0;const a=e.prepare("SELECT sql FROM sqlite_master WHERE type = 'table' AND name = 'categories'").get(),t=String((a==null?void 0:a.sql)??"").toLowerCase().replace(/\s+/g," ");return t.includes("name text unique")||!t.includes("unique(name, inventorytype)")}function ue(e){if(!N(e,"categories")||!we(e))return;const a=e.prepare("SELECT * FROM categories").all(),t=new Map;for(const r of a){const n=i(r.name),s=le(r.section,r.type,r.inventoryType);if(!n||!s)continue;const o=`${s}::${n.toLowerCase()}`;t.has(o)||t.set(o,{id:i(r.id,crypto.randomUUID()),name:n,inventoryType:s})}e.transaction(()=>{e.prepare("DROP TABLE IF EXISTS categories").run(),e.exec(`
       CREATE TABLE IF NOT EXISTS categories (
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         inventoryType TEXT NOT NULL,
         UNIQUE(name, inventoryType)
       );
-    `);
-    const stmt = db2.prepare(`
+    `);const r=e.prepare(`
       INSERT OR IGNORE INTO categories (id, name, inventoryType)
       VALUES (?, ?, ?)
-    `);
-    for (const category of deduped.values()) {
-      stmt.run(category.id, category.name, category.inventoryType);
-    }
-  })();
-  console.log("[migration] Categories schema repaired.");
-}
-function productBatchesSchemaNeedsRepair(db2) {
-  if (!tableHasColumns(db2, "product_batches", [
-    "id",
-    "productId",
-    "inventoryType",
-    "productName",
-    "costPrice",
-    "salePrice",
-    "quantity",
-    "remainingQty",
-    "purchaseDate",
-    "supplier",
-    "notes",
-    "createdAt",
-    "updatedAt"
-  ])) {
-    return true;
-  }
-  const foreignKeys = tableExists(db2, "product_batches") ? db2.prepare("PRAGMA foreign_key_list(product_batches)").all() : [];
-  return foreignKeys.some((foreignKey) => foreignKey.from === "productId" && foreignKey.table === "products");
-}
-function repairProductBatchesSchema(db2) {
-  if (!tableExists(db2, "product_batches") || !productBatchesSchemaNeedsRepair(db2)) return;
-  const existing = db2.prepare("SELECT * FROM product_batches").all();
-  db2.transaction(() => {
-    db2.prepare("DROP TABLE IF EXISTS product_batches").run();
-    db2.exec(`
+    `);for(const n of t.values())r.run(n.id,n.name,n.inventoryType)})(),console.log("[migration] Categories schema repaired.")}function He(e){return W(e,"product_batches",["id","productId","inventoryType","productName","costPrice","salePrice","quantity","remainingQty","purchaseDate","supplier","notes","createdAt","updatedAt"])?(N(e,"product_batches")?e.prepare("PRAGMA foreign_key_list(product_batches)").all():[]).some(t=>t.from==="productId"&&t.table==="products"):!0}function xe(e){if(!N(e,"product_batches")||!He(e))return;const a=e.prepare("SELECT * FROM product_batches").all();e.transaction(()=>{e.prepare("DROP TABLE IF EXISTS product_batches").run(),e.exec(`
       CREATE TABLE IF NOT EXISTS product_batches (
         id TEXT PRIMARY KEY,
         productId TEXT NOT NULL,
@@ -1815,51 +1024,12 @@ function repairProductBatchesSchema(db2) {
         createdAt TEXT,
         updatedAt TEXT
       );
-    `);
-    const stmt = db2.prepare(`
+    `);const t=e.prepare(`
       INSERT OR IGNORE INTO product_batches (
         id, productId, inventoryType, productName, costPrice, salePrice,
         quantity, remainingQty, purchaseDate, supplier, notes, createdAt, updatedAt
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-    for (const batch of existing) {
-      const productId = firstText(batch.productId);
-      if (!productId) continue;
-      const purchaseDate = firstText(batch.purchaseDate, batch.createdAt, (/* @__PURE__ */ new Date()).toISOString());
-      const createdAt = firstText(batch.createdAt, purchaseDate);
-      stmt.run(
-        firstText(batch.id, crypto.randomUUID()),
-        productId,
-        firstText(batch.inventoryType, "mobile"),
-        firstText(batch.productName, "Unknown product"),
-        firstNumber(batch.costPrice),
-        firstNumber(batch.salePrice),
-        Math.max(0, Math.round(firstNumber(batch.quantity))),
-        Math.max(0, Math.round(firstNumber(batch.remainingQty, batch.quantity))),
-        purchaseDate,
-        firstText(batch.supplier) || null,
-        firstText(batch.notes) || null,
-        createdAt,
-        firstText(batch.updatedAt, createdAt)
-      );
-    }
-  })();
-  console.log("[migration] Product batches schema repaired.");
-}
-function repairOperationalSchemas(db2) {
-  if (tableExists(db2, "repair_tickets")) {
-    ensureColumn(db2, "repair_tickets", "final_cost", "REAL DEFAULT 0");
-  }
-  if (tableExists(db2, "blacklist")) {
-    ensureColumn(db2, "blacklist", "imei", "TEXT");
-    ensureColumn(db2, "blacklist", "deviceName", "TEXT NOT NULL DEFAULT ''");
-    ensureColumn(db2, "blacklist", "ownerName", "TEXT");
-    ensureColumn(db2, "blacklist", "ownerPhone", "TEXT");
-    ensureColumn(db2, "blacklist", "status", "TEXT DEFAULT 'active'");
-    ensureColumn(db2, "blacklist", "reportedDate", "TEXT");
-    ensureColumn(db2, "blacklist", "createdBy", "TEXT");
-    ensureColumn(db2, "blacklist", "updatedAt", "TEXT");
-    db2.exec(`
+    `);for(const r of a){const n=i(r.productId);if(!n)continue;const s=i(r.purchaseDate,r.createdAt,new Date().toISOString()),o=i(r.createdAt,s);t.run(i(r.id,crypto.randomUUID()),n,i(r.inventoryType,"mobile"),i(r.productName,"Unknown product"),u(r.costPrice),u(r.salePrice),Math.max(0,Math.round(u(r.quantity))),Math.max(0,Math.round(u(r.remainingQty,r.quantity))),s,i(r.supplier)||null,i(r.notes)||null,o,i(r.updatedAt,o))}})(),console.log("[migration] Product batches schema repaired.")}function Be(e){N(e,"repair_tickets")&&l(e,"repair_tickets","final_cost","REAL DEFAULT 0"),N(e,"blacklist")&&(l(e,"blacklist","imei","TEXT"),l(e,"blacklist","deviceName","TEXT NOT NULL DEFAULT ''"),l(e,"blacklist","ownerName","TEXT"),l(e,"blacklist","ownerPhone","TEXT"),l(e,"blacklist","status","TEXT DEFAULT 'active'"),l(e,"blacklist","reportedDate","TEXT"),l(e,"blacklist","createdBy","TEXT"),l(e,"blacklist","updatedAt","TEXT"),e.exec(`
       UPDATE blacklist
       SET createdAt = COALESCE(NULLIF(createdAt, ''), CURRENT_TIMESTAMP)
       WHERE COALESCE(createdAt, '') = '';
@@ -1907,11 +1077,7 @@ function repairOperationalSchemas(db2) {
       UPDATE blacklist
       SET addedBy = COALESCE(NULLIF(addedBy, ''), createdBy)
       WHERE COALESCE(addedBy, '') = '';
-    `);
-  }
-  if (tableExists(db2, "damaged_items")) {
-    ensureColumn(db2, "damaged_items", "costPrice", "REAL DEFAULT 0");
-    db2.exec(`
+    `)),N(e,"damaged_items")&&(l(e,"damaged_items","costPrice","REAL DEFAULT 0"),e.exec(`
       UPDATE damaged_items
       SET costPrice = CASE
         WHEN COALESCE(costPrice, 0) > 0 THEN costPrice
@@ -1919,12 +1085,7 @@ function repairOperationalSchemas(db2) {
         ELSE 0
       END
       WHERE COALESCE(costPrice, 0) = 0;
-    `);
-  }
-  if (tableExists(db2, "other_revenue")) {
-    ensureColumn(db2, "other_revenue", "addedBy", "TEXT");
-    ensureColumn(db2, "other_revenue", "updatedAt", "TEXT");
-    db2.exec(`
+    `)),N(e,"other_revenue")&&(l(e,"other_revenue","addedBy","TEXT"),l(e,"other_revenue","updatedAt","TEXT"),e.exec(`
       UPDATE other_revenue
       SET createdAt = COALESCE(NULLIF(createdAt, ''), CURRENT_TIMESTAMP)
       WHERE COALESCE(createdAt, '') = '';
@@ -1936,11 +1097,7 @@ function repairOperationalSchemas(db2) {
       UPDATE other_revenue
       SET updatedAt = COALESCE(NULLIF(updatedAt, ''), COALESCE(createdAt, CURRENT_TIMESTAMP))
       WHERE COALESCE(updatedAt, '') = '';
-    `);
-  }
-  if (tableExists(db2, "wallets")) {
-    ensureColumn(db2, "wallets", "icon", "TEXT");
-    db2.exec(`
+    `)),N(e,"wallets")&&(l(e,"wallets","icon","TEXT"),e.exec(`
       UPDATE wallets
       SET icon = CASE
         WHEN COALESCE(NULLIF(icon, ''), '') <> '' THEN icon
@@ -1950,36 +1107,11 @@ function repairOperationalSchemas(db2) {
         ELSE '💵'
       END
       WHERE COALESCE(icon, '') = '';
-    `);
-  }
-  if (tableExists(db2, "customers")) {
-    ensureColumn(db2, "customers", "isArchived", "INTEGER DEFAULT 0");
-    ensureColumn(db2, "customers", "deletedAt", "TEXT");
-  }
-  if (tableExists(db2, "suppliers")) {
-    ensureColumn(db2, "suppliers", "isArchived", "INTEGER DEFAULT 0");
-    ensureColumn(db2, "suppliers", "deletedAt", "TEXT");
-  }
-  if (tableExists(db2, "employees")) {
-    ensureColumn(db2, "employees", "isArchived", "INTEGER DEFAULT 0");
-    ensureColumn(db2, "employees", "deletedAt", "TEXT");
-  }
-  if (tableExists(db2, "used_devices")) {
-    ensureColumn(db2, "used_devices", "isArchived", "INTEGER DEFAULT 0");
-    ensureColumn(db2, "used_devices", "deletedAt", "TEXT");
-    ensureColumn(db2, "used_devices", "warehouseId", "TEXT");
-  }
-  if (tableExists(db2, "employee_salaries")) {
-    ensureColumn(db2, "employee_salaries", "employeeName", "TEXT");
-    ensureColumn(db2, "employee_salaries", "advanceDeducted", "REAL DEFAULT 0");
-    ensureColumn(db2, "employee_salaries", "walletId", "TEXT");
-    db2.exec(`
+    `)),N(e,"customers")&&(l(e,"customers","isArchived","INTEGER DEFAULT 0"),l(e,"customers","deletedAt","TEXT")),N(e,"suppliers")&&(l(e,"suppliers","isArchived","INTEGER DEFAULT 0"),l(e,"suppliers","deletedAt","TEXT")),N(e,"employees")&&(l(e,"employees","isArchived","INTEGER DEFAULT 0"),l(e,"employees","deletedAt","TEXT")),N(e,"used_devices")&&(l(e,"used_devices","isArchived","INTEGER DEFAULT 0"),l(e,"used_devices","deletedAt","TEXT"),l(e,"used_devices","warehouseId","TEXT")),N(e,"employee_salaries")&&(l(e,"employee_salaries","employeeName","TEXT"),l(e,"employee_salaries","advanceDeducted","REAL DEFAULT 0"),l(e,"employee_salaries","walletId","TEXT"),e.exec(`
       UPDATE employee_salaries
       SET createdAt = COALESCE(NULLIF(createdAt, ''), COALESCE(paidAt, CURRENT_TIMESTAMP))
       WHERE COALESCE(createdAt, '') = '';
-    `);
-  }
-  db2.exec(`
+    `)),e.exec(`
     CREATE TABLE IF NOT EXISTS employee_advances (
       id TEXT PRIMARY KEY,
       employeeId TEXT NOT NULL,
@@ -2041,13 +1173,7 @@ function repairOperationalSchemas(db2) {
       updatedAt TEXT,
       FOREIGN KEY (warehouseId) REFERENCES warehouses(id) ON DELETE SET NULL
     );
-  `);
-  if (tableExists(db2, "used_devices")) {
-    ensureColumn(db2, "used_devices", "model", "TEXT");
-    ensureColumn(db2, "used_devices", "deviceType", "TEXT");
-    ensureColumn(db2, "used_devices", "ram", "TEXT");
-    ensureColumn(db2, "used_devices", "description", "TEXT");
-    db2.exec(`
+  `),N(e,"used_devices")&&(l(e,"used_devices","model","TEXT"),l(e,"used_devices","deviceType","TEXT"),l(e,"used_devices","ram","TEXT"),l(e,"used_devices","description","TEXT"),e.exec(`
       UPDATE used_devices
       SET deviceType = COALESCE(NULLIF(deviceType, ''), NULLIF(category, ''), 'mobile')
       WHERE COALESCE(deviceType, '') = '';
@@ -2063,15 +1189,7 @@ function repairOperationalSchemas(db2) {
       UPDATE used_devices
       SET ram = COALESCE(NULLIF(ram, ''), '')
       WHERE ram IS NULL;
-    `);
-  }
-  if (tableExists(db2, "warehouse_items")) {
-    ensureColumn(db2, "warehouse_items", "warehouseId", "TEXT");
-    ensureColumn(db2, "warehouse_items", "notes", "TEXT");
-    ensureColumn(db2, "warehouse_items", "addedBy", "TEXT");
-    ensureColumn(db2, "warehouse_items", "createdAt", "TEXT");
-    ensureColumn(db2, "warehouse_items", "updatedAt", "TEXT");
-    db2.exec(`
+    `)),N(e,"warehouse_items")&&(l(e,"warehouse_items","warehouseId","TEXT"),l(e,"warehouse_items","notes","TEXT"),l(e,"warehouse_items","addedBy","TEXT"),l(e,"warehouse_items","createdAt","TEXT"),l(e,"warehouse_items","updatedAt","TEXT"),e.exec(`
       UPDATE warehouse_items
       SET createdAt = COALESCE(NULLIF(createdAt, ''), CURRENT_TIMESTAMP)
       WHERE COALESCE(createdAt, '') = '';
@@ -2079,15 +1197,7 @@ function repairOperationalSchemas(db2) {
       UPDATE warehouse_items
       SET updatedAt = COALESCE(NULLIF(updatedAt, ''), COALESCE(createdAt, CURRENT_TIMESTAMP))
       WHERE COALESCE(updatedAt, '') = '';
-    `);
-  }
-  if (tableExists(db2, "cars_inventory")) {
-    ensureColumn(db2, "cars_inventory", "warehouseId", "TEXT");
-    ensureColumn(db2, "cars_inventory", "isArchived", "INTEGER DEFAULT 0");
-    ensureColumn(db2, "cars_inventory", "deletedAt", "TEXT");
-    ensureColumn(db2, "cars_inventory", "createdAt", "TEXT");
-    ensureColumn(db2, "cars_inventory", "updatedAt", "TEXT");
-    db2.exec(`
+    `)),N(e,"cars_inventory")&&(l(e,"cars_inventory","warehouseId","TEXT"),l(e,"cars_inventory","isArchived","INTEGER DEFAULT 0"),l(e,"cars_inventory","deletedAt","TEXT"),l(e,"cars_inventory","createdAt","TEXT"),l(e,"cars_inventory","updatedAt","TEXT"),e.exec(`
       UPDATE cars_inventory
       SET createdAt = COALESCE(NULLIF(createdAt, ''), CURRENT_TIMESTAMP)
       WHERE COALESCE(createdAt, '') = '';
@@ -2099,21 +1209,7 @@ function repairOperationalSchemas(db2) {
       UPDATE cars_inventory
       SET isArchived = COALESCE(isArchived, 0)
       WHERE isArchived IS NULL;
-    `);
-  }
-  if (tableExists(db2, "products")) {
-    ensureColumn(db2, "products", "brand", "TEXT");
-    ensureColumn(db2, "products", "description", "TEXT");
-    ensureColumn(db2, "products", "boxNumber", "TEXT");
-    ensureColumn(db2, "products", "taxExcluded", "INTEGER DEFAULT 0");
-    ensureColumn(db2, "products", "profitMargin", "REAL DEFAULT 0");
-    ensureColumn(db2, "products", "minStock", "INTEGER DEFAULT 0");
-    ensureColumn(db2, "products", "warehouseId", "TEXT");
-    ensureColumn(db2, "products", "serialNumber", "TEXT");
-    ensureColumn(db2, "products", "imei2", "TEXT");
-    ensureColumn(db2, "products", "processor", "TEXT");
-    ensureColumn(db2, "products", "isArchived", "INTEGER DEFAULT 0");
-    db2.exec(`
+    `)),N(e,"products")&&(l(e,"products","brand","TEXT"),l(e,"products","description","TEXT"),l(e,"products","boxNumber","TEXT"),l(e,"products","taxExcluded","INTEGER DEFAULT 0"),l(e,"products","profitMargin","REAL DEFAULT 0"),l(e,"products","minStock","INTEGER DEFAULT 0"),l(e,"products","warehouseId","TEXT"),l(e,"products","serialNumber","TEXT"),l(e,"products","imei2","TEXT"),l(e,"products","processor","TEXT"),l(e,"products","isArchived","INTEGER DEFAULT 0"),e.exec(`
       UPDATE products
       SET createdAt = COALESCE(NULLIF(createdAt, ''), CURRENT_TIMESTAMP)
       WHERE COALESCE(createdAt, '') = '';
@@ -2137,13 +1233,7 @@ function repairOperationalSchemas(db2) {
       UPDATE products
       SET minStock = COALESCE(minStock, 0)
       WHERE minStock IS NULL;
-    `);
-  }
-  if (tableExists(db2, "reminders")) {
-    ensureColumn(db2, "reminders", "reminderTime", "TEXT");
-    ensureColumn(db2, "reminders", "status", "TEXT DEFAULT 'pending'");
-    ensureColumn(db2, "reminders", "notes", "TEXT");
-    db2.exec(`
+    `)),N(e,"reminders")&&(l(e,"reminders","reminderTime","TEXT"),l(e,"reminders","status","TEXT DEFAULT 'pending'"),l(e,"reminders","notes","TEXT"),e.exec(`
       UPDATE reminders
       SET createdAt = COALESCE(NULLIF(createdAt, ''), CURRENT_TIMESTAMP)
       WHERE COALESCE(createdAt, '') = '';
@@ -2163,16 +1253,7 @@ function repairOperationalSchemas(db2) {
         ELSE 'pending'
       END
       WHERE COALESCE(status, '') = '';
-    `);
-  }
-  if (tableExists(db2, "product_batches")) {
-    ensureColumn(db2, "product_batches", "inventoryType", "TEXT");
-    ensureColumn(db2, "product_batches", "productName", "TEXT");
-    ensureColumn(db2, "product_batches", "supplier", "TEXT");
-    ensureColumn(db2, "product_batches", "notes", "TEXT");
-    ensureColumn(db2, "product_batches", "createdAt", "TEXT");
-    ensureColumn(db2, "product_batches", "updatedAt", "TEXT");
-    db2.exec(`
+    `)),N(e,"product_batches")&&(l(e,"product_batches","inventoryType","TEXT"),l(e,"product_batches","productName","TEXT"),l(e,"product_batches","supplier","TEXT"),l(e,"product_batches","notes","TEXT"),l(e,"product_batches","createdAt","TEXT"),l(e,"product_batches","updatedAt","TEXT"),e.exec(`
       UPDATE product_batches
       SET productName = COALESCE(NULLIF(productName, ''), 'Unknown product')
       WHERE COALESCE(productName, '') = '';
@@ -2188,20 +1269,7 @@ function repairOperationalSchemas(db2) {
       UPDATE product_batches
       SET updatedAt = COALESCE(NULLIF(updatedAt, ''), COALESCE(createdAt, CURRENT_TIMESTAMP))
       WHERE COALESCE(updatedAt, '') = '';
-    `);
-  }
-  if (tableExists(db2, "accessories")) {
-    ensureColumn(db2, "accessories", "oldCostPrice", "REAL DEFAULT 0");
-    ensureColumn(db2, "accessories", "newCostPrice", "REAL DEFAULT 0");
-    ensureColumn(db2, "accessories", "profitMargin", "REAL DEFAULT 0");
-    ensureColumn(db2, "accessories", "brand", "TEXT");
-    ensureColumn(db2, "accessories", "source", "TEXT");
-    ensureColumn(db2, "accessories", "boxNumber", "TEXT");
-    ensureColumn(db2, "accessories", "taxExcluded", "INTEGER DEFAULT 0");
-    ensureColumn(db2, "accessories", "description", "TEXT");
-    ensureColumn(db2, "accessories", "isArchived", "INTEGER DEFAULT 0");
-    ensureColumn(db2, "accessories", "deletedAt", "TEXT");
-    db2.exec(`
+    `)),N(e,"accessories")&&(l(e,"accessories","oldCostPrice","REAL DEFAULT 0"),l(e,"accessories","newCostPrice","REAL DEFAULT 0"),l(e,"accessories","profitMargin","REAL DEFAULT 0"),l(e,"accessories","brand","TEXT"),l(e,"accessories","source","TEXT"),l(e,"accessories","boxNumber","TEXT"),l(e,"accessories","taxExcluded","INTEGER DEFAULT 0"),l(e,"accessories","description","TEXT"),l(e,"accessories","isArchived","INTEGER DEFAULT 0"),l(e,"accessories","deletedAt","TEXT"),e.exec(`
       UPDATE accessories
       SET createdAt = COALESCE(NULLIF(createdAt, ''), CURRENT_TIMESTAMP)
       WHERE COALESCE(createdAt, '') = '';
@@ -2229,14 +1297,7 @@ function repairOperationalSchemas(db2) {
       UPDATE accessories
       SET isArchived = COALESCE(isArchived, 0)
       WHERE isArchived IS NULL;
-    `);
-  }
-  if (tableExists(db2, "users")) {
-    ensureColumn(db2, "users", "salt", "TEXT");
-    ensureColumn(db2, "users", "mustChangePassword", "INTEGER DEFAULT 0");
-    ensureColumn(db2, "users", "createdAt", "TEXT");
-    ensureColumn(db2, "users", "updatedAt", "TEXT");
-    db2.exec(`
+    `)),N(e,"users")&&(l(e,"users","salt","TEXT"),l(e,"users","mustChangePassword","INTEGER DEFAULT 0"),l(e,"users","createdAt","TEXT"),l(e,"users","updatedAt","TEXT"),e.exec(`
       UPDATE users
       SET createdAt = COALESCE(NULLIF(createdAt, ''), CURRENT_TIMESTAMP)
       WHERE COALESCE(createdAt, '') = '';
@@ -2244,47 +1305,7 @@ function repairOperationalSchemas(db2) {
       UPDATE users
       SET updatedAt = COALESCE(NULLIF(updatedAt, ''), COALESCE(createdAt, CURRENT_TIMESTAMP))
       WHERE COALESCE(updatedAt, '') = '';
-    `);
-  }
-  if (tableExists(db2, "sales")) {
-    ensureColumn(db2, "sales", "voidedAt", "TEXT");
-    ensureColumn(db2, "sales", "voidReason", "TEXT");
-    ensureColumn(db2, "sales", "voidedBy", "TEXT");
-  }
-  if (tableExists(db2, "sale_items")) {
-    ensureColumn(db2, "sale_items", "name", "TEXT NOT NULL DEFAULT ''");
-    ensureColumn(db2, "sale_items", "qty", "INTEGER NOT NULL DEFAULT 0");
-    ensureColumn(db2, "sale_items", "price", "REAL NOT NULL DEFAULT 0");
-    ensureColumn(db2, "sale_items", "cost", "REAL NOT NULL DEFAULT 0");
-    ensureColumn(db2, "sale_items", "lineDiscount", "REAL DEFAULT 0");
-    ensureColumn(db2, "sale_items", "warehouseId", "TEXT");
-    ensureColumn(db2, "sale_items", "batches", "TEXT");
-  }
-  if (tableExists(db2, "stock_movements")) {
-    ensureColumn(db2, "stock_movements", "warehouseId", "TEXT");
-  }
-  if (tableExists(db2, "audit_logs")) {
-    ensureColumn(db2, "audit_logs", "beforeStateJson", "TEXT");
-    ensureColumn(db2, "audit_logs", "afterStateJson", "TEXT");
-    ensureColumn(db2, "audit_logs", "machineId", "TEXT");
-  }
-  if (tableExists(db2, "return_records")) {
-    ensureColumn(db2, "return_records", "originalSaleId", "TEXT");
-    ensureColumn(db2, "return_records", "reason", "TEXT");
-    ensureColumn(db2, "return_records", "processedBy", "TEXT");
-    ensureColumn(db2, "return_records", "createdAt", "TEXT");
-  }
-  if (tableExists(db2, "return_items")) {
-    ensureColumn(db2, "return_items", "reason", "TEXT");
-  }
-  if (tableExists(db2, "purchase_invoices")) {
-    ensureColumn(db2, "purchase_invoices", "supplierId", "TEXT");
-    ensureColumn(db2, "purchase_invoices", "status", "TEXT NOT NULL DEFAULT 'confirmed'");
-    ensureColumn(db2, "purchase_invoices", "notes", "TEXT");
-    ensureColumn(db2, "purchase_invoices", "createdBy", "TEXT");
-    ensureColumn(db2, "purchase_invoices", "createdAt", "TEXT");
-    ensureColumn(db2, "purchase_invoices", "updatedAt", "TEXT");
-    db2.exec(`
+    `)),N(e,"sales")&&(l(e,"sales","voidedAt","TEXT"),l(e,"sales","voidReason","TEXT"),l(e,"sales","voidedBy","TEXT")),N(e,"sale_items")&&(l(e,"sale_items","name","TEXT NOT NULL DEFAULT ''"),l(e,"sale_items","qty","INTEGER NOT NULL DEFAULT 0"),l(e,"sale_items","price","REAL NOT NULL DEFAULT 0"),l(e,"sale_items","cost","REAL NOT NULL DEFAULT 0"),l(e,"sale_items","lineDiscount","REAL DEFAULT 0"),l(e,"sale_items","warehouseId","TEXT"),l(e,"sale_items","batches","TEXT")),N(e,"stock_movements")&&l(e,"stock_movements","warehouseId","TEXT"),N(e,"audit_logs")&&(l(e,"audit_logs","beforeStateJson","TEXT"),l(e,"audit_logs","afterStateJson","TEXT"),l(e,"audit_logs","machineId","TEXT")),N(e,"return_records")&&(l(e,"return_records","originalSaleId","TEXT"),l(e,"return_records","reason","TEXT"),l(e,"return_records","processedBy","TEXT"),l(e,"return_records","createdAt","TEXT")),N(e,"return_items")&&l(e,"return_items","reason","TEXT"),N(e,"purchase_invoices")&&(l(e,"purchase_invoices","supplierId","TEXT"),l(e,"purchase_invoices","status","TEXT NOT NULL DEFAULT 'confirmed'"),l(e,"purchase_invoices","notes","TEXT"),l(e,"purchase_invoices","createdBy","TEXT"),l(e,"purchase_invoices","createdAt","TEXT"),l(e,"purchase_invoices","updatedAt","TEXT"),e.exec(`
       UPDATE purchase_invoices
       SET createdAt = COALESCE(NULLIF(createdAt, ''), CURRENT_TIMESTAMP)
       WHERE COALESCE(createdAt, '') = '';
@@ -2304,24 +1325,11 @@ function repairOperationalSchemas(db2) {
         ELSE 'partial'
       END
       WHERE COALESCE(status, '') = '';
-    `);
-  }
-  if (tableExists(db2, "purchase_invoice_items")) {
-    ensureColumn(db2, "purchase_invoice_items", "category", "TEXT");
-    ensureColumn(db2, "purchase_invoice_items", "notes", "TEXT");
-  }
-  if (tableExists(db2, "shift_closings")) {
-    ensureColumn(db2, "shift_closings", "notes", "TEXT");
-    ensureColumn(db2, "shift_closings", "createdAt", "TEXT");
-    db2.exec(`
+    `)),N(e,"purchase_invoice_items")&&(l(e,"purchase_invoice_items","category","TEXT"),l(e,"purchase_invoice_items","notes","TEXT")),N(e,"shift_closings")&&(l(e,"shift_closings","notes","TEXT"),l(e,"shift_closings","createdAt","TEXT"),e.exec(`
       UPDATE shift_closings
       SET createdAt = COALESCE(NULLIF(createdAt, ''), COALESCE(closedAt, CURRENT_TIMESTAMP))
       WHERE COALESCE(createdAt, '') = '';
-    `);
-  }
-}
-function ensurePerformanceIndexes(db2) {
-  db2.exec(`
+    `))}function We(e){e.exec(`
     CREATE INDEX IF NOT EXISTS idx_products_barcode ON products(barcode);
     CREATE INDEX IF NOT EXISTS idx_products_source_deleted ON products(source, deletedAt, isArchived);
     CREATE INDEX IF NOT EXISTS idx_products_warehouse ON products(warehouseId);
@@ -2367,1271 +1375,279 @@ function ensurePerformanceIndexes(db2) {
     CREATE INDEX IF NOT EXISTS idx_used_devices_serial_status ON used_devices(serialNumber, status);
     CREATE INDEX IF NOT EXISTS idx_cars_inventory_condition ON cars_inventory(condition, isArchived);
     CREATE INDEX IF NOT EXISTS idx_cars_inventory_plate ON cars_inventory(plateNumber);
-  `);
-}
-function runDataMigration(db2) {
-  console.log("[migration] Running data migration check...");
-  try {
-    repairCategoriesSchema(db2);
-    repairProductBatchesSchema(db2);
-    repairOperationalSchemas(db2);
-    migrateCustomers(db2);
-    migrateWallets(db2);
-    migrateCategories(db2);
-    migrateAppUsers(db2);
-    const legacyInstallments = repairInstallmentsSchema(db2);
-    migrateInstallments(db2, legacyInstallments);
-    repairSafeTransactionsSchema(db2);
-    ensurePerformanceIndexes(db2);
-    migrateProductsInventory(db2);
-    migrateAccessories(db2);
-    migrateBatches(db2);
-    migrateWarehouseItems(db2);
-    migrateCars(db2);
-    migrateSales(db2);
-    migrateReturnRecords(db2);
-    migrateShiftClosings(db2);
-    migrateStockMovements(db2);
-    migrateAuditLogs(db2);
-    migrateSuppliers(db2);
-    migratePurchaseInvoices(db2);
-    migrateEmployees(db2);
-    migrateSupplierTransactions(db2);
-    migrateSalaryRecords(db2);
-    migrateAdvances(db2);
-    migrateExpenses(db2);
-    migrateBlacklist(db2);
-    migrateDamagedItems(db2);
-    migrateOtherRevenue(db2);
-    migrateUsedDevices(db2);
-    migrateReminders(db2);
-    migrateRepairs(db2);
-    migrateRepairParts(db2);
-    migrateUnifiedInventory(db2);
-    console.log("[migration] All migrations complete.");
-  } catch (err) {
-    console.error("[migration] Error:", err);
-  }
-}
-function migrateProductsInventory(db2) {
-  const sources = [
-    { key: "elahmed-products", source: "legacy" },
-    { key: "gx_mobiles_v2", source: "mobile" },
-    { key: "gx_computers_v2", source: "computer" },
-    { key: "gx_devices_v2", source: "device" }
-  ];
-  const stmt = db2.prepare(`
+  `)}function ke(e){console.log("[migration] Running data migration check...");try{ue(e),xe(e),Be(e),tt(e),lt(e),Ve(e),Ke(e);const a=Me(e);Fe(e,a),Pe(e),We(e),Ye(e),qe(e),Ge(e),$e(e),je(e),be(e),Je(e),ze(e),Ze(e),et(e),rt(e),Qe(e),nt(e),at(e),st(e),it(e),ot(e),ct(e),Et(e),dt(e),ut(e),pt(e),Tt(e),mt(e),At(e),console.log("[migration] All migrations complete.")}catch(a){console.error("[migration] Error:",a)}}function Ye(e){const a=[{key:"elahmed-products",source:"legacy"},{key:"gx_mobiles_v2",source:"mobile"},{key:"gx_computers_v2",source:"computer"},{key:"gx_devices_v2",source:"device"}],t=e.prepare(`
     INSERT OR IGNORE INTO products (
       id, name, model, barcode, deviceType, category, condition, storage, ram, color,
       brand, description, boxNumber, taxExcluded, quantity, oldCostPrice, newCostPrice,
       salePrice, profitMargin, minStock, supplier, source, warehouseId, serialNumber,
       imei2, processor, isArchived, notes, image, createdAt, updatedAt, deletedAt
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-  db2.transaction(() => {
-    for (const target of sources) {
-      const items = getSettingsJson(db2, target.key);
-      if (!(items == null ? void 0 : items.length)) continue;
-      for (const item of items) {
-        const source = firstText(item.source, target.source);
-        const createdAt = firstText(item.createdAt, (/* @__PURE__ */ new Date()).toISOString());
-        const newCostPrice = firstNumber(item.newCostPrice, item.costPrice, item.oldCostPrice);
-        stmt.run(
-          firstText(item.id, crypto.randomUUID()),
-          firstText(item.name, "Unknown product"),
-          firstText(item.model) || null,
-          firstText(item.barcode) || null,
-          firstText(item.deviceType, source === "mobile" ? "mobile" : source === "computer" ? "computer" : source === "device" ? "device" : "") || null,
-          firstText(item.category) || null,
-          firstText(item.condition, "new") || null,
-          firstText(item.storage) || null,
-          firstText(item.ram) || null,
-          firstText(item.color) || null,
-          firstText(item.brand) || null,
-          firstText(item.description) || null,
-          firstText(item.boxNumber) || null,
-          toBoolean(item.taxExcluded) ? 1 : 0,
-          Math.max(0, Math.round(firstNumber(item.quantity))),
-          firstNumber(item.oldCostPrice, newCostPrice),
-          newCostPrice,
-          firstNumber(item.salePrice),
-          firstNumber(item.profitMargin, firstNumber(item.salePrice) - newCostPrice),
-          Math.max(0, Math.round(firstNumber(item.minStock))),
-          firstText(item.supplier) || null,
-          source,
-          firstText(item.warehouseId) || null,
-          firstText(item.serialNumber) || null,
-          firstText(item.imei2) || null,
-          firstText(item.processor) || null,
-          toBoolean(item.isArchived) ? 1 : 0,
-          firstText(item.notes) || null,
-          firstText(item.image) || null,
-          createdAt,
-          firstText(item.updatedAt, createdAt),
-          firstText(item.deletedAt) || null
-        );
-      }
-      console.log(`[migration] Products (${target.source}): migrated ${items.length} records.`);
-    }
-  })();
-}
-function migrateAccessories(db2) {
-  const keysToMigrate = [
-    { key: "gx_mobile_accessories", type: "mobile_accessory" },
-    { key: "gx_mobile_spare_parts", type: "mobile_spare_part" },
-    { key: "gx_computer_accessories", type: "computer_accessory_legacy" },
-    { key: "gx_computer_accessories_sa", type: "computer_accessory" },
-    { key: "gx_computer_spare_parts", type: "computer_spare_part" },
-    { key: "gx_device_accessories", type: "device_accessory_legacy" },
-    { key: "gx_device_accessories_sa", type: "device_accessory" },
-    { key: "gx_device_spare_parts", type: "device_spare_part" }
-  ];
-  const stmt = db2.prepare(`
+  `);e.transaction(()=>{for(const r of a){const n=A(e,r.key);if(n!=null&&n.length){for(const s of n){const o=i(s.source,r.source),d=i(s.createdAt,new Date().toISOString()),E=u(s.newCostPrice,s.costPrice,s.oldCostPrice);t.run(i(s.id,crypto.randomUUID()),i(s.name,"Unknown product"),i(s.model)||null,i(s.barcode)||null,i(s.deviceType,o==="mobile"?"mobile":o==="computer"?"computer":o==="device"?"device":"")||null,i(s.category)||null,i(s.condition,"new")||null,i(s.storage)||null,i(s.ram)||null,i(s.color)||null,i(s.brand)||null,i(s.description)||null,i(s.boxNumber)||null,P(s.taxExcluded)?1:0,Math.max(0,Math.round(u(s.quantity))),u(s.oldCostPrice,E),E,u(s.salePrice),u(s.profitMargin,u(s.salePrice)-E),Math.max(0,Math.round(u(s.minStock))),i(s.supplier)||null,o,i(s.warehouseId)||null,i(s.serialNumber)||null,i(s.imei2)||null,i(s.processor)||null,P(s.isArchived)?1:0,i(s.notes)||null,i(s.image)||null,d,i(s.updatedAt,d),i(s.deletedAt)||null)}console.log(`[migration] Products (${r.source}): migrated ${n.length} records.`)}}})()}function qe(e){const a=[{key:"gx_mobile_accessories",type:"mobile_accessory"},{key:"gx_mobile_spare_parts",type:"mobile_spare_part"},{key:"gx_computer_accessories",type:"computer_accessory_legacy"},{key:"gx_computer_accessories_sa",type:"computer_accessory"},{key:"gx_computer_spare_parts",type:"computer_spare_part"},{key:"gx_device_accessories",type:"device_accessory_legacy"},{key:"gx_device_accessories_sa",type:"device_accessory"},{key:"gx_device_spare_parts",type:"device_spare_part"}],t=e.prepare(`
     INSERT OR IGNORE INTO accessories (
       id, warehouseId, inventoryType, name, category, subcategory, model, barcode, quantity,
       oldCostPrice, newCostPrice, costPrice, salePrice, profitMargin, minStock, condition,
       brand, supplier, source, boxNumber, taxExcluded, color, description, isArchived,
       deletedAt, notes, image, createdAt, updatedAt
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-  db2.transaction(() => {
-    for (const migrationTarget of keysToMigrate) {
-      const items = getSettingsJson(db2, migrationTarget.key);
-      if (!(items == null ? void 0 : items.length)) continue;
-      for (const item of items) {
-        const newCostPrice = firstNumber(item.newCostPrice, item.costPrice, item.oldCostPrice);
-        const createdAt = firstText(item.createdAt, (/* @__PURE__ */ new Date()).toISOString());
-        stmt.run(
-          firstText(item.id, crypto.randomUUID()),
-          firstText(item.warehouseId) || null,
-          migrationTarget.type,
-          firstText(item.name, "Unknown accessory"),
-          firstText(item.category) || null,
-          firstText(item.subcategory) || null,
-          firstText(item.model) || null,
-          firstText(item.barcode) || null,
-          Math.max(0, Math.round(firstNumber(item.quantity))),
-          firstNumber(item.oldCostPrice, newCostPrice),
-          newCostPrice,
-          firstNumber(item.costPrice, newCostPrice),
-          firstNumber(item.salePrice),
-          firstNumber(item.profitMargin, firstNumber(item.salePrice) - newCostPrice),
-          Math.max(0, Math.round(firstNumber(item.minStock))),
-          firstText(item.condition, "new"),
-          firstText(item.brand) || null,
-          firstText(item.supplier) || null,
-          firstText(item.source) || null,
-          firstText(item.boxNumber) || null,
-          toBoolean(item.taxExcluded) ? 1 : 0,
-          firstText(item.color) || null,
-          firstText(item.description) || null,
-          toBoolean(item.isArchived) ? 1 : 0,
-          firstText(item.deletedAt) || null,
-          firstText(item.notes) || null,
-          firstText(item.image) || null,
-          createdAt,
-          firstText(item.updatedAt, createdAt)
-        );
-      }
-      console.log(`[migration] Accessories (${migrationTarget.type}): migrated ${items.length} records.`);
-    }
-  })();
-}
-function migrateCategories(db2) {
-  repairCategoriesSchema(db2);
-  if (!tableIsEmpty(db2, "categories")) return;
-  const data = getSettingsJson(db2, "gx_categories_v1") || getSettingsJson(db2, "retail_categories");
-  if (!(data == null ? void 0 : data.length)) return;
-  const uniqueCategories = /* @__PURE__ */ new Map();
-  for (const rawCategory of data) {
-    const name = firstText(rawCategory.name);
-    const inventoryType = normalizeCategoryInventoryType(
-      rawCategory.section,
-      rawCategory.type,
-      rawCategory.inventoryType
-    );
-    if (!name || !inventoryType) continue;
-    const key = `${inventoryType}::${name.toLowerCase()}`;
-    if (uniqueCategories.has(key)) continue;
-    uniqueCategories.set(key, {
-      id: firstText(rawCategory.id, crypto.randomUUID()),
-      name,
-      inventoryType
-    });
-  }
-  if (uniqueCategories.size === 0) return;
-  const stmt = db2.prepare(`
+  `);e.transaction(()=>{for(const r of a){const n=A(e,r.key);if(n!=null&&n.length){for(const s of n){const o=u(s.newCostPrice,s.costPrice,s.oldCostPrice),d=i(s.createdAt,new Date().toISOString());t.run(i(s.id,crypto.randomUUID()),i(s.warehouseId)||null,r.type,i(s.name,"Unknown accessory"),i(s.category)||null,i(s.subcategory)||null,i(s.model)||null,i(s.barcode)||null,Math.max(0,Math.round(u(s.quantity))),u(s.oldCostPrice,o),o,u(s.costPrice,o),u(s.salePrice),u(s.profitMargin,u(s.salePrice)-o),Math.max(0,Math.round(u(s.minStock))),i(s.condition,"new"),i(s.brand)||null,i(s.supplier)||null,i(s.source)||null,i(s.boxNumber)||null,P(s.taxExcluded)?1:0,i(s.color)||null,i(s.description)||null,P(s.isArchived)?1:0,i(s.deletedAt)||null,i(s.notes)||null,i(s.image)||null,d,i(s.updatedAt,d))}console.log(`[migration] Accessories (${r.type}): migrated ${n.length} records.`)}}})()}function Ve(e){if(ue(e),!y(e,"categories"))return;const a=A(e,"gx_categories_v1")||A(e,"retail_categories");if(!(a!=null&&a.length))return;const t=new Map;for(const n of a){const s=i(n.name),o=le(n.section,n.type,n.inventoryType);if(!s||!o)continue;const d=`${o}::${s.toLowerCase()}`;t.has(d)||t.set(d,{id:i(n.id,crypto.randomUUID()),name:s,inventoryType:o})}if(t.size===0)return;const r=e.prepare(`
     INSERT OR IGNORE INTO categories (id, name, inventoryType)
     VALUES (?, ?, ?)
-  `);
-  db2.transaction(() => {
-    for (const category of uniqueCategories.values()) {
-      stmt.run(category.id, category.name, category.inventoryType);
-    }
-  })();
-  console.log(`[migration] Categories: ${uniqueCategories.size} records migrated.`);
-}
-function migrateAppUsers(db2) {
-  if (!tableIsEmpty(db2, "users")) return;
-  const data = getSettingsJson(db2, "gx_users") || getSettingsJson(db2, "retail_users");
-  const now = (/* @__PURE__ */ new Date()).toISOString();
-  const stmt = db2.prepare(`
+  `);e.transaction(()=>{for(const n of t.values())r.run(n.id,n.name,n.inventoryType)})(),console.log(`[migration] Categories: ${t.size} records migrated.`)}function Ke(e){if(!y(e,"users"))return;const a=A(e,"gx_users")||A(e,"retail_users"),t=new Date().toISOString(),r=e.prepare(`
     INSERT OR IGNORE INTO users (
       id, username, fullName, role, permissions, active,
       passwordHash, salt, mustChangePassword, createdAt, updatedAt
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-  const records = (data == null ? void 0 : data.length) ? data : [{
-    id: "owner-1",
-    username: "admin",
-    fullName: "صاحب النظام",
-    role: "owner",
-    permissions: DEFAULT_OWNER_PERMISSIONS,
-    active: true,
-    password: "admin123",
-    salt: null,
-    mustChangePassword: true,
-    createdAt: now,
-    updatedAt: now
-  }];
-  db2.transaction(() => {
-    for (const user of records) {
-      const role = firstText(user.role, "user");
-      const permissions = parseJsonArray(user.permissions);
-      const normalizedPermissions = permissions.length > 0 ? permissions : role === "owner" ? DEFAULT_OWNER_PERMISSIONS : [];
-      stmt.run(
-        firstText(user.id, crypto.randomUUID()),
-        firstText(user.username, `user_${Date.now()}`),
-        firstText(user.fullName, user.name, "User"),
-        role,
-        JSON.stringify(normalizedPermissions),
-        toBoolean(user.active ?? true) ? 1 : 0,
-        firstText(user.passwordHash, user.password),
-        firstText(user.salt) || null,
-        toBoolean(user.mustChangePassword) ? 1 : 0,
-        firstText(user.createdAt, now),
-        firstText(user.updatedAt, user.createdAt, now)
-      );
-    }
-  })();
-  console.log(`[migration] Users: ${records.length} records migrated.`);
-}
-function migrateBatches(db2) {
-  if (!tableIsEmpty(db2, "product_batches")) return;
-  const data = getSettingsJson(db2, "gx_product_batches_v1") || getSettingsJson(db2, "retail_product_batches");
-  if (!(data == null ? void 0 : data.length)) return;
-  const stmt = db2.prepare(`
+  `),n=a!=null&&a.length?a:[{id:"owner-1",username:"admin",fullName:"صاحب النظام",role:"owner",permissions:te,active:!0,password:"admin123",salt:null,mustChangePassword:!0,createdAt:t,updatedAt:t}];e.transaction(()=>{for(const s of n){const o=i(s.role,"user"),d=K(s.permissions),E=d.length>0?d:o==="owner"?te:[];r.run(i(s.id,crypto.randomUUID()),i(s.username,`user_${Date.now()}`),i(s.fullName,s.name,"User"),o,JSON.stringify(E),P(s.active??!0)?1:0,i(s.passwordHash,s.password),i(s.salt)||null,P(s.mustChangePassword)?1:0,i(s.createdAt,t),i(s.updatedAt,s.createdAt,t))}})(),console.log(`[migration] Users: ${n.length} records migrated.`)}function Ge(e){if(!y(e,"product_batches"))return;const a=A(e,"gx_product_batches_v1")||A(e,"retail_product_batches");if(!(a!=null&&a.length))return;const t=e.prepare(`
     INSERT OR IGNORE INTO product_batches (
       id, productId, inventoryType, productName, costPrice, salePrice,
       quantity, remainingQty, purchaseDate, supplier, notes, createdAt, updatedAt
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-  db2.transaction(() => {
-    for (const batch of data) {
-      const productId = firstText(batch.productId);
-      if (!productId) continue;
-      const purchaseDate = firstText(batch.purchaseDate, batch.createdAt, (/* @__PURE__ */ new Date()).toISOString());
-      const createdAt = firstText(batch.createdAt, purchaseDate);
-      stmt.run(
-        firstText(batch.id, crypto.randomUUID()),
-        productId,
-        firstText(batch.inventoryType, "mobile"),
-        firstText(batch.productName, "Unknown product"),
-        firstNumber(batch.costPrice),
-        firstNumber(batch.salePrice),
-        Math.max(0, Math.round(firstNumber(batch.quantity))),
-        Math.max(0, Math.round(firstNumber(batch.remainingQty, batch.quantity))),
-        purchaseDate,
-        firstText(batch.supplier) || null,
-        firstText(batch.notes) || null,
-        createdAt,
-        firstText(batch.updatedAt, createdAt)
-      );
-    }
-  })();
-  console.log(`[migration] Product batches: ${data.length} records migrated.`);
-}
-function migrateWarehouseItems(db2) {
-  if (!tableIsEmpty(db2, "warehouse_items")) return;
-  const data = getSettingsJson(db2, "gx_warehouse") || getSettingsJson(db2, "retail_warehouse");
-  if (!(data == null ? void 0 : data.length)) return;
-  const stmt = db2.prepare(`
+  `);e.transaction(()=>{for(const r of a){const n=i(r.productId);if(!n)continue;const s=i(r.purchaseDate,r.createdAt,new Date().toISOString()),o=i(r.createdAt,s);t.run(i(r.id,crypto.randomUUID()),n,i(r.inventoryType,"mobile"),i(r.productName,"Unknown product"),u(r.costPrice),u(r.salePrice),Math.max(0,Math.round(u(r.quantity))),Math.max(0,Math.round(u(r.remainingQty,r.quantity))),s,i(r.supplier)||null,i(r.notes)||null,o,i(r.updatedAt,o))}})(),console.log(`[migration] Product batches: ${a.length} records migrated.`)}function $e(e){if(!y(e,"warehouse_items"))return;const a=A(e,"gx_warehouse")||A(e,"retail_warehouse");if(!(a!=null&&a.length))return;const t=e.prepare(`
     INSERT OR IGNORE INTO warehouse_items (
       id, warehouseId, name, category, quantity, costPrice, notes, addedBy, createdAt, updatedAt
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-  db2.transaction(() => {
-    for (const item of data) {
-      const createdAt = firstText(item.createdAt, (/* @__PURE__ */ new Date()).toISOString());
-      stmt.run(
-        firstText(item.id, crypto.randomUUID()),
-        firstText(item.warehouseId) || null,
-        firstText(item.name, "Unknown item"),
-        firstText(item.category, "general"),
-        Math.max(0, Math.round(firstNumber(item.quantity))),
-        firstNumber(item.costPrice),
-        firstText(item.notes) || null,
-        firstText(item.addedBy) || null,
-        createdAt,
-        firstText(item.updatedAt, createdAt)
-      );
-    }
-  })();
-  console.log(`[migration] Warehouse items: ${data.length} records migrated.`);
-}
-function migrateCars(db2) {
-  if (!tableIsEmpty(db2, "cars_inventory")) return;
-  const data = getSettingsJson(db2, "gx_cars") || getSettingsJson(db2, "retail_cars");
-  if (!(data == null ? void 0 : data.length)) return;
-  const stmt = db2.prepare(`
+  `);e.transaction(()=>{for(const r of a){const n=i(r.createdAt,new Date().toISOString());t.run(i(r.id,crypto.randomUUID()),i(r.warehouseId)||null,i(r.name,"Unknown item"),i(r.category,"general"),Math.max(0,Math.round(u(r.quantity))),u(r.costPrice),i(r.notes)||null,i(r.addedBy)||null,n,i(r.updatedAt,n))}})(),console.log(`[migration] Warehouse items: ${a.length} records migrated.`)}function je(e){if(!y(e,"cars_inventory"))return;const a=A(e,"gx_cars")||A(e,"retail_cars");if(!(a!=null&&a.length))return;const t=e.prepare(`
     INSERT OR IGNORE INTO cars_inventory (
       id, name, model, year, color, plateNumber, licenseExpiry, condition, category,
       purchasePrice, salePrice, notes, image, warehouseId, isArchived, deletedAt, createdAt, updatedAt
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-  db2.transaction(() => {
-    for (const car of data) {
-      const createdAt = firstText(car.createdAt, (/* @__PURE__ */ new Date()).toISOString());
-      stmt.run(
-        firstText(car.id, crypto.randomUUID()),
-        firstText(car.name, "Unknown car"),
-        firstText(car.model, "Unknown model"),
-        Math.max(0, Math.round(firstNumber(car.year))),
-        firstText(car.color) || null,
-        firstText(car.plateNumber) || null,
-        firstText(car.licenseExpiry) || null,
-        firstText(car.condition, "used"),
-        firstText(car.category) || null,
-        firstNumber(car.purchasePrice),
-        firstNumber(car.salePrice),
-        firstText(car.notes) || null,
-        firstText(car.image) || null,
-        firstText(car.warehouseId) || null,
-        toBoolean(car.isArchived) ? 1 : 0,
-        firstText(car.deletedAt) || null,
-        createdAt,
-        firstText(car.updatedAt, createdAt)
-      );
-    }
-  })();
-  console.log(`[migration] Cars: ${data.length} records migrated.`);
-}
-function migrateSales(db2) {
-  if (!tableIsEmpty(db2, "sales")) return;
-  const data = getSettingsJson(db2, "elahmed_sales") || getSettingsJson(db2, "retail_sales");
-  if (!(data == null ? void 0 : data.length)) return;
-  const saleStmt = db2.prepare(`
+  `);e.transaction(()=>{for(const r of a){const n=i(r.createdAt,new Date().toISOString());t.run(i(r.id,crypto.randomUUID()),i(r.name,"Unknown car"),i(r.model,"Unknown model"),Math.max(0,Math.round(u(r.year))),i(r.color)||null,i(r.plateNumber)||null,i(r.licenseExpiry)||null,i(r.condition,"used"),i(r.category)||null,u(r.purchasePrice),u(r.salePrice),i(r.notes)||null,i(r.image)||null,i(r.warehouseId)||null,P(r.isArchived)?1:0,i(r.deletedAt)||null,n,i(r.updatedAt,n))}})(),console.log(`[migration] Cars: ${a.length} records migrated.`)}function be(e){if(!y(e,"sales"))return;const a=A(e,"elahmed_sales")||A(e,"retail_sales");if(!(a!=null&&a.length))return;const t=e.prepare(`
     INSERT OR IGNORE INTO sales (
       id, invoiceNumber, date, subtotal, discount, total, totalCost, grossProfit, marginPct,
       paymentMethod, employee, voidedAt, voidReason, voidedBy
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-  const itemStmt = db2.prepare(`
+  `),r=e.prepare(`
     INSERT OR IGNORE INTO sale_items (
       id, saleId, productId, name, qty, price, cost, lineDiscount, warehouseId, batches
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-  db2.transaction(() => {
-    for (const sale of data) {
-      const saleId = firstText(sale.id, crypto.randomUUID());
-      const items = parseJsonArray(sale.items);
-      saleStmt.run(
-        saleId,
-        firstText(sale.invoiceNumber, `INV-LEGACY-${saleId.slice(0, 8)}`),
-        firstText(sale.date, sale.createdAt, (/* @__PURE__ */ new Date()).toISOString()),
-        firstNumber(sale.subtotal),
-        firstNumber(sale.discount),
-        firstNumber(sale.total),
-        firstNumber(sale.totalCost),
-        firstNumber(sale.grossProfit),
-        firstNumber(sale.marginPct),
-        firstText(sale.paymentMethod, "cash"),
-        firstText(sale.employee, "system"),
-        firstText(sale.voidedAt) || null,
-        firstText(sale.voidReason) || null,
-        firstText(sale.voidedBy) || null
-      );
-      for (const item of items) {
-        itemStmt.run(
-          firstText(item.id, crypto.randomUUID()),
-          saleId,
-          firstText(item.productId),
-          firstText(item.name, "Unknown item"),
-          Math.max(1, Math.round(firstNumber(item.qty, 1))),
-          firstNumber(item.price),
-          firstNumber(item.cost),
-          firstNumber(item.lineDiscount),
-          firstText(item.warehouseId) || null,
-          item.batches ? JSON.stringify(item.batches) : null
-        );
-      }
-    }
-  })();
-  console.log(`[migration] Sales: ${data.length} records migrated.`);
-}
-function migrateReturnRecords(db2) {
-  if (!tableIsEmpty(db2, "return_records")) return;
-  const data = getSettingsJson(db2, "gx_returns_v2") || getSettingsJson(db2, "retail_returns");
-  if (!(data == null ? void 0 : data.length)) return;
-  const saleIds = new Set(
-    db2.prepare("SELECT id FROM sales").all().map((sale) => sale.id)
-  );
-  const recordStmt = db2.prepare(`
+  `);e.transaction(()=>{for(const n of a){const s=i(n.id,crypto.randomUUID()),o=K(n.items);t.run(s,i(n.invoiceNumber,`INV-LEGACY-${s.slice(0,8)}`),i(n.date,n.createdAt,new Date().toISOString()),u(n.subtotal),u(n.discount),u(n.total),u(n.totalCost),u(n.grossProfit),u(n.marginPct),i(n.paymentMethod,"cash"),i(n.employee,"system"),i(n.voidedAt)||null,i(n.voidReason)||null,i(n.voidedBy)||null);for(const d of o)r.run(i(d.id,crypto.randomUUID()),s,i(d.productId),i(d.name,"Unknown item"),Math.max(1,Math.round(u(d.qty,1))),u(d.price),u(d.cost),u(d.lineDiscount),i(d.warehouseId)||null,d.batches?JSON.stringify(d.batches):null)}})(),console.log(`[migration] Sales: ${a.length} records migrated.`)}function Je(e){if(!y(e,"return_records"))return;const a=A(e,"gx_returns_v2")||A(e,"retail_returns");if(!(a!=null&&a.length))return;const t=new Set(e.prepare("SELECT id FROM sales").all().map(o=>o.id)),r=e.prepare(`
     INSERT OR IGNORE INTO return_records (
       id, returnNumber, originalInvoiceNumber, originalSaleId, date, totalRefund, reason, processedBy, createdAt
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-  const itemStmt = db2.prepare(`
+  `),n=e.prepare(`
     INSERT OR IGNORE INTO return_items (
       id, returnId, productId, name, qty, price, reason
     ) VALUES (?, ?, ?, ?, ?, ?, ?)
-  `);
-  let fallbackSequence = 0;
-  db2.transaction(() => {
-    for (const record of data) {
-      const recordId = firstText(record.id, crypto.randomUUID());
-      const createdAt = firstText(record.createdAt, record.date, (/* @__PURE__ */ new Date()).toISOString());
-      const originalSaleId = firstText(record.originalSaleId);
-      const items = parseJsonArray(record.items);
-      const existingSequence = extractPrefixedSequence$1(record.returnNumber, "RET");
-      fallbackSequence = Math.max(fallbackSequence + 1, existingSequence);
-      recordStmt.run(
-        recordId,
-        firstText(record.returnNumber, `RET-${String(fallbackSequence).padStart(4, "0")}`),
-        firstText(record.originalInvoiceNumber, "Unknown invoice"),
-        saleIds.has(originalSaleId) ? originalSaleId : null,
-        firstText(record.date, createdAt.slice(0, 10)),
-        firstNumber(record.totalRefund),
-        firstText(record.reason) || null,
-        firstText(record.processedBy) || null,
-        createdAt
-      );
-      for (const item of items) {
-        itemStmt.run(
-          firstText(item.id, crypto.randomUUID()),
-          recordId,
-          firstText(item.productId),
-          firstText(item.name, "Unknown item"),
-          firstNumber(item.qty, 1) || 1,
-          firstNumber(item.price),
-          firstText(item.reason) || null
-        );
-      }
-    }
-  })();
-  console.log(`[migration] Returns: ${data.length} records migrated.`);
-}
-function migratePurchaseInvoices(db2) {
-  if (!tableIsEmpty(db2, "purchase_invoices")) return;
-  const data = getSettingsJson(db2, "gx_purchase_invoices") || getSettingsJson(db2, "retail_purchase_invoices");
-  if (!(data == null ? void 0 : data.length)) return;
-  const supplierIds = new Set(
-    db2.prepare("SELECT id FROM suppliers").all().map((supplier) => supplier.id)
-  );
-  const invoiceStmt = db2.prepare(`
+  `);let s=0;e.transaction(()=>{for(const o of a){const d=i(o.id,crypto.randomUUID()),E=i(o.createdAt,o.date,new Date().toISOString()),m=i(o.originalSaleId),S=K(o.items),T=de(o.returnNumber,"RET");s=Math.max(s+1,T),r.run(d,i(o.returnNumber,`RET-${String(s).padStart(4,"0")}`),i(o.originalInvoiceNumber,"Unknown invoice"),t.has(m)?m:null,i(o.date,E.slice(0,10)),u(o.totalRefund),i(o.reason)||null,i(o.processedBy)||null,E);for(const C of S)n.run(i(C.id,crypto.randomUUID()),d,i(C.productId),i(C.name,"Unknown item"),u(C.qty,1)||1,u(C.price),i(C.reason)||null)}})(),console.log(`[migration] Returns: ${a.length} records migrated.`)}function Qe(e){if(!y(e,"purchase_invoices"))return;const a=A(e,"gx_purchase_invoices")||A(e,"retail_purchase_invoices");if(!(a!=null&&a.length))return;const t=new Set(e.prepare("SELECT id FROM suppliers").all().map(o=>o.id)),r=e.prepare(`
     INSERT OR IGNORE INTO purchase_invoices (
       id, invoiceNumber, supplierId, supplierName, invoiceDate, totalAmount, paidAmount,
       remaining, paymentMethod, status, notes, createdBy, createdAt, updatedAt
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-  const itemStmt = db2.prepare(`
+  `),n=e.prepare(`
     INSERT OR IGNORE INTO purchase_invoice_items (
       id, invoiceId, productName, category, quantity, unitPrice, totalPrice, notes
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-  let fallbackSequence = 0;
-  db2.transaction(() => {
-    for (const invoice of data) {
-      const invoiceId = firstText(invoice.id, crypto.randomUUID());
-      const totalAmount = firstNumber(invoice.totalAmount);
-      const paidAmount = Math.min(totalAmount, firstNumber(invoice.paidAmount));
-      const remaining = Math.max(0, Math.round((totalAmount - paidAmount) * 100) / 100);
-      const createdAt = firstText(invoice.createdAt, (/* @__PURE__ */ new Date()).toISOString());
-      const updatedAt = firstText(invoice.updatedAt, createdAt);
-      const supplierId = firstText(invoice.supplierId);
-      const items = parseJsonArray(invoice.items);
-      const existingSequence = extractPrefixedSequence$1(invoice.invoiceNumber, "PI");
-      fallbackSequence = Math.max(fallbackSequence + 1, existingSequence);
-      invoiceStmt.run(
-        invoiceId,
-        firstText(invoice.invoiceNumber, `PI-${String(fallbackSequence).padStart(4, "0")}`),
-        supplierIds.has(supplierId) ? supplierId : null,
-        firstText(invoice.supplierName, "Unknown supplier"),
-        firstText(invoice.invoiceDate, createdAt.slice(0, 10)),
-        totalAmount,
-        paidAmount,
-        remaining,
-        firstText(invoice.paymentMethod, "cash"),
-        firstText(invoice.status, derivePurchaseInvoiceStatus$1(totalAmount, paidAmount)),
-        firstText(invoice.notes) || null,
-        firstText(invoice.createdBy) || null,
-        createdAt,
-        updatedAt
-      );
-      for (const item of items) {
-        const quantity = firstNumber(item.quantity, 1) || 1;
-        const unitPrice = firstNumber(item.unitPrice);
-        const totalPrice = firstNumber(item.totalPrice, quantity * unitPrice);
-        itemStmt.run(
-          firstText(item.id, crypto.randomUUID()),
-          invoiceId,
-          firstText(item.productName, "Unknown item"),
-          firstText(item.category) || null,
-          quantity,
-          unitPrice,
-          totalPrice,
-          firstText(item.notes) || null
-        );
-      }
-    }
-  })();
-  console.log(`[migration] Purchase invoices: ${data.length} records migrated.`);
-}
-function migrateShiftClosings(db2) {
-  if (!tableIsEmpty(db2, "shift_closings")) return;
-  const data = getSettingsJson(db2, "gx_shift_closings") || getSettingsJson(db2, "retail_shift_closings");
-  if (!(data == null ? void 0 : data.length)) return;
-  const stmt = db2.prepare(`
+  `);let s=0;e.transaction(()=>{for(const o of a){const d=i(o.id,crypto.randomUUID()),E=u(o.totalAmount),m=Math.min(E,u(o.paidAmount)),S=Math.max(0,Math.round((E-m)*100)/100),T=i(o.createdAt,new Date().toISOString()),C=i(o.updatedAt,T),w=i(o.supplierId),h=K(o.items),U=de(o.invoiceNumber,"PI");s=Math.max(s+1,U),r.run(d,i(o.invoiceNumber,`PI-${String(s).padStart(4,"0")}`),t.has(w)?w:null,i(o.supplierName,"Unknown supplier"),i(o.invoiceDate,T.slice(0,10)),E,m,S,i(o.paymentMethod,"cash"),i(o.status,Oe(E,m)),i(o.notes)||null,i(o.createdBy)||null,T,C);for(const I of h){const v=u(I.quantity,1)||1,B=u(I.unitPrice),k=u(I.totalPrice,v*B);n.run(i(I.id,crypto.randomUUID()),d,i(I.productName,"Unknown item"),i(I.category)||null,v,B,k,i(I.notes)||null)}}})(),console.log(`[migration] Purchase invoices: ${a.length} records migrated.`)}function ze(e){if(!y(e,"shift_closings"))return;const a=A(e,"gx_shift_closings")||A(e,"retail_shift_closings");if(!(a!=null&&a.length))return;const t=e.prepare(`
     INSERT OR IGNORE INTO shift_closings (
       id, shiftDate, closedAt, closedBy, salesCount, salesCash, salesCard, salesTransfer,
       salesTotal, expectedCash, actualCash, cashDifference, notes, createdAt
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-  db2.transaction(() => {
-    for (const closing of data) {
-      const closedAt = firstText(closing.closedAt, closing.createdAt, (/* @__PURE__ */ new Date()).toISOString());
-      stmt.run(
-        firstText(closing.id, crypto.randomUUID()),
-        firstText(closing.shiftDate, closedAt.slice(0, 10)),
-        closedAt,
-        firstText(closing.closedBy, "system"),
-        Math.max(0, Math.round(firstNumber(closing.salesCount))),
-        firstNumber(closing.salesCash),
-        firstNumber(closing.salesCard),
-        firstNumber(closing.salesTransfer),
-        firstNumber(closing.salesTotal),
-        firstNumber(closing.expectedCash),
-        firstNumber(closing.actualCash),
-        firstNumber(closing.cashDifference),
-        firstText(closing.notes) || null,
-        firstText(closing.createdAt, closedAt)
-      );
-    }
-  })();
-  console.log(`[migration] Shift closings: ${data.length} records migrated.`);
-}
-function migrateStockMovements(db2) {
-  if (!tableIsEmpty(db2, "stock_movements")) return;
-  const data = getSettingsJson(db2, "gx_stock_movements") || getSettingsJson(db2, "retail_stock_movements");
-  if (!(data == null ? void 0 : data.length)) return;
-  const stmt = db2.prepare(`
+  `);e.transaction(()=>{for(const r of a){const n=i(r.closedAt,r.createdAt,new Date().toISOString());t.run(i(r.id,crypto.randomUUID()),i(r.shiftDate,n.slice(0,10)),n,i(r.closedBy,"system"),Math.max(0,Math.round(u(r.salesCount))),u(r.salesCash),u(r.salesCard),u(r.salesTransfer),u(r.salesTotal),u(r.expectedCash),u(r.actualCash),u(r.cashDifference),i(r.notes)||null,i(r.createdAt,n))}})(),console.log(`[migration] Shift closings: ${a.length} records migrated.`)}function Ze(e){if(!y(e,"stock_movements"))return;const a=A(e,"gx_stock_movements")||A(e,"retail_stock_movements");if(!(a!=null&&a.length))return;const t=e.prepare(`
     INSERT OR IGNORE INTO stock_movements (
       id, productId, type, quantityChange, previousQuantity, newQuantity, reason,
       referenceId, userId, timestamp, warehouseId
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-  db2.transaction(() => {
-    for (const movement of data) {
-      stmt.run(
-        firstText(movement.id, crypto.randomUUID()),
-        firstText(movement.productId),
-        firstText(movement.type, "correction"),
-        firstNumber(movement.quantityChange),
-        firstNumber(movement.previousQuantity),
-        firstNumber(movement.newQuantity),
-        firstText(movement.reason) || null,
-        firstText(movement.referenceId) || null,
-        firstText(movement.userId) || null,
-        firstText(movement.timestamp, (/* @__PURE__ */ new Date()).toISOString()),
-        firstText(movement.warehouseId) || null
-      );
-    }
-  })();
-  console.log(`[migration] Stock movements: ${data.length} records migrated.`);
-}
-function migrateAuditLogs(db2) {
-  if (!tableIsEmpty(db2, "audit_logs")) return;
-  const data = getSettingsJson(db2, "elahmed_audit_logs") || getSettingsJson(db2, "retail_audit_logs");
-  if (!(data == null ? void 0 : data.length)) return;
-  const stmt = db2.prepare(`
+  `);e.transaction(()=>{for(const r of a)t.run(i(r.id,crypto.randomUUID()),i(r.productId),i(r.type,"correction"),u(r.quantityChange),u(r.previousQuantity),u(r.newQuantity),i(r.reason)||null,i(r.referenceId)||null,i(r.userId)||null,i(r.timestamp,new Date().toISOString()),i(r.warehouseId)||null)})(),console.log(`[migration] Stock movements: ${a.length} records migrated.`)}function et(e){if(!y(e,"audit_logs"))return;const a=A(e,"elahmed_audit_logs")||A(e,"retail_audit_logs");if(!(a!=null&&a.length))return;const t=e.prepare(`
     INSERT OR IGNORE INTO audit_logs (
       id, userId, action, entityType, entityId, beforeStateJson, afterStateJson, machineId, timestamp
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-  db2.transaction(() => {
-    for (const entry of data) {
-      stmt.run(
-        firstText(entry.id, crypto.randomUUID()),
-        firstText(entry.userId, "system"),
-        firstText(entry.action, "settings_changed"),
-        firstText(entry.entityType, "unknown"),
-        firstText(entry.entityId, "unknown"),
-        entry.beforeState ? JSON.stringify(entry.beforeState) : null,
-        entry.afterState ? JSON.stringify(entry.afterState) : null,
-        firstText(entry.machineId) || null,
-        firstText(entry.timestamp, (/* @__PURE__ */ new Date()).toISOString())
-      );
-    }
-  })();
-  console.log(`[migration] Audit logs: ${data.length} records migrated.`);
-}
-function migrateCustomers(db2) {
-  if (!tableIsEmpty(db2, "customers")) return;
-  const data = getSettingsJson(db2, "gx_customers") || getSettingsJson(db2, "retail_customers");
-  if (!(data == null ? void 0 : data.length)) return;
-  const stmt = db2.prepare(`
+  `);e.transaction(()=>{for(const r of a)t.run(i(r.id,crypto.randomUUID()),i(r.userId,"system"),i(r.action,"settings_changed"),i(r.entityType,"unknown"),i(r.entityId,"unknown"),r.beforeState?JSON.stringify(r.beforeState):null,r.afterState?JSON.stringify(r.afterState):null,i(r.machineId)||null,i(r.timestamp,new Date().toISOString()))})(),console.log(`[migration] Audit logs: ${a.length} records migrated.`)}function tt(e){if(!y(e,"customers"))return;const a=A(e,"gx_customers")||A(e,"retail_customers");if(!(a!=null&&a.length))return;const t=e.prepare(`
     INSERT OR IGNORE INTO customers (
       id, name, phone, email, address, nationalId, notes, totalPurchases, balance, createdAt, updatedAt
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-  db2.transaction(() => {
-    for (const c of data) {
-      stmt.run(
-        c.id,
-        c.name,
-        c.phone || null,
-        c.email || null,
-        c.address || null,
-        c.nationalId || null,
-        c.notes || null,
-        c.totalPurchases || 0,
-        c.balance || 0,
-        c.createdAt || (/* @__PURE__ */ new Date()).toISOString(),
-        c.updatedAt || (/* @__PURE__ */ new Date()).toISOString()
-      );
-    }
-  })();
-  console.log(`[migration] Customers: ${data.length} records migrated.`);
-}
-function migrateSuppliers(db2) {
-  if (!tableIsEmpty(db2, "suppliers")) return;
-  const data = getSettingsJson(db2, "gx_suppliers") || getSettingsJson(db2, "retail_suppliers");
-  if (!(data == null ? void 0 : data.length)) return;
-  const stmt = db2.prepare(`
+  `);e.transaction(()=>{for(const r of a)t.run(r.id,r.name,r.phone||null,r.email||null,r.address||null,r.nationalId||null,r.notes||null,r.totalPurchases||0,r.balance||0,r.createdAt||new Date().toISOString(),r.updatedAt||new Date().toISOString())})(),console.log(`[migration] Customers: ${a.length} records migrated.`)}function rt(e){if(!y(e,"suppliers"))return;const a=A(e,"gx_suppliers")||A(e,"retail_suppliers");if(!(a!=null&&a.length))return;const t=e.prepare(`
     INSERT OR IGNORE INTO suppliers (
       id, name, phone, email, address, category, balance, notes, active, createdAt, updatedAt
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-  db2.transaction(() => {
-    for (const s of data) {
-      stmt.run(
-        s.id,
-        s.name,
-        s.phone || null,
-        s.email || null,
-        s.address || null,
-        s.category || null,
-        s.balance || 0,
-        s.notes || null,
-        s.active ?? 1,
-        s.createdAt || (/* @__PURE__ */ new Date()).toISOString(),
-        s.updatedAt || (/* @__PURE__ */ new Date()).toISOString()
-      );
-    }
-  })();
-  console.log(`[migration] Suppliers: ${data.length} records migrated.`);
-}
-function migrateEmployees(db2) {
-  if (!tableIsEmpty(db2, "employees")) return;
-  const data = getSettingsJson(db2, "gx_employees") || getSettingsJson(db2, "retail_employees");
-  if (!(data == null ? void 0 : data.length)) return;
-  const stmt = db2.prepare(`
+  `);e.transaction(()=>{for(const r of a)t.run(r.id,r.name,r.phone||null,r.email||null,r.address||null,r.category||null,r.balance||0,r.notes||null,r.active??1,r.createdAt||new Date().toISOString(),r.updatedAt||new Date().toISOString())})(),console.log(`[migration] Suppliers: ${a.length} records migrated.`)}function nt(e){if(!y(e,"employees"))return;const a=A(e,"gx_employees")||A(e,"retail_employees");if(!(a!=null&&a.length))return;const t=e.prepare(`
     INSERT OR IGNORE INTO employees (
       id, name, phone, role, salary, commissionRate, hireDate, active, notes, createdAt, updatedAt
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-  db2.transaction(() => {
-    for (const e of data) {
-      stmt.run(
-        e.id,
-        e.name,
-        e.phone || null,
-        firstText(e.role, e.position) || null,
-        firstNumber(e.salary, e.baseSalary),
-        firstNumber(e.commissionRate),
-        e.hireDate || null,
-        toBoolean(e.active ?? e.isActive ?? true) ? 1 : 0,
-        e.notes || null,
-        e.createdAt || (/* @__PURE__ */ new Date()).toISOString(),
-        e.updatedAt || (/* @__PURE__ */ new Date()).toISOString()
-      );
-    }
-  })();
-  console.log(`[migration] Employees: ${data.length} records migrated.`);
-}
-function migrateSupplierTransactions(db2) {
-  if (!tableIsEmpty(db2, "supplier_transactions")) return;
-  const data = getSettingsJson(db2, "gx_supplier_transactions") || getSettingsJson(db2, "retail_supplier_transactions");
-  if (!(data == null ? void 0 : data.length)) return;
-  const stmt = db2.prepare(`
+  `);e.transaction(()=>{for(const r of a)t.run(r.id,r.name,r.phone||null,i(r.role,r.position)||null,u(r.salary,r.baseSalary),u(r.commissionRate),r.hireDate||null,P(r.active??r.isActive??!0)?1:0,r.notes||null,r.createdAt||new Date().toISOString(),r.updatedAt||new Date().toISOString())})(),console.log(`[migration] Employees: ${a.length} records migrated.`)}function at(e){if(!y(e,"supplier_transactions"))return;const a=A(e,"gx_supplier_transactions")||A(e,"retail_supplier_transactions");if(!(a!=null&&a.length))return;const t=e.prepare(`
     INSERT OR IGNORE INTO supplier_transactions (
       id, supplierId, supplierName, type, amount, balanceBefore, balanceAfter, notes, createdBy, createdAt
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-  db2.transaction(() => {
-    for (const item of data) {
-      stmt.run(
-        item.id,
-        item.supplierId,
-        item.supplierName || null,
-        item.type,
-        firstNumber(item.amount),
-        firstNumber(item.balanceBefore),
-        firstNumber(item.balanceAfter),
-        item.notes || null,
-        item.createdBy || null,
-        item.createdAt || (/* @__PURE__ */ new Date()).toISOString()
-      );
-    }
-  })();
-  console.log(`[migration] Supplier transactions: ${data.length} records migrated.`);
-}
-function migrateSalaryRecords(db2) {
-  if (!tableIsEmpty(db2, "employee_salaries")) return;
-  const data = getSettingsJson(db2, "gx_salary_records") || getSettingsJson(db2, "retail_salary_records");
-  if (!(data == null ? void 0 : data.length)) return;
-  const stmt = db2.prepare(`
+  `);e.transaction(()=>{for(const r of a)t.run(r.id,r.supplierId,r.supplierName||null,r.type,u(r.amount),u(r.balanceBefore),u(r.balanceAfter),r.notes||null,r.createdBy||null,r.createdAt||new Date().toISOString())})(),console.log(`[migration] Supplier transactions: ${a.length} records migrated.`)}function st(e){if(!y(e,"employee_salaries"))return;const a=A(e,"gx_salary_records")||A(e,"retail_salary_records");if(!(a!=null&&a.length))return;const t=e.prepare(`
     INSERT OR IGNORE INTO employee_salaries (
       id, employeeId, employeeName, month, baseSalary, commission, bonus, deductions, advanceDeducted,
       netSalary, paid, paidAt, walletId, notes, createdAt
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-  db2.transaction(() => {
-    for (const item of data) {
-      const createdAt = firstText(item.createdAt, item.paidAt, (/* @__PURE__ */ new Date()).toISOString());
-      stmt.run(
-        item.id,
-        item.employeeId,
-        item.employeeName || null,
-        item.month,
-        firstNumber(item.baseSalary),
-        firstNumber(item.commission),
-        firstNumber(item.bonus),
-        firstNumber(item.deduction, item.deductions),
-        firstNumber(item.advanceDeducted),
-        firstNumber(item.netSalary),
-        item.paid ?? 1,
-        item.paidAt || createdAt,
-        item.walletId || null,
-        item.notes || null,
-        createdAt
-      );
-    }
-  })();
-  console.log(`[migration] Employee salaries: ${data.length} records migrated.`);
-}
-function migrateAdvances(db2) {
-  if (!tableIsEmpty(db2, "employee_advances")) return;
-  const data = getSettingsJson(db2, "gx_advances") || getSettingsJson(db2, "retail_advances");
-  if (!(data == null ? void 0 : data.length)) return;
-  const stmt = db2.prepare(`
+  `);e.transaction(()=>{for(const r of a){const n=i(r.createdAt,r.paidAt,new Date().toISOString());t.run(r.id,r.employeeId,r.employeeName||null,r.month,u(r.baseSalary),u(r.commission),u(r.bonus),u(r.deduction,r.deductions),u(r.advanceDeducted),u(r.netSalary),r.paid??1,r.paidAt||n,r.walletId||null,r.notes||null,n)}})(),console.log(`[migration] Employee salaries: ${a.length} records migrated.`)}function it(e){if(!y(e,"employee_advances"))return;const a=A(e,"gx_advances")||A(e,"retail_advances");if(!(a!=null&&a.length))return;const t=e.prepare(`
     INSERT OR IGNORE INTO employee_advances (
       id, employeeId, employeeName, amount, date, deductedMonth, notes, createdAt
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-  db2.transaction(() => {
-    for (const item of data) {
-      stmt.run(
-        item.id,
-        item.employeeId,
-        item.employeeName || null,
-        firstNumber(item.amount),
-        item.date,
-        item.deductedMonth || null,
-        item.notes || null,
-        item.createdAt || item.date || (/* @__PURE__ */ new Date()).toISOString()
-      );
-    }
-  })();
-  console.log(`[migration] Employee advances: ${data.length} records migrated.`);
-}
-function migrateExpenses(db2) {
-  if (!tableIsEmpty(db2, "expenses")) return;
-  const data = getSettingsJson(db2, "gx_expenses") || getSettingsJson(db2, "retail_expenses");
-  if (!(data == null ? void 0 : data.length)) return;
-  const stmt = db2.prepare(`
+  `);e.transaction(()=>{for(const r of a)t.run(r.id,r.employeeId,r.employeeName||null,u(r.amount),r.date,r.deductedMonth||null,r.notes||null,r.createdAt||r.date||new Date().toISOString())})(),console.log(`[migration] Employee advances: ${a.length} records migrated.`)}function ot(e){if(!y(e,"expenses"))return;const a=A(e,"gx_expenses")||A(e,"retail_expenses");if(!(a!=null&&a.length))return;const t=e.prepare(`
     INSERT OR IGNORE INTO expenses (
       id, category, description, amount, date, paymentMethod, employee, notes, createdAt, updatedAt
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-  db2.transaction(() => {
-    for (const e of data) {
-      stmt.run(
-        e.id,
-        e.category,
-        e.description || null,
-        e.amount,
-        e.date,
-        e.paymentMethod || "cash",
-        e.employee || null,
-        e.notes || null,
-        e.createdAt || (/* @__PURE__ */ new Date()).toISOString(),
-        e.updatedAt || (/* @__PURE__ */ new Date()).toISOString()
-      );
-    }
-  })();
-  console.log(`[migration] Expenses: ${data.length} records migrated.`);
-}
-function migrateBlacklist(db2) {
-  if (!tableIsEmpty(db2, "blacklist")) return;
-  const data = getSettingsJson(db2, "gx_blacklist") || getSettingsJson(db2, "retail_blacklist");
-  if (!(data == null ? void 0 : data.length)) return;
-  const stmt = db2.prepare(`
+  `);e.transaction(()=>{for(const r of a)t.run(r.id,r.category,r.description||null,r.amount,r.date,r.paymentMethod||"cash",r.employee||null,r.notes||null,r.createdAt||new Date().toISOString(),r.updatedAt||new Date().toISOString())})(),console.log(`[migration] Expenses: ${a.length} records migrated.`)}function ct(e){if(!y(e,"blacklist"))return;const a=A(e,"gx_blacklist")||A(e,"retail_blacklist");if(!(a!=null&&a.length))return;const t=e.prepare(`
     INSERT OR IGNORE INTO blacklist (
       id, imei, deviceName, ownerName, ownerPhone, phone, status, reportedDate,
       nationalId, reason, notes, addedBy, createdBy, name, createdAt, updatedAt
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-  db2.transaction(() => {
-    for (const b of data) {
-      const createdAt = firstText(b.createdAt, (/* @__PURE__ */ new Date()).toISOString());
-      const updatedAt = firstText(b.updatedAt, createdAt);
-      const imei = firstText(b.imei, b.nationalId);
-      const deviceName = firstText(b.deviceName, b.name, "Unknown device");
-      const ownerPhone = firstText(b.ownerPhone, b.phone);
-      const createdBy = firstText(b.createdBy, b.addedBy, "system");
-      stmt.run(
-        b.id,
-        imei || null,
-        deviceName,
-        b.ownerName || null,
-        ownerPhone || null,
-        ownerPhone || null,
-        firstText(b.status, "active"),
-        firstText(b.reportedDate, createdAt.slice(0, 10)),
-        imei || null,
-        b.reason,
-        b.notes || null,
-        createdBy || null,
-        createdBy || null,
-        deviceName,
-        createdAt,
-        updatedAt
-      );
-    }
-  })();
-  console.log(`[migration] Blacklist: ${data.length} records migrated.`);
-}
-function migrateDamagedItems(db2) {
-  if (!tableIsEmpty(db2, "damaged_items")) return;
-  const data = getSettingsJson(db2, "gx_damaged") || getSettingsJson(db2, "retail_damaged");
-  if (!(data == null ? void 0 : data.length)) return;
-  const stmt = db2.prepare(`
+  `);e.transaction(()=>{for(const r of a){const n=i(r.createdAt,new Date().toISOString()),s=i(r.updatedAt,n),o=i(r.imei,r.nationalId),d=i(r.deviceName,r.name,"Unknown device"),E=i(r.ownerPhone,r.phone),m=i(r.createdBy,r.addedBy,"system");t.run(r.id,o||null,d,r.ownerName||null,E||null,E||null,i(r.status,"active"),i(r.reportedDate,n.slice(0,10)),o||null,r.reason,r.notes||null,m||null,m||null,d,n,s)}})(),console.log(`[migration] Blacklist: ${a.length} records migrated.`)}function Et(e){if(!y(e,"damaged_items"))return;const a=A(e,"gx_damaged")||A(e,"retail_damaged");if(!(a!=null&&a.length))return;const t=e.prepare(`
     INSERT OR IGNORE INTO damaged_items (
       id, productName, productId, inventoryType, quantity, costPrice, reason, estimatedLoss, reportedBy, date, notes, createdAt
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-  db2.transaction(() => {
-    for (const d of data) {
-      const quantity = firstNumber(d.quantity, 1) || 1;
-      const estimatedLoss = firstNumber(d.estimatedLoss, d.totalLoss, d.value);
-      const costPrice = firstNumber(d.costPrice, quantity > 0 ? estimatedLoss / quantity : 0);
-      stmt.run(
-        d.id,
-        d.productName || d.name,
-        d.productId || null,
-        d.inventoryType || d.category || null,
-        quantity,
-        costPrice,
-        d.reason || null,
-        estimatedLoss,
-        d.reportedBy || d.addedBy || null,
-        d.date,
-        d.notes || null,
-        d.createdAt || (/* @__PURE__ */ new Date()).toISOString()
-      );
-    }
-  })();
-  console.log(`[migration] Damaged items: ${data.length} records migrated.`);
-}
-function migrateOtherRevenue(db2) {
-  if (!tableIsEmpty(db2, "other_revenue")) return;
-  const data = getSettingsJson(db2, "gx_other_revenue") || getSettingsJson(db2, "retail_other_revenue");
-  if (!(data == null ? void 0 : data.length)) return;
-  const stmt = db2.prepare(`
+  `);e.transaction(()=>{for(const r of a){const n=u(r.quantity,1)||1,s=u(r.estimatedLoss,r.totalLoss,r.value),o=u(r.costPrice,n>0?s/n:0);t.run(r.id,r.productName||r.name,r.productId||null,r.inventoryType||r.category||null,n,o,r.reason||null,s,r.reportedBy||r.addedBy||null,r.date,r.notes||null,r.createdAt||new Date().toISOString())}})(),console.log(`[migration] Damaged items: ${a.length} records migrated.`)}function dt(e){if(!y(e,"other_revenue"))return;const a=A(e,"gx_other_revenue")||A(e,"retail_other_revenue");if(!(a!=null&&a.length))return;const t=e.prepare(`
     INSERT OR IGNORE INTO other_revenue (id, source, description, amount, date, paymentMethod, addedBy, notes, createdAt, updatedAt)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-  db2.transaction(() => {
-    for (const r of data) {
-      const createdAt = firstText(r.createdAt, (/* @__PURE__ */ new Date()).toISOString());
-      stmt.run(
-        r.id,
-        r.source || r.category,
-        r.description || null,
-        r.amount,
-        r.date,
-        r.paymentMethod || "cash",
-        r.addedBy || null,
-        r.notes || null,
-        createdAt,
-        r.updatedAt || createdAt
-      );
-    }
-  })();
-  console.log(`[migration] Other revenue: ${data.length} records migrated.`);
-}
-function migrateWallets(db2) {
-  if (!tableIsEmpty(db2, "wallets")) return;
-  const data = getSettingsJson(db2, "gx_wallets") || getSettingsJson(db2, "retail_wallets");
-  if (!(data == null ? void 0 : data.length)) return;
-  const stmt = db2.prepare(`
+  `);e.transaction(()=>{for(const r of a){const n=i(r.createdAt,new Date().toISOString());t.run(r.id,r.source||r.category,r.description||null,r.amount,r.date,r.paymentMethod||"cash",r.addedBy||null,r.notes||null,n,r.updatedAt||n)}})(),console.log(`[migration] Other revenue: ${a.length} records migrated.`)}function lt(e){if(!y(e,"wallets"))return;const a=A(e,"gx_wallets")||A(e,"retail_wallets");if(!(a!=null&&a.length))return;const t=e.prepare(`
     INSERT OR IGNORE INTO wallets (id, name, type, balance, isDefault, icon, color, notes, createdAt, updatedAt)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-  db2.transaction(() => {
-    for (const w of data) {
-      const type = firstText(w.type, "cash");
-      stmt.run(
-        w.id,
-        w.name,
-        type,
-        firstNumber(w.balance),
-        toBoolean(w.isDefault) ? 1 : 0,
-        firstText(
-          w.icon,
-          type === "bank" ? "🏦" : type === "card" ? "💳" : type === "transfer" ? "📲" : "💵"
-        ) || null,
-        w.color || null,
-        w.notes || null,
-        w.createdAt || (/* @__PURE__ */ new Date()).toISOString(),
-        w.updatedAt || (/* @__PURE__ */ new Date()).toISOString()
-      );
-    }
-  })();
-  console.log(`[migration] Wallets: ${data.length} records migrated.`);
-}
-function migrateUsedDevices(db2) {
-  if (!tableIsEmpty(db2, "used_devices")) return;
-  const data = getSettingsJson(db2, "gx_used_devices") || getSettingsJson(db2, "gx_used_inventory") || getSettingsJson(db2, "retail_used_inventory");
-  if (!(data == null ? void 0 : data.length)) return;
-  const stmt = db2.prepare(`
+  `);e.transaction(()=>{for(const r of a){const n=i(r.type,"cash");t.run(r.id,r.name,n,u(r.balance),P(r.isDefault)?1:0,i(r.icon,n==="bank"?"🏦":n==="card"?"💳":n==="transfer"?"📲":"💵")||null,r.color||null,r.notes||null,r.createdAt||new Date().toISOString(),r.updatedAt||new Date().toISOString())}})(),console.log(`[migration] Wallets: ${a.length} records migrated.`)}function ut(e){if(!y(e,"used_devices"))return;const a=A(e,"gx_used_devices")||A(e,"gx_used_inventory")||A(e,"retail_used_inventory");if(!(a!=null&&a.length))return;const t=e.prepare(`
     INSERT OR IGNORE INTO used_devices (
       id, name, model, deviceType, category, condition, purchasePrice, sellingPrice, status, serialNumber, color, storage,
       ram, description, notes, image, soldAt, purchasedFrom, soldTo, createdAt, updatedAt
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-  db2.transaction(() => {
-    for (const u of data) {
-      stmt.run(
-        u.id,
-        u.name,
-        firstText(u.model) || null,
-        firstText(u.deviceType, u.category, "other") || null,
-        firstText(u.category, u.deviceType) || null,
-        firstText(u.condition, "good"),
-        firstNumber(u.purchasePrice, u.buyPrice),
-        firstNumber(u.sellingPrice, u.salePrice),
-        firstText(u.status, "in_stock"),
-        u.serialNumber || null,
-        u.color || null,
-        u.storage || null,
-        firstText(u.ram) || null,
-        firstText(u.description, u.notes) || null,
-        firstText(u.notes, u.description) || null,
-        u.image || null,
-        u.soldAt || null,
-        u.purchasedFrom || null,
-        u.soldTo || null,
-        u.createdAt || (/* @__PURE__ */ new Date()).toISOString(),
-        u.updatedAt || (/* @__PURE__ */ new Date()).toISOString()
-      );
-    }
-  })();
-  console.log(`[migration] Used devices: ${data.length} records migrated.`);
-}
-function migrateReminders(db2) {
-  if (!tableIsEmpty(db2, "reminders")) return;
-  const data = getSettingsJson(db2, "gx_reminders") || getSettingsJson(db2, "retail_reminders");
-  if (!(data == null ? void 0 : data.length)) return;
-  const stmt = db2.prepare(`
+  `);e.transaction(()=>{for(const r of a)t.run(r.id,r.name,i(r.model)||null,i(r.deviceType,r.category,"other")||null,i(r.category,r.deviceType)||null,i(r.condition,"good"),u(r.purchasePrice,r.buyPrice),u(r.sellingPrice,r.salePrice),i(r.status,"in_stock"),r.serialNumber||null,r.color||null,r.storage||null,i(r.ram)||null,i(r.description,r.notes)||null,i(r.notes,r.description)||null,r.image||null,r.soldAt||null,r.purchasedFrom||null,r.soldTo||null,r.createdAt||new Date().toISOString(),r.updatedAt||new Date().toISOString())})(),console.log(`[migration] Used devices: ${a.length} records migrated.`)}function pt(e){if(!y(e,"reminders"))return;const a=A(e,"gx_reminders")||A(e,"retail_reminders");if(!(a!=null&&a.length))return;const t=e.prepare(`
     INSERT OR IGNORE INTO reminders (
       id, title, description, dueDate, reminderTime, priority, status, completed, completedAt, recurring, category, notes, createdAt, updatedAt
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-  db2.transaction(() => {
-    for (const r of data) {
-      const status = firstText(r.status, r.completed ? "done" : "pending");
-      stmt.run(
-        r.id,
-        r.title,
-        r.description || null,
-        r.dueDate || r.reminderDate,
-        r.reminderTime || null,
-        r.priority || "medium",
-        status,
-        status === "done" || !!r.completed ? 1 : 0,
-        r.completedAt || null,
-        r.recurring || null,
-        r.category || null,
-        r.notes || null,
-        r.createdAt || (/* @__PURE__ */ new Date()).toISOString(),
-        r.updatedAt || (/* @__PURE__ */ new Date()).toISOString()
-      );
-    }
-  })();
-  console.log(`[migration] Reminders: ${data.length} records migrated.`);
-}
-function migrateRepairs(db2) {
-  if (!tableIsEmpty(db2, "repair_tickets")) return;
-  const data = getSettingsJson(db2, "gx_maintenance") || getSettingsJson(db2, "maintenance_orders");
-  if (!(data == null ? void 0 : data.length)) return;
-  const stmt = db2.prepare(`
+  `);e.transaction(()=>{for(const r of a){const n=i(r.status,r.completed?"done":"pending");t.run(r.id,r.title,r.description||null,r.dueDate||r.reminderDate,r.reminderTime||null,r.priority||"medium",n,n==="done"||r.completed?1:0,r.completedAt||null,r.recurring||null,r.category||null,r.notes||null,r.createdAt||new Date().toISOString(),r.updatedAt||new Date().toISOString())}})(),console.log(`[migration] Reminders: ${a.length} records migrated.`)}function Tt(e){if(!y(e,"repair_tickets"))return;const a=A(e,"gx_maintenance")||A(e,"maintenance_orders");if(!(a!=null&&a.length))return;const t=e.prepare(`
     INSERT OR IGNORE INTO repair_tickets (
       id, ticket_no, customer_name, customer_phone, device_category, device_model,
       issue_description, status, package_price, final_cost, createdAt, updatedAt
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-  db2.transaction(() => {
-    for (const r of data) {
-      const status = ["received", "diagnosing", "repairing", "waiting_parts", "testing", "ready", "delivered", "cancelled", "pending", "in_progress", "waiting_for_parts", "completed"].includes(r.status) ? r.status : r.status === "done" ? "delivered" : r.status === "in_progress" ? "repairing" : "received";
-      stmt.run(
-        r.id,
-        r.orderNumber || r.ticket_no || `TKT-${Math.random().toString(36).slice(2, 7)}`,
-        r.customerName || r.customer_name,
-        r.customerPhone || r.customer_phone || null,
-        r.deviceCategory || r.device_category || "other",
-        r.deviceName || r.device_model || "Unknown",
-        r.issueDescription || r.issue_description || r.problem_desc || "",
-        status,
-        r.totalSale || r.package_price || 0,
-        r.final_cost || r.totalSale || r.package_price || 0,
-        r.createdAt || r.created_at || (/* @__PURE__ */ new Date()).toISOString(),
-        r.updatedAt || r.updated_at || (/* @__PURE__ */ new Date()).toISOString()
-      );
-    }
-  })();
-  console.log(`[migration] Repair Tickets: ${data.length} records migrated.`);
-}
-function migrateRepairParts(db2) {
-  if (!tableIsEmpty(db2, "repair_parts")) return;
-  const data = getSettingsJson(db2, "gx_repair_parts") || getSettingsJson(db2, "repair_parts_inventory");
-  if (!(data == null ? void 0 : data.length)) return;
-  const stmt = db2.prepare(`
+  `);e.transaction(()=>{for(const r of a){const n=["received","diagnosing","repairing","waiting_parts","testing","ready","delivered","cancelled","pending","in_progress","waiting_for_parts","completed"].includes(r.status)?r.status:r.status==="done"?"delivered":r.status==="in_progress"?"repairing":"received";t.run(r.id,r.orderNumber||r.ticket_no||`TKT-${Math.random().toString(36).slice(2,7)}`,r.customerName||r.customer_name,r.customerPhone||r.customer_phone||null,r.deviceCategory||r.device_category||"other",r.deviceName||r.device_model||"Unknown",r.issueDescription||r.issue_description||r.problem_desc||"",n,r.totalSale||r.package_price||0,r.final_cost||r.totalSale||r.package_price||0,r.createdAt||r.created_at||new Date().toISOString(),r.updatedAt||r.updated_at||new Date().toISOString())}})(),console.log(`[migration] Repair Tickets: ${a.length} records migrated.`)}function mt(e){if(!y(e,"repair_parts"))return;const a=A(e,"gx_repair_parts")||A(e,"repair_parts_inventory");if(!(a!=null&&a.length))return;const t=e.prepare(`
     INSERT OR IGNORE INTO repair_parts (
       id, name, category, sku, unit_cost, selling_price, qty, min_qty, active, createdAt
     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  `);
-  db2.transaction(() => {
-    for (const p of data) {
-      stmt.run(
-        p.id,
-        p.name,
-        p.category || null,
-        p.sku || p.part_no || null,
-        p.unit_cost || p.cost_price || 0,
-        p.selling_price || 0,
-        p.qty || p.current_stock || 0,
-        p.min_qty || p.min_stock || 0,
-        p.active ?? 1,
-        p.createdAt || p.created_at || (/* @__PURE__ */ new Date()).toISOString()
-      );
-    }
-  })();
-  console.log(`[migration] Repair Parts: ${data.length} records migrated.`);
-}
-function buildUpdateSql(data, excludeKeys = ["id", "createdAt"]) {
-  const sets = [];
-  const values = [];
-  for (const [key, val] of Object.entries(data)) {
-    if (!excludeKeys.includes(key)) {
-      sets.push(`${key} = ?`);
-      values.push(val);
-    }
-  }
-  return { sets, values };
-}
-function readSettingsArray(db2, key) {
-  const row = db2.prepare("SELECT value FROM settings WHERE key = ?").get(key);
-  if (!row) return [];
-  try {
-    const parsed = JSON.parse(row.value);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
-}
-function readSettingJson(db2, key, fallback) {
-  const row = db2.prepare("SELECT value FROM settings WHERE key = ?").get(key);
-  if (!row) return fallback;
-  try {
-    return JSON.parse(row.value);
-  } catch {
-    return fallback;
-  }
-}
-function ensureWalletRecord(db2, walletId) {
-  if (!walletId) return;
-  const existing = db2.prepare("SELECT id FROM wallets WHERE id = ?").get(walletId);
-  if (existing) return;
-  const walletMetadata = [...readSettingsArray(db2, "gx_wallets"), ...readSettingsArray(db2, "retail_wallets")].find((wallet) => String(wallet.id ?? "") === walletId);
-  const now = (/* @__PURE__ */ new Date()).toISOString();
-  const walletType = String((walletMetadata == null ? void 0 : walletMetadata.type) ?? "cash");
-  const walletIcon = String(
-    (walletMetadata == null ? void 0 : walletMetadata.icon) ?? (walletType === "bank" ? "🏦" : walletType === "card" ? "💳" : walletType === "transfer" ? "📲" : "💵")
-  );
-  db2.prepare(`
+  `);e.transaction(()=>{for(const r of a)t.run(r.id,r.name,r.category||null,r.sku||r.part_no||null,r.unit_cost||r.cost_price||0,r.selling_price||0,r.qty||r.current_stock||0,r.min_qty||r.min_stock||0,r.active??1,r.createdAt||r.created_at||new Date().toISOString())})(),console.log(`[migration] Repair Parts: ${a.length} records migrated.`)}function At(e){y(e,"inventory_items")&&(console.log("[migration] Starting Unified Inventory Migration..."),e.transaction(()=>{N(e,"products")&&(e.exec(`
+        INSERT INTO inventory_items (id, type, name, barcode, quantity, costPrice, salePrice, minStock, warehouseId, isArchived, deletedAt, createdAt, updatedAt, metadata)
+        SELECT
+          id,
+          COALESCE(deviceType, 'device'),
+          name,
+          barcode,
+          quantity,
+          newCostPrice,
+          salePrice,
+          minStock,
+          warehouseId,
+          isArchived,
+          deletedAt,
+          COALESCE(createdAt, CURRENT_TIMESTAMP),
+          COALESCE(updatedAt, CURRENT_TIMESTAMP),
+          json_object(
+            'model', model,
+            'category', category,
+            'condition', condition,
+            'storage', storage,
+            'ram', ram,
+            'color', color,
+            'brand', brand,
+            'boxNumber', boxNumber,
+            'processor', processor,
+            'serialNumber', serialNumber,
+            'imei2', imei2
+          )
+        FROM products;
+      `),console.log("[migration] Products migrated to Unified Inventory.")),N(e,"accessories")&&(e.exec(`
+        INSERT INTO inventory_items (id, type, name, barcode, quantity, costPrice, salePrice, minStock, warehouseId, isArchived, deletedAt, createdAt, updatedAt, metadata)
+        SELECT
+          id,
+          'accessory',
+          name,
+          barcode,
+          quantity,
+          newCostPrice,
+          salePrice,
+          minStock,
+          warehouseId,
+          isArchived,
+          deletedAt,
+          COALESCE(createdAt, CURRENT_TIMESTAMP),
+          COALESCE(updatedAt, CURRENT_TIMESTAMP),
+          json_object(
+            'inventoryType', inventoryType,
+            'category', category,
+            'subcategory', subcategory,
+            'model', model,
+            'condition', condition,
+            'brand', brand,
+            'boxNumber', boxNumber,
+            'color', color
+          )
+        FROM accessories;
+      `),console.log("[migration] Accessories migrated to Unified Inventory.")),N(e,"cars_inventory")&&(e.exec(`
+        INSERT INTO inventory_items (id, type, name, quantity, costPrice, salePrice, warehouseId, isArchived, deletedAt, createdAt, updatedAt, metadata)
+        SELECT
+          id,
+          'car',
+          name,
+          1,
+          purchasePrice,
+          salePrice,
+          warehouseId,
+          isArchived,
+          deletedAt,
+          COALESCE(createdAt, CURRENT_TIMESTAMP),
+          COALESCE(updatedAt, CURRENT_TIMESTAMP),
+          json_object(
+            'model', model,
+            'year', year,
+            'color', color,
+            'plateNumber', plateNumber,
+            'licenseExpiry', licenseExpiry,
+            'condition', condition,
+            'category', category
+          )
+        FROM cars_inventory;
+      `),console.log("[migration] Cars migrated to Unified Inventory.")),N(e,"used_devices")&&(e.exec(`
+        INSERT INTO inventory_items (id, type, name, quantity, costPrice, salePrice, warehouseId, isArchived, deletedAt, createdAt, updatedAt, metadata)
+        SELECT
+          id,
+          'used',
+          name,
+          1,
+          purchasePrice,
+          sellingPrice,
+          warehouseId,
+          isArchived,
+          deletedAt,
+          COALESCE(createdAt, CURRENT_TIMESTAMP),
+          COALESCE(updatedAt, CURRENT_TIMESTAMP),
+          json_object(
+            'model', model,
+            'category', category,
+            'condition', condition,
+            'status', status,
+            'serialNumber', serialNumber,
+            'color', color,
+            'storage', storage,
+            'ram', ram,
+            'soldAt', soldAt,
+            'purchasedFrom', purchasedFrom,
+            'soldTo', soldTo
+          )
+        FROM used_devices;
+      `),console.log("[migration] Used Devices migrated to Unified Inventory.")),N(e,"repair_parts")&&(e.exec(`
+        INSERT INTO inventory_items (id, type, name, barcode, quantity, costPrice, salePrice, minStock, createdAt, updatedAt, metadata)
+        SELECT
+          id,
+          'part',
+          name,
+          sku,
+          qty,
+          unit_cost,
+          selling_price,
+          min_qty,
+          COALESCE(createdAt, CURRENT_TIMESTAMP),
+          CURRENT_TIMESTAMP,
+          json_object(
+            'category', category,
+            'active', active
+          )
+        FROM repair_parts;
+      `),console.log("[migration] Repair Parts migrated to Unified Inventory."))})(),console.log("[migration] Unified Inventory Migration Completed."))}function O(e,a=["id","createdAt"]){const t=[],r=[];for(const[n,s]of Object.entries(e))a.includes(n)||(t.push(`${n} = ?`),r.push(s));return{sets:t,values:r}}function re(e,a){const t=e.prepare("SELECT value FROM settings WHERE key = ?").get(a);if(!t)return[];try{const r=JSON.parse(t.value);return Array.isArray(r)?r:[]}catch{return[]}}function St(e,a,t){const r=e.prepare("SELECT value FROM settings WHERE key = ?").get(a);if(!r)return t;try{return JSON.parse(r.value)}catch{return t}}function Nt(e,a){if(!a||e.prepare("SELECT id FROM wallets WHERE id = ?").get(a))return;const r=[...re(e,"gx_wallets"),...re(e,"retail_wallets")].find(d=>String(d.id??"")===a),n=new Date().toISOString(),s=String((r==null?void 0:r.type)??"cash"),o=String((r==null?void 0:r.icon)??(s==="bank"?"🏦":s==="card"?"💳":s==="transfer"?"📲":"💵"));e.prepare(`
     INSERT INTO wallets (id, name, type, balance, isDefault, icon, color, notes, createdAt, updatedAt)
     VALUES (?, ?, ?, 0, ?, ?, ?, ?, ?, ?)
-  `).run(
-    walletId,
-    String((walletMetadata == null ? void 0 : walletMetadata.name) ?? (walletId === "wallet_cash" ? "الصندوق" : `Wallet ${walletId.slice(0, 8)}`)),
-    walletType,
-    (walletMetadata == null ? void 0 : walletMetadata.isDefault) ? 1 : 0,
-    walletIcon,
-    (walletMetadata == null ? void 0 : walletMetadata.color) ? String(walletMetadata.color) : null,
-    String((walletMetadata == null ? void 0 : walletMetadata.notes) ?? "Auto-created to repair wallet references"),
-    (walletMetadata == null ? void 0 : walletMetadata.createdAt) ? String(walletMetadata.createdAt) : now,
-    (walletMetadata == null ? void 0 : walletMetadata.updatedAt) ? String(walletMetadata.updatedAt) : now
-  );
-}
-function parseJsonValue(value, fallback) {
-  if (value === null || value === void 0 || value === "") return fallback;
-  if (typeof value !== "string") return fallback;
-  try {
-    return JSON.parse(value);
-  } catch {
-    return fallback;
-  }
-}
-function extractPrefixedSequence(value, prefix) {
-  if (typeof value !== "string") return 0;
-  const match = new RegExp(`^${prefix}-(\\d+)$`).exec(value.trim());
-  if (!match) return 0;
-  const parsed = Number.parseInt(match[1], 10);
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-function derivePurchaseInvoiceStatus(totalAmount, paidAmount) {
-  if (paidAmount <= 0) return "confirmed";
-  if (paidAmount >= totalAmount) return "paid";
-  return "partial";
-}
-function readProducts(db2, source) {
-  const rows = source ? db2.prepare("SELECT * FROM products WHERE source = ? ORDER BY createdAt DESC, id DESC").all(source) : db2.prepare("SELECT * FROM products ORDER BY createdAt DESC, id DESC").all();
-  return rows;
-}
-function readAccessories(db2, inventoryType) {
-  const rows = inventoryType ? db2.prepare("SELECT * FROM accessories WHERE inventoryType = ? ORDER BY createdAt DESC, id DESC").all(inventoryType) : db2.prepare("SELECT * FROM accessories ORDER BY createdAt DESC, id DESC").all();
-  return rows;
-}
-function readSales(db2, activeOnly = false) {
-  const sales = db2.prepare(`
+  `).run(a,String((r==null?void 0:r.name)??(a==="wallet_cash"?"الصندوق":`Wallet ${a.slice(0,8)}`)),s,r!=null&&r.isDefault?1:0,o,r!=null&&r.color?String(r.color):null,String((r==null?void 0:r.notes)??"Auto-created to repair wallet references"),r!=null&&r.createdAt?String(r.createdAt):n,r!=null&&r.updatedAt?String(r.updatedAt):n)}function Lt(e,a){if(e==null||e===""||typeof e!="string")return a;try{return JSON.parse(e)}catch{return a}}function ne(e,a){if(typeof e!="string")return 0;const t=new RegExp(`^${a}-(\\d+)$`).exec(e.trim());if(!t)return 0;const r=Number.parseInt(t[1],10);return Number.isFinite(r)?r:0}function b(e,a){return a<=0?"confirmed":a>=e?"paid":"partial"}function It(e,a){return a?e.prepare("SELECT * FROM products WHERE source = ? ORDER BY createdAt DESC, id DESC").all(a):e.prepare("SELECT * FROM products ORDER BY createdAt DESC, id DESC").all()}function Rt(e,a){return a?e.prepare("SELECT * FROM accessories WHERE inventoryType = ? ORDER BY createdAt DESC, id DESC").all(a):e.prepare("SELECT * FROM accessories ORDER BY createdAt DESC, id DESC").all()}function ae(e,a=!1){const t=e.prepare(`
     SELECT * FROM sales
-    ${activeOnly ? "WHERE voidedAt IS NULL" : ""}
+    ${a?"WHERE voidedAt IS NULL":""}
     ORDER BY date DESC, invoiceNumber DESC
-  `).all();
-  const items = db2.prepare("SELECT * FROM sale_items ORDER BY saleId ASC, id ASC").all();
-  const itemsBySaleId = /* @__PURE__ */ new Map();
-  for (const item of items) {
-    const saleId = String(item.saleId ?? "");
-    if (!saleId) continue;
-    const bucket = itemsBySaleId.get(saleId) || [];
-    bucket.push({
-      productId: String(item.productId ?? ""),
-      name: String(item.name ?? ""),
-      qty: Number(item.qty ?? 0),
-      price: Number(item.price ?? 0),
-      cost: Number(item.cost ?? 0),
-      lineDiscount: Number(item.lineDiscount ?? 0),
-      warehouseId: item.warehouseId ? String(item.warehouseId) : void 0,
-      batches: parseJsonValue(item.batches, [])
-    });
-    itemsBySaleId.set(saleId, bucket);
-  }
-  return sales.map((sale) => ({
-    id: String(sale.id ?? ""),
-    invoiceNumber: String(sale.invoiceNumber ?? ""),
-    date: String(sale.date ?? ""),
-    items: itemsBySaleId.get(String(sale.id ?? "")) || [],
-    subtotal: Number(sale.subtotal ?? 0),
-    discount: Number(sale.discount ?? 0),
-    total: Number(sale.total ?? 0),
-    totalCost: Number(sale.totalCost ?? 0),
-    grossProfit: Number(sale.grossProfit ?? 0),
-    marginPct: Number(sale.marginPct ?? 0),
-    paymentMethod: String(sale.paymentMethod ?? "cash"),
-    employee: String(sale.employee ?? "system"),
-    voidedAt: sale.voidedAt ? String(sale.voidedAt) : null,
-    voidReason: sale.voidReason ? String(sale.voidReason) : null,
-    voidedBy: sale.voidedBy ? String(sale.voidedBy) : null
-  }));
-}
-function readPurchaseInvoices(db2) {
-  const invoices = db2.prepare("SELECT * FROM purchase_invoices ORDER BY invoiceDate DESC, createdAt DESC").all();
-  const items = db2.prepare("SELECT * FROM purchase_invoice_items ORDER BY invoiceId ASC, id ASC").all();
-  const itemsByInvoiceId = /* @__PURE__ */ new Map();
-  for (const item of items) {
-    const invoiceId = String(item.invoiceId ?? "");
-    if (!invoiceId) continue;
-    const bucket = itemsByInvoiceId.get(invoiceId) || [];
-    bucket.push({
-      id: String(item.id ?? ""),
-      productName: String(item.productName ?? ""),
-      category: item.category ? String(item.category) : "",
-      quantity: Number(item.quantity ?? 0),
-      unitPrice: Number(item.unitPrice ?? 0),
-      totalPrice: Number(item.totalPrice ?? 0),
-      notes: item.notes ? String(item.notes) : ""
-    });
-    itemsByInvoiceId.set(invoiceId, bucket);
-  }
-  return invoices.map((invoice) => ({
-    id: String(invoice.id ?? ""),
-    invoiceNumber: String(invoice.invoiceNumber ?? ""),
-    supplierId: invoice.supplierId ? String(invoice.supplierId) : void 0,
-    supplierName: String(invoice.supplierName ?? ""),
-    invoiceDate: String(invoice.invoiceDate ?? ""),
-    totalAmount: Number(invoice.totalAmount ?? 0),
-    paidAmount: Number(invoice.paidAmount ?? 0),
-    remaining: Number(invoice.remaining ?? 0),
-    paymentMethod: String(invoice.paymentMethod ?? "cash"),
-    items: itemsByInvoiceId.get(String(invoice.id ?? "")) || [],
-    status: String(invoice.status ?? "confirmed"),
-    notes: invoice.notes ? String(invoice.notes) : "",
-    createdBy: String(invoice.createdBy ?? "system"),
-    createdAt: String(invoice.createdAt ?? ""),
-    updatedAt: String(invoice.updatedAt ?? "")
-  }));
-}
-function readReturnRecords(db2) {
-  const records = db2.prepare("SELECT * FROM return_records ORDER BY date DESC, createdAt DESC").all();
-  const items = db2.prepare("SELECT * FROM return_items ORDER BY returnId ASC, id ASC").all();
-  const itemsByReturnId = /* @__PURE__ */ new Map();
-  for (const item of items) {
-    const returnId = String(item.returnId ?? "");
-    if (!returnId) continue;
-    const bucket = itemsByReturnId.get(returnId) || [];
-    bucket.push({
-      productId: String(item.productId ?? ""),
-      name: String(item.name ?? ""),
-      qty: Number(item.qty ?? 0),
-      price: Number(item.price ?? 0),
-      reason: item.reason ? String(item.reason) : ""
-    });
-    itemsByReturnId.set(returnId, bucket);
-  }
-  return records.map((record) => ({
-    id: String(record.id ?? ""),
-    returnNumber: String(record.returnNumber ?? ""),
-    originalInvoiceNumber: String(record.originalInvoiceNumber ?? ""),
-    originalSaleId: record.originalSaleId ? String(record.originalSaleId) : "",
-    date: String(record.date ?? ""),
-    items: itemsByReturnId.get(String(record.id ?? "")) || [],
-    totalRefund: Number(record.totalRefund ?? 0),
-    reason: record.reason ? String(record.reason) : "",
-    processedBy: record.processedBy ? String(record.processedBy) : "",
-    createdAt: String(record.createdAt ?? "")
-  }));
-}
-function readShiftClosings(db2) {
-  return db2.prepare("SELECT * FROM shift_closings ORDER BY closedAt DESC, createdAt DESC").all();
-}
-function buildShiftSummary(db2, closedBy, actualCash, notes) {
-  const startOfToday = /* @__PURE__ */ new Date();
-  startOfToday.setHours(0, 0, 0, 0);
-  const lastClose = db2.prepare("SELECT closedAt FROM shift_closings ORDER BY closedAt DESC LIMIT 1").get();
-  const fromTimestamp = (lastClose == null ? void 0 : lastClose.closedAt) ? String(lastClose.closedAt) : startOfToday.toISOString();
-  const summary = db2.prepare(`
+  `).all(),r=e.prepare("SELECT * FROM sale_items ORDER BY saleId ASC, id ASC").all(),n=new Map;for(const s of r){const o=String(s.saleId??"");if(!o)continue;const d=n.get(o)||[];d.push({productId:String(s.productId??""),name:String(s.name??""),qty:Number(s.qty??0),price:Number(s.price??0),cost:Number(s.cost??0),lineDiscount:Number(s.lineDiscount??0),warehouseId:s.warehouseId?String(s.warehouseId):void 0,batches:Lt(s.batches,[])}),n.set(o,d)}return t.map(s=>({id:String(s.id??""),invoiceNumber:String(s.invoiceNumber??""),date:String(s.date??""),items:n.get(String(s.id??""))||[],subtotal:Number(s.subtotal??0),discount:Number(s.discount??0),total:Number(s.total??0),totalCost:Number(s.totalCost??0),grossProfit:Number(s.grossProfit??0),marginPct:Number(s.marginPct??0),paymentMethod:String(s.paymentMethod??"cash"),employee:String(s.employee??"system"),voidedAt:s.voidedAt?String(s.voidedAt):null,voidReason:s.voidReason?String(s.voidReason):null,voidedBy:s.voidedBy?String(s.voidedBy):null}))}function Y(e){const a=e.prepare("SELECT * FROM purchase_invoices ORDER BY invoiceDate DESC, createdAt DESC").all(),t=e.prepare("SELECT * FROM purchase_invoice_items ORDER BY invoiceId ASC, id ASC").all(),r=new Map;for(const n of t){const s=String(n.invoiceId??"");if(!s)continue;const o=r.get(s)||[];o.push({id:String(n.id??""),productName:String(n.productName??""),category:n.category?String(n.category):"",quantity:Number(n.quantity??0),unitPrice:Number(n.unitPrice??0),totalPrice:Number(n.totalPrice??0),notes:n.notes?String(n.notes):""}),r.set(s,o)}return a.map(n=>({id:String(n.id??""),invoiceNumber:String(n.invoiceNumber??""),supplierId:n.supplierId?String(n.supplierId):void 0,supplierName:String(n.supplierName??""),invoiceDate:String(n.invoiceDate??""),totalAmount:Number(n.totalAmount??0),paidAmount:Number(n.paidAmount??0),remaining:Number(n.remaining??0),paymentMethod:String(n.paymentMethod??"cash"),items:r.get(String(n.id??""))||[],status:String(n.status??"confirmed"),notes:n.notes?String(n.notes):"",createdBy:String(n.createdBy??"system"),createdAt:String(n.createdAt??""),updatedAt:String(n.updatedAt??"")}))}function J(e){const a=e.prepare("SELECT * FROM return_records ORDER BY date DESC, createdAt DESC").all(),t=e.prepare("SELECT * FROM return_items ORDER BY returnId ASC, id ASC").all(),r=new Map;for(const n of t){const s=String(n.returnId??"");if(!s)continue;const o=r.get(s)||[];o.push({productId:String(n.productId??""),name:String(n.name??""),qty:Number(n.qty??0),price:Number(n.price??0),reason:n.reason?String(n.reason):""}),r.set(s,o)}return a.map(n=>({id:String(n.id??""),returnNumber:String(n.returnNumber??""),originalInvoiceNumber:String(n.originalInvoiceNumber??""),originalSaleId:n.originalSaleId?String(n.originalSaleId):"",date:String(n.date??""),items:r.get(String(n.id??""))||[],totalRefund:Number(n.totalRefund??0),reason:n.reason?String(n.reason):"",processedBy:n.processedBy?String(n.processedBy):"",createdAt:String(n.createdAt??"")}))}function yt(e){return e.prepare("SELECT * FROM shift_closings ORDER BY closedAt DESC, createdAt DESC").all()}function _t(e,a,t,r){const n=new Date;n.setHours(0,0,0,0);const s=e.prepare("SELECT closedAt FROM shift_closings ORDER BY closedAt DESC LIMIT 1").get(),o=s!=null&&s.closedAt?String(s.closedAt):n.toISOString(),d=e.prepare(`
     SELECT
       COUNT(*) as salesCount,
       SUM(CASE WHEN paymentMethod = 'cash' THEN total ELSE 0 END) as salesCash,
@@ -3640,921 +1656,92 @@ function buildShiftSummary(db2, closedBy, actualCash, notes) {
       SUM(total) as salesTotal
     FROM sales
     WHERE voidedAt IS NULL AND date >= ?
-  `).get(fromTimestamp);
-  const now = /* @__PURE__ */ new Date();
-  const salesCash = Number(summary.salesCash ?? 0);
-  const salesCard = Number(summary.salesCard ?? 0);
-  const salesTransfer = Number(summary.salesTransfer ?? 0);
-  const salesTotal = Number(summary.salesTotal ?? salesCash + salesCard + salesTransfer);
-  return {
-    shiftDate: now.toISOString().slice(0, 10),
-    closedAt: now.toISOString(),
-    closedBy,
-    salesCount: Number(summary.salesCount ?? 0),
-    salesCash,
-    salesCard,
-    salesTransfer,
-    salesTotal,
-    expectedCash: salesCash,
-    actualCash,
-    cashDifference: actualCash - salesCash,
-    notes
-  };
-}
-function replySync(event, label, fallback, action) {
-  try {
-    event.returnValue = action();
-  } catch (error) {
-    console.error(`${label} error:`, error);
-    event.returnValue = fallback;
-  }
-}
-function setupIpcHandlers(db2) {
-  electron.ipcMain.on("db:installments:get", (event) => {
-    try {
-      event.returnValue = readInstallmentContracts(db2);
-    } catch (error) {
-      console.error("db:installments:get error:", error);
-      event.returnValue = [];
-    }
-  });
-  electron.ipcMain.on("db:installments:replaceAll", (event, contracts) => {
-    try {
-      const rows = Array.isArray(contracts) ? contracts : [];
-      event.returnValue = replaceInstallmentContracts(db2, rows);
-    } catch (error) {
-      console.error("db:installments:replaceAll error:", error);
-      event.returnValue = [];
-    }
-  });
-  electron.ipcMain.on("db-sync:settings:get-json", (event, key) => {
-    replySync(event, "db-sync:settings:get-json", null, () => readSettingJson(db2, key, null));
-  });
-  electron.ipcMain.on("db-sync:settings:set-json", (event, key, value) => {
-    replySync(event, "db-sync:settings:set-json", null, () => {
-      const serialized = JSON.stringify(value ?? null);
-      db2.prepare(`
+  `).get(o),E=new Date,m=Number(d.salesCash??0),S=Number(d.salesCard??0),T=Number(d.salesTransfer??0),C=Number(d.salesTotal??m+S+T);return{shiftDate:E.toISOString().slice(0,10),closedAt:E.toISOString(),closedBy:a,salesCount:Number(d.salesCount??0),salesCash:m,salesCard:S,salesTransfer:T,salesTotal:C,expectedCash:m,actualCash:t,cashDifference:t-m,notes:r}}function p(e,a,t,r){try{e.returnValue=r()}catch(n){console.error(`${a} error:`,n),e.returnValue=t}}function gt(e){c.ipcMain.on("db:installments:get",a=>{try{a.returnValue=oe(e)}catch(t){console.error("db:installments:get error:",t),a.returnValue=[]}}),c.ipcMain.on("db:installments:replaceAll",(a,t)=>{try{const r=Array.isArray(t)?t:[];a.returnValue=ce(e,r)}catch(r){console.error("db:installments:replaceAll error:",r),a.returnValue=[]}}),c.ipcMain.on("db-sync:settings:get-json",(a,t)=>{p(a,"db-sync:settings:get-json",null,()=>St(e,t,null))}),c.ipcMain.on("db-sync:settings:set-json",(a,t,r)=>{p(a,"db-sync:settings:set-json",null,()=>{const n=JSON.stringify(r??null);return e.prepare(`
         INSERT INTO settings (key, value)
         VALUES (?, ?)
         ON CONFLICT(key) DO UPDATE SET value = excluded.value
-      `).run(key, serialized);
-      return value ?? null;
-    });
-  });
-  electron.ipcMain.on("db-sync:categories:get", (event) => {
-    replySync(event, "db-sync:categories:get", [], () => db2.prepare("SELECT * FROM categories ORDER BY inventoryType ASC, name ASC").all());
-  });
-  electron.ipcMain.on("db-sync:categories:replaceAll", (event, categories = []) => {
-    replySync(event, "db-sync:categories:replaceAll", [], () => {
-      const replaceAll = db2.transaction(() => {
-        db2.prepare("DELETE FROM categories").run();
-        const stmt = db2.prepare(`
+      `).run(t,n),r??null})}),c.ipcMain.on("db-sync:categories:get",a=>{p(a,"db-sync:categories:get",[],()=>e.prepare("SELECT * FROM categories ORDER BY inventoryType ASC, name ASC").all())}),c.ipcMain.on("db-sync:categories:replaceAll",(a,t=[])=>{p(a,"db-sync:categories:replaceAll",[],()=>e.transaction(()=>{e.prepare("DELETE FROM categories").run();const n=e.prepare(`
           INSERT INTO categories (id, name, inventoryType)
           VALUES (?, ?, ?)
-        `);
-        for (const category of Array.isArray(categories) ? categories : []) {
-          stmt.run(
-            category.id ?? crypto.randomUUID(),
-            category.name ?? "",
-            category.inventoryType ?? "mobile_device"
-          );
-        }
-        return db2.prepare("SELECT * FROM categories ORDER BY inventoryType ASC, name ASC").all();
-      });
-      return replaceAll();
-    });
-  });
-  electron.ipcMain.on("db-sync:users:get", (event) => {
-    replySync(event, "db-sync:users:get", [], () => db2.prepare("SELECT * FROM users ORDER BY createdAt ASC, username ASC").all());
-  });
-  electron.ipcMain.on("db-sync:users:replaceAll", (event, users = []) => {
-    replySync(event, "db-sync:users:replaceAll", [], () => {
-      const replaceAll = db2.transaction(() => {
-        db2.prepare("DELETE FROM users").run();
-        const stmt = db2.prepare(`
+        `);for(const s of Array.isArray(t)?t:[])n.run(s.id??crypto.randomUUID(),s.name??"",s.inventoryType??"mobile_device");return e.prepare("SELECT * FROM categories ORDER BY inventoryType ASC, name ASC").all()})())}),c.ipcMain.on("db-sync:users:get",a=>{p(a,"db-sync:users:get",[],()=>e.prepare("SELECT * FROM users ORDER BY createdAt ASC, username ASC").all())}),c.ipcMain.on("db-sync:users:replaceAll",(a,t=[])=>{p(a,"db-sync:users:replaceAll",[],()=>e.transaction(()=>{e.prepare("DELETE FROM users").run();const n=e.prepare(`
           INSERT INTO users (
             id, username, fullName, role, permissions, active,
             passwordHash, salt, mustChangePassword, createdAt, updatedAt
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `);
-        const now = (/* @__PURE__ */ new Date()).toISOString();
-        for (const user of Array.isArray(users) ? users : []) {
-          stmt.run(
-            user.id ?? crypto.randomUUID(),
-            user.username ?? "",
-            user.fullName ?? "",
-            user.role ?? "user",
-            user.permissions ?? "[]",
-            user.active ? 1 : 0,
-            user.passwordHash ?? null,
-            user.salt ?? null,
-            user.mustChangePassword ? 1 : 0,
-            user.createdAt ?? now,
-            user.updatedAt ?? user.createdAt ?? now
-          );
-        }
-        return db2.prepare("SELECT * FROM users ORDER BY createdAt ASC, username ASC").all();
-      });
-      return replaceAll();
-    });
-  });
-  electron.ipcMain.on("db-sync:product_batches:get", (event) => {
-    replySync(event, "db-sync:product_batches:get", [], () => db2.prepare("SELECT * FROM product_batches ORDER BY purchaseDate ASC, createdAt ASC, id ASC").all());
-  });
-  electron.ipcMain.on("db-sync:product_batches:add", (event, batch) => {
-    replySync(event, "db-sync:product_batches:add", null, () => {
-      const id = batch.id || crypto.randomUUID();
-      const now = (/* @__PURE__ */ new Date()).toISOString();
-      db2.prepare(`
+        `),s=new Date().toISOString();for(const o of Array.isArray(t)?t:[])n.run(o.id??crypto.randomUUID(),o.username??"",o.fullName??"",o.role??"user",o.permissions??"[]",o.active?1:0,o.passwordHash??null,o.salt??null,o.mustChangePassword?1:0,o.createdAt??s,o.updatedAt??o.createdAt??s);return e.prepare("SELECT * FROM users ORDER BY createdAt ASC, username ASC").all()})())}),c.ipcMain.on("db-sync:product_batches:get",a=>{p(a,"db-sync:product_batches:get",[],()=>e.prepare("SELECT * FROM product_batches ORDER BY purchaseDate ASC, createdAt ASC, id ASC").all())}),c.ipcMain.on("db-sync:product_batches:add",(a,t)=>{p(a,"db-sync:product_batches:add",null,()=>{const r=t.id||crypto.randomUUID(),n=new Date().toISOString();return e.prepare(`
         INSERT INTO product_batches (
           id, productId, inventoryType, productName, costPrice, salePrice,
           quantity, remainingQty, purchaseDate, supplier, notes, createdAt, updatedAt
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(
-        id,
-        batch.productId,
-        batch.inventoryType ?? "mobile",
-        batch.productName ?? "Unknown product",
-        batch.costPrice ?? 0,
-        batch.salePrice ?? 0,
-        batch.quantity ?? 0,
-        batch.remainingQty ?? batch.quantity ?? 0,
-        batch.purchaseDate ?? now,
-        batch.supplier ?? null,
-        batch.notes ?? null,
-        batch.createdAt ?? now,
-        batch.updatedAt ?? now
-      );
-      return db2.prepare("SELECT * FROM product_batches WHERE id = ?").get(id);
-    });
-  });
-  electron.ipcMain.on("db-sync:product_batches:update", (event, id, data) => {
-    replySync(event, "db-sync:product_batches:update", null, () => {
-      const { sets, values } = buildUpdateSql(data);
-      if (!sets.length) return db2.prepare("SELECT * FROM product_batches WHERE id = ?").get(id);
-      sets.push("updatedAt = ?");
-      values.push((/* @__PURE__ */ new Date()).toISOString(), id);
-      db2.prepare(`UPDATE product_batches SET ${sets.join(", ")} WHERE id = ?`).run(...values);
-      return db2.prepare("SELECT * FROM product_batches WHERE id = ?").get(id);
-    });
-  });
-  electron.ipcMain.on("db-sync:product_batches:delete", (event, id) => {
-    replySync(event, "db-sync:product_batches:delete", false, () => db2.prepare("DELETE FROM product_batches WHERE id = ?").run(id).changes > 0);
-  });
-  electron.ipcMain.on("db-sync:products:get", (event, source = null) => {
-    replySync(event, "db-sync:products:get", [], () => readProducts(db2, source));
-  });
-  electron.ipcMain.on("db-sync:products:add", (event, product) => {
-    replySync(event, "db-sync:products:add", null, () => {
-      const id = product.id || crypto.randomUUID();
-      const now = (/* @__PURE__ */ new Date()).toISOString();
-      db2.prepare(`
+      `).run(r,t.productId,t.inventoryType??"mobile",t.productName??"Unknown product",t.costPrice??0,t.salePrice??0,t.quantity??0,t.remainingQty??t.quantity??0,t.purchaseDate??n,t.supplier??null,t.notes??null,t.createdAt??n,t.updatedAt??n),e.prepare("SELECT * FROM product_batches WHERE id = ?").get(r)})}),c.ipcMain.on("db-sync:product_batches:update",(a,t,r)=>{p(a,"db-sync:product_batches:update",null,()=>{const{sets:n,values:s}=O(r);return n.length&&(n.push("updatedAt = ?"),s.push(new Date().toISOString(),t),e.prepare(`UPDATE product_batches SET ${n.join(", ")} WHERE id = ?`).run(...s)),e.prepare("SELECT * FROM product_batches WHERE id = ?").get(t)})}),c.ipcMain.on("db-sync:product_batches:delete",(a,t)=>{p(a,"db-sync:product_batches:delete",!1,()=>e.prepare("DELETE FROM product_batches WHERE id = ?").run(t).changes>0)}),c.ipcMain.on("db-sync:products:get",(a,t=null)=>{p(a,"db-sync:products:get",[],()=>It(e,t))}),c.ipcMain.on("db-sync:products:add",(a,t)=>{p(a,"db-sync:products:add",null,()=>{const r=t.id||crypto.randomUUID(),n=new Date().toISOString();return e.prepare(`
         INSERT INTO products (
           id, name, model, barcode, deviceType, category, condition, storage, ram, color,
           brand, description, boxNumber, taxExcluded, quantity, oldCostPrice, newCostPrice,
           salePrice, profitMargin, minStock, supplier, source, warehouseId, serialNumber,
           imei2, processor, isArchived, notes, image, createdAt, updatedAt, deletedAt
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(
-        id,
-        product.name ?? "",
-        product.model ?? null,
-        product.barcode ?? null,
-        product.deviceType ?? null,
-        product.category ?? null,
-        product.condition ?? null,
-        product.storage ?? null,
-        product.ram ?? null,
-        product.color ?? null,
-        product.brand ?? null,
-        product.description ?? null,
-        product.boxNumber ?? null,
-        product.taxExcluded ? 1 : 0,
-        product.quantity ?? 0,
-        product.oldCostPrice ?? 0,
-        product.newCostPrice ?? 0,
-        product.salePrice ?? 0,
-        product.profitMargin ?? 0,
-        product.minStock ?? 0,
-        product.supplier ?? null,
-        product.source ?? null,
-        product.warehouseId ?? null,
-        product.serialNumber ?? null,
-        product.imei2 ?? null,
-        product.processor ?? null,
-        product.isArchived ? 1 : 0,
-        product.notes ?? null,
-        product.image ?? null,
-        product.createdAt ?? now,
-        product.updatedAt ?? now,
-        product.deletedAt ?? null
-      );
-      return db2.prepare("SELECT * FROM products WHERE id = ?").get(id);
-    });
-  });
-  electron.ipcMain.on("db-sync:products:update", (event, id, data) => {
-    replySync(event, "db-sync:products:update", null, () => {
-      const { sets, values } = buildUpdateSql(data);
-      if (!sets.length) return db2.prepare("SELECT * FROM products WHERE id = ?").get(id);
-      sets.push("updatedAt = ?");
-      values.push((/* @__PURE__ */ new Date()).toISOString(), id);
-      db2.prepare(`UPDATE products SET ${sets.join(", ")} WHERE id = ?`).run(...values);
-      return db2.prepare("SELECT * FROM products WHERE id = ?").get(id);
-    });
-  });
-  electron.ipcMain.on("db-sync:products:delete", (event, id) => {
-    replySync(event, "db-sync:products:delete", false, () => db2.prepare("DELETE FROM products WHERE id = ?").run(id).changes > 0);
-  });
-  electron.ipcMain.on("db-sync:accessories:get", (event, inventoryType = null) => {
-    replySync(event, "db-sync:accessories:get", [], () => readAccessories(db2, inventoryType));
-  });
-  electron.ipcMain.on("db-sync:accessories:add", (event, accessory) => {
-    replySync(event, "db-sync:accessories:add", null, () => {
-      const id = accessory.id || crypto.randomUUID();
-      const now = (/* @__PURE__ */ new Date()).toISOString();
-      db2.prepare(`
+      `).run(r,t.name??"",t.model??null,t.barcode??null,t.deviceType??null,t.category??null,t.condition??null,t.storage??null,t.ram??null,t.color??null,t.brand??null,t.description??null,t.boxNumber??null,t.taxExcluded?1:0,t.quantity??0,t.oldCostPrice??0,t.newCostPrice??0,t.salePrice??0,t.profitMargin??0,t.minStock??0,t.supplier??null,t.source??null,t.warehouseId??null,t.serialNumber??null,t.imei2??null,t.processor??null,t.isArchived?1:0,t.notes??null,t.image??null,t.createdAt??n,t.updatedAt??n,t.deletedAt??null),e.prepare("SELECT * FROM products WHERE id = ?").get(r)})}),c.ipcMain.on("db-sync:products:update",(a,t,r)=>{p(a,"db-sync:products:update",null,()=>{const{sets:n,values:s}=O(r);return n.length&&(n.push("updatedAt = ?"),s.push(new Date().toISOString(),t),e.prepare(`UPDATE products SET ${n.join(", ")} WHERE id = ?`).run(...s)),e.prepare("SELECT * FROM products WHERE id = ?").get(t)})}),c.ipcMain.on("db-sync:products:delete",(a,t)=>{p(a,"db-sync:products:delete",!1,()=>e.prepare("DELETE FROM products WHERE id = ?").run(t).changes>0)}),c.ipcMain.on("db-sync:accessories:get",(a,t=null)=>{p(a,"db-sync:accessories:get",[],()=>Rt(e,t))}),c.ipcMain.on("db-sync:accessories:add",(a,t)=>{p(a,"db-sync:accessories:add",null,()=>{const r=t.id||crypto.randomUUID(),n=new Date().toISOString();return e.prepare(`
         INSERT INTO accessories (
           id, warehouseId, inventoryType, name, category, subcategory, model, barcode, quantity,
           oldCostPrice, newCostPrice, costPrice, salePrice, profitMargin, minStock, condition,
           brand, supplier, source, boxNumber, taxExcluded, color, description, isArchived,
           deletedAt, notes, image, createdAt, updatedAt
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(
-        id,
-        accessory.warehouseId ?? null,
-        accessory.inventoryType ?? null,
-        accessory.name ?? "",
-        accessory.category ?? null,
-        accessory.subcategory ?? null,
-        accessory.model ?? null,
-        accessory.barcode ?? null,
-        accessory.quantity ?? 0,
-        accessory.oldCostPrice ?? 0,
-        accessory.newCostPrice ?? accessory.costPrice ?? 0,
-        accessory.costPrice ?? accessory.newCostPrice ?? 0,
-        accessory.salePrice ?? 0,
-        accessory.profitMargin ?? 0,
-        accessory.minStock ?? 0,
-        accessory.condition ?? "new",
-        accessory.brand ?? null,
-        accessory.supplier ?? null,
-        accessory.source ?? null,
-        accessory.boxNumber ?? null,
-        accessory.taxExcluded ? 1 : 0,
-        accessory.color ?? null,
-        accessory.description ?? null,
-        accessory.isArchived ? 1 : 0,
-        accessory.deletedAt ?? null,
-        accessory.notes ?? null,
-        accessory.image ?? null,
-        accessory.createdAt ?? now,
-        accessory.updatedAt ?? now
-      );
-      return db2.prepare("SELECT * FROM accessories WHERE id = ?").get(id);
-    });
-  });
-  electron.ipcMain.on("db-sync:accessories:update", (event, id, data) => {
-    replySync(event, "db-sync:accessories:update", null, () => {
-      const { sets, values } = buildUpdateSql(data);
-      if (!sets.length) return db2.prepare("SELECT * FROM accessories WHERE id = ?").get(id);
-      sets.push("updatedAt = ?");
-      values.push((/* @__PURE__ */ new Date()).toISOString(), id);
-      db2.prepare(`UPDATE accessories SET ${sets.join(", ")} WHERE id = ?`).run(...values);
-      return db2.prepare("SELECT * FROM accessories WHERE id = ?").get(id);
-    });
-  });
-  electron.ipcMain.on("db-sync:accessories:delete", (event, id) => {
-    replySync(event, "db-sync:accessories:delete", false, () => db2.prepare("DELETE FROM accessories WHERE id = ?").run(id).changes > 0);
-  });
-  electron.ipcMain.on("db-sync:warehouse_items:get", (event) => {
-    replySync(event, "db-sync:warehouse_items:get", [], () => db2.prepare("SELECT * FROM warehouse_items ORDER BY createdAt DESC, id DESC").all());
-  });
-  electron.ipcMain.on("db-sync:warehouse_items:add", (event, item) => {
-    replySync(event, "db-sync:warehouse_items:add", null, () => {
-      const id = item.id || crypto.randomUUID();
-      const now = (/* @__PURE__ */ new Date()).toISOString();
-      db2.prepare(`
+      `).run(r,t.warehouseId??null,t.inventoryType??null,t.name??"",t.category??null,t.subcategory??null,t.model??null,t.barcode??null,t.quantity??0,t.oldCostPrice??0,t.newCostPrice??t.costPrice??0,t.costPrice??t.newCostPrice??0,t.salePrice??0,t.profitMargin??0,t.minStock??0,t.condition??"new",t.brand??null,t.supplier??null,t.source??null,t.boxNumber??null,t.taxExcluded?1:0,t.color??null,t.description??null,t.isArchived?1:0,t.deletedAt??null,t.notes??null,t.image??null,t.createdAt??n,t.updatedAt??n),e.prepare("SELECT * FROM accessories WHERE id = ?").get(r)})}),c.ipcMain.on("db-sync:accessories:update",(a,t,r)=>{p(a,"db-sync:accessories:update",null,()=>{const{sets:n,values:s}=O(r);return n.length&&(n.push("updatedAt = ?"),s.push(new Date().toISOString(),t),e.prepare(`UPDATE accessories SET ${n.join(", ")} WHERE id = ?`).run(...s)),e.prepare("SELECT * FROM accessories WHERE id = ?").get(t)})}),c.ipcMain.on("db-sync:accessories:delete",(a,t)=>{p(a,"db-sync:accessories:delete",!1,()=>e.prepare("DELETE FROM accessories WHERE id = ?").run(t).changes>0)}),c.ipcMain.on("db-sync:warehouse_items:get",a=>{p(a,"db-sync:warehouse_items:get",[],()=>e.prepare("SELECT * FROM warehouse_items ORDER BY createdAt DESC, id DESC").all())}),c.ipcMain.on("db-sync:warehouse_items:add",(a,t)=>{p(a,"db-sync:warehouse_items:add",null,()=>{const r=t.id||crypto.randomUUID(),n=new Date().toISOString();return e.prepare(`
         INSERT INTO warehouse_items (
           id, warehouseId, name, category, quantity, costPrice, notes, addedBy, createdAt, updatedAt
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(
-        id,
-        item.warehouseId ?? null,
-        item.name ?? "",
-        item.category ?? "general",
-        item.quantity ?? 0,
-        item.costPrice ?? 0,
-        item.notes ?? null,
-        item.addedBy ?? null,
-        item.createdAt ?? now,
-        item.updatedAt ?? now
-      );
-      return db2.prepare("SELECT * FROM warehouse_items WHERE id = ?").get(id);
-    });
-  });
-  electron.ipcMain.on("db-sync:warehouse_items:update", (event, id, data) => {
-    replySync(event, "db-sync:warehouse_items:update", null, () => {
-      const { sets, values } = buildUpdateSql(data);
-      if (!sets.length) return db2.prepare("SELECT * FROM warehouse_items WHERE id = ?").get(id);
-      sets.push("updatedAt = ?");
-      values.push((/* @__PURE__ */ new Date()).toISOString(), id);
-      db2.prepare(`UPDATE warehouse_items SET ${sets.join(", ")} WHERE id = ?`).run(...values);
-      return db2.prepare("SELECT * FROM warehouse_items WHERE id = ?").get(id);
-    });
-  });
-  electron.ipcMain.on("db-sync:warehouse_items:delete", (event, id) => {
-    replySync(event, "db-sync:warehouse_items:delete", false, () => db2.prepare("DELETE FROM warehouse_items WHERE id = ?").run(id).changes > 0);
-  });
-  electron.ipcMain.on("db-sync:cars:get", (event) => {
-    replySync(event, "db-sync:cars:get", [], () => db2.prepare("SELECT * FROM cars_inventory ORDER BY createdAt DESC, id DESC").all());
-  });
-  electron.ipcMain.on("db-sync:cars:add", (event, car) => {
-    replySync(event, "db-sync:cars:add", null, () => {
-      const id = car.id || crypto.randomUUID();
-      const now = (/* @__PURE__ */ new Date()).toISOString();
-      db2.prepare(`
+      `).run(r,t.warehouseId??null,t.name??"",t.category??"general",t.quantity??0,t.costPrice??0,t.notes??null,t.addedBy??null,t.createdAt??n,t.updatedAt??n),e.prepare("SELECT * FROM warehouse_items WHERE id = ?").get(r)})}),c.ipcMain.on("db-sync:warehouse_items:update",(a,t,r)=>{p(a,"db-sync:warehouse_items:update",null,()=>{const{sets:n,values:s}=O(r);return n.length&&(n.push("updatedAt = ?"),s.push(new Date().toISOString(),t),e.prepare(`UPDATE warehouse_items SET ${n.join(", ")} WHERE id = ?`).run(...s)),e.prepare("SELECT * FROM warehouse_items WHERE id = ?").get(t)})}),c.ipcMain.on("db-sync:warehouse_items:delete",(a,t)=>{p(a,"db-sync:warehouse_items:delete",!1,()=>e.prepare("DELETE FROM warehouse_items WHERE id = ?").run(t).changes>0)}),c.ipcMain.on("db-sync:cars:get",a=>{p(a,"db-sync:cars:get",[],()=>e.prepare("SELECT * FROM cars_inventory ORDER BY createdAt DESC, id DESC").all())}),c.ipcMain.on("db-sync:cars:add",(a,t)=>{p(a,"db-sync:cars:add",null,()=>{const r=t.id||crypto.randomUUID(),n=new Date().toISOString();return e.prepare(`
         INSERT INTO cars_inventory (
           id, name, model, year, color, plateNumber, licenseExpiry, condition, category,
           purchasePrice, salePrice, notes, image, warehouseId, isArchived, deletedAt, createdAt, updatedAt
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(
-        id,
-        car.name ?? "",
-        car.model ?? "",
-        car.year ?? 0,
-        car.color ?? null,
-        car.plateNumber ?? null,
-        car.licenseExpiry ?? null,
-        car.condition ?? "used",
-        car.category ?? null,
-        car.purchasePrice ?? 0,
-        car.salePrice ?? 0,
-        car.notes ?? null,
-        car.image ?? null,
-        car.warehouseId ?? null,
-        car.isArchived ? 1 : 0,
-        car.deletedAt ?? null,
-        car.createdAt ?? now,
-        car.updatedAt ?? now
-      );
-      return db2.prepare("SELECT * FROM cars_inventory WHERE id = ?").get(id);
-    });
-  });
-  electron.ipcMain.on("db-sync:cars:update", (event, id, data) => {
-    replySync(event, "db-sync:cars:update", null, () => {
-      const { sets, values } = buildUpdateSql(data);
-      if (!sets.length) return db2.prepare("SELECT * FROM cars_inventory WHERE id = ?").get(id);
-      sets.push("updatedAt = ?");
-      values.push((/* @__PURE__ */ new Date()).toISOString(), id);
-      db2.prepare(`UPDATE cars_inventory SET ${sets.join(", ")} WHERE id = ?`).run(...values);
-      return db2.prepare("SELECT * FROM cars_inventory WHERE id = ?").get(id);
-    });
-  });
-  electron.ipcMain.on("db-sync:cars:delete", (event, id) => {
-    replySync(event, "db-sync:cars:delete", false, () => db2.prepare("DELETE FROM cars_inventory WHERE id = ?").run(id).changes > 0);
-  });
-  electron.ipcMain.on("db-sync:customers:get", (event) => {
-    replySync(event, "db-sync:customers:get", [], () => db2.prepare("SELECT * FROM customers WHERE COALESCE(isArchived, 0) = 0 AND deletedAt IS NULL ORDER BY name ASC").all());
-  });
-  electron.ipcMain.on("db-sync:customers:add", (event, customer) => {
-    replySync(event, "db-sync:customers:add", null, () => {
-      const id = customer.id || crypto.randomUUID();
-      const now = (/* @__PURE__ */ new Date()).toISOString();
-      db2.prepare(`
+      `).run(r,t.name??"",t.model??"",t.year??0,t.color??null,t.plateNumber??null,t.licenseExpiry??null,t.condition??"used",t.category??null,t.purchasePrice??0,t.salePrice??0,t.notes??null,t.image??null,t.warehouseId??null,t.isArchived?1:0,t.deletedAt??null,t.createdAt??n,t.updatedAt??n),e.prepare("SELECT * FROM cars_inventory WHERE id = ?").get(r)})}),c.ipcMain.on("db-sync:cars:update",(a,t,r)=>{p(a,"db-sync:cars:update",null,()=>{const{sets:n,values:s}=O(r);return n.length&&(n.push("updatedAt = ?"),s.push(new Date().toISOString(),t),e.prepare(`UPDATE cars_inventory SET ${n.join(", ")} WHERE id = ?`).run(...s)),e.prepare("SELECT * FROM cars_inventory WHERE id = ?").get(t)})}),c.ipcMain.on("db-sync:cars:delete",(a,t)=>{p(a,"db-sync:cars:delete",!1,()=>e.prepare("DELETE FROM cars_inventory WHERE id = ?").run(t).changes>0)}),c.ipcMain.on("db-sync:customers:get",a=>{p(a,"db-sync:customers:get",[],()=>e.prepare("SELECT * FROM customers WHERE COALESCE(isArchived, 0) = 0 AND deletedAt IS NULL ORDER BY name ASC").all())}),c.ipcMain.on("db-sync:customers:add",(a,t)=>{p(a,"db-sync:customers:add",null,()=>{const r=t.id||crypto.randomUUID(),n=new Date().toISOString();return e.prepare(`
         INSERT INTO customers (id, name, phone, email, address, nationalId, notes, totalPurchases, balance, createdAt, updatedAt)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(
-        id,
-        customer.name,
-        customer.phone ?? null,
-        customer.email ?? null,
-        customer.address ?? null,
-        customer.nationalId ?? null,
-        customer.notes ?? null,
-        customer.totalPurchases ?? 0,
-        customer.balance ?? 0,
-        customer.createdAt || now,
-        customer.updatedAt || now
-      );
-      return db2.prepare("SELECT * FROM customers WHERE id = ?").get(id);
-    });
-  });
-  electron.ipcMain.on("db-sync:customers:update", (event, id, data) => {
-    replySync(event, "db-sync:customers:update", null, () => {
-      const { sets, values } = buildUpdateSql(data);
-      if (!sets.length) return db2.prepare("SELECT * FROM customers WHERE id = ?").get(id);
-      sets.push("updatedAt = ?");
-      values.push((/* @__PURE__ */ new Date()).toISOString(), id);
-      db2.prepare(`UPDATE customers SET ${sets.join(", ")} WHERE id = ?`).run(...values);
-      return db2.prepare("SELECT * FROM customers WHERE id = ?").get(id);
-    });
-  });
-  electron.ipcMain.on("db-sync:customers:delete", (event, id) => {
-    replySync(event, "db-sync:customers:delete", false, () => db2.prepare("DELETE FROM customers WHERE id = ?").run(id).changes > 0);
-  });
-  electron.ipcMain.on("db-sync:expenses:get", (event) => {
-    replySync(event, "db-sync:expenses:get", [], () => db2.prepare("SELECT * FROM expenses ORDER BY date DESC, createdAt DESC").all());
-  });
-  electron.ipcMain.on("db-sync:expenses:add", (event, expense) => {
-    replySync(event, "db-sync:expenses:add", null, () => {
-      const id = expense.id || crypto.randomUUID();
-      const now = (/* @__PURE__ */ new Date()).toISOString();
-      db2.prepare(`
+      `).run(r,t.name,t.phone??null,t.email??null,t.address??null,t.nationalId??null,t.notes??null,t.totalPurchases??0,t.balance??0,t.createdAt||n,t.updatedAt||n),e.prepare("SELECT * FROM customers WHERE id = ?").get(r)})}),c.ipcMain.on("db-sync:customers:update",(a,t,r)=>{p(a,"db-sync:customers:update",null,()=>{const{sets:n,values:s}=O(r);return n.length&&(n.push("updatedAt = ?"),s.push(new Date().toISOString(),t),e.prepare(`UPDATE customers SET ${n.join(", ")} WHERE id = ?`).run(...s)),e.prepare("SELECT * FROM customers WHERE id = ?").get(t)})}),c.ipcMain.on("db-sync:customers:delete",(a,t)=>{p(a,"db-sync:customers:delete",!1,()=>e.prepare("DELETE FROM customers WHERE id = ?").run(t).changes>0)}),c.ipcMain.on("db-sync:expenses:get",a=>{p(a,"db-sync:expenses:get",[],()=>e.prepare("SELECT * FROM expenses ORDER BY date DESC, createdAt DESC").all())}),c.ipcMain.on("db-sync:expenses:add",(a,t)=>{p(a,"db-sync:expenses:add",null,()=>{const r=t.id||crypto.randomUUID(),n=new Date().toISOString();return e.prepare(`
         INSERT INTO expenses (id, category, description, amount, date, paymentMethod, employee, notes, createdAt, updatedAt)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(
-        id,
-        expense.category,
-        expense.description ?? null,
-        expense.amount ?? 0,
-        expense.date,
-        expense.paymentMethod ?? "cash",
-        expense.employee ?? null,
-        expense.notes ?? null,
-        expense.createdAt || now,
-        expense.updatedAt || now
-      );
-      return db2.prepare("SELECT * FROM expenses WHERE id = ?").get(id);
-    });
-  });
-  electron.ipcMain.on("db-sync:expenses:update", (event, id, data) => {
-    replySync(event, "db-sync:expenses:update", null, () => {
-      const { sets, values } = buildUpdateSql(data);
-      if (!sets.length) return db2.prepare("SELECT * FROM expenses WHERE id = ?").get(id);
-      sets.push("updatedAt = ?");
-      values.push((/* @__PURE__ */ new Date()).toISOString(), id);
-      db2.prepare(`UPDATE expenses SET ${sets.join(", ")} WHERE id = ?`).run(...values);
-      return db2.prepare("SELECT * FROM expenses WHERE id = ?").get(id);
-    });
-  });
-  electron.ipcMain.on("db-sync:expenses:delete", (event, id) => {
-    replySync(event, "db-sync:expenses:delete", false, () => db2.prepare("DELETE FROM expenses WHERE id = ?").run(id).changes > 0);
-  });
-  electron.ipcMain.on("db-sync:blacklist:get", (event) => {
-    replySync(event, "db-sync:blacklist:get", [], () => db2.prepare("SELECT * FROM blacklist ORDER BY createdAt DESC, updatedAt DESC").all());
-  });
-  electron.ipcMain.on("db-sync:blacklist:add", (event, entry) => {
-    replySync(event, "db-sync:blacklist:add", null, () => {
-      const id = entry.id || crypto.randomUUID();
-      const now = (/* @__PURE__ */ new Date()).toISOString();
-      db2.prepare(`
+      `).run(r,t.category,t.description??null,t.amount??0,t.date,t.paymentMethod??"cash",t.employee??null,t.notes??null,t.createdAt||n,t.updatedAt||n),e.prepare("SELECT * FROM expenses WHERE id = ?").get(r)})}),c.ipcMain.on("db-sync:expenses:update",(a,t,r)=>{p(a,"db-sync:expenses:update",null,()=>{const{sets:n,values:s}=O(r);return n.length&&(n.push("updatedAt = ?"),s.push(new Date().toISOString(),t),e.prepare(`UPDATE expenses SET ${n.join(", ")} WHERE id = ?`).run(...s)),e.prepare("SELECT * FROM expenses WHERE id = ?").get(t)})}),c.ipcMain.on("db-sync:expenses:delete",(a,t)=>{p(a,"db-sync:expenses:delete",!1,()=>e.prepare("DELETE FROM expenses WHERE id = ?").run(t).changes>0)}),c.ipcMain.on("db-sync:blacklist:get",a=>{p(a,"db-sync:blacklist:get",[],()=>e.prepare("SELECT * FROM blacklist ORDER BY createdAt DESC, updatedAt DESC").all())}),c.ipcMain.on("db-sync:blacklist:add",(a,t)=>{p(a,"db-sync:blacklist:add",null,()=>{const r=t.id||crypto.randomUUID(),n=new Date().toISOString();return e.prepare(`
         INSERT INTO blacklist (
           id, imei, deviceName, ownerName, ownerPhone, phone, status, reportedDate,
           nationalId, reason, notes, addedBy, createdBy, name, createdAt, updatedAt
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(
-        id,
-        entry.imei ?? null,
-        entry.deviceName,
-        entry.ownerName ?? null,
-        entry.ownerPhone ?? null,
-        entry.ownerPhone ?? null,
-        entry.status ?? "active",
-        entry.reportedDate ?? now.slice(0, 10),
-        entry.imei ?? null,
-        entry.reason,
-        entry.notes ?? null,
-        entry.createdBy ?? null,
-        entry.createdBy ?? null,
-        entry.deviceName,
-        entry.createdAt || now,
-        entry.updatedAt || now
-      );
-      return db2.prepare("SELECT * FROM blacklist WHERE id = ?").get(id);
-    });
-  });
-  electron.ipcMain.on("db-sync:blacklist:update", (event, id, data) => {
-    replySync(event, "db-sync:blacklist:update", null, () => {
-      const updates = { ...data };
-      if (Object.prototype.hasOwnProperty.call(updates, "ownerPhone") && !Object.prototype.hasOwnProperty.call(updates, "phone")) {
-        updates.phone = updates.ownerPhone;
-      }
-      if (Object.prototype.hasOwnProperty.call(updates, "imei") && !Object.prototype.hasOwnProperty.call(updates, "nationalId")) {
-        updates.nationalId = updates.imei;
-      }
-      if (Object.prototype.hasOwnProperty.call(updates, "deviceName") && !Object.prototype.hasOwnProperty.call(updates, "name")) {
-        updates.name = updates.deviceName;
-      }
-      if (Object.prototype.hasOwnProperty.call(updates, "createdBy") && !Object.prototype.hasOwnProperty.call(updates, "addedBy")) {
-        updates.addedBy = updates.createdBy;
-      }
-      const { sets, values } = buildUpdateSql(updates);
-      if (!sets.length) return db2.prepare("SELECT * FROM blacklist WHERE id = ?").get(id);
-      sets.push("updatedAt = ?");
-      values.push((/* @__PURE__ */ new Date()).toISOString(), id);
-      db2.prepare(`UPDATE blacklist SET ${sets.join(", ")} WHERE id = ?`).run(...values);
-      return db2.prepare("SELECT * FROM blacklist WHERE id = ?").get(id);
-    });
-  });
-  electron.ipcMain.on("db-sync:blacklist:delete", (event, id) => {
-    replySync(event, "db-sync:blacklist:delete", false, () => db2.prepare("DELETE FROM blacklist WHERE id = ?").run(id).changes > 0);
-  });
-  electron.ipcMain.on("db-sync:damaged_items:get", (event) => {
-    replySync(event, "db-sync:damaged_items:get", [], () => db2.prepare("SELECT * FROM damaged_items ORDER BY date DESC, createdAt DESC").all());
-  });
-  electron.ipcMain.on("db-sync:damaged_items:add", (event, item) => {
-    replySync(event, "db-sync:damaged_items:add", null, () => {
-      const id = item.id || crypto.randomUUID();
-      db2.prepare(`
+      `).run(r,t.imei??null,t.deviceName,t.ownerName??null,t.ownerPhone??null,t.ownerPhone??null,t.status??"active",t.reportedDate??n.slice(0,10),t.imei??null,t.reason,t.notes??null,t.createdBy??null,t.createdBy??null,t.deviceName,t.createdAt||n,t.updatedAt||n),e.prepare("SELECT * FROM blacklist WHERE id = ?").get(r)})}),c.ipcMain.on("db-sync:blacklist:update",(a,t,r)=>{p(a,"db-sync:blacklist:update",null,()=>{const n={...r};Object.prototype.hasOwnProperty.call(n,"ownerPhone")&&!Object.prototype.hasOwnProperty.call(n,"phone")&&(n.phone=n.ownerPhone),Object.prototype.hasOwnProperty.call(n,"imei")&&!Object.prototype.hasOwnProperty.call(n,"nationalId")&&(n.nationalId=n.imei),Object.prototype.hasOwnProperty.call(n,"deviceName")&&!Object.prototype.hasOwnProperty.call(n,"name")&&(n.name=n.deviceName),Object.prototype.hasOwnProperty.call(n,"createdBy")&&!Object.prototype.hasOwnProperty.call(n,"addedBy")&&(n.addedBy=n.createdBy);const{sets:s,values:o}=O(n);return s.length&&(s.push("updatedAt = ?"),o.push(new Date().toISOString(),t),e.prepare(`UPDATE blacklist SET ${s.join(", ")} WHERE id = ?`).run(...o)),e.prepare("SELECT * FROM blacklist WHERE id = ?").get(t)})}),c.ipcMain.on("db-sync:blacklist:delete",(a,t)=>{p(a,"db-sync:blacklist:delete",!1,()=>e.prepare("DELETE FROM blacklist WHERE id = ?").run(t).changes>0)}),c.ipcMain.on("db-sync:damaged_items:get",a=>{p(a,"db-sync:damaged_items:get",[],()=>e.prepare("SELECT * FROM damaged_items ORDER BY date DESC, createdAt DESC").all())}),c.ipcMain.on("db-sync:damaged_items:add",(a,t)=>{p(a,"db-sync:damaged_items:add",null,()=>{const r=t.id||crypto.randomUUID();return e.prepare(`
         INSERT INTO damaged_items (
           id, productName, productId, inventoryType, quantity, costPrice, reason, estimatedLoss, reportedBy, date, notes, createdAt
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(
-        id,
-        item.productName ?? item.name,
-        item.productId ?? null,
-        item.inventoryType ?? null,
-        item.quantity ?? 1,
-        item.costPrice ?? 0,
-        item.reason ?? null,
-        item.estimatedLoss ?? 0,
-        item.reportedBy ?? null,
-        item.date,
-        item.notes ?? null,
-        item.createdAt || (/* @__PURE__ */ new Date()).toISOString()
-      );
-      return db2.prepare("SELECT * FROM damaged_items WHERE id = ?").get(id);
-    });
-  });
-  electron.ipcMain.on("db-sync:damaged_items:update", (event, id, data) => {
-    replySync(event, "db-sync:damaged_items:update", null, () => {
-      const { sets, values } = buildUpdateSql(data);
-      if (!sets.length) return db2.prepare("SELECT * FROM damaged_items WHERE id = ?").get(id);
-      values.push(id);
-      db2.prepare(`UPDATE damaged_items SET ${sets.join(", ")} WHERE id = ?`).run(...values);
-      return db2.prepare("SELECT * FROM damaged_items WHERE id = ?").get(id);
-    });
-  });
-  electron.ipcMain.on("db-sync:damaged_items:delete", (event, id) => {
-    replySync(event, "db-sync:damaged_items:delete", false, () => db2.prepare("DELETE FROM damaged_items WHERE id = ?").run(id).changes > 0);
-  });
-  electron.ipcMain.on("db-sync:other_revenue:get", (event) => {
-    replySync(event, "db-sync:other_revenue:get", [], () => db2.prepare("SELECT * FROM other_revenue ORDER BY date DESC, createdAt DESC").all());
-  });
-  electron.ipcMain.on("db-sync:other_revenue:add", (event, revenue) => {
-    replySync(event, "db-sync:other_revenue:add", null, () => {
-      const id = revenue.id || crypto.randomUUID();
-      const now = (/* @__PURE__ */ new Date()).toISOString();
-      db2.prepare(`
+      `).run(r,t.productName??t.name,t.productId??null,t.inventoryType??null,t.quantity??1,t.costPrice??0,t.reason??null,t.estimatedLoss??0,t.reportedBy??null,t.date,t.notes??null,t.createdAt||new Date().toISOString()),e.prepare("SELECT * FROM damaged_items WHERE id = ?").get(r)})}),c.ipcMain.on("db-sync:damaged_items:update",(a,t,r)=>{p(a,"db-sync:damaged_items:update",null,()=>{const{sets:n,values:s}=O(r);return n.length&&(s.push(t),e.prepare(`UPDATE damaged_items SET ${n.join(", ")} WHERE id = ?`).run(...s)),e.prepare("SELECT * FROM damaged_items WHERE id = ?").get(t)})}),c.ipcMain.on("db-sync:damaged_items:delete",(a,t)=>{p(a,"db-sync:damaged_items:delete",!1,()=>e.prepare("DELETE FROM damaged_items WHERE id = ?").run(t).changes>0)}),c.ipcMain.on("db-sync:other_revenue:get",a=>{p(a,"db-sync:other_revenue:get",[],()=>e.prepare("SELECT * FROM other_revenue ORDER BY date DESC, createdAt DESC").all())}),c.ipcMain.on("db-sync:other_revenue:add",(a,t)=>{p(a,"db-sync:other_revenue:add",null,()=>{const r=t.id||crypto.randomUUID(),n=new Date().toISOString();return e.prepare(`
         INSERT INTO other_revenue (id, source, description, amount, date, paymentMethod, addedBy, notes, createdAt, updatedAt)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(
-        id,
-        revenue.source,
-        revenue.description ?? null,
-        revenue.amount ?? 0,
-        revenue.date,
-        revenue.paymentMethod ?? "cash",
-        revenue.addedBy ?? null,
-        revenue.notes ?? null,
-        revenue.createdAt || now,
-        revenue.updatedAt || now
-      );
-      return db2.prepare("SELECT * FROM other_revenue WHERE id = ?").get(id);
-    });
-  });
-  electron.ipcMain.on("db-sync:other_revenue:update", (event, id, data) => {
-    replySync(event, "db-sync:other_revenue:update", null, () => {
-      const { sets, values } = buildUpdateSql(data);
-      if (!sets.length) return db2.prepare("SELECT * FROM other_revenue WHERE id = ?").get(id);
-      sets.push("updatedAt = ?");
-      values.push((/* @__PURE__ */ new Date()).toISOString(), id);
-      db2.prepare(`UPDATE other_revenue SET ${sets.join(", ")} WHERE id = ?`).run(...values);
-      return db2.prepare("SELECT * FROM other_revenue WHERE id = ?").get(id);
-    });
-  });
-  electron.ipcMain.on("db-sync:other_revenue:delete", (event, id) => {
-    replySync(event, "db-sync:other_revenue:delete", false, () => db2.prepare("DELETE FROM other_revenue WHERE id = ?").run(id).changes > 0);
-  });
-  electron.ipcMain.on("db-sync:reminders:get", (event) => {
-    replySync(event, "db-sync:reminders:get", [], () => db2.prepare("SELECT * FROM reminders ORDER BY dueDate ASC, reminderTime ASC").all());
-  });
-  electron.ipcMain.on("db-sync:reminders:add", (event, reminder) => {
-    replySync(event, "db-sync:reminders:add", null, () => {
-      const id = reminder.id || crypto.randomUUID();
-      const now = (/* @__PURE__ */ new Date()).toISOString();
-      db2.prepare(`
+      `).run(r,t.source,t.description??null,t.amount??0,t.date,t.paymentMethod??"cash",t.addedBy??null,t.notes??null,t.createdAt||n,t.updatedAt||n),e.prepare("SELECT * FROM other_revenue WHERE id = ?").get(r)})}),c.ipcMain.on("db-sync:other_revenue:update",(a,t,r)=>{p(a,"db-sync:other_revenue:update",null,()=>{const{sets:n,values:s}=O(r);return n.length&&(n.push("updatedAt = ?"),s.push(new Date().toISOString(),t),e.prepare(`UPDATE other_revenue SET ${n.join(", ")} WHERE id = ?`).run(...s)),e.prepare("SELECT * FROM other_revenue WHERE id = ?").get(t)})}),c.ipcMain.on("db-sync:other_revenue:delete",(a,t)=>{p(a,"db-sync:other_revenue:delete",!1,()=>e.prepare("DELETE FROM other_revenue WHERE id = ?").run(t).changes>0)}),c.ipcMain.on("db-sync:reminders:get",a=>{p(a,"db-sync:reminders:get",[],()=>e.prepare("SELECT * FROM reminders ORDER BY dueDate ASC, reminderTime ASC").all())}),c.ipcMain.on("db-sync:reminders:add",(a,t)=>{p(a,"db-sync:reminders:add",null,()=>{const r=t.id||crypto.randomUUID(),n=new Date().toISOString();return e.prepare(`
         INSERT INTO reminders (
           id, title, description, dueDate, reminderTime, priority, status, completed, completedAt, recurring, category, notes, createdAt, updatedAt
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(
-        id,
-        reminder.title,
-        reminder.description ?? null,
-        reminder.dueDate,
-        reminder.reminderTime ?? null,
-        reminder.priority ?? "medium",
-        reminder.status ?? "pending",
-        reminder.completed ?? 0,
-        reminder.completedAt ?? null,
-        reminder.recurring ?? null,
-        reminder.category ?? null,
-        reminder.notes ?? null,
-        reminder.createdAt || now,
-        reminder.updatedAt || now
-      );
-      return db2.prepare("SELECT * FROM reminders WHERE id = ?").get(id);
-    });
-  });
-  electron.ipcMain.on("db-sync:reminders:update", (event, id, data) => {
-    replySync(event, "db-sync:reminders:update", null, () => {
-      const { sets, values } = buildUpdateSql(data);
-      if (!sets.length) return db2.prepare("SELECT * FROM reminders WHERE id = ?").get(id);
-      sets.push("updatedAt = ?");
-      values.push((/* @__PURE__ */ new Date()).toISOString(), id);
-      db2.prepare(`UPDATE reminders SET ${sets.join(", ")} WHERE id = ?`).run(...values);
-      return db2.prepare("SELECT * FROM reminders WHERE id = ?").get(id);
-    });
-  });
-  electron.ipcMain.on("db-sync:reminders:delete", (event, id) => {
-    replySync(event, "db-sync:reminders:delete", false, () => db2.prepare("DELETE FROM reminders WHERE id = ?").run(id).changes > 0);
-  });
-  electron.ipcMain.on("db-sync:suppliers:get", (event) => {
-    replySync(event, "db-sync:suppliers:get", [], () => db2.prepare("SELECT * FROM suppliers WHERE COALESCE(isArchived, 0) = 0 AND deletedAt IS NULL ORDER BY name ASC").all());
-  });
-  electron.ipcMain.on("db-sync:suppliers:add", (event, supplier) => {
-    replySync(event, "db-sync:suppliers:add", null, () => {
-      const id = supplier.id || crypto.randomUUID();
-      const now = (/* @__PURE__ */ new Date()).toISOString();
-      db2.prepare(`
+      `).run(r,t.title,t.description??null,t.dueDate,t.reminderTime??null,t.priority??"medium",t.status??"pending",t.completed??0,t.completedAt??null,t.recurring??null,t.category??null,t.notes??null,t.createdAt||n,t.updatedAt||n),e.prepare("SELECT * FROM reminders WHERE id = ?").get(r)})}),c.ipcMain.on("db-sync:reminders:update",(a,t,r)=>{p(a,"db-sync:reminders:update",null,()=>{const{sets:n,values:s}=O(r);return n.length&&(n.push("updatedAt = ?"),s.push(new Date().toISOString(),t),e.prepare(`UPDATE reminders SET ${n.join(", ")} WHERE id = ?`).run(...s)),e.prepare("SELECT * FROM reminders WHERE id = ?").get(t)})}),c.ipcMain.on("db-sync:reminders:delete",(a,t)=>{p(a,"db-sync:reminders:delete",!1,()=>e.prepare("DELETE FROM reminders WHERE id = ?").run(t).changes>0)}),c.ipcMain.on("db-sync:suppliers:get",a=>{p(a,"db-sync:suppliers:get",[],()=>e.prepare("SELECT * FROM suppliers WHERE COALESCE(isArchived, 0) = 0 AND deletedAt IS NULL ORDER BY name ASC").all())}),c.ipcMain.on("db-sync:suppliers:add",(a,t)=>{p(a,"db-sync:suppliers:add",null,()=>{const r=t.id||crypto.randomUUID(),n=new Date().toISOString();return e.prepare(`
         INSERT INTO suppliers (id, name, phone, email, address, category, balance, notes, active, createdAt, updatedAt)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(
-        id,
-        supplier.name,
-        supplier.phone ?? null,
-        supplier.email ?? null,
-        supplier.address ?? null,
-        supplier.category ?? null,
-        supplier.balance ?? 0,
-        supplier.notes ?? null,
-        supplier.active ?? 1,
-        supplier.createdAt || now,
-        supplier.updatedAt || now
-      );
-      return db2.prepare("SELECT * FROM suppliers WHERE id = ?").get(id);
-    });
-  });
-  electron.ipcMain.on("db-sync:suppliers:update", (event, id, data) => {
-    replySync(event, "db-sync:suppliers:update", null, () => {
-      const { sets, values } = buildUpdateSql(data);
-      if (!sets.length) return db2.prepare("SELECT * FROM suppliers WHERE id = ?").get(id);
-      sets.push("updatedAt = ?");
-      values.push((/* @__PURE__ */ new Date()).toISOString(), id);
-      db2.prepare(`UPDATE suppliers SET ${sets.join(", ")} WHERE id = ?`).run(...values);
-      return db2.prepare("SELECT * FROM suppliers WHERE id = ?").get(id);
-    });
-  });
-  electron.ipcMain.on("db-sync:suppliers:delete", (event, id) => {
-    replySync(event, "db-sync:suppliers:delete", false, () => db2.prepare("DELETE FROM suppliers WHERE id = ?").run(id).changes > 0);
-  });
-  electron.ipcMain.on("db-sync:supplier_transactions:get", (event, supplierId) => {
-    replySync(event, "db-sync:supplier_transactions:get", [], () => {
-      if (supplierId) {
-        return db2.prepare("SELECT * FROM supplier_transactions WHERE supplierId = ? ORDER BY createdAt DESC").all(supplierId);
-      }
-      return db2.prepare("SELECT * FROM supplier_transactions ORDER BY createdAt DESC").all();
-    });
-  });
-  electron.ipcMain.on("db-sync:supplier_transactions:add", (event, transaction) => {
-    replySync(event, "db-sync:supplier_transactions:add", null, () => {
-      const persistTransaction = db2.transaction(() => {
-        const supplier = db2.prepare("SELECT * FROM suppliers WHERE id = ?").get(transaction.supplierId);
-        if (!supplier) throw new Error("Supplier not found");
-        const id = transaction.id || crypto.randomUUID();
-        const now = transaction.createdAt || (/* @__PURE__ */ new Date()).toISOString();
-        const amount = Number(transaction.amount ?? 0);
-        const balanceBefore = Number(supplier.balance ?? 0);
-        const delta = transaction.type === "purchase" ? amount : -amount;
-        const balanceAfter = balanceBefore + delta;
-        db2.prepare(`
+      `).run(r,t.name,t.phone??null,t.email??null,t.address??null,t.category??null,t.balance??0,t.notes??null,t.active??1,t.createdAt||n,t.updatedAt||n),e.prepare("SELECT * FROM suppliers WHERE id = ?").get(r)})}),c.ipcMain.on("db-sync:suppliers:update",(a,t,r)=>{p(a,"db-sync:suppliers:update",null,()=>{const{sets:n,values:s}=O(r);return n.length&&(n.push("updatedAt = ?"),s.push(new Date().toISOString(),t),e.prepare(`UPDATE suppliers SET ${n.join(", ")} WHERE id = ?`).run(...s)),e.prepare("SELECT * FROM suppliers WHERE id = ?").get(t)})}),c.ipcMain.on("db-sync:suppliers:delete",(a,t)=>{p(a,"db-sync:suppliers:delete",!1,()=>e.prepare("DELETE FROM suppliers WHERE id = ?").run(t).changes>0)}),c.ipcMain.on("db-sync:supplier_transactions:get",(a,t)=>{p(a,"db-sync:supplier_transactions:get",[],()=>t?e.prepare("SELECT * FROM supplier_transactions WHERE supplierId = ? ORDER BY createdAt DESC").all(t):e.prepare("SELECT * FROM supplier_transactions ORDER BY createdAt DESC").all())}),c.ipcMain.on("db-sync:supplier_transactions:add",(a,t)=>{p(a,"db-sync:supplier_transactions:add",null,()=>e.transaction(()=>{const n=e.prepare("SELECT * FROM suppliers WHERE id = ?").get(t.supplierId);if(!n)throw new Error("Supplier not found");const s=t.id||crypto.randomUUID(),o=t.createdAt||new Date().toISOString(),d=Number(t.amount??0),E=Number(n.balance??0),m=t.type==="purchase"?d:-d,S=E+m;return e.prepare(`
           INSERT INTO supplier_transactions (
             id, supplierId, supplierName, type, amount, balanceBefore, balanceAfter, notes, createdBy, createdAt
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(
-          id,
-          transaction.supplierId,
-          transaction.supplierName ?? supplier.name ?? null,
-          transaction.type,
-          amount,
-          balanceBefore,
-          balanceAfter,
-          transaction.notes ?? null,
-          transaction.createdBy ?? null,
-          now
-        );
-        db2.prepare("UPDATE suppliers SET balance = ?, updatedAt = ? WHERE id = ?").run(balanceAfter, (/* @__PURE__ */ new Date()).toISOString(), transaction.supplierId);
-        return db2.prepare("SELECT * FROM supplier_transactions WHERE id = ?").get(id);
-      });
-      return persistTransaction();
-    });
-  });
-  electron.ipcMain.on("db-sync:employees:get", (event) => {
-    replySync(event, "db-sync:employees:get", [], () => db2.prepare("SELECT * FROM employees WHERE COALESCE(isArchived, 0) = 0 AND deletedAt IS NULL ORDER BY name ASC").all());
-  });
-  electron.ipcMain.on("db-sync:employees:add", (event, employee) => {
-    replySync(event, "db-sync:employees:add", null, () => {
-      const id = employee.id || crypto.randomUUID();
-      const now = (/* @__PURE__ */ new Date()).toISOString();
-      db2.prepare(`
+        `).run(s,t.supplierId,t.supplierName??n.name??null,t.type,d,E,S,t.notes??null,t.createdBy??null,o),e.prepare("UPDATE suppliers SET balance = ?, updatedAt = ? WHERE id = ?").run(S,new Date().toISOString(),t.supplierId),e.prepare("SELECT * FROM supplier_transactions WHERE id = ?").get(s)})())}),c.ipcMain.on("db-sync:employees:get",a=>{p(a,"db-sync:employees:get",[],()=>e.prepare("SELECT * FROM employees WHERE COALESCE(isArchived, 0) = 0 AND deletedAt IS NULL ORDER BY name ASC").all())}),c.ipcMain.on("db-sync:employees:add",(a,t)=>{p(a,"db-sync:employees:add",null,()=>{const r=t.id||crypto.randomUUID(),n=new Date().toISOString();return e.prepare(`
         INSERT INTO employees (id, name, phone, role, salary, commissionRate, hireDate, active, notes, createdAt, updatedAt)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(
-        id,
-        employee.name,
-        employee.phone ?? null,
-        employee.role ?? null,
-        employee.salary ?? 0,
-        employee.commissionRate ?? 0,
-        employee.hireDate ?? null,
-        employee.active ?? 1,
-        employee.notes ?? null,
-        employee.createdAt || now,
-        employee.updatedAt || now
-      );
-      return db2.prepare("SELECT * FROM employees WHERE id = ?").get(id);
-    });
-  });
-  electron.ipcMain.on("db-sync:employees:update", (event, id, data) => {
-    replySync(event, "db-sync:employees:update", null, () => {
-      const { sets, values } = buildUpdateSql(data);
-      if (!sets.length) return db2.prepare("SELECT * FROM employees WHERE id = ?").get(id);
-      sets.push("updatedAt = ?");
-      values.push((/* @__PURE__ */ new Date()).toISOString(), id);
-      db2.prepare(`UPDATE employees SET ${sets.join(", ")} WHERE id = ?`).run(...values);
-      return db2.prepare("SELECT * FROM employees WHERE id = ?").get(id);
-    });
-  });
-  electron.ipcMain.on("db-sync:employees:delete", (event, id) => {
-    replySync(event, "db-sync:employees:delete", false, () => db2.prepare("DELETE FROM employees WHERE id = ?").run(id).changes > 0);
-  });
-  electron.ipcMain.on("db-sync:employee_salaries:get", (event, employeeId) => {
-    replySync(event, "db-sync:employee_salaries:get", [], () => {
-      if (employeeId) {
-        return db2.prepare("SELECT * FROM employee_salaries WHERE employeeId = ? ORDER BY month DESC, paidAt DESC, createdAt DESC").all(employeeId);
-      }
-      return db2.prepare("SELECT * FROM employee_salaries ORDER BY month DESC, paidAt DESC, createdAt DESC").all();
-    });
-  });
-  electron.ipcMain.on("db-sync:employee_salaries:add", (event, salary) => {
-    replySync(event, "db-sync:employee_salaries:add", null, () => {
-      const id = salary.id || crypto.randomUUID();
-      const createdAt = salary.createdAt || salary.paidAt || (/* @__PURE__ */ new Date()).toISOString();
-      db2.prepare(`
+      `).run(r,t.name,t.phone??null,t.role??null,t.salary??0,t.commissionRate??0,t.hireDate??null,t.active??1,t.notes??null,t.createdAt||n,t.updatedAt||n),e.prepare("SELECT * FROM employees WHERE id = ?").get(r)})}),c.ipcMain.on("db-sync:employees:update",(a,t,r)=>{p(a,"db-sync:employees:update",null,()=>{const{sets:n,values:s}=O(r);return n.length&&(n.push("updatedAt = ?"),s.push(new Date().toISOString(),t),e.prepare(`UPDATE employees SET ${n.join(", ")} WHERE id = ?`).run(...s)),e.prepare("SELECT * FROM employees WHERE id = ?").get(t)})}),c.ipcMain.on("db-sync:employees:delete",(a,t)=>{p(a,"db-sync:employees:delete",!1,()=>e.prepare("DELETE FROM employees WHERE id = ?").run(t).changes>0)}),c.ipcMain.on("db-sync:employee_salaries:get",(a,t)=>{p(a,"db-sync:employee_salaries:get",[],()=>t?e.prepare("SELECT * FROM employee_salaries WHERE employeeId = ? ORDER BY month DESC, paidAt DESC, createdAt DESC").all(t):e.prepare("SELECT * FROM employee_salaries ORDER BY month DESC, paidAt DESC, createdAt DESC").all())}),c.ipcMain.on("db-sync:employee_salaries:add",(a,t)=>{p(a,"db-sync:employee_salaries:add",null,()=>{const r=t.id||crypto.randomUUID(),n=t.createdAt||t.paidAt||new Date().toISOString();return e.prepare(`
         INSERT INTO employee_salaries (
           id, employeeId, employeeName, month, baseSalary, commission, bonus, deductions, advanceDeducted,
           netSalary, paid, paidAt, walletId, notes, createdAt
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(
-        id,
-        salary.employeeId,
-        salary.employeeName ?? null,
-        salary.month,
-        salary.baseSalary ?? 0,
-        salary.commission ?? 0,
-        salary.bonus ?? 0,
-        salary.deductions ?? 0,
-        salary.advanceDeducted ?? 0,
-        salary.netSalary ?? 0,
-        salary.paid ?? 1,
-        salary.paidAt ?? createdAt,
-        salary.walletId ?? null,
-        salary.notes ?? null,
-        createdAt
-      );
-      return db2.prepare("SELECT * FROM employee_salaries WHERE id = ?").get(id);
-    });
-  });
-  electron.ipcMain.on("db-sync:employee_salaries:update", (event, id, data) => {
-    replySync(event, "db-sync:employee_salaries:update", null, () => {
-      const { sets, values } = buildUpdateSql(data);
-      if (!sets.length) return db2.prepare("SELECT * FROM employee_salaries WHERE id = ?").get(id);
-      values.push(id);
-      db2.prepare(`UPDATE employee_salaries SET ${sets.join(", ")} WHERE id = ?`).run(...values);
-      return db2.prepare("SELECT * FROM employee_salaries WHERE id = ?").get(id);
-    });
-  });
-  electron.ipcMain.on("db-sync:employee_salaries:delete", (event, id) => {
-    replySync(event, "db-sync:employee_salaries:delete", false, () => db2.prepare("DELETE FROM employee_salaries WHERE id = ?").run(id).changes > 0);
-  });
-  electron.ipcMain.on("db-sync:employee_advances:get", (event, employeeId) => {
-    replySync(event, "db-sync:employee_advances:get", [], () => {
-      if (employeeId) {
-        return db2.prepare("SELECT * FROM employee_advances WHERE employeeId = ? ORDER BY date DESC, createdAt DESC").all(employeeId);
-      }
-      return db2.prepare("SELECT * FROM employee_advances ORDER BY date DESC, createdAt DESC").all();
-    });
-  });
-  electron.ipcMain.on("db-sync:employee_advances:add", (event, advance) => {
-    replySync(event, "db-sync:employee_advances:add", null, () => {
-      const id = advance.id || crypto.randomUUID();
-      const createdAt = advance.createdAt || advance.date || (/* @__PURE__ */ new Date()).toISOString();
-      db2.prepare(`
+      `).run(r,t.employeeId,t.employeeName??null,t.month,t.baseSalary??0,t.commission??0,t.bonus??0,t.deductions??0,t.advanceDeducted??0,t.netSalary??0,t.paid??1,t.paidAt??n,t.walletId??null,t.notes??null,n),e.prepare("SELECT * FROM employee_salaries WHERE id = ?").get(r)})}),c.ipcMain.on("db-sync:employee_salaries:update",(a,t,r)=>{p(a,"db-sync:employee_salaries:update",null,()=>{const{sets:n,values:s}=O(r);return n.length&&(s.push(t),e.prepare(`UPDATE employee_salaries SET ${n.join(", ")} WHERE id = ?`).run(...s)),e.prepare("SELECT * FROM employee_salaries WHERE id = ?").get(t)})}),c.ipcMain.on("db-sync:employee_salaries:delete",(a,t)=>{p(a,"db-sync:employee_salaries:delete",!1,()=>e.prepare("DELETE FROM employee_salaries WHERE id = ?").run(t).changes>0)}),c.ipcMain.on("db-sync:employee_advances:get",(a,t)=>{p(a,"db-sync:employee_advances:get",[],()=>t?e.prepare("SELECT * FROM employee_advances WHERE employeeId = ? ORDER BY date DESC, createdAt DESC").all(t):e.prepare("SELECT * FROM employee_advances ORDER BY date DESC, createdAt DESC").all())}),c.ipcMain.on("db-sync:employee_advances:add",(a,t)=>{p(a,"db-sync:employee_advances:add",null,()=>{const r=t.id||crypto.randomUUID(),n=t.createdAt||t.date||new Date().toISOString();return e.prepare(`
         INSERT INTO employee_advances (id, employeeId, employeeName, amount, date, deductedMonth, notes, createdAt)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(
-        id,
-        advance.employeeId,
-        advance.employeeName ?? null,
-        advance.amount ?? 0,
-        advance.date,
-        advance.deductedMonth ?? null,
-        advance.notes ?? null,
-        createdAt
-      );
-      return db2.prepare("SELECT * FROM employee_advances WHERE id = ?").get(id);
-    });
-  });
-  electron.ipcMain.on("db-sync:employee_advances:update", (event, id, data) => {
-    replySync(event, "db-sync:employee_advances:update", null, () => {
-      const { sets, values } = buildUpdateSql(data);
-      if (!sets.length) return db2.prepare("SELECT * FROM employee_advances WHERE id = ?").get(id);
-      values.push(id);
-      db2.prepare(`UPDATE employee_advances SET ${sets.join(", ")} WHERE id = ?`).run(...values);
-      return db2.prepare("SELECT * FROM employee_advances WHERE id = ?").get(id);
-    });
-  });
-  electron.ipcMain.on("db-sync:employee_advances:delete", (event, id) => {
-    replySync(event, "db-sync:employee_advances:delete", false, () => db2.prepare("DELETE FROM employee_advances WHERE id = ?").run(id).changes > 0);
-  });
-  electron.ipcMain.on("db-sync:used_devices:get", (event) => {
-    replySync(event, "db-sync:used_devices:get", [], () => db2.prepare("SELECT * FROM used_devices WHERE COALESCE(isArchived, 0) = 0 AND deletedAt IS NULL ORDER BY createdAt DESC, updatedAt DESC").all());
-  });
-  electron.ipcMain.on("db-sync:used_devices:add", (event, device) => {
-    replySync(event, "db-sync:used_devices:add", null, () => {
-      const id = device.id || crypto.randomUUID();
-      const now = (/* @__PURE__ */ new Date()).toISOString();
-      db2.prepare(`
+      `).run(r,t.employeeId,t.employeeName??null,t.amount??0,t.date,t.deductedMonth??null,t.notes??null,n),e.prepare("SELECT * FROM employee_advances WHERE id = ?").get(r)})}),c.ipcMain.on("db-sync:employee_advances:update",(a,t,r)=>{p(a,"db-sync:employee_advances:update",null,()=>{const{sets:n,values:s}=O(r);return n.length&&(s.push(t),e.prepare(`UPDATE employee_advances SET ${n.join(", ")} WHERE id = ?`).run(...s)),e.prepare("SELECT * FROM employee_advances WHERE id = ?").get(t)})}),c.ipcMain.on("db-sync:employee_advances:delete",(a,t)=>{p(a,"db-sync:employee_advances:delete",!1,()=>e.prepare("DELETE FROM employee_advances WHERE id = ?").run(t).changes>0)}),c.ipcMain.on("db-sync:used_devices:get",a=>{p(a,"db-sync:used_devices:get",[],()=>e.prepare("SELECT * FROM used_devices WHERE COALESCE(isArchived, 0) = 0 AND deletedAt IS NULL ORDER BY createdAt DESC, updatedAt DESC").all())}),c.ipcMain.on("db-sync:used_devices:add",(a,t)=>{p(a,"db-sync:used_devices:add",null,()=>{const r=t.id||crypto.randomUUID(),n=new Date().toISOString();return e.prepare(`
         INSERT INTO used_devices (
           id, name, model, deviceType, category, condition, purchasePrice, sellingPrice, status, serialNumber, color, storage,
           ram, description, notes, image, soldAt, purchasedFrom, soldTo, isArchived, deletedAt, warehouseId, createdAt, updatedAt
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(
-        id,
-        device.name,
-        device.model ?? null,
-        device.deviceType ?? null,
-        device.category ?? device.deviceType ?? null,
-        device.condition ?? "good",
-        device.purchasePrice ?? 0,
-        device.sellingPrice ?? device.salePrice ?? 0,
-        device.status ?? "in_stock",
-        device.serialNumber ?? null,
-        device.color ?? null,
-        device.storage ?? null,
-        device.ram ?? null,
-        device.description ?? null,
-        device.notes ?? device.description ?? null,
-        device.image ?? null,
-        device.soldAt ?? null,
-        device.purchasedFrom ?? null,
-        device.soldTo ?? null,
-        device.isArchived ? 1 : 0,
-        device.deletedAt ?? null,
-        device.warehouseId ?? null,
-        device.createdAt || now,
-        device.updatedAt || now
-      );
-      return db2.prepare("SELECT * FROM used_devices WHERE id = ?").get(id);
-    });
-  });
-  electron.ipcMain.on("db-sync:used_devices:update", (event, id, data) => {
-    replySync(event, "db-sync:used_devices:update", null, () => {
-      const updates = { ...data };
-      if (Object.prototype.hasOwnProperty.call(updates, "deviceType") && !Object.prototype.hasOwnProperty.call(updates, "category")) {
-        updates.category = updates.deviceType;
-      }
-      if (Object.prototype.hasOwnProperty.call(updates, "description") && !Object.prototype.hasOwnProperty.call(updates, "notes")) {
-        updates.notes = updates.description;
-      }
-      const { sets, values } = buildUpdateSql(updates);
-      if (!sets.length) return db2.prepare("SELECT * FROM used_devices WHERE id = ?").get(id);
-      sets.push("updatedAt = ?");
-      values.push((/* @__PURE__ */ new Date()).toISOString(), id);
-      db2.prepare(`UPDATE used_devices SET ${sets.join(", ")} WHERE id = ?`).run(...values);
-      return db2.prepare("SELECT * FROM used_devices WHERE id = ?").get(id);
-    });
-  });
-  electron.ipcMain.on("db-sync:used_devices:delete", (event, id) => {
-    replySync(event, "db-sync:used_devices:delete", false, () => db2.prepare("DELETE FROM used_devices WHERE id = ?").run(id).changes > 0);
-  });
-  electron.ipcMain.on("db-sync:sales:get", (event, activeOnly = false) => {
-    replySync(event, "db-sync:sales:get", [], () => readSales(db2, Boolean(activeOnly)));
-  });
-  electron.ipcMain.on("db-sync:sales:maxInvoiceSequence", (event) => {
-    replySync(event, "db-sync:sales:maxInvoiceSequence", 0, () => {
-      const rows = db2.prepare("SELECT invoiceNumber FROM sales").all();
-      return rows.reduce((max, row) => {
-        const match = /^INV-\d{4}-(\d+)$/.exec(String(row.invoiceNumber ?? ""));
-        const sequence = match ? Number.parseInt(match[1], 10) : 0;
-        return Number.isFinite(sequence) ? Math.max(max, sequence) : max;
-      }, 0);
-    });
-  });
-  electron.ipcMain.on("db-sync:sales:upsert", (event, sale) => {
-    replySync(event, "db-sync:sales:upsert", null, () => {
-      const persistSale = db2.transaction(() => {
-        db2.prepare(`
+      `).run(r,t.name,t.model??null,t.deviceType??null,t.category??t.deviceType??null,t.condition??"good",t.purchasePrice??0,t.sellingPrice??t.salePrice??0,t.status??"in_stock",t.serialNumber??null,t.color??null,t.storage??null,t.ram??null,t.description??null,t.notes??t.description??null,t.image??null,t.soldAt??null,t.purchasedFrom??null,t.soldTo??null,t.isArchived?1:0,t.deletedAt??null,t.warehouseId??null,t.createdAt||n,t.updatedAt||n),e.prepare("SELECT * FROM used_devices WHERE id = ?").get(r)})}),c.ipcMain.on("db-sync:used_devices:update",(a,t,r)=>{p(a,"db-sync:used_devices:update",null,()=>{const n={...r};Object.prototype.hasOwnProperty.call(n,"deviceType")&&!Object.prototype.hasOwnProperty.call(n,"category")&&(n.category=n.deviceType),Object.prototype.hasOwnProperty.call(n,"description")&&!Object.prototype.hasOwnProperty.call(n,"notes")&&(n.notes=n.description);const{sets:s,values:o}=O(n);return s.length&&(s.push("updatedAt = ?"),o.push(new Date().toISOString(),t),e.prepare(`UPDATE used_devices SET ${s.join(", ")} WHERE id = ?`).run(...o)),e.prepare("SELECT * FROM used_devices WHERE id = ?").get(t)})}),c.ipcMain.on("db-sync:used_devices:delete",(a,t)=>{p(a,"db-sync:used_devices:delete",!1,()=>e.prepare("DELETE FROM used_devices WHERE id = ?").run(t).changes>0)}),c.ipcMain.on("db-sync:sales:get",(a,t=!1)=>{p(a,"db-sync:sales:get",[],()=>ae(e,!!t))}),c.ipcMain.on("db-sync:sales:maxInvoiceSequence",a=>{p(a,"db-sync:sales:maxInvoiceSequence",0,()=>e.prepare("SELECT invoiceNumber FROM sales").all().reduce((r,n)=>{const s=/^INV-\d{4}-(\d+)$/.exec(String(n.invoiceNumber??"")),o=s?Number.parseInt(s[1],10):0;return Number.isFinite(o)?Math.max(r,o):r},0))}),c.ipcMain.on("db-sync:sales:upsert",(a,t)=>{p(a,"db-sync:sales:upsert",null,()=>e.transaction(()=>{e.prepare(`
           INSERT INTO sales (
             id, invoiceNumber, date, subtotal, discount, total, totalCost, grossProfit, marginPct,
             paymentMethod, employee, voidedAt, voidReason, voidedBy
@@ -4573,735 +1760,89 @@ function setupIpcHandlers(db2) {
             voidedAt = excluded.voidedAt,
             voidReason = excluded.voidReason,
             voidedBy = excluded.voidedBy
-        `).run(
-          sale.id,
-          sale.invoiceNumber,
-          sale.date,
-          sale.subtotal ?? 0,
-          sale.discount ?? 0,
-          sale.total ?? 0,
-          sale.totalCost ?? 0,
-          sale.grossProfit ?? 0,
-          sale.marginPct ?? 0,
-          sale.paymentMethod ?? "cash",
-          sale.employee ?? "system",
-          sale.voidedAt ?? null,
-          sale.voidReason ?? null,
-          sale.voidedBy ?? null
-        );
-        db2.prepare("DELETE FROM sale_items WHERE saleId = ?").run(sale.id);
-        const itemStmt = db2.prepare(`
+        `).run(t.id,t.invoiceNumber,t.date,t.subtotal??0,t.discount??0,t.total??0,t.totalCost??0,t.grossProfit??0,t.marginPct??0,t.paymentMethod??"cash",t.employee??"system",t.voidedAt??null,t.voidReason??null,t.voidedBy??null),e.prepare("DELETE FROM sale_items WHERE saleId = ?").run(t.id);const n=e.prepare(`
           INSERT INTO sale_items (id, saleId, productId, name, qty, price, cost, lineDiscount, warehouseId, batches)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `);
-        for (const item of Array.isArray(sale.items) ? sale.items : []) {
-          itemStmt.run(
-            item.id ?? crypto.randomUUID(),
-            sale.id,
-            item.productId,
-            item.name,
-            item.qty ?? 0,
-            item.price ?? 0,
-            item.cost ?? 0,
-            item.lineDiscount ?? 0,
-            item.warehouseId ?? null,
-            item.batches ? JSON.stringify(item.batches) : null
-          );
-        }
-        return readSales(db2).find((row) => row.id === sale.id) ?? null;
-      });
-      return persistSale();
-    });
-  });
-  electron.ipcMain.on("db-sync:returns:get", (event) => {
-    replySync(event, "db-sync:returns:get", [], () => readReturnRecords(db2));
-  });
-  electron.ipcMain.on("db-sync:returns:add", (event, record) => {
-    replySync(event, "db-sync:returns:add", null, () => {
-      const persistReturn = db2.transaction(() => {
-        const existing = readReturnRecords(db2);
-        const maxSequence = existing.reduce((max, item) => Math.max(max, extractPrefixedSequence(item.returnNumber, "RET")), 0);
-        const id = record.id || crypto.randomUUID();
-        const createdAt = record.createdAt || (/* @__PURE__ */ new Date()).toISOString();
-        const returnNumber = record.returnNumber || `RET-${String(maxSequence + 1).padStart(4, "0")}`;
-        const originalSaleRow = record.originalSaleId ? db2.prepare("SELECT id FROM sales WHERE id = ?").get(record.originalSaleId) : void 0;
-        db2.prepare(`
+        `);for(const s of Array.isArray(t.items)?t.items:[])n.run(s.id??crypto.randomUUID(),t.id,s.productId,s.name,s.qty??0,s.price??0,s.cost??0,s.lineDiscount??0,s.warehouseId??null,s.batches?JSON.stringify(s.batches):null);return ae(e).find(s=>s.id===t.id)??null})())}),c.ipcMain.on("db-sync:returns:get",a=>{p(a,"db-sync:returns:get",[],()=>J(e))}),c.ipcMain.on("db-sync:returns:add",(a,t)=>{p(a,"db-sync:returns:add",null,()=>e.transaction(()=>{const s=J(e).reduce((T,C)=>Math.max(T,ne(C.returnNumber,"RET")),0),o=t.id||crypto.randomUUID(),d=t.createdAt||new Date().toISOString(),E=t.returnNumber||`RET-${String(s+1).padStart(4,"0")}`,m=t.originalSaleId?e.prepare("SELECT id FROM sales WHERE id = ?").get(t.originalSaleId):void 0;e.prepare(`
           INSERT INTO return_records (
             id, returnNumber, originalInvoiceNumber, originalSaleId, date, totalRefund, reason, processedBy, createdAt
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(
-          id,
-          returnNumber,
-          record.originalInvoiceNumber,
-          (originalSaleRow == null ? void 0 : originalSaleRow.id) ?? null,
-          record.date,
-          record.totalRefund ?? 0,
-          record.reason ?? null,
-          record.processedBy ?? null,
-          createdAt
-        );
-        const itemStmt = db2.prepare(`
+        `).run(o,E,t.originalInvoiceNumber,(m==null?void 0:m.id)??null,t.date,t.totalRefund??0,t.reason??null,t.processedBy??null,d);const S=e.prepare(`
           INSERT INTO return_items (id, returnId, productId, name, qty, price, reason)
           VALUES (?, ?, ?, ?, ?, ?, ?)
-        `);
-        for (const item of Array.isArray(record.items) ? record.items : []) {
-          itemStmt.run(
-            item.id ?? crypto.randomUUID(),
-            id,
-            item.productId,
-            item.name,
-            item.qty ?? 0,
-            item.price ?? 0,
-            item.reason ?? null
-          );
-        }
-        return readReturnRecords(db2).find((row) => row.id === id) ?? null;
-      });
-      return persistReturn();
-    });
-  });
-  electron.ipcMain.on("db-sync:purchase_invoices:get", (event) => {
-    replySync(event, "db-sync:purchase_invoices:get", [], () => readPurchaseInvoices(db2));
-  });
-  electron.ipcMain.on("db-sync:purchase_invoices:add", (event, invoice) => {
-    replySync(event, "db-sync:purchase_invoices:add", null, () => {
-      const persistInvoice = db2.transaction(() => {
-        var _a;
-        const invoices = readPurchaseInvoices(db2);
-        const maxSequence = invoices.reduce((max, item) => Math.max(max, extractPrefixedSequence(item.invoiceNumber, "PI")), 0);
-        const id = invoice.id || crypto.randomUUID();
-        const now = (/* @__PURE__ */ new Date()).toISOString();
-        const totalAmount = Number(invoice.totalAmount ?? 0);
-        const paidAmount = Math.min(totalAmount, Number(invoice.paidAmount ?? 0));
-        const remaining = Math.max(0, Math.round((totalAmount - paidAmount) * 100) / 100);
-        const status = derivePurchaseInvoiceStatus(totalAmount, paidAmount);
-        const supplierId = invoice.supplierId ? ((_a = db2.prepare("SELECT id FROM suppliers WHERE id = ?").get(invoice.supplierId)) == null ? void 0 : _a.id) ?? null : null;
-        db2.prepare(`
+        `);for(const T of Array.isArray(t.items)?t.items:[])S.run(T.id??crypto.randomUUID(),o,T.productId,T.name,T.qty??0,T.price??0,T.reason??null);return J(e).find(T=>T.id===o)??null})())}),c.ipcMain.on("db-sync:purchase_invoices:get",a=>{p(a,"db-sync:purchase_invoices:get",[],()=>Y(e))}),c.ipcMain.on("db-sync:purchase_invoices:add",(a,t)=>{p(a,"db-sync:purchase_invoices:add",null,()=>e.transaction(()=>{var h;const s=Y(e).reduce((U,I)=>Math.max(U,ne(I.invoiceNumber,"PI")),0),o=t.id||crypto.randomUUID(),d=new Date().toISOString(),E=Number(t.totalAmount??0),m=Math.min(E,Number(t.paidAmount??0)),S=Math.max(0,Math.round((E-m)*100)/100),T=b(E,m),C=t.supplierId?((h=e.prepare("SELECT id FROM suppliers WHERE id = ?").get(t.supplierId))==null?void 0:h.id)??null:null;e.prepare(`
           INSERT INTO purchase_invoices (
             id, invoiceNumber, supplierId, supplierName, invoiceDate, totalAmount, paidAmount,
             remaining, paymentMethod, status, notes, createdBy, createdAt, updatedAt
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(
-          id,
-          invoice.invoiceNumber || `PI-${String(maxSequence + 1).padStart(4, "0")}`,
-          supplierId,
-          invoice.supplierName,
-          invoice.invoiceDate,
-          totalAmount,
-          paidAmount,
-          remaining,
-          invoice.paymentMethod ?? "cash",
-          status,
-          invoice.notes ?? null,
-          invoice.createdBy ?? "system",
-          invoice.createdAt || now,
-          invoice.updatedAt || now
-        );
-        const itemStmt = db2.prepare(`
+        `).run(o,t.invoiceNumber||`PI-${String(s+1).padStart(4,"0")}`,C,t.supplierName,t.invoiceDate,E,m,S,t.paymentMethod??"cash",T,t.notes??null,t.createdBy??"system",t.createdAt||d,t.updatedAt||d);const w=e.prepare(`
           INSERT INTO purchase_invoice_items (
             id, invoiceId, productName, category, quantity, unitPrice, totalPrice, notes
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `);
-        for (const item of Array.isArray(invoice.items) ? invoice.items : []) {
-          const quantity = Number(item.quantity ?? 0);
-          const unitPrice = Number(item.unitPrice ?? 0);
-          itemStmt.run(
-            item.id ?? crypto.randomUUID(),
-            id,
-            item.productName,
-            item.category ?? null,
-            quantity,
-            unitPrice,
-            item.totalPrice ?? quantity * unitPrice,
-            item.notes ?? null
-          );
-        }
-        return readPurchaseInvoices(db2).find((row) => row.id === id) ?? null;
-      });
-      return persistInvoice();
-    });
-  });
-  electron.ipcMain.on("db-sync:purchase_invoices:update", (event, id, data) => {
-    replySync(event, "db-sync:purchase_invoices:update", null, () => {
-      const persistInvoice = db2.transaction(() => {
-        var _a;
-        const existing = readPurchaseInvoices(db2).find((invoice) => invoice.id === id);
-        if (!existing) return null;
-        const merged = {
-          ...existing,
-          ...data,
-          items: Array.isArray(data == null ? void 0 : data.items) ? data.items : existing.items
-        };
-        const totalAmount = Number(merged.totalAmount ?? 0);
-        const paidAmount = Math.min(totalAmount, Number(merged.paidAmount ?? 0));
-        const remaining = Math.max(0, Math.round((totalAmount - paidAmount) * 100) / 100);
-        const status = derivePurchaseInvoiceStatus(totalAmount, paidAmount);
-        const supplierId = merged.supplierId ? ((_a = db2.prepare("SELECT id FROM suppliers WHERE id = ?").get(merged.supplierId)) == null ? void 0 : _a.id) ?? null : null;
-        db2.prepare(`
+        `);for(const U of Array.isArray(t.items)?t.items:[]){const I=Number(U.quantity??0),v=Number(U.unitPrice??0);w.run(U.id??crypto.randomUUID(),o,U.productName,U.category??null,I,v,U.totalPrice??I*v,U.notes??null)}return Y(e).find(U=>U.id===o)??null})())}),c.ipcMain.on("db-sync:purchase_invoices:update",(a,t,r)=>{p(a,"db-sync:purchase_invoices:update",null,()=>e.transaction(()=>{var w;const s=Y(e).find(h=>h.id===t);if(!s)return null;const o={...s,...r,items:Array.isArray(r==null?void 0:r.items)?r.items:s.items},d=Number(o.totalAmount??0),E=Math.min(d,Number(o.paidAmount??0)),m=Math.max(0,Math.round((d-E)*100)/100),S=b(d,E),T=o.supplierId?((w=e.prepare("SELECT id FROM suppliers WHERE id = ?").get(o.supplierId))==null?void 0:w.id)??null:null;e.prepare(`
           UPDATE purchase_invoices
           SET supplierId = ?, supplierName = ?, invoiceDate = ?, totalAmount = ?, paidAmount = ?, remaining = ?,
               paymentMethod = ?, status = ?, notes = ?, createdBy = ?, updatedAt = ?
           WHERE id = ?
-        `).run(
-          supplierId,
-          merged.supplierName,
-          merged.invoiceDate,
-          totalAmount,
-          paidAmount,
-          remaining,
-          merged.paymentMethod ?? "cash",
-          status,
-          merged.notes ?? null,
-          merged.createdBy ?? "system",
-          (/* @__PURE__ */ new Date()).toISOString(),
-          id
-        );
-        db2.prepare("DELETE FROM purchase_invoice_items WHERE invoiceId = ?").run(id);
-        const itemStmt = db2.prepare(`
+        `).run(T,o.supplierName,o.invoiceDate,d,E,m,o.paymentMethod??"cash",S,o.notes??null,o.createdBy??"system",new Date().toISOString(),t),e.prepare("DELETE FROM purchase_invoice_items WHERE invoiceId = ?").run(t);const C=e.prepare(`
           INSERT INTO purchase_invoice_items (
             id, invoiceId, productName, category, quantity, unitPrice, totalPrice, notes
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `);
-        for (const item of Array.isArray(merged.items) ? merged.items : []) {
-          const quantity = Number(item.quantity ?? 0);
-          const unitPrice = Number(item.unitPrice ?? 0);
-          itemStmt.run(
-            item.id ?? crypto.randomUUID(),
-            id,
-            item.productName,
-            item.category ?? null,
-            quantity,
-            unitPrice,
-            item.totalPrice ?? quantity * unitPrice,
-            item.notes ?? null
-          );
-        }
-        return readPurchaseInvoices(db2).find((invoice) => invoice.id === id) ?? null;
-      });
-      return persistInvoice();
-    });
-  });
-  electron.ipcMain.on("db-sync:purchase_invoices:applyPayment", (event, id, amount) => {
-    replySync(event, "db-sync:purchase_invoices:applyPayment", null, () => {
-      const applyInvoicePayment = db2.transaction(() => {
-        const current = db2.prepare("SELECT * FROM purchase_invoices WHERE id = ?").get(id);
-        if (!current) return null;
-        const totalAmount = Number(current.totalAmount ?? 0);
-        const nextPaidAmount = Math.min(totalAmount, Number(current.paidAmount ?? 0) + Math.max(0, Number(amount ?? 0)));
-        const remaining = Math.max(0, Math.round((totalAmount - nextPaidAmount) * 100) / 100);
-        const status = derivePurchaseInvoiceStatus(totalAmount, nextPaidAmount);
-        db2.prepare(`
+        `);for(const h of Array.isArray(o.items)?o.items:[]){const U=Number(h.quantity??0),I=Number(h.unitPrice??0);C.run(h.id??crypto.randomUUID(),t,h.productName,h.category??null,U,I,h.totalPrice??U*I,h.notes??null)}return Y(e).find(h=>h.id===t)??null})())}),c.ipcMain.on("db-sync:purchase_invoices:applyPayment",(a,t,r)=>{p(a,"db-sync:purchase_invoices:applyPayment",null,()=>e.transaction(()=>{const s=e.prepare("SELECT * FROM purchase_invoices WHERE id = ?").get(t);if(!s)return null;const o=Number(s.totalAmount??0),d=Math.min(o,Number(s.paidAmount??0)+Math.max(0,Number(r??0))),E=Math.max(0,Math.round((o-d)*100)/100),m=b(o,d);return e.prepare(`
           UPDATE purchase_invoices
           SET paidAmount = ?, remaining = ?, status = ?, updatedAt = ?
           WHERE id = ?
-        `).run(nextPaidAmount, remaining, status, (/* @__PURE__ */ new Date()).toISOString(), id);
-        return readPurchaseInvoices(db2).find((invoice) => invoice.id === id) ?? null;
-      });
-      return applyInvoicePayment();
-    });
-  });
-  electron.ipcMain.on("db-sync:purchase_invoices:delete", (event, id) => {
-    replySync(event, "db-sync:purchase_invoices:delete", false, () => db2.prepare("DELETE FROM purchase_invoices WHERE id = ?").run(id).changes > 0);
-  });
-  electron.ipcMain.on("db-sync:shift_closings:get", (event) => {
-    replySync(event, "db-sync:shift_closings:get", [], () => readShiftClosings(db2));
-  });
-  electron.ipcMain.on("db-sync:shift_closings:buildSummary", (event, closedBy, actualCash, notes) => {
-    replySync(event, "db-sync:shift_closings:buildSummary", null, () => buildShiftSummary(db2, closedBy, Number(actualCash ?? 0), notes));
-  });
-  electron.ipcMain.on("db-sync:shift_closings:add", (event, closing) => {
-    replySync(event, "db-sync:shift_closings:add", null, () => {
-      const id = closing.id || crypto.randomUUID();
-      const createdAt = closing.createdAt || closing.closedAt || (/* @__PURE__ */ new Date()).toISOString();
-      db2.prepare(`
+        `).run(d,E,m,new Date().toISOString(),t),Y(e).find(S=>S.id===t)??null})())}),c.ipcMain.on("db-sync:purchase_invoices:delete",(a,t)=>{p(a,"db-sync:purchase_invoices:delete",!1,()=>e.prepare("DELETE FROM purchase_invoices WHERE id = ?").run(t).changes>0)}),c.ipcMain.on("db-sync:shift_closings:get",a=>{p(a,"db-sync:shift_closings:get",[],()=>yt(e))}),c.ipcMain.on("db-sync:shift_closings:buildSummary",(a,t,r,n)=>{p(a,"db-sync:shift_closings:buildSummary",null,()=>_t(e,t,Number(r??0),n))}),c.ipcMain.on("db-sync:shift_closings:add",(a,t)=>{p(a,"db-sync:shift_closings:add",null,()=>{const r=t.id||crypto.randomUUID(),n=t.createdAt||t.closedAt||new Date().toISOString();return e.prepare(`
         INSERT INTO shift_closings (
           id, shiftDate, closedAt, closedBy, salesCount, salesCash, salesCard, salesTransfer,
           salesTotal, expectedCash, actualCash, cashDifference, notes, createdAt
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(
-        id,
-        closing.shiftDate,
-        closing.closedAt,
-        closing.closedBy,
-        closing.salesCount ?? 0,
-        closing.salesCash ?? 0,
-        closing.salesCard ?? 0,
-        closing.salesTransfer ?? 0,
-        closing.salesTotal ?? 0,
-        closing.expectedCash ?? 0,
-        closing.actualCash ?? 0,
-        closing.cashDifference ?? 0,
-        closing.notes ?? null,
-        createdAt
-      );
-      return db2.prepare("SELECT * FROM shift_closings WHERE id = ?").get(id) ?? null;
-    });
-  });
-  electron.ipcMain.on("db-sync:stock_movements:get", (event, productId) => {
-    replySync(event, "db-sync:stock_movements:get", [], () => {
-      if (productId) {
-        return db2.prepare("SELECT * FROM stock_movements WHERE productId = ? ORDER BY timestamp DESC, id DESC").all(productId);
-      }
-      return db2.prepare("SELECT * FROM stock_movements ORDER BY timestamp DESC, id DESC").all();
-    });
-  });
-  electron.ipcMain.on("db-sync:stock_movements:add", (event, movement) => {
-    replySync(event, "db-sync:stock_movements:add", null, () => {
-      const id = movement.id || crypto.randomUUID();
-      db2.prepare(`
+      `).run(r,t.shiftDate,t.closedAt,t.closedBy,t.salesCount??0,t.salesCash??0,t.salesCard??0,t.salesTransfer??0,t.salesTotal??0,t.expectedCash??0,t.actualCash??0,t.cashDifference??0,t.notes??null,n),e.prepare("SELECT * FROM shift_closings WHERE id = ?").get(r)??null})}),c.ipcMain.on("db-sync:stock_movements:get",(a,t)=>{p(a,"db-sync:stock_movements:get",[],()=>t?e.prepare("SELECT * FROM stock_movements WHERE productId = ? ORDER BY timestamp DESC, id DESC").all(t):e.prepare("SELECT * FROM stock_movements ORDER BY timestamp DESC, id DESC").all())}),c.ipcMain.on("db-sync:stock_movements:add",(a,t)=>{p(a,"db-sync:stock_movements:add",null,()=>{const r=t.id||crypto.randomUUID();return e.prepare(`
         INSERT INTO stock_movements (
           id, productId, type, quantityChange, previousQuantity, newQuantity, reason,
           referenceId, userId, timestamp, warehouseId
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(
-        id,
-        movement.productId,
-        movement.type,
-        movement.quantityChange ?? 0,
-        movement.previousQuantity ?? 0,
-        movement.newQuantity ?? 0,
-        movement.reason ?? null,
-        movement.referenceId ?? null,
-        movement.userId ?? null,
-        movement.timestamp ?? (/* @__PURE__ */ new Date()).toISOString(),
-        movement.warehouseId ?? null
-      );
-      return db2.prepare("SELECT * FROM stock_movements WHERE id = ?").get(id);
-    });
-  });
-  electron.ipcMain.on("db-sync:stock_movements:addBulk", (event, movements) => {
-    replySync(event, "db-sync:stock_movements:addBulk", [], () => {
-      const persistMovements = db2.transaction(() => {
-        const stmt = db2.prepare(`
+      `).run(r,t.productId,t.type,t.quantityChange??0,t.previousQuantity??0,t.newQuantity??0,t.reason??null,t.referenceId??null,t.userId??null,t.timestamp??new Date().toISOString(),t.warehouseId??null),e.prepare("SELECT * FROM stock_movements WHERE id = ?").get(r)})}),c.ipcMain.on("db-sync:stock_movements:addBulk",(a,t)=>{p(a,"db-sync:stock_movements:addBulk",[],()=>e.transaction(()=>{const n=e.prepare(`
           INSERT INTO stock_movements (
             id, productId, type, quantityChange, previousQuantity, newQuantity, reason,
             referenceId, userId, timestamp, warehouseId
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `);
-        const insertedIds = [];
-        for (const movement of Array.isArray(movements) ? movements : []) {
-          const id = movement.id || crypto.randomUUID();
-          insertedIds.push(id);
-          stmt.run(
-            id,
-            movement.productId,
-            movement.type,
-            movement.quantityChange ?? 0,
-            movement.previousQuantity ?? 0,
-            movement.newQuantity ?? 0,
-            movement.reason ?? null,
-            movement.referenceId ?? null,
-            movement.userId ?? null,
-            movement.timestamp ?? (/* @__PURE__ */ new Date()).toISOString(),
-            movement.warehouseId ?? null
-          );
-        }
-        if (insertedIds.length === 0) return [];
-        const placeholders = insertedIds.map(() => "?").join(", ");
-        return db2.prepare(`SELECT * FROM stock_movements WHERE id IN (${placeholders}) ORDER BY timestamp DESC, id DESC`).all(...insertedIds);
-      });
-      return persistMovements();
-    });
-  });
-  electron.ipcMain.on("db-sync:audit_logs:get", (event) => {
-    replySync(event, "db-sync:audit_logs:get", [], () => db2.prepare("SELECT * FROM audit_logs ORDER BY timestamp DESC, id DESC").all());
-  });
-  electron.ipcMain.on("db-sync:audit_logs:add", (event, entry) => {
-    replySync(event, "db-sync:audit_logs:add", null, () => {
-      const id = entry.id || crypto.randomUUID();
-      db2.prepare(`
+        `),s=[];for(const d of Array.isArray(t)?t:[]){const E=d.id||crypto.randomUUID();s.push(E),n.run(E,d.productId,d.type,d.quantityChange??0,d.previousQuantity??0,d.newQuantity??0,d.reason??null,d.referenceId??null,d.userId??null,d.timestamp??new Date().toISOString(),d.warehouseId??null)}if(s.length===0)return[];const o=s.map(()=>"?").join(", ");return e.prepare(`SELECT * FROM stock_movements WHERE id IN (${o}) ORDER BY timestamp DESC, id DESC`).all(...s)})())}),c.ipcMain.on("db-sync:audit_logs:get",a=>{p(a,"db-sync:audit_logs:get",[],()=>e.prepare("SELECT * FROM audit_logs ORDER BY timestamp DESC, id DESC").all())}),c.ipcMain.on("db-sync:audit_logs:add",(a,t)=>{p(a,"db-sync:audit_logs:add",null,()=>{const r=t.id||crypto.randomUUID();return e.prepare(`
         INSERT INTO audit_logs (
           id, userId, action, entityType, entityId, beforeStateJson, afterStateJson, machineId, timestamp
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(
-        id,
-        entry.userId ?? "system",
-        entry.action,
-        entry.entityType,
-        entry.entityId,
-        entry.beforeState ? JSON.stringify(entry.beforeState) : null,
-        entry.afterState ? JSON.stringify(entry.afterState) : null,
-        entry.machineId ?? null,
-        entry.timestamp ?? (/* @__PURE__ */ new Date()).toISOString()
-      );
-      return db2.prepare("SELECT * FROM audit_logs WHERE id = ?").get(id);
-    });
-  });
-  electron.ipcMain.on("db-sync:audit_logs:addBulk", (event, entries) => {
-    replySync(event, "db-sync:audit_logs:addBulk", [], () => {
-      const persistEntries = db2.transaction(() => {
-        const stmt = db2.prepare(`
+      `).run(r,t.userId??"system",t.action,t.entityType,t.entityId,t.beforeState?JSON.stringify(t.beforeState):null,t.afterState?JSON.stringify(t.afterState):null,t.machineId??null,t.timestamp??new Date().toISOString()),e.prepare("SELECT * FROM audit_logs WHERE id = ?").get(r)})}),c.ipcMain.on("db-sync:audit_logs:addBulk",(a,t)=>{p(a,"db-sync:audit_logs:addBulk",[],()=>e.transaction(()=>{const n=e.prepare(`
           INSERT INTO audit_logs (
             id, userId, action, entityType, entityId, beforeStateJson, afterStateJson, machineId, timestamp
           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        `);
-        const insertedIds = [];
-        for (const entry of Array.isArray(entries) ? entries : []) {
-          const id = entry.id || crypto.randomUUID();
-          insertedIds.push(id);
-          stmt.run(
-            id,
-            entry.userId ?? "system",
-            entry.action,
-            entry.entityType,
-            entry.entityId,
-            entry.beforeState ? JSON.stringify(entry.beforeState) : null,
-            entry.afterState ? JSON.stringify(entry.afterState) : null,
-            entry.machineId ?? null,
-            entry.timestamp ?? (/* @__PURE__ */ new Date()).toISOString()
-          );
-        }
-        if (insertedIds.length === 0) return [];
-        const placeholders = insertedIds.map(() => "?").join(", ");
-        return db2.prepare(`SELECT * FROM audit_logs WHERE id IN (${placeholders}) ORDER BY timestamp DESC, id DESC`).all(...insertedIds);
-      });
-      return persistEntries();
-    });
-  });
-  electron.ipcMain.handle("db:partners:get", () => db2.prepare("SELECT * FROM partners ORDER BY createdAt DESC").all());
-  electron.ipcMain.handle("db:partners:add", (_, partner) => {
-    const id = partner.id || crypto.randomUUID();
-    const now = (/* @__PURE__ */ new Date()).toISOString();
-    db2.prepare(`INSERT INTO partners (id, name, phone, address, partnershipType, sharePercent, profitShareDevices, profitShareAccessories, capitalAmount, active, notes, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(id, partner.name, partner.phone, partner.address, partner.partnershipType, partner.sharePercent || 0, partner.profitShareDevices || 0, partner.profitShareAccessories || 0, partner.capitalAmount || 0, partner.active ? 1 : 0, partner.notes, partner.createdAt || now, now);
-    return db2.prepare("SELECT * FROM partners WHERE id = ?").get(id);
-  });
-  electron.ipcMain.handle("db:partners:update", (_, id, data) => {
-    const { sets, values } = buildUpdateSql(data);
-    if (!sets.length) return true;
-    sets.push("updatedAt = ?");
-    values.push((/* @__PURE__ */ new Date()).toISOString());
-    values.push(id);
-    db2.prepare(`UPDATE partners SET ${sets.join(", ")} WHERE id = ?`).run(...values);
-    return db2.prepare("SELECT * FROM partners WHERE id = ?").get(id);
-  });
-  electron.ipcMain.handle("db:partners:delete", (_, id) => db2.prepare("DELETE FROM partners WHERE id = ?").run(id).changes > 0);
-  electron.ipcMain.handle("db:partner_transactions:get", (_, partnerId) => {
-    if (partnerId) return db2.prepare("SELECT * FROM partner_transactions WHERE partnerId = ? ORDER BY createdAt DESC").all(partnerId);
-    return db2.prepare("SELECT * FROM partner_transactions ORDER BY createdAt DESC").all();
-  });
-  electron.ipcMain.handle("db:partner_transactions:add", (_, trx) => {
-    const id = trx.id || crypto.randomUUID();
-    db2.prepare(`INSERT INTO partner_transactions (id, partnerId, type, amount, description, createdAt) VALUES (?, ?, ?, ?, ?, ?)`).run(id, trx.partnerId, trx.type, trx.amount, trx.description, trx.createdAt || (/* @__PURE__ */ new Date()).toISOString());
-    return db2.prepare("SELECT * FROM partner_transactions WHERE id = ?").get(id);
-  });
-  electron.ipcMain.handle("db:warehouses:get", () => db2.prepare("SELECT * FROM warehouses ORDER BY name ASC").all());
-  electron.ipcMain.handle("db:warehouses:add", (_, w) => {
-    const id = w.id || crypto.randomUUID();
-    db2.prepare(`INSERT INTO warehouses (id, name, location, isDefault, notes) VALUES (?, ?, ?, ?, ?)`).run(id, w.name, w.location, w.isDefault ? 1 : 0, w.notes);
-    return db2.prepare("SELECT * FROM warehouses WHERE id = ?").get(id);
-  });
-  electron.ipcMain.handle("db:warehouses:update", (_, id, data) => {
-    const { sets, values } = buildUpdateSql(data);
-    if (!sets.length) return true;
-    values.push(id);
-    db2.prepare(`UPDATE warehouses SET ${sets.join(", ")} WHERE id = ?`).run(...values);
-    return db2.prepare("SELECT * FROM warehouses WHERE id = ?").get(id);
-  });
-  electron.ipcMain.handle("db:warehouses:delete", (_, id) => db2.prepare("DELETE FROM warehouses WHERE id = ?").run(id).changes > 0);
-  electron.ipcMain.handle("db:safe_transactions:get", (_, walletId) => {
-    if (walletId) return db2.prepare("SELECT * FROM safe_transactions WHERE walletId = ? ORDER BY createdAt DESC").all(walletId);
-    return db2.prepare("SELECT * FROM safe_transactions ORDER BY createdAt DESC").all();
-  });
-  electron.ipcMain.handle("db:safe_transactions:add", (_, trx) => {
-    const id = trx.id || crypto.randomUUID();
-    ensureWalletRecord(db2, String(trx.walletId ?? ""));
-    db2.prepare(`INSERT INTO safe_transactions (id, walletId, type, subType, amount, category, description, paymentMethod, affectsCapital, affectsProfit, createdBy, relatedId, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(id, trx.walletId, trx.type, trx.subType, trx.amount, trx.category, trx.description, trx.paymentMethod, trx.affectsCapital ? 1 : 0, trx.affectsProfit ? 1 : 0, trx.createdBy, trx.relatedId, trx.createdAt || (/* @__PURE__ */ new Date()).toISOString());
-    return db2.prepare("SELECT * FROM safe_transactions WHERE id = ?").get(id);
-  });
-  electron.ipcMain.handle("db:customers:get", () => db2.prepare("SELECT * FROM customers ORDER BY name ASC").all());
-  electron.ipcMain.handle("db:customers:add", (_, c) => {
-    const id = c.id || crypto.randomUUID();
-    const now = (/* @__PURE__ */ new Date()).toISOString();
-    db2.prepare(`INSERT INTO customers (id, name, phone, email, address, nationalId, notes, totalPurchases, balance, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(id, c.name, c.phone, c.email, c.address, c.nationalId, c.notes, c.totalPurchases || 0, c.balance || 0, c.createdAt || now, now);
-    return db2.prepare("SELECT * FROM customers WHERE id = ?").get(id);
-  });
-  electron.ipcMain.handle("db:customers:update", (_, id, data) => {
-    const { sets, values } = buildUpdateSql(data);
-    if (!sets.length) return true;
-    sets.push("updatedAt = ?");
-    values.push((/* @__PURE__ */ new Date()).toISOString());
-    values.push(id);
-    db2.prepare(`UPDATE customers SET ${sets.join(", ")} WHERE id = ?`).run(...values);
-    return db2.prepare("SELECT * FROM customers WHERE id = ?").get(id);
-  });
-  electron.ipcMain.handle("db:customers:delete", (_, id) => db2.prepare("DELETE FROM customers WHERE id = ?").run(id).changes > 0);
-  electron.ipcMain.handle("db:suppliers:get", () => db2.prepare("SELECT * FROM suppliers ORDER BY name ASC").all());
-  electron.ipcMain.handle("db:suppliers:add", (_, s) => {
-    const id = s.id || crypto.randomUUID();
-    const now = (/* @__PURE__ */ new Date()).toISOString();
-    db2.prepare(`INSERT INTO suppliers (id, name, phone, email, address, category, balance, notes, active, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(id, s.name, s.phone, s.email, s.address, s.category, s.balance || 0, s.notes, s.active ?? 1, s.createdAt || now, now);
-    return db2.prepare("SELECT * FROM suppliers WHERE id = ?").get(id);
-  });
-  electron.ipcMain.handle("db:suppliers:update", (_, id, data) => {
-    const { sets, values } = buildUpdateSql(data);
-    if (!sets.length) return true;
-    sets.push("updatedAt = ?");
-    values.push((/* @__PURE__ */ new Date()).toISOString());
-    values.push(id);
-    db2.prepare(`UPDATE suppliers SET ${sets.join(", ")} WHERE id = ?`).run(...values);
-    return db2.prepare("SELECT * FROM suppliers WHERE id = ?").get(id);
-  });
-  electron.ipcMain.handle("db:suppliers:delete", (_, id) => db2.prepare("DELETE FROM suppliers WHERE id = ?").run(id).changes > 0);
-  electron.ipcMain.handle("db:employees:get", () => db2.prepare("SELECT * FROM employees ORDER BY name ASC").all());
-  electron.ipcMain.handle("db:employees:add", (_, e) => {
-    const id = e.id || crypto.randomUUID();
-    const now = (/* @__PURE__ */ new Date()).toISOString();
-    db2.prepare(`INSERT INTO employees (id, name, phone, role, salary, commissionRate, hireDate, active, notes, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(id, e.name, e.phone, e.role, e.salary || 0, e.commissionRate || 0, e.hireDate, e.active ?? 1, e.notes, e.createdAt || now, now);
-    return db2.prepare("SELECT * FROM employees WHERE id = ?").get(id);
-  });
-  electron.ipcMain.handle("db:employees:update", (_, id, data) => {
-    const { sets, values } = buildUpdateSql(data);
-    if (!sets.length) return true;
-    sets.push("updatedAt = ?");
-    values.push((/* @__PURE__ */ new Date()).toISOString());
-    values.push(id);
-    db2.prepare(`UPDATE employees SET ${sets.join(", ")} WHERE id = ?`).run(...values);
-    return db2.prepare("SELECT * FROM employees WHERE id = ?").get(id);
-  });
-  electron.ipcMain.handle("db:employees:delete", (_, id) => db2.prepare("DELETE FROM employees WHERE id = ?").run(id).changes > 0);
-  electron.ipcMain.handle("db:expenses:get", (_, { from, to } = {}) => {
-    if (from && to) return db2.prepare("SELECT * FROM expenses WHERE date BETWEEN ? AND ? ORDER BY date DESC").all(from, to);
-    return db2.prepare("SELECT * FROM expenses ORDER BY date DESC").all();
-  });
-  electron.ipcMain.handle("db:expenses:add", (_, e) => {
-    const id = e.id || crypto.randomUUID();
-    const now = (/* @__PURE__ */ new Date()).toISOString();
-    db2.prepare(`INSERT INTO expenses (id, category, description, amount, date, paymentMethod, employee, notes, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(id, e.category, e.description, e.amount, e.date, e.paymentMethod || "cash", e.employee, e.notes, e.createdAt || now, now);
-    return db2.prepare("SELECT * FROM expenses WHERE id = ?").get(id);
-  });
-  electron.ipcMain.handle("db:expenses:update", (_, id, data) => {
-    const { sets, values } = buildUpdateSql(data);
-    if (!sets.length) return true;
-    sets.push("updatedAt = ?");
-    values.push((/* @__PURE__ */ new Date()).toISOString());
-    values.push(id);
-    db2.prepare(`UPDATE expenses SET ${sets.join(", ")} WHERE id = ?`).run(...values);
-    return db2.prepare("SELECT * FROM expenses WHERE id = ?").get(id);
-  });
-  electron.ipcMain.handle("db:expenses:delete", (_, id) => db2.prepare("DELETE FROM expenses WHERE id = ?").run(id).changes > 0);
-  electron.ipcMain.handle("db:blacklist:get", () => db2.prepare("SELECT * FROM blacklist ORDER BY createdAt DESC").all());
-  electron.ipcMain.handle("db:blacklist:add", (_, b) => {
-    const id = b.id || crypto.randomUUID();
-    db2.prepare(`INSERT INTO blacklist (id, name, phone, nationalId, reason, notes, addedBy, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).run(id, b.name, b.phone, b.nationalId, b.reason, b.notes, b.addedBy, b.createdAt || (/* @__PURE__ */ new Date()).toISOString());
-    return db2.prepare("SELECT * FROM blacklist WHERE id = ?").get(id);
-  });
-  electron.ipcMain.handle("db:blacklist:delete", (_, id) => db2.prepare("DELETE FROM blacklist WHERE id = ?").run(id).changes > 0);
-  electron.ipcMain.handle("db:blacklist:search", (_, query) => {
-    const q = `%${query}%`;
-    return db2.prepare("SELECT * FROM blacklist WHERE name LIKE ? OR phone LIKE ? OR nationalId LIKE ?").all(q, q, q);
-  });
-  electron.ipcMain.handle("db:damaged_items:get", () => db2.prepare("SELECT * FROM damaged_items ORDER BY date DESC").all());
-  electron.ipcMain.handle("db:damaged_items:add", (_, d) => {
-    const id = d.id || crypto.randomUUID();
-    db2.prepare(`INSERT INTO damaged_items (id, productName, productId, inventoryType, quantity, reason, estimatedLoss, reportedBy, date, notes, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(id, d.productName || d.name, d.productId, d.inventoryType, d.quantity || 1, d.reason, d.estimatedLoss || 0, d.reportedBy, d.date, d.notes, d.createdAt || (/* @__PURE__ */ new Date()).toISOString());
-    return db2.prepare("SELECT * FROM damaged_items WHERE id = ?").get(id);
-  });
-  electron.ipcMain.handle("db:damaged_items:delete", (_, id) => db2.prepare("DELETE FROM damaged_items WHERE id = ?").run(id).changes > 0);
-  electron.ipcMain.handle("db:other_revenue:get", () => db2.prepare("SELECT * FROM other_revenue ORDER BY date DESC").all());
-  electron.ipcMain.handle("db:other_revenue:add", (_, r) => {
-    const id = r.id || crypto.randomUUID();
-    db2.prepare(`INSERT INTO other_revenue (id, source, description, amount, date, paymentMethod, notes, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`).run(id, r.source, r.description, r.amount, r.date, r.paymentMethod || "cash", r.notes, r.createdAt || (/* @__PURE__ */ new Date()).toISOString());
-    return db2.prepare("SELECT * FROM other_revenue WHERE id = ?").get(id);
-  });
-  electron.ipcMain.handle("db:other_revenue:delete", (_, id) => db2.prepare("DELETE FROM other_revenue WHERE id = ?").run(id).changes > 0);
-  electron.ipcMain.handle("db:wallets:get", () => db2.prepare("SELECT * FROM wallets ORDER BY name ASC").all());
-  electron.ipcMain.handle("db:wallets:add", (_, w) => {
-    const id = w.id || crypto.randomUUID();
-    const now = (/* @__PURE__ */ new Date()).toISOString();
-    db2.prepare(`INSERT INTO wallets (id, name, type, balance, isDefault, icon, color, notes, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(id, w.name, w.type || "cash", w.balance || 0, w.isDefault ? 1 : 0, w.icon || null, w.color, w.notes, w.createdAt || now, now);
-    return db2.prepare("SELECT * FROM wallets WHERE id = ?").get(id);
-  });
-  electron.ipcMain.handle("db:wallets:update", (_, id, data) => {
-    const { sets, values } = buildUpdateSql(data);
-    if (!sets.length) return true;
-    sets.push("updatedAt = ?");
-    values.push((/* @__PURE__ */ new Date()).toISOString());
-    values.push(id);
-    db2.prepare(`UPDATE wallets SET ${sets.join(", ")} WHERE id = ?`).run(...values);
-    return db2.prepare("SELECT * FROM wallets WHERE id = ?").get(id);
-  });
-  electron.ipcMain.handle("db:wallets:delete", (_, id) => {
-    const deleteWallet = db2.transaction(() => {
-      db2.prepare("DELETE FROM safe_transactions WHERE walletId = ?").run(id);
-      return db2.prepare("DELETE FROM wallets WHERE id = ?").run(id).changes > 0;
-    });
-    return deleteWallet();
-  });
-  electron.ipcMain.handle("db:used_devices:get", () => db2.prepare("SELECT * FROM used_devices ORDER BY createdAt DESC").all());
-  electron.ipcMain.handle("db:used_devices:add", (_, d) => {
-    const id = d.id || crypto.randomUUID();
-    const now = (/* @__PURE__ */ new Date()).toISOString();
-    db2.prepare(`
+        `),s=[];for(const d of Array.isArray(t)?t:[]){const E=d.id||crypto.randomUUID();s.push(E),n.run(E,d.userId??"system",d.action,d.entityType,d.entityId,d.beforeState?JSON.stringify(d.beforeState):null,d.afterState?JSON.stringify(d.afterState):null,d.machineId??null,d.timestamp??new Date().toISOString())}if(s.length===0)return[];const o=s.map(()=>"?").join(", ");return e.prepare(`SELECT * FROM audit_logs WHERE id IN (${o}) ORDER BY timestamp DESC, id DESC`).all(...s)})())}),c.ipcMain.handle("db:partners:get",()=>e.prepare("SELECT * FROM partners ORDER BY createdAt DESC").all()),c.ipcMain.handle("db:partners:add",(a,t)=>{const r=t.id||crypto.randomUUID(),n=new Date().toISOString();return e.prepare("INSERT INTO partners (id, name, phone, address, partnershipType, sharePercent, profitShareDevices, profitShareAccessories, capitalAmount, active, notes, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").run(r,t.name,t.phone,t.address,t.partnershipType,t.sharePercent||0,t.profitShareDevices||0,t.profitShareAccessories||0,t.capitalAmount||0,t.active?1:0,t.notes,t.createdAt||n,n),e.prepare("SELECT * FROM partners WHERE id = ?").get(r)}),c.ipcMain.handle("db:partners:update",(a,t,r)=>{const{sets:n,values:s}=O(r);return n.length?(n.push("updatedAt = ?"),s.push(new Date().toISOString()),s.push(t),e.prepare(`UPDATE partners SET ${n.join(", ")} WHERE id = ?`).run(...s),e.prepare("SELECT * FROM partners WHERE id = ?").get(t)):!0}),c.ipcMain.handle("db:partners:delete",(a,t)=>e.prepare("DELETE FROM partners WHERE id = ?").run(t).changes>0),c.ipcMain.handle("db:partner_transactions:get",(a,t)=>t?e.prepare("SELECT * FROM partner_transactions WHERE partnerId = ? ORDER BY createdAt DESC").all(t):e.prepare("SELECT * FROM partner_transactions ORDER BY createdAt DESC").all()),c.ipcMain.handle("db:partner_transactions:add",(a,t)=>{const r=t.id||crypto.randomUUID();return e.prepare("INSERT INTO partner_transactions (id, partnerId, type, amount, description, createdAt) VALUES (?, ?, ?, ?, ?, ?)").run(r,t.partnerId,t.type,t.amount,t.description,t.createdAt||new Date().toISOString()),e.prepare("SELECT * FROM partner_transactions WHERE id = ?").get(r)}),c.ipcMain.handle("db:warehouses:get",()=>e.prepare("SELECT * FROM warehouses ORDER BY name ASC").all()),c.ipcMain.handle("db:warehouses:add",(a,t)=>{const r=t.id||crypto.randomUUID();return e.prepare("INSERT INTO warehouses (id, name, location, isDefault, notes) VALUES (?, ?, ?, ?, ?)").run(r,t.name,t.location,t.isDefault?1:0,t.notes),e.prepare("SELECT * FROM warehouses WHERE id = ?").get(r)}),c.ipcMain.handle("db:warehouses:update",(a,t,r)=>{const{sets:n,values:s}=O(r);return n.length?(s.push(t),e.prepare(`UPDATE warehouses SET ${n.join(", ")} WHERE id = ?`).run(...s),e.prepare("SELECT * FROM warehouses WHERE id = ?").get(t)):!0}),c.ipcMain.handle("db:warehouses:delete",(a,t)=>e.prepare("DELETE FROM warehouses WHERE id = ?").run(t).changes>0),c.ipcMain.handle("db:safe_transactions:get",(a,t)=>t?e.prepare("SELECT * FROM safe_transactions WHERE walletId = ? ORDER BY createdAt DESC").all(t):e.prepare("SELECT * FROM safe_transactions ORDER BY createdAt DESC").all()),c.ipcMain.handle("db:safe_transactions:add",(a,t)=>{const r=t.id||crypto.randomUUID();return Nt(e,String(t.walletId??"")),e.prepare("INSERT INTO safe_transactions (id, walletId, type, subType, amount, category, description, paymentMethod, affectsCapital, affectsProfit, createdBy, relatedId, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").run(r,t.walletId,t.type,t.subType,t.amount,t.category,t.description,t.paymentMethod,t.affectsCapital?1:0,t.affectsProfit?1:0,t.createdBy,t.relatedId,t.createdAt||new Date().toISOString()),e.prepare("SELECT * FROM safe_transactions WHERE id = ?").get(r)}),c.ipcMain.handle("db:customers:get",()=>e.prepare("SELECT * FROM customers ORDER BY name ASC").all()),c.ipcMain.handle("db:customers:add",(a,t)=>{const r=t.id||crypto.randomUUID(),n=new Date().toISOString();return e.prepare("INSERT INTO customers (id, name, phone, email, address, nationalId, notes, totalPurchases, balance, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").run(r,t.name,t.phone,t.email,t.address,t.nationalId,t.notes,t.totalPurchases||0,t.balance||0,t.createdAt||n,n),e.prepare("SELECT * FROM customers WHERE id = ?").get(r)}),c.ipcMain.handle("db:customers:update",(a,t,r)=>{const{sets:n,values:s}=O(r);return n.length?(n.push("updatedAt = ?"),s.push(new Date().toISOString()),s.push(t),e.prepare(`UPDATE customers SET ${n.join(", ")} WHERE id = ?`).run(...s),e.prepare("SELECT * FROM customers WHERE id = ?").get(t)):!0}),c.ipcMain.handle("db:customers:delete",(a,t)=>e.prepare("DELETE FROM customers WHERE id = ?").run(t).changes>0),c.ipcMain.handle("db:suppliers:get",()=>e.prepare("SELECT * FROM suppliers ORDER BY name ASC").all()),c.ipcMain.handle("db:suppliers:add",(a,t)=>{const r=t.id||crypto.randomUUID(),n=new Date().toISOString();return e.prepare("INSERT INTO suppliers (id, name, phone, email, address, category, balance, notes, active, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").run(r,t.name,t.phone,t.email,t.address,t.category,t.balance||0,t.notes,t.active??1,t.createdAt||n,n),e.prepare("SELECT * FROM suppliers WHERE id = ?").get(r)}),c.ipcMain.handle("db:suppliers:update",(a,t,r)=>{const{sets:n,values:s}=O(r);return n.length?(n.push("updatedAt = ?"),s.push(new Date().toISOString()),s.push(t),e.prepare(`UPDATE suppliers SET ${n.join(", ")} WHERE id = ?`).run(...s),e.prepare("SELECT * FROM suppliers WHERE id = ?").get(t)):!0}),c.ipcMain.handle("db:suppliers:delete",(a,t)=>e.prepare("DELETE FROM suppliers WHERE id = ?").run(t).changes>0),c.ipcMain.handle("db:employees:get",()=>e.prepare("SELECT * FROM employees ORDER BY name ASC").all()),c.ipcMain.handle("db:employees:add",(a,t)=>{const r=t.id||crypto.randomUUID(),n=new Date().toISOString();return e.prepare("INSERT INTO employees (id, name, phone, role, salary, commissionRate, hireDate, active, notes, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").run(r,t.name,t.phone,t.role,t.salary||0,t.commissionRate||0,t.hireDate,t.active??1,t.notes,t.createdAt||n,n),e.prepare("SELECT * FROM employees WHERE id = ?").get(r)}),c.ipcMain.handle("db:employees:update",(a,t,r)=>{const{sets:n,values:s}=O(r);return n.length?(n.push("updatedAt = ?"),s.push(new Date().toISOString()),s.push(t),e.prepare(`UPDATE employees SET ${n.join(", ")} WHERE id = ?`).run(...s),e.prepare("SELECT * FROM employees WHERE id = ?").get(t)):!0}),c.ipcMain.handle("db:employees:delete",(a,t)=>e.prepare("DELETE FROM employees WHERE id = ?").run(t).changes>0),c.ipcMain.handle("db:expenses:get",(a,{from:t,to:r}={})=>t&&r?e.prepare("SELECT * FROM expenses WHERE date BETWEEN ? AND ? ORDER BY date DESC").all(t,r):e.prepare("SELECT * FROM expenses ORDER BY date DESC").all()),c.ipcMain.handle("db:expenses:add",(a,t)=>{const r=t.id||crypto.randomUUID(),n=new Date().toISOString();return e.prepare("INSERT INTO expenses (id, category, description, amount, date, paymentMethod, employee, notes, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").run(r,t.category,t.description,t.amount,t.date,t.paymentMethod||"cash",t.employee,t.notes,t.createdAt||n,n),e.prepare("SELECT * FROM expenses WHERE id = ?").get(r)}),c.ipcMain.handle("db:expenses:update",(a,t,r)=>{const{sets:n,values:s}=O(r);return n.length?(n.push("updatedAt = ?"),s.push(new Date().toISOString()),s.push(t),e.prepare(`UPDATE expenses SET ${n.join(", ")} WHERE id = ?`).run(...s),e.prepare("SELECT * FROM expenses WHERE id = ?").get(t)):!0}),c.ipcMain.handle("db:expenses:delete",(a,t)=>e.prepare("DELETE FROM expenses WHERE id = ?").run(t).changes>0),c.ipcMain.handle("db:blacklist:get",()=>e.prepare("SELECT * FROM blacklist ORDER BY createdAt DESC").all()),c.ipcMain.handle("db:blacklist:add",(a,t)=>{const r=t.id||crypto.randomUUID();return e.prepare("INSERT INTO blacklist (id, name, phone, nationalId, reason, notes, addedBy, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)").run(r,t.name,t.phone,t.nationalId,t.reason,t.notes,t.addedBy,t.createdAt||new Date().toISOString()),e.prepare("SELECT * FROM blacklist WHERE id = ?").get(r)}),c.ipcMain.handle("db:blacklist:delete",(a,t)=>e.prepare("DELETE FROM blacklist WHERE id = ?").run(t).changes>0),c.ipcMain.handle("db:blacklist:search",(a,t)=>{const r=`%${t}%`;return e.prepare("SELECT * FROM blacklist WHERE name LIKE ? OR phone LIKE ? OR nationalId LIKE ?").all(r,r,r)}),c.ipcMain.handle("db:damaged_items:get",()=>e.prepare("SELECT * FROM damaged_items ORDER BY date DESC").all()),c.ipcMain.handle("db:damaged_items:add",(a,t)=>{const r=t.id||crypto.randomUUID();return e.prepare("INSERT INTO damaged_items (id, productName, productId, inventoryType, quantity, reason, estimatedLoss, reportedBy, date, notes, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").run(r,t.productName||t.name,t.productId,t.inventoryType,t.quantity||1,t.reason,t.estimatedLoss||0,t.reportedBy,t.date,t.notes,t.createdAt||new Date().toISOString()),e.prepare("SELECT * FROM damaged_items WHERE id = ?").get(r)}),c.ipcMain.handle("db:damaged_items:delete",(a,t)=>e.prepare("DELETE FROM damaged_items WHERE id = ?").run(t).changes>0),c.ipcMain.handle("db:other_revenue:get",()=>e.prepare("SELECT * FROM other_revenue ORDER BY date DESC").all()),c.ipcMain.handle("db:other_revenue:add",(a,t)=>{const r=t.id||crypto.randomUUID();return e.prepare("INSERT INTO other_revenue (id, source, description, amount, date, paymentMethod, notes, createdAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)").run(r,t.source,t.description,t.amount,t.date,t.paymentMethod||"cash",t.notes,t.createdAt||new Date().toISOString()),e.prepare("SELECT * FROM other_revenue WHERE id = ?").get(r)}),c.ipcMain.handle("db:other_revenue:delete",(a,t)=>e.prepare("DELETE FROM other_revenue WHERE id = ?").run(t).changes>0),c.ipcMain.handle("db:wallets:get",()=>e.prepare("SELECT * FROM wallets ORDER BY name ASC").all()),c.ipcMain.handle("db:wallets:add",(a,t)=>{const r=t.id||crypto.randomUUID(),n=new Date().toISOString();return e.prepare("INSERT INTO wallets (id, name, type, balance, isDefault, icon, color, notes, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").run(r,t.name,t.type||"cash",t.balance||0,t.isDefault?1:0,t.icon||null,t.color,t.notes,t.createdAt||n,n),e.prepare("SELECT * FROM wallets WHERE id = ?").get(r)}),c.ipcMain.handle("db:wallets:update",(a,t,r)=>{const{sets:n,values:s}=O(r);return n.length?(n.push("updatedAt = ?"),s.push(new Date().toISOString()),s.push(t),e.prepare(`UPDATE wallets SET ${n.join(", ")} WHERE id = ?`).run(...s),e.prepare("SELECT * FROM wallets WHERE id = ?").get(t)):!0}),c.ipcMain.handle("db:wallets:delete",(a,t)=>e.transaction(()=>(e.prepare("DELETE FROM safe_transactions WHERE walletId = ?").run(t),e.prepare("DELETE FROM wallets WHERE id = ?").run(t).changes>0))()),c.ipcMain.handle("db:used_devices:get",()=>e.prepare("SELECT * FROM used_devices ORDER BY createdAt DESC").all()),c.ipcMain.handle("db:used_devices:add",(a,t)=>{const r=t.id||crypto.randomUUID(),n=new Date().toISOString();return e.prepare(`
       INSERT INTO used_devices (
         id, name, model, deviceType, category, condition, purchasePrice, sellingPrice, status, serialNumber, color, storage,
         ram, description, notes, image, soldAt, purchasedFrom, soldTo, createdAt, updatedAt
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      id,
-      d.name,
-      d.model ?? null,
-      d.deviceType ?? null,
-      d.category ?? d.deviceType ?? null,
-      d.condition || "good",
-      d.purchasePrice || 0,
-      d.sellingPrice || 0,
-      d.status || "in_stock",
-      d.serialNumber,
-      d.color,
-      d.storage,
-      d.ram ?? null,
-      d.description ?? null,
-      d.notes ?? d.description ?? null,
-      d.image,
-      d.soldAt,
-      d.purchasedFrom,
-      d.soldTo,
-      d.createdAt || now,
-      now
-    );
-    return db2.prepare("SELECT * FROM used_devices WHERE id = ?").get(id);
-  });
-  electron.ipcMain.handle("db:used_devices:update", (_, id, data) => {
-    const updates = { ...data };
-    if (Object.prototype.hasOwnProperty.call(updates, "deviceType") && !Object.prototype.hasOwnProperty.call(updates, "category")) {
-      updates.category = updates.deviceType;
-    }
-    if (Object.prototype.hasOwnProperty.call(updates, "description") && !Object.prototype.hasOwnProperty.call(updates, "notes")) {
-      updates.notes = updates.description;
-    }
-    const { sets, values } = buildUpdateSql(updates);
-    if (!sets.length) return true;
-    sets.push("updatedAt = ?");
-    values.push((/* @__PURE__ */ new Date()).toISOString());
-    values.push(id);
-    db2.prepare(`UPDATE used_devices SET ${sets.join(", ")} WHERE id = ?`).run(...values);
-    return db2.prepare("SELECT * FROM used_devices WHERE id = ?").get(id);
-  });
-  electron.ipcMain.handle("db:used_devices:delete", (_, id) => db2.prepare("DELETE FROM used_devices WHERE id = ?").run(id).changes > 0);
-  electron.ipcMain.handle("db:reminders:get", () => db2.prepare("SELECT * FROM reminders ORDER BY dueDate ASC").all());
-  electron.ipcMain.handle("db:reminders:add", (_, r) => {
-    const id = r.id || crypto.randomUUID();
-    const now = (/* @__PURE__ */ new Date()).toISOString();
-    db2.prepare(`INSERT INTO reminders (id, title, description, dueDate, priority, completed, completedAt, recurring, category, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(id, r.title, r.description, r.dueDate, r.priority || "medium", r.completed ? 1 : 0, r.completedAt, r.recurring, r.category, r.createdAt || now, now);
-    return db2.prepare("SELECT * FROM reminders WHERE id = ?").get(id);
-  });
-  electron.ipcMain.handle("db:reminders:update", (_, id, data) => {
-    const { sets, values } = buildUpdateSql(data);
-    if (!sets.length) return true;
-    sets.push("updatedAt = ?");
-    values.push((/* @__PURE__ */ new Date()).toISOString());
-    values.push(id);
-    db2.prepare(`UPDATE reminders SET ${sets.join(", ")} WHERE id = ?`).run(...values);
-    return db2.prepare("SELECT * FROM reminders WHERE id = ?").get(id);
-  });
-  electron.ipcMain.handle("db:reminders:delete", (_, id) => db2.prepare("DELETE FROM reminders WHERE id = ?").run(id).changes > 0);
-  electron.ipcMain.handle("db:shifts:get", () => db2.prepare("SELECT * FROM shift_records ORDER BY openedAt DESC").all());
-  electron.ipcMain.handle("db:shifts:getActive", () => db2.prepare("SELECT * FROM shift_records WHERE closedAt IS NULL ORDER BY openedAt DESC LIMIT 1").get());
-  electron.ipcMain.handle("db:shifts:open", (_, s) => {
-    const id = s.id || crypto.randomUUID();
-    db2.prepare(`INSERT INTO shift_records (id, openedAt, openingBalance, openedBy, notes) VALUES (?, ?, ?, ?, ?)`).run(id, s.openedAt || (/* @__PURE__ */ new Date()).toISOString(), s.openingBalance || 0, s.openedBy, s.notes);
-    return db2.prepare("SELECT * FROM shift_records WHERE id = ?").get(id);
-  });
-  electron.ipcMain.handle("db:shifts:close", (_, id, data) => {
-    db2.prepare(`UPDATE shift_records SET closedAt = ?, closingBalance = ?, totalSales = ?, totalExpenses = ?, closedBy = ?, notes = ? WHERE id = ?`).run(data.closedAt || (/* @__PURE__ */ new Date()).toISOString(), data.closingBalance || 0, data.totalSales || 0, data.totalExpenses || 0, data.closedBy, data.notes, id);
-    return db2.prepare("SELECT * FROM shift_records WHERE id = ?").get(id);
-  });
-  electron.ipcMain.handle("db:stats", () => {
-    const tables = [
-      "products",
-      "sales",
-      "customers",
-      "suppliers",
-      "employees",
-      "expenses",
-      "installments",
-      "repair_tickets",
-      "repair_parts",
-      "wallets",
-      "used_devices",
-      "reminders",
-      "blacklist",
-      "damaged_items",
-      "other_revenue",
-      "partners",
-      "warehouses"
-    ];
-    const result = {};
-    for (const t of tables) {
-      try {
-        const row = db2.prepare(`SELECT COUNT(*) as c FROM ${t}`).get();
-        result[t] = row.c;
-      } catch {
-        result[t] = -1;
-      }
-    }
-    return result;
-  });
-  electron.ipcMain.handle("db:factory-reset", () => {
-    try {
-      db2.transaction(() => {
-        const tablesQuery = db2.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
-        const tables = tablesQuery.map((row) => row.name);
-        for (const t of tables) {
-          if (t === "settings" || t === "users" || t === "sqlite_sequence" || t === "sqlite_stat1") {
-            continue;
-          }
-          try {
-            db2.prepare(`DELETE FROM ${t}`).run();
-          } catch {
-          }
-        }
-      })();
-      return true;
-    } catch (e) {
-      console.error("Factory reset failed:", e);
-      return false;
-    }
-  });
-}
-function setupRepairHandlers(db2) {
-  const SPARE_PART_TYPES = ["mobile_spare_part", "device_spare_part", "computer_spare_part"];
-  const getExpectedInventoryType = (deviceCategory) => {
-    switch (deviceCategory) {
-      case "mobile":
-      case "tablet":
-        return "mobile_spare_part";
-      case "device":
-        return "device_spare_part";
-      case "computer":
-      case "laptop":
-        return "computer_spare_part";
-      default:
-        return null;
-    }
-  };
-  electron.ipcMain.handle("db:repairs:getTickets", (_, filters = {}) => {
-    let query = "SELECT * FROM repair_tickets WHERE 1=1";
-    const params = [];
-    if (filters.status) {
-      query += " AND status = ?";
-      params.push(filters.status);
-    }
-    if (filters.customerId) {
-      query += " AND client_id = ?";
-      params.push(filters.customerId);
-    }
-    if (filters.search) {
-      query += " AND (customer_name LIKE ? OR customer_phone LIKE ? OR ticket_no LIKE ?)";
-      const q = `%${filters.search}%`;
-      params.push(q, q, q);
-    }
-    query += " ORDER BY createdAt DESC";
-    return db2.prepare(query).all(...params);
-  });
-  electron.ipcMain.handle("db:repairs:getTicket", (_, id) => {
-    return db2.prepare("SELECT * FROM repair_tickets WHERE id = ?").get(id);
-  });
-  electron.ipcMain.handle("db:repairs:addTicket", (_, ticket) => {
-    const id = ticket.id || crypto.randomUUID();
-    const now = (/* @__PURE__ */ new Date()).toISOString();
-    const ticketNo = ticket.ticket_no || `TKT-${Date.now()}`;
-    db2.prepare(`
+    `).run(r,t.name,t.model??null,t.deviceType??null,t.category??t.deviceType??null,t.condition||"good",t.purchasePrice||0,t.sellingPrice||0,t.status||"in_stock",t.serialNumber,t.color,t.storage,t.ram??null,t.description??null,t.notes??t.description??null,t.image,t.soldAt,t.purchasedFrom,t.soldTo,t.createdAt||n,n),e.prepare("SELECT * FROM used_devices WHERE id = ?").get(r)}),c.ipcMain.handle("db:used_devices:update",(a,t,r)=>{const n={...r};Object.prototype.hasOwnProperty.call(n,"deviceType")&&!Object.prototype.hasOwnProperty.call(n,"category")&&(n.category=n.deviceType),Object.prototype.hasOwnProperty.call(n,"description")&&!Object.prototype.hasOwnProperty.call(n,"notes")&&(n.notes=n.description);const{sets:s,values:o}=O(n);return s.length?(s.push("updatedAt = ?"),o.push(new Date().toISOString()),o.push(t),e.prepare(`UPDATE used_devices SET ${s.join(", ")} WHERE id = ?`).run(...o),e.prepare("SELECT * FROM used_devices WHERE id = ?").get(t)):!0}),c.ipcMain.handle("db:used_devices:delete",(a,t)=>e.prepare("DELETE FROM used_devices WHERE id = ?").run(t).changes>0),c.ipcMain.handle("db:reminders:get",()=>e.prepare("SELECT * FROM reminders ORDER BY dueDate ASC").all()),c.ipcMain.handle("db:reminders:add",(a,t)=>{const r=t.id||crypto.randomUUID(),n=new Date().toISOString();return e.prepare("INSERT INTO reminders (id, title, description, dueDate, priority, completed, completedAt, recurring, category, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").run(r,t.title,t.description,t.dueDate,t.priority||"medium",t.completed?1:0,t.completedAt,t.recurring,t.category,t.createdAt||n,n),e.prepare("SELECT * FROM reminders WHERE id = ?").get(r)}),c.ipcMain.handle("db:reminders:update",(a,t,r)=>{const{sets:n,values:s}=O(r);return n.length?(n.push("updatedAt = ?"),s.push(new Date().toISOString()),s.push(t),e.prepare(`UPDATE reminders SET ${n.join(", ")} WHERE id = ?`).run(...s),e.prepare("SELECT * FROM reminders WHERE id = ?").get(t)):!0}),c.ipcMain.handle("db:reminders:delete",(a,t)=>e.prepare("DELETE FROM reminders WHERE id = ?").run(t).changes>0),c.ipcMain.handle("db:shifts:get",()=>e.prepare("SELECT * FROM shift_records ORDER BY openedAt DESC").all()),c.ipcMain.handle("db:shifts:getActive",()=>e.prepare("SELECT * FROM shift_records WHERE closedAt IS NULL ORDER BY openedAt DESC LIMIT 1").get()),c.ipcMain.handle("db:shifts:open",(a,t)=>{const r=t.id||crypto.randomUUID();return e.prepare("INSERT INTO shift_records (id, openedAt, openingBalance, openedBy, notes) VALUES (?, ?, ?, ?, ?)").run(r,t.openedAt||new Date().toISOString(),t.openingBalance||0,t.openedBy,t.notes),e.prepare("SELECT * FROM shift_records WHERE id = ?").get(r)}),c.ipcMain.handle("db:shifts:close",(a,t,r)=>(e.prepare("UPDATE shift_records SET closedAt = ?, closingBalance = ?, totalSales = ?, totalExpenses = ?, closedBy = ?, notes = ? WHERE id = ?").run(r.closedAt||new Date().toISOString(),r.closingBalance||0,r.totalSales||0,r.totalExpenses||0,r.closedBy,r.notes,t),e.prepare("SELECT * FROM shift_records WHERE id = ?").get(t))),c.ipcMain.handle("db-sync:checkout:process",(a,{sale:t,stockMovements:r,auditEntries:n})=>{var s;try{return e.transaction(()=>{e.prepare(`
+          INSERT INTO sales (
+            id, invoiceNumber, date, subtotal, discount, total, 
+            totalCost, grossProfit, marginPct, paymentMethod, employee, idempotencyKey
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(t.id,t.invoiceNumber,t.date,t.subtotal,t.discount,t.total,t.totalCost,t.grossProfit,t.marginPct,t.paymentMethod,t.employeeId||t.employee,t.idempotencyKey);const o=e.prepare(`
+          INSERT INTO sale_items (
+            id, saleId, productId, name, qty, price, cost, lineDiscount, warehouseId, batches
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `);for(const T of t.items)o.run(T.id,t.id,T.productId,T.name,T.qty,T.price,T.cost,T.lineDiscount||0,T.warehouseId,JSON.stringify(T.batches||[]));const d=e.prepare(`
+          INSERT INTO stock_movements (
+            id, productId, type, quantityChange, previousQuantity, newQuantity, 
+            reason, referenceId, userId, timestamp, warehouseId
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `),E=e.prepare(`
+          UPDATE products SET quantity = quantity + ? WHERE id = ?
+        `),m=e.prepare(`
+          UPDATE inventory_items SET quantity = quantity + ? WHERE id = ?
+        `);for(const T of r){d.run(T.id,T.productId,T.type,T.quantityChange,T.previousQuantity,T.newQuantity,T.reason,T.referenceId,T.userId,T.timestamp,T.warehouseId),E.run(T.quantityChange,T.productId);try{m.run(T.quantityChange,T.productId)}catch{}}const S=e.prepare(`
+          INSERT INTO audit_logs (
+            id, userId, action, entityType, entityId, beforeStateJson, afterStateJson, machineId, timestamp
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `);for(const T of n||[])S.run(T.id||crypto.randomUUID(),T.userId,T.action,T.entityType,T.entityId,T.beforeStateJson?JSON.stringify(T.beforeStateJson):null,T.afterStateJson?JSON.stringify(T.afterStateJson):null,T.machineId||"local",T.timestamp||new Date().toISOString())})(),{success:!0}}catch(o){return console.error("[checkout] Transaction failed:",o),(s=o==null?void 0:o.message)!=null&&s.includes("UNIQUE constraint failed: sales.idempotencyKey")?{success:!1,error:"DUPLICATE_TRANSACTION",message:"This transaction was already completed."}:{success:!1,error:"TRANSACTION_FAILED",message:o.message}}}),c.ipcMain.handle("db:stats",()=>{const a=["products","sales","customers","suppliers","employees","expenses","installments","repair_tickets","repair_parts","wallets","used_devices","reminders","blacklist","damaged_items","other_revenue","partners","warehouses"],t={};for(const r of a)try{const n=e.prepare(`SELECT COUNT(*) as c FROM ${r}`).get();t[r]=n.c}catch{t[r]=-1}return t}),c.ipcMain.handle("db:factory-reset",()=>{try{return e.transaction(()=>{const t=e.prepare("SELECT name FROM sqlite_master WHERE type='table'").all().map(r=>r.name);for(const r of t)if(!(r==="settings"||r==="users"||r==="sqlite_sequence"||r==="sqlite_stat1"))try{e.prepare(`DELETE FROM ${r}`).run()}catch{}})(),!0}catch(a){return console.error("Factory reset failed:",a),!1}})}function Ot(e){const a=["mobile_spare_part","device_spare_part","computer_spare_part"],t=r=>{switch(r){case"mobile":case"tablet":return"mobile_spare_part";case"device":return"device_spare_part";case"computer":case"laptop":return"computer_spare_part";default:return null}};c.ipcMain.handle("db:repairs:getTickets",(r,n={})=>{let s="SELECT * FROM repair_tickets WHERE 1=1";const o=[];if(n.status&&(s+=" AND status = ?",o.push(n.status)),n.customerId&&(s+=" AND client_id = ?",o.push(n.customerId)),n.search){s+=" AND (customer_name LIKE ? OR customer_phone LIKE ? OR ticket_no LIKE ?)";const d=`%${n.search}%`;o.push(d,d,d)}return s+=" ORDER BY createdAt DESC",e.prepare(s).all(...o)}),c.ipcMain.handle("db:repairs:getTicket",(r,n)=>e.prepare("SELECT * FROM repair_tickets WHERE id = ?").get(n)),c.ipcMain.handle("db:repairs:addTicket",(r,n)=>{const s=n.id||crypto.randomUUID(),o=new Date().toISOString(),d=n.ticket_no||`TKT-${Date.now()}`;return e.prepare(`
       INSERT INTO repair_tickets (
         id, ticket_no, client_id, customer_name, customer_phone,
         device_category, device_brand, device_model, imei_or_serial,
@@ -5310,185 +1851,22 @@ function setupRepairHandlers(db2) {
         assigned_tech_name, tech_bonus_type, tech_bonus_value,
         createdAt, createdBy, updatedAt, updatedBy
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      id,
-      ticketNo,
-      ticket.client_id || ticket.customerId || null,
-      ticket.customer_name || "عميل نقدي",
-      ticket.customer_phone || null,
-      ticket.device_category || "mobile",
-      ticket.device_brand || ticket.deviceBrand || null,
-      ticket.device_model || ticket.deviceModel || null,
-      ticket.imei_or_serial || ticket.serial || null,
-      ticket.issue_description || ticket.problemDesc || "",
-      ticket.accessories_received || ticket.accessories || null,
-      ticket.device_passcode || ticket.password || null,
-      ticket.status || "received",
-      ticket.package_price ?? ticket.expectedCost ?? null,
-      ticket.final_cost ?? null,
-      ticket.warranty_days ?? null,
-      ticket.assigned_tech_name || ticket.techName || null,
-      ticket.tech_bonus_type || null,
-      ticket.tech_bonus_value ?? null,
-      ticket.createdAt || now,
-      ticket.createdBy || null,
-      now,
-      ticket.updatedBy || null
-    );
-    return db2.prepare("SELECT * FROM repair_tickets WHERE id = ?").get(id);
-  });
-  electron.ipcMain.handle("db:repairs:updateTicket", (_, id, data) => {
-    const VALID_COLUMNS = /* @__PURE__ */ new Set([
-      "client_id",
-      "customer_name",
-      "customer_phone",
-      "device_category",
-      "device_brand",
-      "device_model",
-      "imei_or_serial",
-      "issue_description",
-      "accessories_received",
-      "device_passcode",
-      "status",
-      "package_price",
-      "final_cost",
-      "warranty_days",
-      "assigned_tech_name",
-      "tech_bonus_type",
-      "tech_bonus_value",
-      "updatedBy"
-    ]);
-    const sets = [];
-    const values = [];
-    for (const [key, val] of Object.entries(data)) {
-      if (VALID_COLUMNS.has(key)) {
-        sets.push(`${key} = ?`);
-        values.push(val === void 0 ? null : val);
-      }
-    }
-    if (sets.length === 0) return db2.prepare("SELECT * FROM repair_tickets WHERE id = ?").get(id);
-    sets.push("updatedAt = ?");
-    values.push((/* @__PURE__ */ new Date()).toISOString());
-    values.push(id);
-    db2.prepare(`UPDATE repair_tickets SET ${sets.join(", ")} WHERE id = ?`).run(...values);
-    return db2.prepare("SELECT * FROM repair_tickets WHERE id = ?").get(id);
-  });
-  electron.ipcMain.handle("db:repairs:deleteTicket", (_, id) => {
-    db2.prepare("DELETE FROM repair_ticket_parts WHERE ticket_id = ?").run(id);
-    db2.prepare("DELETE FROM repair_events WHERE ticket_id = ?").run(id);
-    db2.prepare("DELETE FROM repair_payments WHERE ticket_id = ?").run(id);
-    db2.prepare("DELETE FROM repair_status_history WHERE ticket_id = ?").run(id);
-    return db2.prepare("DELETE FROM repair_tickets WHERE id = ?").run(id).changes > 0;
-  });
-  electron.ipcMain.handle("db:repairs:getHistory", (_, ticketId) => {
-    return db2.prepare("SELECT * FROM repair_status_history WHERE ticket_id = ? ORDER BY createdAt DESC").all(ticketId);
-  });
-  electron.ipcMain.handle("db:repairs:addHistory", (_, entry) => {
-    const id = entry.id || crypto.randomUUID();
-    const now = (/* @__PURE__ */ new Date()).toISOString();
-    db2.prepare(`
+    `).run(s,d,n.client_id||n.customerId||null,n.customer_name||"عميل نقدي",n.customer_phone||null,n.device_category||"mobile",n.device_brand||n.deviceBrand||null,n.device_model||n.deviceModel||null,n.imei_or_serial||n.serial||null,n.issue_description||n.problemDesc||"",n.accessories_received||n.accessories||null,n.device_passcode||n.password||null,n.status||"received",n.package_price??n.expectedCost??null,n.final_cost??null,n.warranty_days??null,n.assigned_tech_name||n.techName||null,n.tech_bonus_type||null,n.tech_bonus_value??null,n.createdAt||o,n.createdBy||null,o,n.updatedBy||null),e.prepare("SELECT * FROM repair_tickets WHERE id = ?").get(s)}),c.ipcMain.handle("db:repairs:updateTicket",(r,n,s)=>{const o=new Set(["client_id","customer_name","customer_phone","device_category","device_brand","device_model","imei_or_serial","issue_description","accessories_received","device_passcode","status","package_price","final_cost","warranty_days","assigned_tech_name","tech_bonus_type","tech_bonus_value","updatedBy"]),d=[],E=[];for(const[m,S]of Object.entries(s))o.has(m)&&(d.push(`${m} = ?`),E.push(S===void 0?null:S));return d.length===0||(d.push("updatedAt = ?"),E.push(new Date().toISOString()),E.push(n),e.prepare(`UPDATE repair_tickets SET ${d.join(", ")} WHERE id = ?`).run(...E)),e.prepare("SELECT * FROM repair_tickets WHERE id = ?").get(n)}),c.ipcMain.handle("db:repairs:deleteTicket",(r,n)=>(e.prepare("DELETE FROM repair_ticket_parts WHERE ticket_id = ?").run(n),e.prepare("DELETE FROM repair_events WHERE ticket_id = ?").run(n),e.prepare("DELETE FROM repair_payments WHERE ticket_id = ?").run(n),e.prepare("DELETE FROM repair_status_history WHERE ticket_id = ?").run(n),e.prepare("DELETE FROM repair_tickets WHERE id = ?").run(n).changes>0)),c.ipcMain.handle("db:repairs:getHistory",(r,n)=>e.prepare("SELECT * FROM repair_status_history WHERE ticket_id = ? ORDER BY createdAt DESC").all(n)),c.ipcMain.handle("db:repairs:addHistory",(r,n)=>{const s=n.id||crypto.randomUUID(),o=new Date().toISOString();return e.prepare(`
       INSERT INTO repair_status_history (id, ticket_id, from_status, to_status, note, createdAt, createdBy)
       VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).run(id, entry.ticket_id, entry.from_status || null, entry.to_status, entry.note || null, now, entry.createdBy || null);
-    return db2.prepare("SELECT * FROM repair_status_history WHERE id = ?").get(id);
-  });
-  electron.ipcMain.handle("db:repairs:getEvents", (_, ticketId) => {
-    return db2.prepare("SELECT * FROM repair_events WHERE ticket_id = ? ORDER BY createdAt DESC").all(ticketId);
-  });
-  electron.ipcMain.handle("db:repairs:addEvent", (_, event) => {
-    const id = event.id || crypto.randomUUID();
-    const now = (/* @__PURE__ */ new Date()).toISOString();
-    db2.prepare(`
+    `).run(s,n.ticket_id,n.from_status||null,n.to_status,n.note||null,o,n.createdBy||null),e.prepare("SELECT * FROM repair_status_history WHERE id = ?").get(s)}),c.ipcMain.handle("db:repairs:getEvents",(r,n)=>e.prepare("SELECT * FROM repair_events WHERE ticket_id = ? ORDER BY createdAt DESC").all(n)),c.ipcMain.handle("db:repairs:addEvent",(r,n)=>{const s=n.id||crypto.randomUUID(),o=new Date().toISOString();return e.prepare(`
       INSERT INTO repair_events (id, ticket_id, event_type, from_status, to_status, note, createdBy, createdAt)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      id,
-      event.ticket_id,
-      event.event_type,
-      event.from_status || event.old_status || null,
-      event.to_status || event.new_status || null,
-      event.note || event.notes || null,
-      event.createdBy || event.user_name || null,
-      now
-    );
-    return db2.prepare("SELECT * FROM repair_events WHERE id = ?").get(id);
-  });
-  electron.ipcMain.handle("db:repairs:getPayments", (_, ticketId) => {
-    return db2.prepare("SELECT * FROM repair_payments WHERE ticket_id = ? ORDER BY createdAt DESC").all(ticketId);
-  });
-  electron.ipcMain.handle("db:repairs:addPayment", (_, payment) => {
-    const id = payment.id || crypto.randomUUID();
-    const now = (/* @__PURE__ */ new Date()).toISOString();
-    db2.prepare(`
+    `).run(s,n.ticket_id,n.event_type,n.from_status||n.old_status||null,n.to_status||n.new_status||null,n.note||n.notes||null,n.createdBy||n.user_name||null,o),e.prepare("SELECT * FROM repair_events WHERE id = ?").get(s)}),c.ipcMain.handle("db:repairs:getPayments",(r,n)=>e.prepare("SELECT * FROM repair_payments WHERE ticket_id = ? ORDER BY createdAt DESC").all(n)),c.ipcMain.handle("db:repairs:addPayment",(r,n)=>{const s=n.id||crypto.randomUUID(),o=new Date().toISOString();return e.prepare(`
       INSERT INTO repair_payments (id, ticket_id, kind, amount, wallet_type, note, createdAt, createdBy)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      id,
-      payment.ticket_id,
-      payment.kind || "deposit",
-      payment.amount,
-      payment.wallet_type || "cash",
-      payment.note || null,
-      now,
-      payment.createdBy || null
-    );
-    return db2.prepare("SELECT * FROM repair_payments WHERE id = ?").get(id);
-  });
-  electron.ipcMain.handle("db:repairs:getParts", () => {
-    return db2.prepare("SELECT * FROM repair_parts ORDER BY name ASC").all();
-  });
-  electron.ipcMain.handle("db:repairs:getPart", (_, id) => {
-    return db2.prepare("SELECT * FROM repair_parts WHERE id = ?").get(id);
-  });
-  electron.ipcMain.handle("db:repairs:addPart", (_, part) => {
-    const id = part.id || crypto.randomUUID();
-    const now = (/* @__PURE__ */ new Date()).toISOString();
-    db2.prepare(`
+    `).run(s,n.ticket_id,n.kind||"deposit",n.amount,n.wallet_type||"cash",n.note||null,o,n.createdBy||null),e.prepare("SELECT * FROM repair_payments WHERE id = ?").get(s)}),c.ipcMain.handle("db:repairs:getParts",()=>e.prepare("SELECT * FROM repair_parts ORDER BY name ASC").all()),c.ipcMain.handle("db:repairs:getPart",(r,n)=>e.prepare("SELECT * FROM repair_parts WHERE id = ?").get(n)),c.ipcMain.handle("db:repairs:addPart",(r,n)=>{const s=n.id||crypto.randomUUID(),o=new Date().toISOString();return e.prepare(`
       INSERT INTO repair_parts (
         id, name, category, sku, brand, compatible_models,
         unit_cost, selling_price, qty, min_qty,
         barcode, color, location, active, notes, createdAt
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      id,
-      part.name,
-      part.category || null,
-      part.sku || part.part_no || null,
-      part.brand || null,
-      part.compatible_models || null,
-      part.unit_cost || part.cost_price || 0,
-      part.selling_price || 0,
-      part.qty || part.current_stock || 0,
-      part.min_qty || part.min_stock || 0,
-      part.barcode || null,
-      part.color || null,
-      part.location || null,
-      part.active ?? 1,
-      part.notes || null,
-      now
-    );
-    return db2.prepare("SELECT * FROM repair_parts WHERE id = ?").get(id);
-  });
-  electron.ipcMain.handle("db:repairs:updatePart", (_, id, data) => {
-    const EXCLUDED = ["id", "createdAt"];
-    const sets = [];
-    const values = [];
-    for (const [key, val] of Object.entries(data)) {
-      if (!EXCLUDED.includes(key)) {
-        sets.push(`${key} = ?`);
-        values.push(val);
-      }
-    }
-    if (sets.length === 0) return db2.prepare("SELECT * FROM repair_parts WHERE id = ?").get(id);
-    values.push(id);
-    db2.prepare(`UPDATE repair_parts SET ${sets.join(", ")} WHERE id = ?`).run(...values);
-    return db2.prepare("SELECT * FROM repair_parts WHERE id = ?").get(id);
-  });
-  electron.ipcMain.handle("db:repairs:deletePart", (_, id) => {
-    return db2.prepare("DELETE FROM repair_parts WHERE id = ?").run(id).changes > 0;
-  });
-  electron.ipcMain.handle("db:repairs:getTicketParts", (_, ticketId) => {
-    return db2.prepare(`
+    `).run(s,n.name,n.category||null,n.sku||n.part_no||null,n.brand||null,n.compatible_models||null,n.unit_cost||n.cost_price||0,n.selling_price||0,n.qty||n.current_stock||0,n.min_qty||n.min_stock||0,n.barcode||null,n.color||null,n.location||null,n.active??1,n.notes||null,o),e.prepare("SELECT * FROM repair_parts WHERE id = ?").get(s)}),c.ipcMain.handle("db:repairs:updatePart",(r,n,s)=>{const o=["id","createdAt"],d=[],E=[];for(const[m,S]of Object.entries(s))o.includes(m)||(d.push(`${m} = ?`),E.push(S));return d.length===0||(E.push(n),e.prepare(`UPDATE repair_parts SET ${d.join(", ")} WHERE id = ?`).run(...E)),e.prepare("SELECT * FROM repair_parts WHERE id = ?").get(n)}),c.ipcMain.handle("db:repairs:deletePart",(r,n)=>e.prepare("DELETE FROM repair_parts WHERE id = ?").run(n).changes>0),c.ipcMain.handle("db:repairs:getTicketParts",(r,n)=>e.prepare(`
       SELECT tp.*, 
         COALESCE(rp.name, acc.name) as partName,
         COALESCE(rp.unit_cost, acc.costPrice, acc.newCostPrice) as partCostPrice,
@@ -5497,442 +1875,33 @@ function setupRepairHandlers(db2) {
       LEFT JOIN repair_parts rp ON tp.part_id = rp.id
       LEFT JOIN accessories acc ON tp.part_id = acc.id
       WHERE tp.ticket_id = ?
-    `).all(ticketId);
-  });
-  electron.ipcMain.handle("db:repairs:addTicketPart", (_, tpart) => {
-    const id = tpart.id || crypto.randomUUID();
-    const now = (/* @__PURE__ */ new Date()).toISOString();
-    const qty = Math.max(1, Number(tpart.qty || tpart.quantity || 1));
-    const ticket = db2.prepare("SELECT id, ticket_no, device_category FROM repair_tickets WHERE id = ?").get(tpart.ticket_id);
-    if (!ticket) {
-      throw new Error("طلب الصيانة غير موجود.");
-    }
-    const expectedInventoryType = getExpectedInventoryType(ticket.device_category);
-    const accessoryPart = db2.prepare("SELECT id, name, quantity, inventoryType FROM accessories WHERE id = ?").get(tpart.part_id);
-    const repairPart = accessoryPart ? void 0 : db2.prepare("SELECT id, name, qty FROM repair_parts WHERE id = ?").get(tpart.part_id);
-    if (accessoryPart) {
-      if (!SPARE_PART_TYPES.includes(accessoryPart.inventoryType)) {
-        throw new Error("القطعة المختارة ليست من مخزون قطع الغيار.");
-      }
-      if (expectedInventoryType && accessoryPart.inventoryType !== expectedInventoryType) {
-        throw new Error("يجب اختيار قطعة من مخزون نفس نوع الجهاز الجاري إصلاحه.");
-      }
-      if (Number(accessoryPart.quantity || 0) < qty) {
-        throw new Error(`الكمية المتاحة من ${accessoryPart.name} هي ${accessoryPart.quantity} فقط.`);
-      }
-    } else if (repairPart && Number(repairPart.qty || 0) < qty) {
-      throw new Error(`الكمية المتاحة من ${repairPart.name} هي ${repairPart.qty} فقط.`);
-    }
-    db2.prepare(`
+    `).all(n)),c.ipcMain.handle("db:repairs:addTicketPart",(r,n)=>{const s=n.id||crypto.randomUUID(),o=new Date().toISOString(),d=Math.max(1,Number(n.qty||n.quantity||1)),E=e.prepare("SELECT id, ticket_no, device_category FROM repair_tickets WHERE id = ?").get(n.ticket_id);if(!E)throw new Error("طلب الصيانة غير موجود.");const m=t(E.device_category),S=e.prepare("SELECT id, name, quantity, inventoryType FROM accessories WHERE id = ?").get(n.part_id),T=S?void 0:e.prepare("SELECT id, name, qty FROM repair_parts WHERE id = ?").get(n.part_id);if(S){if(!a.includes(S.inventoryType))throw new Error("القطعة المختارة ليست من مخزون قطع الغيار.");if(m&&S.inventoryType!==m)throw new Error("يجب اختيار قطعة من مخزون نفس نوع الجهاز الجاري إصلاحه.");if(Number(S.quantity||0)<d)throw new Error(`الكمية المتاحة من ${S.name} هي ${S.quantity} فقط.`)}else if(T&&Number(T.qty||0)<d)throw new Error(`الكمية المتاحة من ${T.name} هي ${T.qty} فقط.`);return e.prepare(`
       INSERT INTO repair_ticket_parts (id, ticket_id, part_id, qty, unit_cost, status, createdAt, updatedAt)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      id,
-      tpart.ticket_id,
-      tpart.part_id,
-      qty,
-      tpart.unit_cost || tpart.cost_price || 0,
-      tpart.status || "used",
-      now,
-      now
-    );
-    if (accessoryPart) {
-      db2.prepare("UPDATE accessories SET quantity = MAX(0, quantity - ?) WHERE id = ?").run(qty, tpart.part_id);
-    } else if (repairPart) {
-      db2.prepare("UPDATE repair_parts SET qty = MAX(0, qty - ?) WHERE id = ?").run(qty, tpart.part_id);
-    }
-    if (accessoryPart || repairPart) {
-      db2.prepare(`
+    `).run(s,n.ticket_id,n.part_id,d,n.unit_cost||n.cost_price||0,n.status||"used",o,o),S?e.prepare("UPDATE accessories SET quantity = MAX(0, quantity - ?) WHERE id = ?").run(d,n.part_id):T&&e.prepare("UPDATE repair_parts SET qty = MAX(0, qty - ?) WHERE id = ?").run(d,n.part_id),(S||T)&&e.prepare(`
       INSERT INTO repair_parts_movements (id, part_id, ticket_id, type, qty, unit_cost, note, createdAt)
       VALUES (?, ?, ?, 'usage', ?, ?, ?, ?)
-    `).run(
-        crypto.randomUUID(),
-        tpart.part_id,
-        tpart.ticket_id,
-        qty,
-        tpart.unit_cost || 0,
-        `استخدام في تذكرة ${tpart.ticket_id}`,
-        now
-      );
-    }
-    return db2.prepare("SELECT * FROM repair_ticket_parts WHERE id = ?").get(id);
-  });
-  electron.ipcMain.handle("db:repairs:removeTicketPart", (_, id) => {
-    const tpart = db2.prepare("SELECT * FROM repair_ticket_parts WHERE id = ?").get(id);
-    if (tpart) {
-      const accessoryPart = db2.prepare("SELECT id FROM accessories WHERE id = ?").get(tpart.part_id);
-      if (accessoryPart) {
-        db2.prepare("UPDATE accessories SET quantity = quantity + ? WHERE id = ?").run(tpart.qty, tpart.part_id);
-      } else if (db2.prepare("SELECT id FROM repair_parts WHERE id = ?").get(tpart.part_id)) {
-        db2.prepare("UPDATE repair_parts SET qty = qty + ? WHERE id = ?").run(tpart.qty, tpart.part_id);
-      }
-    }
-    return db2.prepare("DELETE FROM repair_ticket_parts WHERE id = ?").run(id).changes > 0;
-  });
-  electron.ipcMain.handle("db:repairs:getInvoices", (_, ticketId) => {
-    if (ticketId) return db2.prepare("SELECT * FROM repair_invoices WHERE ticket_id = ? ORDER BY createdAt DESC").all(ticketId);
-    return db2.prepare("SELECT * FROM repair_invoices ORDER BY createdAt DESC").all();
-  });
-  electron.ipcMain.handle("db:repairs:addInvoice", (_, invoice) => {
-    const id = invoice.id || crypto.randomUUID();
-    const now = (/* @__PURE__ */ new Date()).toISOString();
-    const invoiceNo = invoice.invoice_no || `INV-${Date.now()}`;
-    db2.prepare(`
+    `).run(crypto.randomUUID(),n.part_id,n.ticket_id,d,n.unit_cost||0,`استخدام في تذكرة ${n.ticket_id}`,o),e.prepare("SELECT * FROM repair_ticket_parts WHERE id = ?").get(s)}),c.ipcMain.handle("db:repairs:removeTicketPart",(r,n)=>{const s=e.prepare("SELECT * FROM repair_ticket_parts WHERE id = ?").get(n);return s&&(e.prepare("SELECT id FROM accessories WHERE id = ?").get(s.part_id)?e.prepare("UPDATE accessories SET quantity = quantity + ? WHERE id = ?").run(s.qty,s.part_id):e.prepare("SELECT id FROM repair_parts WHERE id = ?").get(s.part_id)&&e.prepare("UPDATE repair_parts SET qty = qty + ? WHERE id = ?").run(s.qty,s.part_id)),e.prepare("DELETE FROM repair_ticket_parts WHERE id = ?").run(n).changes>0}),c.ipcMain.handle("db:repairs:getInvoices",(r,n)=>n?e.prepare("SELECT * FROM repair_invoices WHERE ticket_id = ? ORDER BY createdAt DESC").all(n):e.prepare("SELECT * FROM repair_invoices ORDER BY createdAt DESC").all()),c.ipcMain.handle("db:repairs:addInvoice",(r,n)=>{const s=n.id||crypto.randomUUID(),o=new Date().toISOString(),d=n.invoice_no||`INV-${Date.now()}`;if(e.prepare(`
       INSERT INTO repair_invoices (id, invoice_no, ticket_id, createdAt, deliveredAt,
         subtotal_labor, subtotal_parts, discount, tax, total, paid_total, remaining,
         payment_summary_json, createdBy)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      id,
-      invoiceNo,
-      invoice.ticket_id,
-      now,
-      invoice.deliveredAt || null,
-      invoice.subtotal_labor || 0,
-      invoice.subtotal_parts || 0,
-      invoice.discount || 0,
-      invoice.tax || 0,
-      invoice.total || 0,
-      invoice.paid_total || 0,
-      invoice.remaining || 0,
-      invoice.payment_summary_json ? JSON.stringify(invoice.payment_summary_json) : null,
-      invoice.createdBy || null
-    );
-    if (Array.isArray(invoice.items)) {
-      for (const item of invoice.items) {
-        db2.prepare(`
+    `).run(s,d,n.ticket_id,o,n.deliveredAt||null,n.subtotal_labor||0,n.subtotal_parts||0,n.discount||0,n.tax||0,n.total||0,n.paid_total||0,n.remaining||0,n.payment_summary_json?JSON.stringify(n.payment_summary_json):null,n.createdBy||null),Array.isArray(n.items))for(const E of n.items)e.prepare(`
           INSERT INTO repair_invoice_items (id, invoice_id, type, ref_id, name, qty, unit_price, line_total)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `).run(
-          crypto.randomUUID(),
-          id,
-          item.type,
-          item.ref_id || null,
-          item.name,
-          item.qty || 1,
-          item.unit_price || 0,
-          (item.qty || 1) * (item.unit_price || 0)
-        );
-      }
-    }
-    return db2.prepare("SELECT * FROM repair_invoices WHERE id = ?").get(id);
-  });
-  electron.ipcMain.handle("db:repairs:getPartMovements", (_, partId) => {
-    return db2.prepare("SELECT * FROM repair_parts_movements WHERE part_id = ? ORDER BY createdAt DESC").all(partId);
-  });
-  electron.ipcMain.handle("db:repairs:addPartMovement", (_, movement) => {
-    const id = movement.id || crypto.randomUUID();
-    const now = (/* @__PURE__ */ new Date()).toISOString();
-    db2.prepare(`
+        `).run(crypto.randomUUID(),s,E.type,E.ref_id||null,E.name,E.qty||1,E.unit_price||0,(E.qty||1)*(E.unit_price||0));return e.prepare("SELECT * FROM repair_invoices WHERE id = ?").get(s)}),c.ipcMain.handle("db:repairs:getPartMovements",(r,n)=>e.prepare("SELECT * FROM repair_parts_movements WHERE part_id = ? ORDER BY createdAt DESC").all(n)),c.ipcMain.handle("db:repairs:addPartMovement",(r,n)=>{const s=n.id||crypto.randomUUID(),o=new Date().toISOString();e.prepare(`
       INSERT INTO repair_parts_movements (id, part_id, ticket_id, type, qty, unit_cost, note, createdAt)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `).run(
-      id,
-      movement.part_id,
-      movement.ticket_id || null,
-      movement.type,
-      movement.qty,
-      movement.unit_cost || 0,
-      movement.note || null,
-      now
-    );
-    const delta = ["purchase", "return", "adjustment_add"].includes(movement.type) ? movement.qty : -movement.qty;
-    db2.prepare("UPDATE repair_parts SET qty = MAX(0, qty + ?) WHERE id = ?").run(delta, movement.part_id);
-    return db2.prepare("SELECT * FROM repair_parts_movements WHERE id = ?").get(id);
-  });
-  electron.ipcMain.handle("db:repairs:getAccessoryParts", (_, inventoryType) => {
-    const query = `
+    `).run(s,n.part_id,n.ticket_id||null,n.type,n.qty,n.unit_cost||0,n.note||null,o);const d=["purchase","return","adjustment_add"].includes(n.type)?n.qty:-n.qty;return e.prepare("UPDATE repair_parts SET qty = MAX(0, qty + ?) WHERE id = ?").run(d,n.part_id),e.prepare("SELECT * FROM repair_parts_movements WHERE id = ?").get(s)}),c.ipcMain.handle("db:repairs:getAccessoryParts",(r,n)=>{const s=`
       SELECT * FROM accessories 
       WHERE inventoryType IN ('mobile_spare_part', 'device_spare_part', 'computer_spare_part')
-      ${inventoryType ? "AND inventoryType = ?" : ""}
+      ${n?"AND inventoryType = ?":""}
       AND (isArchived IS NULL OR isArchived = 0)
       ORDER BY name ASC
-    `;
-    return inventoryType ? db2.prepare(query).all(inventoryType) : db2.prepare(query).all();
-  });
-  electron.ipcMain.handle("db:repairs:stats", () => {
-    const statuses = ["received", "diagnosing", "waiting_parts", "repairing", "ready", "delivered", "cancelled"];
-    const result = {};
-    for (const s of statuses) {
-      const row = db2.prepare("SELECT COUNT(*) as c FROM repair_tickets WHERE status = ?").get(s);
-      result[s] = row.c;
-    }
-    const overdue = db2.prepare("SELECT COUNT(*) as c FROM repair_tickets WHERE status NOT IN ('delivered','cancelled')").get();
-    result["active"] = overdue.c;
-    return result;
-  });
-}
-electron.protocol.registerSchemesAsPrivileged([
-  { scheme: "local-img", privileges: { secure: true, standard: true, bypassCSP: true } }
-]);
-const __filename$1 = url.fileURLToPath(typeof document === "undefined" ? require("url").pathToFileURL(__filename).href : _documentCurrentScript && _documentCurrentScript.tagName.toUpperCase() === "SCRIPT" && _documentCurrentScript.src || new URL("main.js", document.baseURI).href);
-const __dirname$1 = path.dirname(__filename$1);
-let db = null;
-let mainWindow = null;
-function isDevelopmentMode() {
-  return !electron.app.isPackaged;
-}
-function writeStartupLog(message, error) {
-  try {
-    const logDir = electron.app.isReady() ? electron.app.getPath("userData") : path.join(process.cwd(), "logs");
-    fs.mkdirSync(logDir, { recursive: true });
-    const logPath = path.join(logDir, "startup.log");
-    const details = error instanceof Error ? `${error.stack ?? error.message}` : error ? JSON.stringify(error) : "";
-    fs.appendFileSync(logPath, `[${(/* @__PURE__ */ new Date()).toISOString()}] ${message}${details ? `
-${details}` : ""}
-`);
-  } catch (logError) {
-    console.error("Failed to write startup log", logError);
-  }
-}
-function resolvePreloadPath() {
-  const candidates = ["preload.js", "preload.cjs", "preload.mjs"];
-  for (const fileName of candidates) {
-    const candidate = path.join(__dirname$1, fileName);
-    if (fs.existsSync(candidate)) {
-      return candidate;
-    }
-  }
-  return path.join(__dirname$1, "preload.js");
-}
-function resolveWindowIconPath() {
-  const candidates = isDevelopmentMode() ? [path.join(__dirname$1, "../public/logo.png")] : [path.join(__dirname$1, "../dist/logo.png"), path.join(process.resourcesPath, "app.asar.unpacked/dist/logo.png")];
-  for (const candidate of candidates) {
-    if (fs.existsSync(candidate)) {
-      return candidate;
-    }
-  }
-  return void 0;
-}
-function createWindow() {
-  const preloadPath = resolvePreloadPath();
-  const iconPath = resolveWindowIconPath();
-  let revealFallbackTimer = null;
-  writeStartupLog(`Creating main window with preload at ${preloadPath}`);
-  mainWindow = new electron.BrowserWindow({
-    width: 1280,
-    height: 800,
-    minWidth: 900,
-    minHeight: 600,
-    show: false,
-    icon: iconPath,
-    webPreferences: {
-      nodeIntegration: false,
-      contextIsolation: true,
-      preload: preloadPath
-    }
-  });
-  const isDev = isDevelopmentMode();
-  if (isDev && process.env.VITE_DEV_SERVER_URL) {
-    writeStartupLog(`Loading renderer URL ${process.env.VITE_DEV_SERVER_URL}`);
-    mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
-    mainWindow.webContents.openDevTools();
-  } else {
-    const rendererPath = path.join(__dirname$1, "../dist/index.html");
-    writeStartupLog(`Loading renderer file ${rendererPath}`);
-    mainWindow.loadFile(rendererPath);
-  }
-  mainWindow.once("ready-to-show", () => {
-    writeStartupLog("Main window emitted ready-to-show");
-    if (revealFallbackTimer) {
-      clearTimeout(revealFallbackTimer);
-      revealFallbackTimer = null;
-    }
-    mainWindow == null ? void 0 : mainWindow.show();
-    mainWindow == null ? void 0 : mainWindow.focus();
-  });
-  mainWindow.webContents.on("did-finish-load", () => {
-    writeStartupLog("Main window emitted did-finish-load");
-    if (revealFallbackTimer) {
-      clearTimeout(revealFallbackTimer);
-      revealFallbackTimer = null;
-    }
-    if (!(mainWindow == null ? void 0 : mainWindow.isVisible())) {
-      mainWindow == null ? void 0 : mainWindow.show();
-      mainWindow == null ? void 0 : mainWindow.focus();
-    }
-  });
-  mainWindow.webContents.on("did-fail-load", (_event, errorCode, errorDescription, validatedURL) => {
-    console.error("Renderer failed to load", { errorCode, errorDescription, validatedURL });
-    writeStartupLog(`Renderer failed to load (${errorCode}) ${validatedURL ?? "unknown url"}: ${errorDescription}`);
-    if (revealFallbackTimer) {
-      clearTimeout(revealFallbackTimer);
-      revealFallbackTimer = null;
-    }
-    if (!(mainWindow == null ? void 0 : mainWindow.isVisible())) {
-      mainWindow == null ? void 0 : mainWindow.show();
-    }
-  });
-  mainWindow.on("closed", () => {
-    writeStartupLog("Main window closed");
-    if (revealFallbackTimer) {
-      clearTimeout(revealFallbackTimer);
-      revealFallbackTimer = null;
-    }
-    mainWindow = null;
-  });
-  revealFallbackTimer = setTimeout(() => {
-    if (!(mainWindow == null ? void 0 : mainWindow.isVisible())) {
-      console.warn("Renderer did not trigger ready-to-show in time, revealing window fallback.");
-      writeStartupLog("Renderer did not trigger ready-to-show in time, revealing window fallback");
-      mainWindow == null ? void 0 : mainWindow.show();
-      mainWindow == null ? void 0 : mainWindow.focus();
-    }
-  }, 3e3);
-  mainWindow.setMenuBarVisibility(false);
-}
-electron.ipcMain.on("store-get", (event, key) => {
-  if (!db) {
-    event.returnValue = null;
-    return;
-  }
-  try {
-    const row = db.prepare("SELECT value FROM settings WHERE key = ?").get(key);
-    event.returnValue = row ? JSON.parse(row.value) : null;
-  } catch (err) {
-    console.error("store-get error:", err);
-    event.returnValue = null;
-  }
-});
-electron.ipcMain.on("store-set", (event, key, value) => {
-  if (!db) {
-    event.returnValue = false;
-    return;
-  }
-  try {
-    db.prepare(`
+    `;return n?e.prepare(s).all(n):e.prepare(s).all()}),c.ipcMain.handle("db:repairs:stats",()=>{const r=["received","diagnosing","waiting_parts","repairing","ready","delivered","cancelled"],n={};for(const o of r){const d=e.prepare("SELECT COUNT(*) as c FROM repair_tickets WHERE status = ?").get(o);n[o]=d.c}const s=e.prepare("SELECT COUNT(*) as c FROM repair_tickets WHERE status NOT IN ('delivered','cancelled')").get();return n.active=s.c,n})}c.protocol.registerSchemesAsPrivileged([{scheme:"local-img",privileges:{secure:!0,standard:!0,bypassCSP:!0}}]);const ht=pe.fileURLToPath(typeof document>"u"?require("url").pathToFileURL(__filename).href:j&&j.tagName.toUpperCase()==="SCRIPT"&&j.src||new URL("main.js",document.baseURI).href),V=F.dirname(ht);let x=null,L=null;function $(){return!c.app.isPackaged}function M(e,a){try{const t=c.app.isReady()?c.app.getPath("userData"):F.join(process.cwd(),"logs");H.mkdirSync(t,{recursive:!0});const r=F.join(t,"startup.log"),n=a instanceof Error?`${a.stack??a.message}`:a?JSON.stringify(a):"";H.appendFileSync(r,`[${new Date().toISOString()}] ${e}${n?`
+${n}`:""}
+`)}catch(t){console.error("Failed to write startup log",t)}}function Ct(){const e=["preload.js","preload.cjs","preload.mjs"];for(const a of e){const t=F.join(V,a);if(H.existsSync(t))return t}return F.join(V,"preload.js")}function Dt(){const e=$()?[F.join(V,"../public/logo.png")]:[F.join(V,"../dist/logo.png"),F.join(process.resourcesPath,"app.asar.unpacked/dist/logo.png")];for(const a of e)if(H.existsSync(a))return a}function se(){const e=Ct(),a=Dt();let t=null;if(M(`Creating main window with preload at ${e}`),L=new c.BrowserWindow({width:1280,height:800,minWidth:900,minHeight:600,show:!1,icon:a,webPreferences:{nodeIntegration:!1,contextIsolation:!0,preload:e}}),$()&&process.env.VITE_DEV_SERVER_URL)M(`Loading renderer URL ${process.env.VITE_DEV_SERVER_URL}`),L.loadURL(process.env.VITE_DEV_SERVER_URL),L.webContents.openDevTools();else{const n=F.join(V,"../dist/index.html");M(`Loading renderer file ${n}`),L.loadFile(n)}L.once("ready-to-show",()=>{M("Main window emitted ready-to-show"),t&&(clearTimeout(t),t=null),L==null||L.show(),L==null||L.focus()}),L.webContents.on("did-finish-load",()=>{M("Main window emitted did-finish-load"),t&&(clearTimeout(t),t=null),L!=null&&L.isVisible()||(L==null||L.show(),L==null||L.focus())}),L.webContents.on("did-fail-load",(n,s,o,d)=>{console.error("Renderer failed to load",{errorCode:s,errorDescription:o,validatedURL:d}),M(`Renderer failed to load (${s}) ${d??"unknown url"}: ${o}`),t&&(clearTimeout(t),t=null),L!=null&&L.isVisible()||L==null||L.show()}),L.on("closed",()=>{M("Main window closed"),t&&(clearTimeout(t),t=null),L=null}),t=setTimeout(()=>{L!=null&&L.isVisible()||(console.warn("Renderer did not trigger ready-to-show in time, revealing window fallback."),M("Renderer did not trigger ready-to-show in time, revealing window fallback"),L==null||L.show(),L==null||L.focus())},3e3),L.setMenuBarVisibility(!1)}c.ipcMain.on("store-get",(e,a)=>{if(!x){e.returnValue=null;return}try{const t=x.prepare("SELECT value FROM settings WHERE key = ?").get(a);e.returnValue=t?JSON.parse(t.value):null}catch(t){console.error("store-get error:",t),e.returnValue=null}});c.ipcMain.on("store-set",(e,a,t)=>{if(!x){e.returnValue=!1;return}try{x.prepare(`
       INSERT INTO settings (key, value) 
       VALUES (?, ?) 
       ON CONFLICT(key) DO UPDATE SET value = excluded.value
-    `).run(key, JSON.stringify(value));
-    event.returnValue = true;
-  } catch (err) {
-    console.error("store-set error:", err);
-    event.returnValue = false;
-  }
-});
-electron.ipcMain.on("store-delete", (event, key) => {
-  if (!db) {
-    event.returnValue = false;
-    return;
-  }
-  try {
-    db.prepare("DELETE FROM settings WHERE key = ?").run(key);
-    event.returnValue = true;
-  } catch (err) {
-    console.error("store-delete error:", err);
-    event.returnValue = false;
-  }
-});
-electron.app.whenReady().then(() => {
-  try {
-    writeStartupLog("Electron app is ready");
-    db = initializeDatabase();
-    writeStartupLog("Database initialized");
-    runDataMigration(db);
-    writeStartupLog("Data migration completed");
-    setupIpcHandlers(db);
-    writeStartupLog("IPC handlers registered");
-    setupRepairHandlers(db);
-    writeStartupLog("Repair handlers registered");
-    const userDataPath = electron.app.getPath("userData");
-    const imagesDir = path.join(userDataPath, "images");
-    electron.protocol.handle("local-img", (request) => {
-      const fileName = request.url.slice("local-img://".length).split("?")[0];
-      const filePath = path.join(imagesDir, decodeURIComponent(fileName));
-      return electron.net.fetch(`file://${filePath}`);
-    });
-    writeStartupLog("local-img protocol handler registered");
-    createWindow();
-    electron.app.on("activate", () => {
-      if (electron.BrowserWindow.getAllWindows().length === 0) {
-        writeStartupLog("App activated with no windows, recreating main window");
-        createWindow();
-      }
-    });
-  } catch (error) {
-    writeStartupLog("Fatal startup error", error);
-    electron.dialog.showErrorBox(
-      "تعذر تشغيل البرنامج",
-      error instanceof Error ? error.message : "حدث خطأ غير متوقع أثناء تشغيل البرنامج."
-    );
-    electron.app.quit();
-  }
-});
-electron.app.on("window-all-closed", () => {
-  if (process.platform !== "darwin") {
-    electron.app.quit();
-  }
-});
-process.on("uncaughtException", (error) => {
-  writeStartupLog("Uncaught exception", error);
-  electron.dialog.showErrorBox("خطأ غير متوقع", error.message);
-});
-process.on("unhandledRejection", (reason) => {
-  writeStartupLog("Unhandled rejection", reason);
-});
-electron.ipcMain.handle("ping", () => "pong");
-electron.ipcMain.handle("save-image", async (event, base64Data) => {
-  try {
-    const userDataPath = electron.app.getPath("userData");
-    const imagesDir = path.join(userDataPath, "images");
-    if (!fs.existsSync(imagesDir)) {
-      fs.mkdirSync(imagesDir, { recursive: true });
-    }
-    const matches = base64Data.match(/^data:([A-Za-z+/.-]+);base64,(.+)$/);
-    if (!matches || matches.length !== 3) {
-      return { success: false, error: "Invalid base64 format" };
-    }
-    const ext = matches[1].split("/")[1] || "png";
-    const buffer = Buffer.from(matches[2], "base64");
-    const fileName = `img_${Date.now()}.${ext}`;
-    const filePath = path.join(imagesDir, fileName);
-    fs.writeFileSync(filePath, buffer);
-    return { success: true, path: `local-img://${fileName}` };
-  } catch (error) {
-    console.error("Error saving image:", error);
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return { success: false, error: message };
-  }
-});
-electron.ipcMain.handle("db:backup", async () => {
-  try {
-    const userDataPath = electron.app.getPath("userData");
-    const isDev = isDevelopmentMode();
-    const dbFile = path.join(userDataPath, isDev ? "retail_dev.sqlite" : "retail_prod.sqlite");
-    const { canceled, filePath: savePath } = await electron.dialog.showSaveDialog({
-      title: "حفظ نسخة احتياطية من قاعدة البيانات",
-      defaultPath: path.join(electron.app.getPath("downloads"), `backup_${(/* @__PURE__ */ new Date()).toISOString().replace(/[:.]/g, "-")}.sqlite`),
-      filters: [{ name: "SQLite Database", extensions: ["sqlite"] }]
-    });
-    if (canceled || !savePath) return { success: false, reason: "canceled" };
-    fs.copyFileSync(dbFile, savePath);
-    return { success: true, path: savePath };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return { success: false, error: message };
-  }
-});
-electron.ipcMain.handle("db:restore", async () => {
-  try {
-    const { canceled, filePaths } = await electron.dialog.showOpenDialog({
-      title: "استعادة قاعدة البيانات من نسخة احتياطية",
-      filters: [{ name: "SQLite Database", extensions: ["sqlite"] }],
-      properties: ["openFile"]
-    });
-    if (canceled || !filePaths.length) return { success: false, reason: "canceled" };
-    const userDataPath = electron.app.getPath("userData");
-    const isDev = isDevelopmentMode();
-    const dbFile = path.join(userDataPath, isDev ? "retail_dev.sqlite" : "retail_prod.sqlite");
-    const backupPath = dbFile + ".bak";
-    if (fs.existsSync(dbFile)) {
-      fs.copyFileSync(dbFile, backupPath);
-    }
-    fs.copyFileSync(filePaths[0], dbFile);
-    return { success: true };
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return { success: false, error: message };
-  }
-});
-electron.ipcMain.handle("db:getUserDataPath", () => electron.app.getPath("userData"));
+    `).run(a,JSON.stringify(t)),e.returnValue=!0}catch(r){console.error("store-set error:",r),e.returnValue=!1}});c.ipcMain.on("store-delete",(e,a)=>{if(!x){e.returnValue=!1;return}try{x.prepare("DELETE FROM settings WHERE key = ?").run(a),e.returnValue=!0}catch(t){console.error("store-delete error:",t),e.returnValue=!1}});c.app.whenReady().then(()=>{try{M("Electron app is ready"),x=Ne(),M("Database initialized"),ke(x),M("Data migration completed"),gt(x),M("IPC handlers registered"),Ot(x),M("Repair handlers registered");const e=c.app.getPath("userData"),a=F.join(e,"images");c.protocol.handle("local-img",t=>{const r=t.url.slice(12).split("?")[0],n=F.join(a,decodeURIComponent(r));return c.net.fetch(`file://${n}`)}),M("local-img protocol handler registered"),se(),c.app.on("activate",()=>{c.BrowserWindow.getAllWindows().length===0&&(M("App activated with no windows, recreating main window"),se())})}catch(e){M("Fatal startup error",e),c.dialog.showErrorBox("تعذر تشغيل البرنامج",e instanceof Error?e.message:"حدث خطأ غير متوقع أثناء تشغيل البرنامج."),c.app.quit()}});c.app.on("window-all-closed",()=>{process.platform!=="darwin"&&c.app.quit()});process.on("uncaughtException",e=>{M("Uncaught exception",e),c.dialog.showErrorBox("خطأ غير متوقع",e.message)});process.on("unhandledRejection",e=>{M("Unhandled rejection",e)});c.ipcMain.handle("ping",()=>"pong");c.ipcMain.handle("save-image",async(e,a)=>{try{const t=c.app.getPath("userData"),r=F.join(t,"images");H.existsSync(r)||H.mkdirSync(r,{recursive:!0});const n=a.match(/^data:([A-Za-z+/.-]+);base64,(.+)$/);if(!n||n.length!==3)return{success:!1,error:"Invalid base64 format"};const s=n[1].split("/")[1]||"png",o=Buffer.from(n[2],"base64"),d=`img_${Date.now()}.${s}`,E=F.join(r,d);return H.writeFileSync(E,o),{success:!0,path:`local-img://${d}`}}catch(t){return console.error("Error saving image:",t),{success:!1,error:t instanceof Error?t.message:"Unknown error"}}});c.ipcMain.handle("db:backup",async()=>{try{const e=c.app.getPath("userData"),a=$(),t=F.join(e,a?"retail_dev.sqlite":"retail_prod.sqlite"),{canceled:r,filePath:n}=await c.dialog.showSaveDialog({title:"حفظ نسخة احتياطية من قاعدة البيانات",defaultPath:F.join(c.app.getPath("downloads"),`backup_${new Date().toISOString().replace(/[:.]/g,"-")}.sqlite`),filters:[{name:"SQLite Database",extensions:["sqlite"]}]});return r||!n?{success:!1,reason:"canceled"}:(H.copyFileSync(t,n),{success:!0,path:n})}catch(e){return{success:!1,error:e instanceof Error?e.message:"Unknown error"}}});c.ipcMain.handle("db:restore",async()=>{try{const{canceled:e,filePaths:a}=await c.dialog.showOpenDialog({title:"استعادة قاعدة البيانات من نسخة احتياطية",filters:[{name:"SQLite Database",extensions:["sqlite"]}],properties:["openFile"]});if(e||!a.length)return{success:!1,reason:"canceled"};const t=c.app.getPath("userData"),r=$(),n=F.join(t,r?"retail_dev.sqlite":"retail_prod.sqlite"),s=n+".bak";return H.existsSync(n)&&H.copyFileSync(n,s),H.copyFileSync(a[0],n),{success:!0}}catch(e){return{success:!1,error:e instanceof Error?e.message:"Unknown error"}}});c.ipcMain.handle("db:getUserDataPath",()=>c.app.getPath("userData"));

@@ -253,6 +253,36 @@ describe('voidSale', () => {
 
         expect(batchesData.restoreBatchQty).toHaveBeenCalledWith('batch-1', 1);
     });
+
+    it('does not restore any batches if validating a later item fails', async () => {
+        const sale = makeSale({
+            items: [
+                {
+                    productId: 'p1',
+                    name: 'iPhone 15',
+                    qty: 1,
+                    price: 1500,
+                    cost: 1000,
+                    lineDiscount: 0,
+                    batches: [{ batchId: 'batch-1', qtyFromBatch: 1, costPrice: 1000, salePrice: 1500, profit: 500 }],
+                },
+                {
+                    productId: 'p2',
+                    name: 'Galaxy S24',
+                    qty: 1,
+                    price: 2000,
+                    cost: 1500,
+                    lineDiscount: 0,
+                },
+            ],
+        });
+        const batchesData = await import('@/data/batchesData');
+
+        expect(() =>
+            voidSale(sale, 'ط³ط¨ط¨', 'admin-1', { p1: makeProduct() })
+        ).toThrow('Galaxy S24');
+        expect(batchesData.restoreBatchQty).not.toHaveBeenCalled();
+    });
 });
 
 // ─── getCartTotals ────────────────────────────────────────────
@@ -271,5 +301,65 @@ describe('getCartTotals', () => {
         expect(result.subtotal).toBe(0);
         expect(result.total).toBe(0);
         expect(result.grossProfit).toBe(0);
+    });
+});
+
+// ─── Financial Edge Cases ─────────────────────────────────
+
+describe('Financial edge cases', () => {
+    it('should handle 100% invoice discount', () => {
+        const cart = [makeCartItem({ qty: 1 })];
+        const result = getCartTotals(cart, 1500); // 100% discount
+        expect(result.total).toBe(0);
+        expect(result.grossProfit).toBe(-1000); // loss equal to cost
+    });
+
+    it('should handle large quantity multiplication', () => {
+        const cart = [makeCartItem({ qty: 100 })];
+        const result = getCartTotals(cart, 0);
+        expect(result.subtotal).toBe(150000); // 1500 * 100
+        expect(result.totalCost).toBe(100000); // 1000 * 100
+        expect(result.grossProfit).toBe(50000); // (1500-1000)*100
+    });
+
+    it('should calculate margin correctly', () => {
+        const cart = [makeCartItem()];
+        const result = getCartTotals(cart, 0);
+        // margin = profit/revenue * 1000 / 10
+        expect(result.marginPct).toBe(33.3); // (500/1500)*100 = 33.3...
+    });
+
+    it('should handle zero profit (break-even)', () => {
+        const product = makeProduct({ costPrice: 1000, sellingPrice: 1000 });
+        const cart = [makeCartItem({ product, qty: 1 })];
+        const result = getCartTotals(cart, 0);
+        expect(result.grossProfit).toBe(0);
+        expect(result.marginPct).toBe(0);
+    });
+
+    it('should handle loss-making sale', () => {
+        const product = makeProduct({ costPrice: 1500, sellingPrice: 1000 });
+        const cart = [makeCartItem({ product, qty: 1 })];
+        const result = getCartTotals(cart, 0);
+        expect(result.grossProfit).toBe(-500); // loss
+        expect(result.marginPct).toBe(0); // negative profit shows 0%
+    });
+});
+
+// ─── Line Discounts ─────────────────────────────────────
+
+describe('Line discounts', () => {
+    it('should apply line discount correctly', () => {
+        const cart = [makeCartItem({ qty: 2, lineDiscount: 100 })];
+        const result = getCartTotals(cart, 0);
+        expect(result.subtotal).toBe(3000 - 100); // (1500*2) - 100
+        expect(result.total).toBe(2900);
+    });
+
+    it('should combine line and invoice discounts', () => {
+        const cart = [makeCartItem({ qty: 1, lineDiscount: 50 })];
+        const result = getCartTotals(cart, 100);
+        // (1500 - 50) - 100 = 1350
+        expect(result.total).toBe(1350);
     });
 });
