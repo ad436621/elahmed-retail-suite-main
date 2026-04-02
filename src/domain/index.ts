@@ -25,10 +25,10 @@ export { calculateFIFOSale, commitFIFOSaleFromBatches, bulkCommitFIFOSales, getA
 
 // Returns domain
 export { processReturn, ReturnError, calculateAlreadyReturnedQty } from './returns';
-export type { ReturnRecord, ReturnItem } from './returns';
+// ReturnRecord and ReturnItem types are exported from types barrel above
 
 // Audit domain
 export { createAuditEntry } from './audit';
 
-// Product domain
-export { validateProduct, formatProductForDisplay } from './product';
+// Product domain — calcProductMarginPct avoids clash with money.ts calcMarginPct
+export { validatePricing, calcMarginPct as calcProductMarginPct, filterProducts, findByBarcode, generateBarcode, ProductError } from './product';

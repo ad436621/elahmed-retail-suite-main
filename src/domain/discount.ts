@@ -7,7 +7,9 @@ import { DiscountRule, UserRole, CartItem } from './types';
 
 const DISCOUNT_RULES: DiscountRule[] = [
   { role: 'super_admin', maxLinePct: 100, maxInvoicePct: 100 },
+  { role: 'owner', maxLinePct: 100, maxInvoicePct: 100 },
   { role: 'admin', maxLinePct: 30, maxInvoicePct: 20 },
+  { role: 'user', maxLinePct: 10, maxInvoicePct: 5 },
   { role: 'employee', maxLinePct: 10, maxInvoicePct: 5 },
 ];
 
@@ -19,7 +21,9 @@ export class DiscountError extends Error {
 }
 
 export function getDiscountLimits(role: UserRole): DiscountRule {
-  return DISCOUNT_RULES.find(r => r.role === role) || DISCOUNT_RULES[2];
+  const found = DISCOUNT_RULES.find(r => r.role === role);
+  // Fallback to employee limits (most restrictive) for unknown roles
+  return found ?? DISCOUNT_RULES.find(r => r.role === 'employee') ?? DISCOUNT_RULES[4];
 }
 
 /** Validate a line discount against role limits */
@@ -29,9 +33,11 @@ export function validateLineDiscount(
   role: UserRole
 ): void {
   if (discount < 0) throw new DiscountError('Discount cannot be negative');
-  if (lineTotal === 0) return;
+  if (lineTotal <= 0) return; // Skip validation for zero/negative totals
 
   const pct = (discount / lineTotal) * 100;
+  if (!Number.isFinite(pct)) return; // Guard against Infinity
+
   const limits = getDiscountLimits(role);
 
   if (pct > limits.maxLinePct) {
@@ -48,9 +54,11 @@ export function validateInvoiceDiscount(
   role: UserRole
 ): void {
   if (discount < 0) throw new DiscountError('Discount cannot be negative');
-  if (subtotal === 0) return;
+  if (subtotal <= 0) return; // Skip validation for zero/negative subtotals
 
   const pct = (discount / subtotal) * 100;
+  if (!Number.isFinite(pct)) return; // Guard against Infinity
+
   const limits = getDiscountLimits(role);
 
   if (pct > limits.maxInvoicePct) {

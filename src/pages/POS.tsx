@@ -43,6 +43,7 @@ export default function POS() {
     cart, addToCart, removeFromCart, updateCartItemQty, updateLineDiscount,
     clearCart, invoiceDiscount, applyInvoiceDiscount,
     holdInvoice, heldInvoices, restoreInvoice, removeHeldInvoice,
+    getTotals,
   } = useCart();
 
   // Delta-to-absolute adapter for CheckoutSidebar
@@ -52,12 +53,12 @@ export default function POS() {
     updateCartItemQty(productId, item.qty + delta);
   }, [cart, updateCartItemQty]);
 
-  // Computed cart values
-  const subtotal           = cart.reduce((s, i) => s + i.product.sellingPrice * i.qty, 0);
-  const lineDiscountsTotal = cart.reduce((s, i) => s + (i.lineDiscount ?? 0), 0);
-  const totalCost          = cart.reduce((s, i) => s + i.product.costPrice * i.qty, 0);
-  const maxInvoiceDiscount = Math.max(0, subtotal - lineDiscountsTotal - totalCost);
-  const grandTotal         = Math.max(0, subtotal - lineDiscountsTotal - invoiceDiscount);
+  // Computed cart values - use CartContext's getTotals for accurate money calculations
+  const totals = useMemo(() => getTotals(), [cart, invoiceDiscount]);
+  const subtotal = totals.subtotal;
+  const grandTotal = totals.total;
+  const lineDiscountsTotal = totals.subtotal - cart.reduce((s, i) => s + i.product.sellingPrice * i.qty, 0);
+  const maxInvoiceDiscount = Math.max(0, subtotal - lineDiscountsTotal - cart.reduce((s, i) => s + (i.product.costPrice ?? 0) * i.qty, 0));
 
   // ── Local state ─────────────────────────────────────────────
   const searchInputRef = useRef<HTMLInputElement>(null);

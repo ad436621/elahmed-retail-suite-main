@@ -28,7 +28,9 @@ function getStoredInvoiceCounter(): number {
       if (!isNaN(parsed) && parsed > 0) return parsed;
     }
   } catch (e) {
-    console.error('Failed to read invoice counter:', e);
+    if (import.meta.env.DEV) {
+      console.error('Failed to read invoice counter:', e);
+    }
   }
   return 0;
 }
@@ -44,7 +46,9 @@ function getPersistedInvoiceSequence(): number {
     const sales = rawSales ? JSON.parse(rawSales) as Array<{ invoiceNumber?: string }> : [];
     return sales.reduce((max, sale) => Math.max(max, extractInvoiceSequence(String(sale.invoiceNumber ?? ''))), 0);
   } catch (e) {
-    console.error('Failed to infer invoice counter from persisted sales:', e);
+    if (import.meta.env.DEV) {
+      console.error('Failed to infer invoice counter from persisted sales:', e);
+    }
     return 0;
   }
 }
@@ -53,16 +57,68 @@ function saveInvoiceCounter(counter: number): void {
   try {
     localStorage.setItem(INVOICE_COUNTER_KEY, String(counter));
   } catch (e) {
-    console.error('Failed to save invoice counter:', e);
+    if (import.meta.env.DEV) {
+      console.error('Failed to save invoice counter:', e);
+    }
   }
 }
 
-function generateInvoiceNumber(): string {
-  const currentCounter = Math.max(getStoredInvoiceCounter(), getPersistedInvoiceSequence());
-  const newCounter = currentCounter + 1;
-  saveInvoiceCounter(newCounter);
-  const year = new Date().getFullYear();
-  return `INV-${year}-${newCounter.toString().padStart(4, '0')}`;
+// Simple lock to prevent concurrent invoice number generation
+const INVOICE_LOCK_KEY = 'gx_invoice_gen_lock';
+
+function acquireInvoiceLock(): boolean {
+  try {
+    // Try to set a unique value - if it already exists, lock is held
+    const existing = localStorage.getItem(INVOICE_LOCK_KEY);
+    if (existing) {
+      // Check if lock is stale (older than 5 seconds)
+      const lockTime = parseInt(existing, 10);
+      if (Date.now() - lockTime > 5000) {
+        // Stale lock - overwrite it
+        localStorage.setItem(INVOICE_LOCK_KEY, String(Date.now()));
+        return true;
+      }
+      return false;
+    }
+    localStorage.setItem(INVOICE_LOCK_KEY, String(Date.now()));
+    return true;
+  } catch {
+    return true; // If we can't set, proceed anyway
+  }
+}
+
+function releaseInvoiceLock(): void {
+  try {
+    localStorage.removeItem(INVOICE_LOCK_KEY);
+  } catch {
+    // Ignore cleanup errors
+  }
+}
+
+export function generateInvoiceNumber(): string {
+  // Try to acquire lock - retry a few times if locked
+  let lockAcquired = false;
+  for (let i = 0; i < 3; i++) {
+    if (acquireInvoiceLock()) {
+      lockAcquired = true;
+      break;
+    }
+    // Small delay before retry
+    const start = Date.now();
+    while (Date.now() - start < 10) { /* busy wait */ }
+  }
+  
+  try {
+    const currentCounter = Math.max(getStoredInvoiceCounter(), getPersistedInvoiceSequence());
+    const newCounter = currentCounter + 1;
+    saveInvoiceCounter(newCounter);
+    const year = new Date().getFullYear();
+    return `INV-${year}-${newCounter.toString().padStart(4, '0')}`;
+  } finally {
+    if (lockAcquired) {
+      releaseInvoiceLock();
+    }
+  }
 }
 
 export interface SaleResult {
@@ -81,6 +137,11 @@ export function processSale(
   customerId?: string,
   customerName?: string
 ): SaleResult {
+  // Validate invoice discount - must be non-negative
+  if (invoiceDiscount < 0) {
+    throw new Error('خصم الفاتورة لا يمكن أن يكون سالباً');
+  }
+
   // 1. Validate stock for all items
   for (const item of cart) {
     validateStock(item.product, item.qty);
@@ -93,21 +154,23 @@ export function processSale(
   for (const item of cart) {
     let result: BatchSaleResult;
     try {
+      // FIX: Calculate net unit price to ensure batch profit isn't inflated by ignoring line discounts
+      const netUnitPrice = Math.max(0, (item.product.sellingPrice * item.qty - (item.lineDiscount || 0)) / item.qty);
       // Try FIFO from batches first
-      result = calculateFIFOSale(item.product.id, item.qty, item.product.sellingPrice);
+      result = calculateFIFOSale(item.product.id, item.qty, netUnitPrice);
     } catch {
       // ── No batches fallback ─────────────────────────────────────────
       // If the product has enough quantity in its own record, use it directly.
       // This handles imported backups that lack batch records.
       const costPerUnit = item.product.costPrice ?? 0;
-      const salePerUnit = item.product.sellingPrice ?? 0;
-      const profit = (salePerUnit - costPerUnit) * item.qty;
+      const netUnitPrice = Math.max(0, (item.product.sellingPrice * item.qty - (item.lineDiscount || 0)) / item.qty);
+      const profit = (netUnitPrice - costPerUnit) * item.qty;
       result = {
         batches: [{
           batchId: `auto-${item.product.id}`,
           qtyFromBatch: item.qty,
           costPrice: costPerUnit,
-          salePrice: salePerUnit,
+          salePrice: netUnitPrice,
           profit,
         }],
         totalCost: costPerUnit * item.qty,

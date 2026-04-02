@@ -13,7 +13,37 @@ function getTableColumns$1(db2, table) {
   if (!tableExists$1(db2, table)) {
     return [];
   }
-  return db2.prepare(`PRAGMA table_info(${table})`).all().map((column) => column.name);
+  const validTables = /* @__PURE__ */ new Set([
+    "products",
+    "sales",
+    "sale_items",
+    "customers",
+    "installments",
+    "installment_schedules",
+    "installment_payments",
+    "wallets",
+    "safe_transactions",
+    "expenses",
+    "employees",
+    "employee_salaries",
+    "employee_advances",
+    "suppliers",
+    "supplier_transactions",
+    "product_batches",
+    "blacklist",
+    "damaged_items",
+    "other_revenue",
+    "reminders",
+    "repair_tickets",
+    "repair_parts",
+    "used_devices",
+    "settings",
+    "inventory_items"
+  ]);
+  if (!validTables.has(table)) {
+    return [];
+  }
+  return db2.prepare(`PRAGMA table_info("${table}")`).all().map((column) => column.name);
 }
 function createIndexIfColumnsExist(db2, indexName, table, columns) {
   const tableColumns = new Set(getTableColumns$1(db2, table));
@@ -84,6 +114,23 @@ function initializeDatabase() {
       name TEXT NOT NULL,
       inventoryType TEXT NOT NULL,
       UNIQUE(name, inventoryType)
+    );
+
+    CREATE TABLE IF NOT EXISTS inventory_items (
+      id TEXT PRIMARY KEY,
+      type TEXT NOT NULL,
+      name TEXT NOT NULL,
+      barcode TEXT,
+      quantity INTEGER NOT NULL DEFAULT 0 CHECK (quantity >= 0),
+      costPrice REAL NOT NULL DEFAULT 0,
+      salePrice REAL NOT NULL DEFAULT 0,
+      minStock INTEGER DEFAULT 0,
+      warehouseId TEXT,
+      isArchived INTEGER DEFAULT 0,
+      deletedAt TEXT,
+      createdAt TEXT NOT NULL,
+      updatedAt TEXT NOT NULL,
+      metadata TEXT
     );
 
     CREATE TABLE IF NOT EXISTS products (
@@ -175,6 +222,7 @@ function initializeDatabase() {
       marginPct REAL NOT NULL,
       paymentMethod TEXT NOT NULL,
       employee TEXT NOT NULL,
+      idempotencyKey TEXT UNIQUE,
       voidedAt TEXT,
       voidReason TEXT,
       voidedBy TEXT
@@ -2359,6 +2407,7 @@ function runDataMigration(db2) {
     migrateReminders(db2);
     migrateRepairs(db2);
     migrateRepairParts(db2);
+    migrateUnifiedInventory(db2);
     console.log("[migration] All migrations complete.");
   } catch (err) {
     console.error("[migration] Error:", err);
@@ -5187,6 +5236,27 @@ function setupIpcHandlers(db2) {
       }
     }
     return result;
+  });
+  electron.ipcMain.handle("db:factory-reset", () => {
+    try {
+      db2.transaction(() => {
+        const tablesQuery = db2.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
+        const tables = tablesQuery.map((row) => row.name);
+        for (const t of tables) {
+          if (t === "settings" || t === "users" || t === "sqlite_sequence" || t === "sqlite_stat1") {
+            continue;
+          }
+          try {
+            db2.prepare(`DELETE FROM ${t}`).run();
+          } catch {
+          }
+        }
+      })();
+      return true;
+    } catch (e) {
+      console.error("Factory reset failed:", e);
+      return false;
+    }
   });
 }
 function setupRepairHandlers(db2) {

@@ -15,7 +15,22 @@ function getTableColumns(db: Database.Database, table: string): string[] {
     return [];
   }
 
-  return (db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>).map((column) => column.name);
+  // Use parameterized query - validate table name against whitelist
+  const validTables = new Set([
+    'products', 'sales', 'sale_items', 'customers', 'installments',
+    'installment_schedules', 'installment_payments', 'wallets',
+    'safe_transactions', 'expenses', 'employees', 'employee_salaries',
+    'employee_advances', 'suppliers', 'supplier_transactions', 'product_batches',
+    'blacklist', 'damaged_items', 'other_revenue', 'reminders',
+    'repair_tickets', 'repair_parts', 'used_devices', 'settings', 'inventory_items'
+  ]);
+  
+  // Only allow known table names to prevent SQL injection
+  if (!validTables.has(table)) {
+    return [];
+  }
+
+  return (db.prepare(`PRAGMA table_info("${table}")`).all() as Array<{ name: string }>).map((column) => column.name);
 }
 
 function createIndexIfColumnsExist(
@@ -101,6 +116,23 @@ export function initializeDatabase() {
       name TEXT NOT NULL,
       inventoryType TEXT NOT NULL,
       UNIQUE(name, inventoryType)
+    );
+
+    CREATE TABLE IF NOT EXISTS inventory_items (
+      id TEXT PRIMARY KEY,
+      type TEXT NOT NULL,
+      name TEXT NOT NULL,
+      barcode TEXT,
+      quantity INTEGER NOT NULL DEFAULT 0 CHECK (quantity >= 0),
+      costPrice REAL NOT NULL DEFAULT 0,
+      salePrice REAL NOT NULL DEFAULT 0,
+      minStock INTEGER DEFAULT 0,
+      warehouseId TEXT,
+      isArchived INTEGER DEFAULT 0,
+      deletedAt TEXT,
+      createdAt TEXT NOT NULL,
+      updatedAt TEXT NOT NULL,
+      metadata TEXT
     );
 
     CREATE TABLE IF NOT EXISTS products (
@@ -192,6 +224,7 @@ export function initializeDatabase() {
       marginPct REAL NOT NULL,
       paymentMethod TEXT NOT NULL,
       employee TEXT NOT NULL,
+      idempotencyKey TEXT UNIQUE,
       voidedAt TEXT,
       voidReason TEXT,
       voidedBy TEXT

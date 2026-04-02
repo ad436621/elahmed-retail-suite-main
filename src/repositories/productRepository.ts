@@ -45,7 +45,7 @@ import {
   carSparePartsDB,
   carOilsDB,
 } from '@/data/subInventoryData';
-import { getCars } from '@/data/carsData';
+import { getCars, updateCar } from '@/data/carsData';
 import {
   addProductRow,
   getProductRows,
@@ -374,6 +374,108 @@ export function updateProductQuantity(productId: string, newQuantity: number): v
   const carOil = carOilsDB.get().find((item) => item.id === productId);
   if (carOil) {
     carOilsDB.update(productId, { quantity: newQuantity });
+    return;
+  }
+
+  // FIX: added missing car branch — selling a car from POS must update its quantity
+  const car = getCars().find((item) => item.id === productId);
+  if (car) {
+    updateCar(productId, { quantity: newQuantity } as any);
+  }
+}
+
+// FIX: Surgical atomic increment to prevent TOCTOU data corruption
+export function incrementProductQuantity(productId: string, qtyDelta: number): void {
+  const storeProduct = getLegacyProductRows().find((r) => r.id === productId);
+  if (storeProduct) {
+    updateProductRow(LEGACY_SOURCE, LEGACY_STORAGE_KEY, productId, {
+      quantity: Math.max(0, storeProduct.quantity + qtyDelta),
+      updatedAt: new Date().toISOString(),
+    });
+    return;
+  }
+
+  const mobile = getMobiles().find((item) => item.id === productId);
+  if (mobile) {
+    updateMobile(productId, { quantity: Math.max(0, mobile.quantity + qtyDelta) });
+    return;
+  }
+
+  const mobileAccessory = getMobileAccessories().find((item) => item.id === productId);
+  if (mobileAccessory) {
+    updateMobileAccessory(productId, { quantity: Math.max(0, mobileAccessory.quantity + qtyDelta) });
+    return;
+  }
+
+  const mobileSparePart = getMobileSpareParts().find((item) => item.id === productId);
+  if (mobileSparePart) {
+    updateMobileSparePart(productId, { quantity: Math.max(0, mobileSparePart.quantity + qtyDelta) });
+    return;
+  }
+
+  const computer = getComputers().find((item) => item.id === productId);
+  if (computer) {
+    updateComputer(productId, { quantity: Math.max(0, computer.quantity + qtyDelta) });
+    return;
+  }
+
+  const legacyComputerAccessory = getComputerAccessories().find((item) => item.id === productId);
+  if (legacyComputerAccessory) {
+    updateComputerAccessory(productId, { quantity: Math.max(0, legacyComputerAccessory.quantity + qtyDelta) });
+    return;
+  }
+
+  const computerAccessory = computerAccessoriesDB.get().find((item) => item.id === productId);
+  if (computerAccessory) {
+    computerAccessoriesDB.update(productId, { quantity: Math.max(0, computerAccessory.quantity + qtyDelta) });
+    return;
+  }
+
+  const computerSparePart = computerSparePartsDB.get().find((item) => item.id === productId);
+  if (computerSparePart) {
+    computerSparePartsDB.update(productId, { quantity: Math.max(0, computerSparePart.quantity + qtyDelta) });
+    return;
+  }
+
+  const device = getDevices().find((item) => item.id === productId);
+  if (device) {
+    updateDevice(productId, { quantity: Math.max(0, device.quantity + qtyDelta) });
+    return;
+  }
+
+  const legacyDeviceAccessory = getDeviceAccessories().find((item) => item.id === productId);
+  if (legacyDeviceAccessory) {
+    updateDeviceAccessory(productId, { quantity: Math.max(0, legacyDeviceAccessory.quantity + qtyDelta) });
+    return;
+  }
+
+  const deviceAccessory = deviceAccessoriesDB.get().find((item) => item.id === productId);
+  if (deviceAccessory) {
+    deviceAccessoriesDB.update(productId, { quantity: Math.max(0, deviceAccessory.quantity + qtyDelta) });
+    return;
+  }
+
+  const deviceSparePart = deviceSparePartsDB.get().find((item) => item.id === productId);
+  if (deviceSparePart) {
+    deviceSparePartsDB.update(productId, { quantity: Math.max(0, deviceSparePart.quantity + qtyDelta) });
+    return;
+  }
+
+  const carSparePart = carSparePartsDB.get().find((item) => item.id === productId);
+  if (carSparePart) {
+    carSparePartsDB.update(productId, { quantity: Math.max(0, carSparePart.quantity + qtyDelta) });
+    return;
+  }
+
+  const carOil = carOilsDB.get().find((item) => item.id === productId);
+  if (carOil) {
+    carOilsDB.update(productId, { quantity: Math.max(0, carOil.quantity + qtyDelta) });
+    return;
+  }
+
+  const car = getCars().find((item) => item.id === productId);
+  if (car) {
+    updateCar(productId, { quantity: Math.max(0, car.quantity + qtyDelta) } as any);
   }
 }
 

@@ -12,7 +12,7 @@ import { processSale } from '@/services/saleService';
 import { saveSale } from '@/repositories/saleRepository';
 import { saveMovements } from '@/repositories/stockRepository';
 import { saveAuditEntries } from '@/repositories/auditRepository';
-import { getAllInventoryProducts, updateProductQuantity } from '@/repositories/productRepository';
+import { getAllInventoryProducts, updateProductQuantity, incrementProductQuantity } from '@/repositories/productRepository';
 import { printInvoice } from '@/services/invoicePrinter';
 import { recordSalePayment } from '@/data/walletsData';
 import { useAuth } from '@/contexts/AuthContext';
@@ -124,7 +124,9 @@ export default function CheckoutSidebar({
             saveSale(result.sale);
             saveMovements(result.stockMovements);
             saveAuditEntries(result.auditEntries);
-            result.stockMovements.forEach(m => updateProductQuantity(m.productId, m.newQuantity));
+            
+            // FIX: Atomic inventory updates prevent data races
+            result.stockMovements.forEach(m => incrementProductQuantity(m.productId, m.quantity));
 
             let postSaleWarning: string | null = null;
 
@@ -161,7 +163,7 @@ export default function CheckoutSidebar({
         } finally {
             setIsProcessing(false);
         }
-    }, [cart, invoiceDiscount, user, grandTotal, toast, isProcessing]);
+    }, [cart, invoiceDiscount, user, grandTotal, toast, isProcessing, selectedCustomer]);
 
     const handleSuccessDismiss = useCallback(() => {
         onClearCart();

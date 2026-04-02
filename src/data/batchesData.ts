@@ -86,7 +86,7 @@ function normalizeBatch(row: Partial<ProductBatchRow> | Partial<ProductBatch>): 
     : purchaseDate;
   return {
     id: String(row.id ?? crypto.randomUUID()),
-    productId: String(row.productId ?? ''),
+    productId: row.productId ? String(row.productId) : '',
     inventoryType: String((row as ProductBatchRow).inventoryType ?? (row as ProductBatch).inventoryType ?? 'mobile') as BatchInventoryType,
     productName: String((row as ProductBatchRow).productName ?? (row as ProductBatch).productName ?? '').trim(),
     costPrice: toNumber((row as ProductBatchRow).costPrice ?? (row as ProductBatch).costPrice),

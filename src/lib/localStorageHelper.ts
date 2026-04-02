@@ -63,10 +63,13 @@ function checkStorageUsage(): void {
         const MAX_MB = 5; // Most browsers allow 5MB
         const usagePercent = (totalMB / MAX_MB) * 100;
 
-        if (usagePercent >= 90) {
-            console.error(`[localStorage] 🔴 CRITICAL: ${usagePercent.toFixed(1)}% used (${totalMB.toFixed(2)}MB / ${MAX_MB}MB). Consider cleaning up data!`);
-        } else if (usagePercent >= 70) {
-            console.warn(`[localStorage] 🟡 WARNING: ${usagePercent.toFixed(1)}% used (${totalMB.toFixed(2)}MB / ${MAX_MB}MB).`);
+        // Only log in development - production should be silent
+        if (import.meta.env.DEV) {
+            if (usagePercent >= 90) {
+                console.error(`[localStorage] 🔴 CRITICAL: ${usagePercent.toFixed(1)}% used (${totalMB.toFixed(2)}MB / ${MAX_MB}MB). Consider cleaning up data!`);
+            } else if (usagePercent >= 70) {
+                console.warn(`[localStorage] 🟡 WARNING: ${usagePercent.toFixed(1)}% used (${totalMB.toFixed(2)}MB / ${MAX_MB}MB).`);
+            }
         }
     } catch {
         // Silently fail — not critical

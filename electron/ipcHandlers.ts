@@ -2000,6 +2000,97 @@ export function setupIpcHandlers(db: DB) {
     return db.prepare('SELECT * FROM shift_records WHERE id = ?').get(id);
   });
 
+  // ── Atomic Checkout Transaction ──────────────────────────────────────────
+  ipcMain.handle('db-sync:checkout:process', (_, { sale, stockMovements, auditEntries }) => {
+    try {
+      db.transaction(() => {
+        // 1. Insert Sale
+        db.prepare(`
+          INSERT INTO sales (
+            id, invoiceNumber, date, subtotal, discount, total, 
+            totalCost, grossProfit, marginPct, paymentMethod, employee, idempotencyKey
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(
+          sale.id, sale.invoiceNumber, sale.date, sale.subtotal, sale.discount, sale.total,
+          sale.totalCost, sale.grossProfit, sale.marginPct, sale.paymentMethod, sale.employeeId || sale.employee, sale.idempotencyKey
+        );
+
+        // 2. Insert Sale Items
+        const insertSaleItem = db.prepare(`
+          INSERT INTO sale_items (
+            id, saleId, productId, name, qty, price, cost, lineDiscount, warehouseId, batches
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+        for (const item of sale.items) {
+          insertSaleItem.run(
+            item.id, sale.id, item.productId, item.name, item.qty, item.price, item.cost, 
+            item.lineDiscount || 0, item.warehouseId, JSON.stringify(item.batches || [])
+          );
+        }
+
+        // 3. Process Stock Movements & Inventory Quantity Updates
+        const insertMovement = db.prepare(`
+          INSERT INTO stock_movements (
+            id, productId, type, quantityChange, previousQuantity, newQuantity, 
+            reason, referenceId, userId, timestamp, warehouseId
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+        // using atomic UPDATE to prevent TOCTOU race condition
+        const updateStock = db.prepare(`
+          UPDATE products SET quantity = quantity + ? WHERE id = ?
+        `);
+        const updateUnifiedStock = db.prepare(`
+          UPDATE inventory_items SET quantity = quantity + ? WHERE id = ?
+        `);
+
+        for (const mov of stockMovements) {
+          insertMovement.run(
+            mov.id, mov.productId, mov.type, mov.quantityChange, mov.previousQuantity, mov.newQuantity,
+            mov.reason, mov.referenceId, mov.userId, mov.timestamp, mov.warehouseId
+          );
+          
+          // Apply decrement atomically
+          updateStock.run(mov.quantityChange, mov.productId);
+          
+          // Also try to update unified table if it exists
+          try {
+            updateUnifiedStock.run(mov.quantityChange, mov.productId);
+          } catch(e) {
+            // ignore if unified table is not set up correctly yet or record doesn't exist
+          }
+        }
+
+        // 4. Insert Audit Entries
+        const insertAudit = db.prepare(`
+          INSERT INTO audit_logs (
+            id, userId, action, entityType, entityId, beforeStateJson, afterStateJson, machineId, timestamp
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `);
+        for (const entry of auditEntries || []) {
+          insertAudit.run(
+            entry.id || crypto.randomUUID(),
+            entry.userId,
+            entry.action,
+            entry.entityType,
+            entry.entityId,
+            entry.beforeStateJson ? JSON.stringify(entry.beforeStateJson) : null,
+            entry.afterStateJson ? JSON.stringify(entry.afterStateJson) : null,
+            entry.machineId || 'local',
+            entry.timestamp || new Date().toISOString()
+          );
+        }
+      })();
+      return { success: true };
+    } catch (error: any) {
+      console.error('[checkout] Transaction failed:', error);
+      // Let the frontend know this idempotency key might be a duplicate or there is a negative stock error
+      if (error?.message?.includes('UNIQUE constraint failed: sales.idempotencyKey')) {
+        return { success: false, error: 'DUPLICATE_TRANSACTION', message: 'This transaction was already completed.' };
+      }
+      return { success: false, error: 'TRANSACTION_FAILED', message: error.message };
+    }
+  });
+
   // ── DB Stats (for diagnostics page) ────────────────────────────────────────
   ipcMain.handle('db:stats', () => {
     const tables = ['products', 'sales', 'customers', 'suppliers', 'employees', 'expenses',
@@ -2015,5 +2106,28 @@ export function setupIpcHandlers(db: DB) {
       }
     }
     return result;
+  });
+
+  // ── Danger Zone (Factory Reset) ───────────────────────────────────────────
+  ipcMain.handle('db:factory-reset', () => {
+    try {
+      db.transaction(() => {
+        const tablesQuery = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all() as { name: string }[];
+        const tables = tablesQuery.map(row => row.name);
+
+        for (const t of tables) {
+          if (t === 'settings' || t === 'users' || t === 'sqlite_sequence' || t === 'sqlite_stat1') {
+            continue;
+          }
+          try {
+            db.prepare(`DELETE FROM ${t}`).run();
+          } catch { /* ignore */ }
+        }
+      })();
+      return true;
+    } catch (e) {
+      console.error('Factory reset failed:', e);
+      return false;
+    }
   });
 }

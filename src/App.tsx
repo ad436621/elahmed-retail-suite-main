@@ -11,7 +11,7 @@ import { migrateUsedMerge } from "@/domain/migrationUsedMerge";
 import { syncRepairsToLegacy } from "@/data/repairsData";
 import { runAiNotificationsAnalysis } from '@/services/aiNotificationsService';
 // NEW: import storage migration
-import { runStorageMigration } from '@/utils/storageMigration';
+import { runStorageMigrations } from '@/lib/storageMigration';
 import { LocalStorageSizeMonitor } from '@/components/LocalStorageSizeMonitor';
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { ThemeProvider } from "@/contexts/ThemeContext";
@@ -121,7 +121,7 @@ function DataMigrationRunner(): React.ReactElement | null {
     if (!isAuthenticated) return;
 
     // NEW: run storage key migration first (elahmed_* → gx_*)
-    try { runStorageMigration(); } catch (e) { console.error(e); }
+    try { runStorageMigrations(); } catch (e) { console.error(e); }
 
     try { migrateLegacyDataToBatches(); } catch (e) { console.error(e); }
     try { migrateUsedMerge(); } catch (e) { console.error(e); }

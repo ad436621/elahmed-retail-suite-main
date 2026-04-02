@@ -92,11 +92,14 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     const updateLineDiscount = useCallback((productId: string, discount: number) => {
         setCart(prev =>
-            prev.map(item =>
-                item.product.id === productId
-                    ? { ...item, lineDiscount: Math.max(0, discount) }
-                    : item
-            )
+            prev.map(item => {
+                if (item.product.id === productId) {
+                    // Prevent UI crash by clamping discount to the maximum possible line total (Domain constraint)
+                    const maxDiscount = item.product.sellingPrice * item.qty;
+                    return { ...item, lineDiscount: Math.min(Math.max(0, discount), maxDiscount) };
+                }
+                return item;
+            })
         );
     }, []);
 

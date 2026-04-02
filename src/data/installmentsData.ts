@@ -129,11 +129,25 @@ export function addPaymentToContract(contractId: string, payment: Omit<Installme
   if (!current) return null;
 
   const allocation = applyPaymentToSchedule(current.schedule, payment.amount);
+  
+  // FIX: Ensure audit notes perfectly match the mathematical FIFO allocation of the payment
+  const paidMonths = allocation.allocations
+    .map((a) => current.schedule.find((s) => s.id === a.scheduleItemId)?.month)
+    .filter(Boolean)
+    .join(' و ');
+    
+  let actualNote = payment.note;
+  if (!actualNote || actualNote.startsWith('دفعة للقسط رقم')) {
+    actualNote = `دفعة للأقساط المنقضية آلياً: ${paidMonths}`;
+  } else if (!actualNote.includes('آلياً')) {
+    actualNote = `${actualNote} (توجيه آلي للأقساط: ${paidMonths})`;
+  }
+
   const nextPayment: InstallmentPayment = {
     id: crypto.randomUUID(),
     amount: payment.amount,
     date: payment.date,
-    note: payment.note,
+    note: actualNote,
     allocations: allocation.allocations,
   };
 

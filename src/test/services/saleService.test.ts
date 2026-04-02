@@ -46,6 +46,7 @@ vi.mock('@/data/batchesData', () => {
         updateBatchQty: vi.fn(),
         restoreBatchQty: vi.fn(),
         getWeightedAvgCost: vi.fn(() => null),
+        invalidateBatchesCache: vi.fn(),
         __setMockBatches: (b: unknown[]) => { batches = b; },
     };
 });

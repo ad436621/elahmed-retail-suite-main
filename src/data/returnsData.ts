@@ -25,6 +25,7 @@ function normalizeRecord(record: Partial<StoredReturnRecord>): StoredReturnRecor
         name: String(item.name ?? ''),
         qty: Number(item.qty ?? 0),
         price: Number(item.price ?? 0),
+        cost: item.cost !== undefined ? Number(item.cost) : undefined,
         reason: String(item.reason ?? ''),
       }))
       : [],
@@ -89,7 +90,7 @@ export function getReturnsBySaleId(originalSaleId: string): StoredReturnRecord[]
 export function getReturnedQuantitiesBySaleId(originalSaleId: string): Record<string, number> {
   return getReturnsBySaleId(originalSaleId).reduce<Record<string, number>>((acc, record) => {
     record.items.forEach((item) => {
-      acc[item.productId] = (acc[item.productId] ?? 0) + item.qty;
+      acc[item.productId] = (acc[item.productId] ?? 0) + (Number(item.qty) || 0);
     });
     return acc;
   }, {});

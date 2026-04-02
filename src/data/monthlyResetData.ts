@@ -95,6 +95,8 @@ export function shouldAutoReset(): boolean {
 
 // ─── ALL DATA KEYS (for "Clear All Data") ───────────────────
 
+import { hasElectronIpc, callElectronSync } from '@/lib/electronDataBridge';
+
 export const ALL_DATA_KEYS = [
     STORAGE_KEYS.MOBILES,
     STORAGE_KEYS.MOBILE_ACCESSORIES,
@@ -115,6 +117,13 @@ export const ALL_DATA_KEYS = [
 ];
 
 export function clearAllData(): void {
+    if (hasElectronIpc()) {
+        try {
+            callElectronSync('db:factory-reset', null);
+        } catch (e) {
+            console.error('Failed to factory reset DB:', e);
+        }
+    }
     ALL_DATA_KEYS.forEach(key => localStorage.removeItem(key));
     // Keep app_settings (company name etc.) intact
 }

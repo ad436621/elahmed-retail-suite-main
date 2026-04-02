@@ -24,7 +24,10 @@ export function calculateProfitAmount(costPrice: number, salePrice: number): num
 
 export function calculateMarginPercent(costPrice: number, salePrice: number): number {
   if (salePrice <= 0) return 0;
-  return (calculateProfitAmount(costPrice, salePrice) / salePrice) * 100;
+  if (costPrice < 0) return 0; // Guard against negative cost
+  const profit = calculateProfitAmount(costPrice, salePrice);
+  if (profit < 0) return 0; // Guard against negative profit (loss)
+  return (profit / salePrice) * 100;
 }
 
 export function calculateSalePriceFromProfit(costPrice: number, profitAmount: number): number {

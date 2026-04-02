@@ -1297,6 +1297,10 @@ export function runDataMigration(db: DB) {
     migrateReminders(db);
     migrateRepairs(db);
     migrateRepairParts(db);
+    
+    // NEW: Run the Unified Inventory Migration
+    migrateUnifiedInventory(db);
+    
     console.log('[migration] All migrations complete.');
   } catch (err) {
     console.error('[migration] Error:', err);
@@ -2399,4 +2403,171 @@ function migrateRepairParts(db: DB) {
     }
   })();
   console.log(`[migration] Repair Parts: ${data.length} records migrated.`);
+}
+
+function migrateUnifiedInventory(db: DB) {
+  if (!tableIsEmpty(db, 'inventory_items')) return;
+
+  console.log('[migration] Starting Unified Inventory Migration...');
+
+  db.transaction(() => {
+    // 1. Migrate Products
+    if (tableExists(db, 'products')) {
+      db.exec(`
+        INSERT INTO inventory_items (id, type, name, barcode, quantity, costPrice, salePrice, minStock, warehouseId, isArchived, deletedAt, createdAt, updatedAt, metadata)
+        SELECT
+          id,
+          COALESCE(deviceType, 'device'),
+          name,
+          barcode,
+          quantity,
+          newCostPrice,
+          salePrice,
+          minStock,
+          warehouseId,
+          isArchived,
+          deletedAt,
+          COALESCE(createdAt, CURRENT_TIMESTAMP),
+          COALESCE(updatedAt, CURRENT_TIMESTAMP),
+          json_object(
+            'model', model,
+            'category', category,
+            'condition', condition,
+            'storage', storage,
+            'ram', ram,
+            'color', color,
+            'brand', brand,
+            'boxNumber', boxNumber,
+            'processor', processor,
+            'serialNumber', serialNumber,
+            'imei2', imei2
+          )
+        FROM products;
+      `);
+      console.log('[migration] Products migrated to Unified Inventory.');
+    }
+
+    // 2. Migrate Accessories
+    if (tableExists(db, 'accessories')) {
+      db.exec(`
+        INSERT INTO inventory_items (id, type, name, barcode, quantity, costPrice, salePrice, minStock, warehouseId, isArchived, deletedAt, createdAt, updatedAt, metadata)
+        SELECT
+          id,
+          'accessory',
+          name,
+          barcode,
+          quantity,
+          newCostPrice,
+          salePrice,
+          minStock,
+          warehouseId,
+          isArchived,
+          deletedAt,
+          COALESCE(createdAt, CURRENT_TIMESTAMP),
+          COALESCE(updatedAt, CURRENT_TIMESTAMP),
+          json_object(
+            'inventoryType', inventoryType,
+            'category', category,
+            'subcategory', subcategory,
+            'model', model,
+            'condition', condition,
+            'brand', brand,
+            'boxNumber', boxNumber,
+            'color', color
+          )
+        FROM accessories;
+      `);
+      console.log('[migration] Accessories migrated to Unified Inventory.');
+    }
+
+    // 3. Migrate Cars
+    if (tableExists(db, 'cars_inventory')) {
+      db.exec(`
+        INSERT INTO inventory_items (id, type, name, quantity, costPrice, salePrice, warehouseId, isArchived, deletedAt, createdAt, updatedAt, metadata)
+        SELECT
+          id,
+          'car',
+          name,
+          1,
+          purchasePrice,
+          salePrice,
+          warehouseId,
+          isArchived,
+          deletedAt,
+          COALESCE(createdAt, CURRENT_TIMESTAMP),
+          COALESCE(updatedAt, CURRENT_TIMESTAMP),
+          json_object(
+            'model', model,
+            'year', year,
+            'color', color,
+            'plateNumber', plateNumber,
+            'licenseExpiry', licenseExpiry,
+            'condition', condition,
+            'category', category
+          )
+        FROM cars_inventory;
+      `);
+      console.log('[migration] Cars migrated to Unified Inventory.');
+    }
+
+    // 4. Migrate Used Devices
+    if (tableExists(db, 'used_devices')) {
+      db.exec(`
+        INSERT INTO inventory_items (id, type, name, quantity, costPrice, salePrice, warehouseId, isArchived, deletedAt, createdAt, updatedAt, metadata)
+        SELECT
+          id,
+          'used',
+          name,
+          1,
+          purchasePrice,
+          sellingPrice,
+          warehouseId,
+          isArchived,
+          deletedAt,
+          COALESCE(createdAt, CURRENT_TIMESTAMP),
+          COALESCE(updatedAt, CURRENT_TIMESTAMP),
+          json_object(
+            'model', model,
+            'category', category,
+            'condition', condition,
+            'status', status,
+            'serialNumber', serialNumber,
+            'color', color,
+            'storage', storage,
+            'ram', ram,
+            'soldAt', soldAt,
+            'purchasedFrom', purchasedFrom,
+            'soldTo', soldTo
+          )
+        FROM used_devices;
+      `);
+      console.log('[migration] Used Devices migrated to Unified Inventory.');
+    }
+
+    // 5. Migrate Repair Parts
+    if (tableExists(db, 'repair_parts')) {
+      db.exec(`
+        INSERT INTO inventory_items (id, type, name, barcode, quantity, costPrice, salePrice, minStock, createdAt, updatedAt, metadata)
+        SELECT
+          id,
+          'part',
+          name,
+          sku,
+          qty,
+          unit_cost,
+          selling_price,
+          min_qty,
+          COALESCE(createdAt, CURRENT_TIMESTAMP),
+          CURRENT_TIMESTAMP,
+          json_object(
+            'category', category,
+            'active', active
+          )
+        FROM repair_parts;
+      `);
+      console.log('[migration] Repair Parts migrated to Unified Inventory.');
+    }
+  })();
+
+  console.log('[migration] Unified Inventory Migration Completed.');
 }

@@ -28,7 +28,9 @@ export default function CartItemRow({ item, onUpdateQty, onRemove, onLineDiscoun
     const qtyRef = useRef<HTMLInputElement>(null);
     const rowRef = useRef<HTMLDivElement>(null);
 
-    const maxDiscount = Math.max(0, (item.product.sellingPrice - item.product.costPrice) * item.qty);
+    const costPrice = item.product.costPrice ?? 0;
+    const sellingPrice = item.product.sellingPrice ?? 0;
+    const maxDiscount = Math.max(0, (sellingPrice - costPrice) * item.qty);
     const lineDiscount = item.lineDiscount ?? 0;
     const lineTotal = item.product.sellingPrice * item.qty - lineDiscount;
 

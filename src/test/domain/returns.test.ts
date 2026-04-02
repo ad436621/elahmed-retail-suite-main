@@ -63,10 +63,10 @@ describe('processReturn', () => {
             currentQtys,
             [] // no prior returns
         );
-        expect(returnRecord.saleId).toBe('sale-1');
-        expect(returnRecord.invoiceNumber).toBe('INV-001');
-        expect(returnRecord.reason).toBe('عيب مصنعي');
-        expect(returnRecord.processedBy).toBe('user-1');
+        expect(returnRecord.originalSaleId).toBe('sale-1');
+        expect(returnRecord.originalInvoiceNumber).toBe('INV-001');
+        expect(returnRecord.totalRefund).toBeGreaterThan(0);
+        expect(returnRecord.id).toBeDefined();
     });
 
     it('should calculate totalRefund correctly', () => {
@@ -182,7 +182,7 @@ describe('processReturn', () => {
         const sale = makeSale();
         // Simulate a prior return that consumed all 3 units of prod-1
         const priorReturn = {
-            saleId: 'sale-1',
+            originalSaleId: 'sale-1',
             items: [{ productId: 'prod-1', qty: 3 }],
         };
         expect(() =>
@@ -201,7 +201,7 @@ describe('processReturn', () => {
         const sale = makeSale();
         // Prior return consumed 2 of 3 units — only 1 remains
         const priorReturn = {
-            saleId: 'sale-1',
+            originalSaleId: 'sale-1',
             items: [{ productId: 'prod-1', qty: 2 }],
         };
         expect(() =>
@@ -220,7 +220,7 @@ describe('processReturn', () => {
         const sale = makeSale();
         // Prior return consumed 1 of 3 units — 2 remain
         const priorReturn = {
-            saleId: 'sale-1',
+            originalSaleId: 'sale-1',
             items: [{ productId: 'prod-1', qty: 1 }],
         };
         const { returnRecord } = processReturn(
@@ -248,7 +248,7 @@ describe('processReturn', () => {
                 'attempt',
                 'user-1',
                 currentQtys,
-                [priorReturn as { saleId?: string; originalSaleId?: string; items: { productId: string; qty: number }[] }]
+                [priorReturn]
             )
         ).toThrow('تم إرجاع "iPhone 15" بالكامل مسبقاً');
     });
@@ -257,7 +257,7 @@ describe('processReturn', () => {
         const sale = makeSale();
         // This return is for a DIFFERENT sale — should not affect sale-1
         const unrelatedReturn = {
-            saleId: 'sale-999',
+            originalSaleId: 'sale-999',
             items: [{ productId: 'prod-1', qty: 3 }],
         };
         // Should succeed — different sale's returns don't count
@@ -283,8 +283,8 @@ describe('calculateAlreadyReturnedQty', () => {
 
     it('sums quantities from multiple returns for the same sale', () => {
         const returns = [
-            { saleId: 'sale-1', items: [{ productId: 'p1', qty: 2 }] },
-            { saleId: 'sale-1', items: [{ productId: 'p1', qty: 1 }, { productId: 'p2', qty: 3 }] },
+            { originalSaleId: 'sale-1', items: [{ productId: 'p1', qty: 2 }] },
+            { originalSaleId: 'sale-1', items: [{ productId: 'p1', qty: 1 }, { productId: 'p2', qty: 3 }] },
         ];
         const result = calculateAlreadyReturnedQty('sale-1', returns);
         expect(result.get('p1')).toBe(3);
@@ -293,7 +293,7 @@ describe('calculateAlreadyReturnedQty', () => {
 
     it('ignores returns for other sales', () => {
         const returns = [
-            { saleId: 'sale-other', items: [{ productId: 'p1', qty: 5 }] },
+            { originalSaleId: 'sale-other', items: [{ productId: 'p1', qty: 5 }] },
         ];
         const result = calculateAlreadyReturnedQty('sale-1', returns);
         expect(result.size).toBe(0);

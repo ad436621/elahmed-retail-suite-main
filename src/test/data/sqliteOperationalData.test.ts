@@ -656,7 +656,8 @@ describe('sqlite operational bridges', () => {
     expect(MASTER_RECOVERY_CODE).toBe('GX-LOCKED');
     expect(verifyRecoveryCode('gx-locked')).toBe(true);
 
-    addUser({
+    // addUser is async - must await
+    await addUser({
       username: 'cashier',
       password: '123456',
       fullName: 'Cashier',
@@ -670,6 +671,11 @@ describe('sqlite operational bridges', () => {
       fullName: 'Cashier',
       permissions: ['pos'],
     }));
+
+    // NOTE: In-memory cache needs to be reset after addUser since it's async
+    // The usersData module caches users in memory, so we need to re-import to get fresh state
+    const { getUsers: getUsersFresh } = await import('@/data/usersData');
+    expect(getUsersFresh().find(u => u.username === 'cashier')).toBeDefined();
 
     const changed = await changePassword('admin', 'admin1234');
     expect(changed).toBe(true);

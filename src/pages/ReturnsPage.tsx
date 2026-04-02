@@ -4,7 +4,7 @@ import { Search, X, RotateCcw, Check, AlertCircle, History, ChevronDown, Chevron
 import { Sale } from '@/domain/types';
 import { restoreBatchQty } from '@/data/batchesData';
 // NEW: import getReturnRecords for history table
-import { getReturnedQuantitiesBySaleId, addReturnRecord, getReturnRecords, StoredReturnRecord } from '@/data/returnsData';
+import { getReturnedQuantitiesBySaleId, getReturnsBySaleId, addReturnRecord, getReturnRecords, StoredReturnRecord } from '@/data/returnsData';
 import { processReturn } from '@/domain/returns';
 import { saveAuditEntries } from '@/repositories/auditRepository';
 import { getAllInventoryProducts, updateProductQuantity } from '@/repositories/productRepository';
@@ -142,12 +142,15 @@ export default function ReturnsPage() {
       .map((item) => item.reason.trim() ? `${item.name}: ${item.reason.trim()}` : item.name)
       .join(' | ') || 'مرتجع مبيعات';
 
+    // Fraud guard: fetch existing returns before calling processReturn
+    const existingReturns = getReturnsBySaleId(foundSale.id);
     const { returnRecord, stockMovements, auditEntries } = processReturn(
       foundSale,
       itemsToReturn.map((item) => ({ productId: item.productId, qty: item.returnQty })),
       reason,
       user?.id || 'system',
-      currentProductQuantities
+      currentProductQuantities,
+      existingReturns
     );
 
     itemsToReturn.forEach(item => {
@@ -210,12 +213,15 @@ export default function ReturnsPage() {
       const inventoryProducts = getAllInventoryProducts();
       const currentProductQuantities = Object.fromEntries(inventoryProducts.map((product) => [product.id, product.quantity]));
 
+      // Fraud guard: fetch existing returns before calling processReturn
+      const existingReturnsForFull = getReturnsBySaleId(foundSale.id);
       const { returnRecord, stockMovements, auditEntries: returnAuditEntries } = processReturn(
         foundSale,
         fullyReturnedItems.map((item) => ({ productId: item.productId, qty: item.returnQty })),
         'إرجاع كامل للفاتورة',
         user?.id || 'system',
-        currentProductQuantities
+        currentProductQuantities,
+        existingReturnsForFull
       );
 
       fullyReturnedItems.forEach(item => {

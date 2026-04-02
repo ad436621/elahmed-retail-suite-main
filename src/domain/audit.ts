@@ -10,10 +10,18 @@ let machineId: string | null = null;
 
 function getMachineId(): string {
   if (!machineId) {
-    machineId = localStorage.getItem(STORAGE_KEYS.MACHINE_ID);
+    try {
+      machineId = localStorage.getItem(STORAGE_KEYS.MACHINE_ID);
+    } catch {
+      machineId = null;
+    }
     if (!machineId) {
       machineId = crypto.randomUUID();
-      localStorage.setItem(STORAGE_KEYS.MACHINE_ID, machineId);
+      try {
+        localStorage.setItem(STORAGE_KEYS.MACHINE_ID, machineId);
+      } catch {
+        // استمرار بدون حفظ - لن نستخدم ID ثابتاً في كل مرة
+      }
     }
   }
   return machineId;

@@ -171,11 +171,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [user]);
 
   const refreshUsers = useCallback(() => {
-    setAllUsers(getUsers());
+    const freshUsers = getUsers();
+    setAllUsers(freshUsers);
+    
+    // Sync current user if their permissions or data was modified
+    setUser(prev => {
+      if (!prev) return prev;
+      const updatedUser = freshUsers.find(u => u.id === prev.id);
+      if (!updatedUser) return prev;
+      
+      // Only merge safe auth properties to maintain current session validity
+      return {
+        ...prev,
+        role: updatedUser.role,
+        fullName: updatedUser.fullName,
+        username: updatedUser.username,
+        permissions: updatedUser.permissions,
+      };
+    });
   }, []);
 
   const updateAppUser = useCallback((id: string, updates: Partial<Omit<AppUser, 'id' | 'createdAt'>>) => {
     updateUser(id, updates);
+    // emitDataChange('users') is called inside updateUser, so we don't strictly need refreshUsers() here 
+    // if we add the event listener, but calling it right away is safer for the active tab.
     refreshUsers();
   }, [refreshUsers]);
 
@@ -186,6 +205,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     refreshUsers();
     return true;
+  }, [refreshUsers]);
+
+  // Synchronize users and current session when users data changes across tabs/IPC
+  useEffect(() => {
+    const handleStorage = (e: Event | StorageEvent) => {
+      // Handle native cross-tab storage event
+      if (e.type === 'storage') {
+        const se = e as StorageEvent;
+        if (se.key === STORAGE_KEYS.USERS) refreshUsers();
+      }
+      // Handle same-tab/IPC custom event
+      else if (e.type === 'local-storage') {
+        const ce = e as CustomEvent;
+        if (ce.detail?.key === STORAGE_KEYS.USERS) refreshUsers();
+      }
+    };
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener('local-storage', handleStorage as EventListener);
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('local-storage', handleStorage as EventListener);
+    };
   }, [refreshUsers]);
 
   return (

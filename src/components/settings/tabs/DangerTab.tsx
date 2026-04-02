@@ -22,7 +22,12 @@ export default function DangerTab({ onDataCleared }: Props) {
         setConfirmClear(false);
         setConfirmText('');
         onDataCleared?.();
-        toast({ title: '🗑️ تم مسح جميع البيانات', description: 'تم حذف كل البيانات. الإعدادات محفوظة.' });
+        toast({ title: '🗑️ تم مسح جميع البيانات', description: 'جارِ تحديث النظام...' });
+        
+        // Force a hard reload to clear all React state and memory caches
+        setTimeout(() => {
+            window.location.reload();
+        }, 1500);
     };
 
     return (

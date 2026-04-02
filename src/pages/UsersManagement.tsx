@@ -2,7 +2,7 @@ import { useState } from 'react';
 import {
     Plus, Trash2, Pencil, X, Check, Users, ShieldCheck, Eye, EyeOff,
     ToggleLeft, ToggleRight, Activity, Clock, Crown, UserCircle2,
-    KeyRound, AlertTriangle
+    AlertTriangle
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { addUser, deleteUser, updateUser, AppUser, ALL_PERMISSIONS, PERMISSION_LABELS, Permission, MASTER_RECOVERY_CODE } from '@/data/usersData';
@@ -74,8 +74,20 @@ export default function UsersManagement() {
 
     const openAdd = () => { setForm(emptyForm); setEditId(null); setShowPass(false); setShowForm(true); };
     const openEdit = (u: AppUser) => {
-        setForm({ fullName: u.fullName, username: u.username, password: '', role: u.role, permissions: [...u.permissions], active: u.active });
-        setEditId(u.id); setShowPass(false); setShowForm(true);
+        // Enforce role to be either 'owner' or 'user' for backwards compatibility
+        const legacySafeRole = u.role === 'owner' ? 'owner' : 'user';
+        
+        setForm({
+            fullName: u.fullName,
+            username: u.username,
+            password: '',
+            role: legacySafeRole,
+            permissions: u.permissions,
+            active: u.active,
+        });
+        setEditId(u.id);
+        setShowPass(false);
+        setShowForm(true);
     };
     const togglePermission = (perm: Permission) =>
         setForm(f => ({ ...f, permissions: f.permissions.includes(perm) ? f.permissions.filter(p => p !== perm) : [...f.permissions, perm] }));
@@ -286,11 +298,7 @@ export default function UsersManagement() {
                                 <div className="flex items-center gap-2 pt-1 border-t border-border/50">
                                     <button onClick={() => openEdit(u)}
                                         className="flex flex-1 items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-semibold bg-primary/10 text-primary hover:bg-primary/20 transition-colors">
-                                        <Pencil className="h-3.5 w-3.5" /> تعديل
-                                    </button>
-                                    <button onClick={() => { setShowPass(false); openEdit(u); }}
-                                        className="flex items-center justify-center gap-1 rounded-xl py-2 px-3 text-xs font-semibold bg-muted text-muted-foreground hover:bg-muted/80 transition-colors" title="تغيير كلمة المرور">
-                                        <KeyRound className="h-3.5 w-3.5" />
+                                        <Pencil className="h-3.5 w-3.5" /> تعديل مستخدم
                                     </button>
                                     {u.role !== 'owner' && (
                                         <button onClick={() => setDeleteTarget(u)}

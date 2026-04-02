@@ -8,7 +8,7 @@
 //      multiple cash refunds and multiple inventory credits.
 // ============================================================
 
-import { Sale, StockMovement } from './types';
+import { Sale, StockMovement, ReturnRecord, ReturnItem } from './types';
 import { createStockMovement } from './stock';
 import { createAuditEntry } from './audit';
 
@@ -19,41 +19,22 @@ export class ReturnError extends Error {
   }
 }
 
-export interface ReturnItem {
-  productId: string;
-  name: string;
-  qty: number;
-  price: number;
-  cost: number;
-}
-
-export interface ReturnRecord {
-  id: string;
-  saleId: string;
-  invoiceNumber: string;
-  date: string;
-  items: ReturnItem[];
-  totalRefund: number;
-  reason: string;
-  processedBy: string;
-}
+// Re-export types so callers can import from one place
+export type { ReturnRecord, ReturnItem };
 
 /**
  * Minimal shape needed to check already-returned quantities.
- * Compatible with both ReturnRecord and StoredReturnRecord from returnsData.ts.
+ * Compatible with both ReturnRecord (originalSaleId) from types.ts
+ * and StoredReturnRecord from returnsData.ts (same field name).
  */
 interface ReturnRecordLike {
-  saleId?: string;
-  originalSaleId?: string; // StoredReturnRecord uses this field name
+  originalSaleId?: string;
   items: Array<{ productId: string; qty: number }>;
 }
 
 /**
  * Calculate how many units of each product have already been returned
  * for a given sale, across all prior return records.
- *
- * Supports both domain ReturnRecord (saleId) and data-layer StoredReturnRecord
- * (originalSaleId) field names.
  */
 export function calculateAlreadyReturnedQty(
   saleId: string,
@@ -61,9 +42,7 @@ export function calculateAlreadyReturnedQty(
 ): Map<string, number> {
   const returned = new Map<string, number>();
   for (const ret of existingReturns) {
-    // Support both field name conventions
-    const retSaleId = ret.saleId ?? (ret as { originalSaleId?: string }).originalSaleId;
-    if (retSaleId !== saleId) continue;
+    if (ret.originalSaleId !== saleId) continue;
     for (const item of ret.items) {
       returned.set(item.productId, (returned.get(item.productId) ?? 0) + item.qty);
     }
@@ -79,8 +58,8 @@ export function processReturn(
   currentProductQuantities: Record<string, number>,
   /**
    * Pass ALL existing return records for this sale to prevent double-return fraud.
-   * Accepts both domain ReturnRecord[] and data-layer StoredReturnRecord[].
-   * If omitted (legacy callers), fraud guard is skipped — update callers!
+   * Accepts StoredReturnRecord[] from returnsData.ts (uses originalSaleId field).
+   * If omitted, fraud guard is skipped — update all callers!
    */
   existingReturns: ReturnRecordLike[] = []
 ): {
@@ -92,7 +71,7 @@ export function processReturn(
     throw new ReturnError('سبب الإرجاع مطلوب');
   }
 
-  if (sale.voidedAt) {
+  if (sale.voidedAt !== null && sale.voidedAt !== undefined) {
     throw new ReturnError('لا يمكن إرجاع فاتورة ملغاة');
   }
 
@@ -137,7 +116,8 @@ export function processReturn(
       name: saleItem.name,
       qty: ri.qty,
       price: saleItem.price,
-      cost: saleItem.cost,
+      cost: saleItem.cost,   // optional field added to ReturnItem in types.ts
+      reason,
     });
 
     const currentQty = currentProductQuantities[ri.productId] ?? 0;
@@ -156,15 +136,17 @@ export function processReturn(
 
   const totalRefund = items.reduce((sum, i) => sum + i.price * i.qty, 0);
 
+  // Build a ReturnRecord compatible with types.ts (uses originalSaleId, originalInvoiceNumber)
+  // returnNumber and createdAt are assigned by the data layer (addReturnRecord)
   const returnRecord: ReturnRecord = {
     id: crypto.randomUUID(),
-    saleId: sale.id,
-    invoiceNumber: sale.invoiceNumber,
-    date: new Date().toISOString(),
+    returnNumber: '',                         // assigned by addReturnRecord
+    originalSaleId: sale.id,
+    originalInvoiceNumber: sale.invoiceNumber,
+    date: new Date().toISOString().slice(0, 10),
     items,
     totalRefund,
-    reason,
-    processedBy: userId,
+    createdAt: new Date().toISOString(),
   };
 
   const auditEntries = [

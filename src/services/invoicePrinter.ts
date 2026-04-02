@@ -6,6 +6,11 @@
 import { Sale } from '@/domain/types';
 import { STORAGE_KEYS } from '@/config';
 
+// Safe number formatting to avoid IEEE 754 float errors
+function fmtMoney(amount: number): string {
+  return Math.round(amount * 100) / 100;
+}
+
 interface ShopInfo {
   nameAr: string;
   nameEn: string;
@@ -144,8 +149,8 @@ export function printInvoice(sale: Sale) {
             <tr>
               <td>${item.name}</td>
               <td>${item.qty}</td>
-              <td>${item.price.toFixed(2)}</td>
-              <td>${(item.price * item.qty - item.lineDiscount).toFixed(2)}</td>
+              <td>${fmtMoney(item.price).toFixed(2)}</td>
+              <td>${fmtMoney(item.price * item.qty - item.lineDiscount).toFixed(2)}</td>
             </tr>
           `).join('')}
         </tbody>
@@ -154,17 +159,17 @@ export function printInvoice(sale: Sale) {
       <div class="totals">
         <div class="total-row">
           <span>المجموع الفرعي:</span>
-          <span>${sale.subtotal.toFixed(2)}</span>
+          <span>${fmtMoney(sale.subtotal).toFixed(2)}</span>
         </div>
         ${sale.discount > 0 ? `
           <div class="total-row">
             <span>الخصم:</span>
-            <span>-${sale.discount.toFixed(2)}</span>
+            <span>-${fmtMoney(sale.discount).toFixed(2)}</span>
           </div>
         ` : ''}
         <div class="total-row grand-total">
           <span>الإجمالي:</span>
-          <span>${sale.total.toFixed(2)}</span>
+          <span>${fmtMoney(sale.total).toFixed(2)}</span>
         </div>
         <div class="total-row">
           <span>طريقة الدفع:</span>

@@ -44,9 +44,10 @@ export function multiplyMoney(price: number, qty: number): number {
 
 /**
  * Calculate margin percentage, rounded to 1 decimal place.
- * Returns 0 if revenue is zero or negative.
+ * Returns 0 if revenue is zero, negative, or profit is negative.
  */
 export function calcMarginPct(profit: number, revenue: number): number {
   if (revenue <= 0) return 0;
+  if (profit < 0) return 0;
   return Math.round((profit / revenue) * 1000) / 10; // 1 decimal place
 }

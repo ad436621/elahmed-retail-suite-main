@@ -61,6 +61,11 @@ function QuickReturnDialog({ sale, onClose, onDone }: { sale: Sale; onClose: () 
   };
 
   const handleConfirm = () => {
+    if (!user?.id) {
+      toast({ title: 'خطأ', description: 'يجب تسجيل الدخول لإجراء الإرجاع', variant: 'destructive' });
+      return;
+    }
+
     const toReturn = items.filter(i => i.returnQty > 0);
     if (toReturn.length === 0) {
       toast({ title: 'خطأ', description: 'حدد كمية مرتجعة لمنتج واحد على الأقل', variant: 'destructive' });

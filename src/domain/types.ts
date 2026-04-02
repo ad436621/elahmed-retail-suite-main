@@ -562,6 +562,7 @@ export interface ReturnItem {
   name: string;
   qty: number;
   price: number;
+  cost?: number;      // cost price at time of sale (optional for backward compat)
   reason: string;
 }
 
