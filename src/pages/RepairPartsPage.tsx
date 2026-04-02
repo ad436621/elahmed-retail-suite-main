@@ -102,7 +102,7 @@ export default function RepairPartsPage() {
     };
 
     return (
-        <div className="space-y-6 animate-fade-in pb-12" dir="rtl">
+        <div className="space-y-6 animate-fade-in pb-12" dir="rtl" data-testid="repair-parts-page">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                     <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/20">
@@ -113,7 +113,7 @@ export default function RepairPartsPage() {
                         <p className="text-sm font-medium text-muted-foreground">{parts.length} قطعة مسجلة</p>
                     </div>
                 </div>
-                <button onClick={() => { setForm(emptyPart); setEditId(null); setShowForm(true); }}
+                <button data-testid="repair-parts-add" onClick={() => { setForm(emptyPart); setEditId(null); setShowForm(true); }}
                     className="flex items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-sm font-bold text-white hover:bg-emerald-700 transition-colors shadow-lg shadow-emerald-500/25">
                     <Plus className="h-5 w-5" /> إضافة قطعة غيار
                 </button>
@@ -122,7 +122,7 @@ export default function RepairPartsPage() {
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center bg-card p-4 rounded-2xl border border-border shadow-sm">
                 <div className="md:col-span-2 relative">
                     <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <input value={search} onChange={e => setSearch(e.target.value)} placeholder="ابحث باسم القطعة، SKU، أو البراند..." className={`${IC} pr-9`} />
+                    <input data-testid="repair-parts-search" value={search} onChange={e => setSearch(e.target.value)} placeholder="ابحث باسم القطعة، SKU، أو البراند..." className={`${IC} pr-9`} />
                 </div>
                 <select value={categoryFilter} onChange={e => setCategoryFilter(e.target.value)} className={IC}>
                     <option value="all">كل التصنيفات</option>
@@ -190,7 +190,7 @@ export default function RepairPartsPage() {
             {/* Form Modal */}
             {showForm && (
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm overflow-y-auto py-6 px-4" onClick={() => setShowForm(false)}>
-                    <div className="w-full max-w-xl mx-auto rounded-3xl border border-border bg-background shadow-2xl animate-scale-in flex flex-col" onClick={e => e.stopPropagation()}>
+                    <div data-testid="repair-parts-form-modal" className="w-full max-w-xl mx-auto rounded-3xl border border-border bg-background shadow-2xl animate-scale-in flex flex-col" onClick={e => e.stopPropagation()}>
                         
                         {/* ── Modal Body ── */}
                         <div className="p-6 space-y-5 max-h-[80vh] overflow-y-auto w-full">
@@ -205,7 +205,7 @@ export default function RepairPartsPage() {
                                 <label className="mb-2 block text-[11px] font-bold text-muted-foreground text-right">اسم القطعة <span className="text-destructive">*</span></label>
                                 <div className="relative">
                                     <Tag className="absolute right-3 top-3 h-4 w-4 text-muted-foreground/40" />
-                                    <input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} 
+                                    <input data-testid="repair-parts-name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} 
                                         className={`${IC} pr-9 transition-colors hover:border-primary/50 focus:border-primary focus:ring-1 focus:ring-primary`} placeholder="مثال: شاشة ايفون 13 اصلية" autoFocus />
                                 </div>
                             </div>
@@ -231,7 +231,7 @@ export default function RepairPartsPage() {
                                     <label className="mb-2 block text-[11px] font-bold text-muted-foreground text-right">التصنيف</label>
                                     <div className="relative">
                                         <Layers className="absolute right-3 top-3 h-4 w-4 text-muted-foreground/40" />
-                                        <input value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} 
+                                        <input data-testid="repair-parts-category" value={form.category} onChange={e => setForm({ ...form, category: e.target.value })} 
                                             className={`${IC} pr-9 transition-colors hover:border-primary/50 focus:border-primary focus:ring-1 focus:ring-primary`} list="part-cats" placeholder="-- اختر تصنيف --" />
                                         <datalist id="part-cats">
                                             {categories.filter(c => c !== 'all').map(c => <option key={c} value={c} />)}
@@ -262,7 +262,7 @@ export default function RepairPartsPage() {
                                 </div>
                                 <div>
                                     <label className="mb-2 block text-[11px] font-bold text-muted-foreground text-right">الكمية</label>
-                                    <input type="number" min={0} value={form.qty || ''} onChange={e => setForm({ ...form, qty: +e.target.value })} 
+                                    <input data-testid="repair-parts-qty" type="number" min={0} value={form.qty || ''} onChange={e => setForm({ ...form, qty: +e.target.value })} 
                                         className={`${IC} transition-colors hover:border-primary/50 focus:border-primary focus:ring-1 focus:ring-primary text-center`} placeholder="0" />
                                 </div>
                             </div>
@@ -286,12 +286,12 @@ export default function RepairPartsPage() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="mb-2 block text-[11px] font-bold text-muted-foreground text-right">سعر الشراء</label>
-                                    <input type="number" min={0} value={form.unit_cost || ''} onChange={e => setForm({ ...form, unit_cost: +e.target.value })} 
+                                    <input data-testid="repair-parts-unit-cost" type="number" min={0} value={form.unit_cost || ''} onChange={e => setForm({ ...form, unit_cost: +e.target.value })} 
                                         className={`${IC} transition-colors hover:border-primary/50 focus:border-primary focus:ring-1 focus:ring-primary text-center font-bold`} placeholder="0.00" />
                                 </div>
                                 <div>
                                     <label className="mb-2 block text-[11px] font-bold text-muted-foreground text-right">سعر البيع</label>
-                                    <input type="number" min={0} value={form.selling_price || ''} onChange={e => setForm({ ...form, selling_price: +e.target.value })} 
+                                    <input data-testid="repair-parts-selling-price" type="number" min={0} value={form.selling_price || ''} onChange={e => setForm({ ...form, selling_price: +e.target.value })} 
                                         className={`${IC} transition-colors hover:border-primary/50 focus:border-primary focus:ring-1 focus:ring-primary text-center font-bold text-emerald-600`} placeholder="0.00" />
                                 </div>
                             </div>
@@ -316,7 +316,7 @@ export default function RepairPartsPage() {
                                 className="flex-1 rounded-xl border border-border bg-background py-3.5 text-sm font-bold text-muted-foreground hover:bg-muted/50 transition-colors">
                                 إلغاء
                             </button>
-                            <button onClick={handleSubmit}
+                            <button data-testid="repair-parts-save" onClick={handleSubmit}
                                 className="flex-1 rounded-xl bg-emerald-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">
                                 <CheckCircle2 className="h-5 w-5" /> {editId ? 'حفظ التعديلات' : 'إضافة القطعة للمخزون'}
                             </button>

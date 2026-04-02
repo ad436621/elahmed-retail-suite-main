@@ -131,6 +131,8 @@ function getIpc() {
 }
 
 const REPAIR_REVENUE_PREFIX = 'repair-revenue-';
+const REPAIRS_KEY = STORAGE_KEYS.REPAIRS;
+const REPAIR_PARTS_KEY = STORAGE_KEYS.REPAIR_PARTS;
 
 function getRepairRevenueId(ticketId: string): string {
     return `${REPAIR_REVENUE_PREFIX}${ticketId}`;
@@ -140,6 +142,47 @@ function getRepairRevenueAmount(ticket: Partial<RepairTicket>): number {
     const finalCost = Number(ticket.final_cost ?? 0);
     if (finalCost > 0) return finalCost;
     return Number(ticket.package_price ?? ticket.expected_cost ?? 0) || 0;
+}
+
+function normalizeRepairPart(part: Partial<RepairPart>): RepairPart {
+    const createdAt = String(part.createdAt ?? part.created_at ?? new Date().toISOString());
+    const qty = Number(part.qty ?? part.current_stock ?? 0) || 0;
+    const minQty = Number(part.min_qty ?? part.min_stock ?? 0) || 0;
+    const unitCost = Number(part.unit_cost ?? part.cost_price ?? 0) || 0;
+    const sellingPrice = Number(part.selling_price ?? 0) || 0;
+
+    return {
+        id: String(part.id ?? crypto.randomUUID()),
+        name: String(part.name ?? '').trim(),
+        category: part.category ? String(part.category) : undefined,
+        sku: part.sku ? String(part.sku) : undefined,
+        brand: part.brand ? String(part.brand) : undefined,
+        compatible_models: part.compatible_models ? String(part.compatible_models) : undefined,
+        unit_cost: unitCost,
+        selling_price: sellingPrice,
+        qty,
+        min_qty: minQty,
+        barcode: part.barcode ? String(part.barcode) : undefined,
+        color: part.color ? String(part.color) : undefined,
+        location: part.location ? String(part.location) : undefined,
+        notes: part.notes ? String(part.notes) : undefined,
+        active: part.active ?? true,
+        createdAt,
+        part_no: part.part_no,
+        current_stock: qty,
+        min_stock: minQty,
+        cost_price: unitCost,
+        created_at: createdAt,
+    };
+}
+
+function loadLocalRepairParts(): RepairPart[] {
+    const parts = getStorageItem<RepairPart[]>(REPAIR_PARTS_KEY, []);
+    return Array.isArray(parts) ? parts.map(normalizeRepairPart) : [];
+}
+
+function saveLocalRepairParts(parts: RepairPart[]): void {
+    setStorageItem(REPAIR_PARTS_KEY, parts.map(normalizeRepairPart));
 }
 
 function syncRepairRevenue(ticket: RepairTicket | null): void {
@@ -227,7 +270,7 @@ export async function syncRepairsToLegacy(): Promise<void> {
 export async function getRepairTickets(filters?: { status?: string, customerId?: string, search?: string }): Promise<RepairTicket[]> {
     const ipc = getIpc();
     if (!ipc) {
-        let tickets = getStorageItem<RepairTicket[]>('gx_repairs', []);
+        let tickets = getStorageItem<RepairTicket[]>(REPAIRS_KEY, []);
         if (filters?.status && filters.status !== 'all') tickets = tickets.filter(t => t.status === filters.status);
         if (filters?.customerId) tickets = tickets.filter(t => t.client_id === filters.customerId || t.customer_id === filters.customerId);
         if (filters?.search) tickets = tickets.filter(t => t.customer_name.includes(filters.search!) || t.ticket_no.includes(filters.search!));
@@ -240,7 +283,7 @@ export async function getRepairTickets(filters?: { status?: string, customerId?:
 export async function getRepairTicket(id: string): Promise<RepairTicket | null> {
     const ipc = getIpc();
     if (!ipc) {
-        return getStorageItem<RepairTicket[]>('gx_repairs', []).find(t => t.id === id) || null;
+        return getStorageItem<RepairTicket[]>(REPAIRS_KEY, []).find(t => t.id === id) || null;
     }
     const result = await ipc.invoke('db:repairs:getTicket', id);
     return (result || null) as RepairTicket | null;
@@ -249,10 +292,10 @@ export async function getRepairTicket(id: string): Promise<RepairTicket | null> 
 export async function addRepairTicket(ticket: Partial<RepairTicket>): Promise<RepairTicket> {
     const ipc = getIpc();
     if (!ipc) {
-        const tickets = getStorageItem<RepairTicket[]>('gx_repairs', []);
+        const tickets = getStorageItem<RepairTicket[]>(REPAIRS_KEY, []);
         const newTicket = { id: crypto.randomUUID(), ticket_no: `TKT-${Date.now()}`, createdAt: new Date().toISOString(), ...ticket } as RepairTicket;
         tickets.push(newTicket);
-        setStorageItem('gx_repairs', tickets);
+        setStorageItem(REPAIRS_KEY, tickets);
         syncRepairRevenue(newTicket);
         return newTicket;
     }
@@ -265,11 +308,11 @@ export async function addRepairTicket(ticket: Partial<RepairTicket>): Promise<Re
 export async function updateRepairTicket(id: string, updates: Partial<RepairTicket>): Promise<RepairTicket> {
     const ipc = getIpc();
     if (!ipc) {
-        const tickets = getStorageItem<RepairTicket[]>('gx_repairs', []);
+        const tickets = getStorageItem<RepairTicket[]>(REPAIRS_KEY, []);
         const idx = tickets.findIndex(t => t.id === id);
         if (idx !== -1) {
             tickets[idx] = { ...tickets[idx], ...updates, updatedAt: new Date().toISOString() };
-            setStorageItem('gx_repairs', tickets);
+            setStorageItem(REPAIRS_KEY, tickets);
             syncRepairRevenue(tickets[idx]);
             return tickets[idx];
         }
@@ -284,9 +327,9 @@ export async function updateRepairTicket(id: string, updates: Partial<RepairTick
 export async function deleteRepairTicket(id: string): Promise<boolean> {
     const ipc = getIpc();
     if (!ipc) {
-        let tickets = getStorageItem<RepairTicket[]>('gx_repairs', []);
+        let tickets = getStorageItem<RepairTicket[]>(REPAIRS_KEY, []);
         tickets = tickets.filter(t => t.id !== id);
-        setStorageItem('gx_repairs', tickets);
+        setStorageItem(REPAIRS_KEY, tickets);
         deleteOtherRevenue(getRepairRevenueId(id));
         return true;
     }
@@ -314,28 +357,52 @@ export async function logRepairEvent(event: Partial<RepairEvent>): Promise<Repai
 // -- PARTS --
 export async function getRepairParts(): Promise<RepairPart[]> {
     const ipc = getIpc();
-    if (!ipc) return [] as RepairPart[];
+    if (!ipc) return loadLocalRepairParts();
     const result = await ipc.invoke('db:repairs:getParts');
     return (result || []) as RepairPart[];
 }
 
 export async function getRepairPart(id: string): Promise<RepairPart | null> {
     const ipc = getIpc();
-    if (!ipc) return null;
+    if (!ipc) return loadLocalRepairParts().find((part) => part.id === id) || null;
     const result = await ipc.invoke('db:repairs:getPart', id);
     return (result || null) as RepairPart | null;
 }
 
 export async function addRepairPart(part: Partial<RepairPart>): Promise<RepairPart> {
     const ipc = getIpc();
-    if (!ipc) throw new Error("IPC not found");
+    if (!ipc) {
+        const newPart = normalizeRepairPart({
+            ...part,
+            id: crypto.randomUUID(),
+            createdAt: new Date().toISOString(),
+            active: part.active ?? true,
+        });
+        saveLocalRepairParts([...loadLocalRepairParts(), newPart]);
+        return newPart;
+    }
     const result = await ipc.invoke('db:repairs:addPart', part);
     return result as RepairPart;
 }
 
 export async function updateRepairPart(id: string, updates: Partial<RepairPart>): Promise<RepairPart> {
     const ipc = getIpc();
-    if (!ipc) throw new Error("IPC not found");
+    if (!ipc) {
+        const parts = loadLocalRepairParts();
+        const index = parts.findIndex((part) => part.id === id);
+        if (index === -1) {
+            throw new Error("Repair part not found");
+        }
+        const updatedPart = normalizeRepairPart({
+            ...parts[index],
+            ...updates,
+            id,
+            createdAt: parts[index].createdAt,
+        });
+        parts[index] = updatedPart;
+        saveLocalRepairParts(parts);
+        return updatedPart;
+    }
     const result = await ipc.invoke('db:repairs:updatePart', id, updates);
     return result as RepairPart;
 }
@@ -344,7 +411,7 @@ export async function updateRepairPart(id: string, updates: Partial<RepairPart>)
 export async function getTicketParts(ticketId: string): Promise<RepairTicketPart[]> {
     const ipc = getIpc();
     if (!ipc) {
-        return getStorageItem<RepairTicketPart[]>('gx_repair_parts', []).filter(p => p.ticket_id === ticketId);
+        return getStorageItem<RepairTicketPart[]>(REPAIR_PARTS_KEY, []).filter(p => p.ticket_id === ticketId);
     }
     const result = await ipc.invoke('db:repairs:getTicketParts', ticketId);
     return (result || []) as RepairTicketPart[];
@@ -353,10 +420,10 @@ export async function getTicketParts(ticketId: string): Promise<RepairTicketPart
 export async function addTicketPart(ticketPart: Partial<RepairTicketPart>): Promise<RepairTicketPart> {
     const ipc = getIpc();
     if (!ipc) {
-        const parts = getStorageItem<RepairTicketPart[]>('gx_repair_parts', []);
+        const parts = getStorageItem<RepairTicketPart[]>(REPAIR_PARTS_KEY, []);
         const newPart = { id: crypto.randomUUID(), createdAt: new Date().toISOString(), ...ticketPart } as RepairTicketPart;
         parts.push(newPart);
-        setStorageItem('gx_repair_parts', parts);
+        setStorageItem(REPAIR_PARTS_KEY, parts);
         return newPart;
     }
     const result = await ipc.invoke('db:repairs:addTicketPart', ticketPart);
@@ -367,9 +434,9 @@ export async function addTicketPart(ticketPart: Partial<RepairTicketPart>): Prom
 export async function removeTicketPart(id: string): Promise<boolean> {
     const ipc = getIpc();
     if (!ipc) {
-        let parts = getStorageItem<RepairTicketPart[]>('gx_repair_parts', []);
+        let parts = getStorageItem<RepairTicketPart[]>(REPAIR_PARTS_KEY, []);
         parts = parts.filter(p => p.id !== id);
-        setStorageItem('gx_repair_parts', parts);
+        setStorageItem(REPAIR_PARTS_KEY, parts);
         return true;
     }
     const result = await ipc.invoke('db:repairs:removeTicketPart', id);

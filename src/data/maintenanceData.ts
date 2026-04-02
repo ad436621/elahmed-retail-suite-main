@@ -62,7 +62,7 @@ export function deleteMaintenanceOrder(id: string): void {
 import { RepairTicket } from './repairsData';
 
 export function getTodayPartsCost(): number {
-    const tickets = getStorageItem<RepairTicket[]>('gx_repairs', []);
+    const tickets = getStorageItem<RepairTicket[]>(STORAGE_KEYS.REPAIRS, []);
     const today = new Date().toISOString().split('T')[0];
     
     return tickets
@@ -72,7 +72,7 @@ export function getTodayPartsCost(): number {
 }
 
 export function getTodayMaintenanceNetProfit(): number {
-    const tickets = getStorageItem<RepairTicket[]>('gx_repairs', []);
+    const tickets = getStorageItem<RepairTicket[]>(STORAGE_KEYS.REPAIRS, []);
     const today = new Date().toISOString().split('T')[0];
     
     const todayRevenue = tickets

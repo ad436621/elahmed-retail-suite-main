@@ -8,7 +8,8 @@ import { STORAGE_KEYS } from '@/config';
 import { getStorageItem, setStorageItem } from '@/lib/localStorageHelper';
 import { callElectronSync, emitDataChange, hasElectronIpc, readElectronSync } from '@/lib/electronDataBridge';
 
-const STORAGE_KEY = STORAGE_KEYS.SALES_LEGACY;
+const STORAGE_KEY = STORAGE_KEYS.SALES;
+const LEGACY_STORAGE_KEY = STORAGE_KEYS.SALES_LEGACY;
 
 interface SaleItemRow {
   productId?: string;
@@ -89,14 +90,28 @@ function setSalesState(sales: Sale[]): void {
   salesCache = sortSales(sales.map(normalizeSale));
 }
 
-function loadSales(): Sale[] {
+function loadSalesFromKey(key: string): Sale[] {
   try {
-    const saved = getStorageItem<Sale[]>(STORAGE_KEY, []);
+    const saved = getStorageItem<Sale[]>(key, []);
     if (!Array.isArray(saved)) return [];
     return sortSales(saved.map(normalizeSale));
   } catch {
     return [];
   }
+}
+
+function loadSales(): Sale[] {
+  const currentSales = loadSalesFromKey(STORAGE_KEY);
+  if (currentSales.length > 0) {
+    return currentSales;
+  }
+
+  const legacySales = loadSalesFromKey(LEGACY_STORAGE_KEY);
+  if (legacySales.length > 0) {
+    persistSales(legacySales);
+  }
+
+  return legacySales;
 }
 
 function persistSales(sales: Sale[]): void {
@@ -121,7 +136,7 @@ export function getAllSales(): Sale[] {
 
   const sales = loadSales();
   setSalesState(sales);
-  return salesCache ?? [];
+  return sales;
 }
 
 export function getSaleById(id: string): Sale | undefined {

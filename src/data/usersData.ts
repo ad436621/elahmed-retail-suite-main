@@ -34,6 +34,8 @@ export const ALL_PERMISSIONS = [
   'pos',
   'sales',
   'inventory',
+  'used',
+  'stocktake',
   'mobiles',
   'computers',
   'devices',
@@ -63,6 +65,8 @@ export const ALL_PERMISSIONS = [
 export type Permission = (typeof ALL_PERMISSIONS)[number];
 
 export const PERMISSION_LABELS: Record<Permission, string> = {
+  used: 'الأجهزة المستعملة',
+  stocktake: 'الجرد',
   dashboard: 'لوحة التحكم',
   pos: 'نقطة البيع',
   sales: 'المبيعات',

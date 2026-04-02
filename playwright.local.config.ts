@@ -17,10 +17,4 @@ export default defineConfig({
     locale: 'ar-EG',
     timezoneId: 'Africa/Cairo',
   },
-  webServer: {
-    command: 'npm run e2e:serve',
-    url: 'http://127.0.0.1:4173',
-    reuseExistingServer: false,
-    timeout: 180_000,
-  },
 });

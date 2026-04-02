@@ -135,7 +135,7 @@ export function importStructuredBackup(data: Record<string, unknown>): boolean {
         write(STORAGE_KEYS.OTHER_REVENUE,       data.otherRevenue);
         write(STORAGE_KEYS.DAMAGED,             data.damagedItems);
         write(STORAGE_KEYS.WALLETS,             data.wallets ?? []);
-        write('gx_wallet_transactions',         data.walletTransactions);
+        write(STORAGE_KEYS.WALLET_TRANSACTIONS, data.walletTransactions);
         write(STORAGE_KEYS.PURCHASE_INVOICES,   data.purchaseInvoices);
         write(STORAGE_KEYS.SHIFT_CLOSINGS,      data.shiftClosings);
         write(STORAGE_KEYS.STOCK_MOVEMENTS,     data.stockMovements);
@@ -151,14 +151,14 @@ export function importStructuredBackup(data: Record<string, unknown>): boolean {
         write(STORAGE_KEYS.REMINDERS,           data.reminders);
 
         // ── Payroll ───────────────────────────────────────────────
-        write('gx_salary_records',              data.salaryRecords);
-        write('gx_advances',                    data.advances);
+        write(STORAGE_KEYS.SALARY_RECORDS,      data.salaryRecords);
+        write(STORAGE_KEYS.ADVANCES,            data.advances);
 
         // ── Maintenance & Installments ────────────────────────────
         write(STORAGE_KEYS.MAINTENANCE,         data.maintenances);
         write(STORAGE_KEYS.INSTALLMENTS,        data.installments);
-        write('gx_repair_tickets',              data.repairTickets);
-        write('gx_repair_parts',                data.repairParts);
+        write(STORAGE_KEYS.REPAIR_TICKETS,      data.repairTickets);
+        write(STORAGE_KEYS.REPAIR_PARTS,        data.repairParts);
 
         // ── Users ─────────────────────────────────────────────────
         if (Array.isArray(data.users) && (data.users as any[]).length > 0) {

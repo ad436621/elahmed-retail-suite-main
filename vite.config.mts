@@ -33,7 +33,7 @@ function copyLogoPlugin() {
 }
 
 export default defineConfig(({ mode }) => ({
-  base: mode === "e2e" ? "/" : "./",
+  base: mode === "electron" ? "./" : "/",
   server: {
     host: "::",
     port: 8081,

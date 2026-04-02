@@ -40,6 +40,9 @@ const MobilesInventory = lazy(() => import("@/pages/MobilesInventory"));
 const ComputersInventory = lazy(() => import("@/pages/ComputersInventory"));
 const DevicesInventory = lazy(() => import("@/pages/DevicesInventory"));
 const Maintenance = lazy(() => import("@/pages/Maintenance"));
+const RepairPartsPage = lazy(() => import("@/pages/RepairPartsPage"));
+const UsedInventory = lazy(() => import("@/pages/UsedInventory"));
+const StocktakePage = lazy(() => import("@/pages/StocktakePage"));
 
 const Installments = lazy(() => import("@/pages/Installments"));
 const Expenses = lazy(() => import("@/pages/Expenses"));
@@ -166,8 +169,11 @@ const AppRoutes = () => (
         <Route path="/cars/spare-parts" element={<PermGuard perm="cars"><CarSparePartsPage /></PermGuard>} />
         <Route path="/cars/oils" element={<PermGuard perm="cars"><CarOilsPage /></PermGuard>} />
         <Route path="/warehouse" element={<PermGuard perm="warehouse"><WarehousePage /></PermGuard>} />
+        <Route path="/used-inventory" element={<PermGuard perm="used"><UsedInventory /></PermGuard>} />
+        <Route path="/stocktake" element={<PermGuard perm="stocktake"><StocktakePage /></PermGuard>} />
 
         <Route path="/maintenance" element={<PermGuard perm="maintenance"><Maintenance /></PermGuard>} />
+        <Route path="/maintenance/parts" element={<PermGuard perm="maintenance"><RepairPartsPage /></PermGuard>} />
 
         <Route path="/installments" element={<PermGuard perm="installments"><Installments /></PermGuard>} />
         <Route path="/expenses" element={<PermGuard perm="expenses"><Expenses /></PermGuard>} />

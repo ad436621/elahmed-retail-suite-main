@@ -52,7 +52,7 @@ vi.mock('@/data/batchesData', () => {
 });
 
 // Import AFTER mocks are hoisted
-import { processSale, voidSale, getCartTotals } from '@/services/saleService';
+import { processSale, voidSale, getCartTotals, generateInvoiceNumber } from '@/services/saleService';
 import type { CartItem, PaymentMethod } from '@/domain/types';
 
 // ─── Fixtures ────────────────────────────────────────────────
@@ -118,6 +118,7 @@ const makeSale = (overrides = {}) => ({
 }) as unknown as import('@/domain/types').Sale;
 
 beforeEach(async () => {
+    localStorage.clear();
     const mod = await import('@/data/batchesData') as unknown as { __setMockBatches: (b: unknown[]) => void };
     mod.__setMockBatches([makeBatch()]);
     vi.clearAllMocks();
@@ -142,6 +143,14 @@ describe('processSale', () => {
         const cart = [makeCartItem()];
         const result = processSale(cart, 0, 'cash', 'user-1', 'Ahmed');
         expect(result.sale.invoiceNumber).toMatch(/^INV-\d{4}-\d{4}$/);
+    });
+
+    it('should continue invoice sequencing from the current gx sales key', () => {
+        localStorage.setItem('gx_sales_v2', JSON.stringify([
+            { invoiceNumber: 'INV-2026-0012' },
+        ]));
+
+        expect(generateInvoiceNumber()).toBe('INV-2026-0013');
     });
 
     it('should apply invoice discount', () => {

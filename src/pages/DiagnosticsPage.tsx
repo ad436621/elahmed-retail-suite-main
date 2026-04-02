@@ -12,6 +12,11 @@ import { getExpenses } from '@/data/expensesData';
 import { getMobiles } from '@/data/mobilesData';
 import { getComputers } from '@/data/computersData';
 import { getDevices } from '@/data/devicesData';
+import { getPurchaseInvoices } from '@/data/purchaseInvoicesData';
+import { getSuppliers } from '@/data/suppliersData';
+import { getCustomers } from '@/data/customersData';
+import { getBlacklist } from '@/data/blacklistData';
+import { getEmployees } from '@/data/employeesData';
 
 type Severity = 'error' | 'warning' | 'info' | 'ok';
 
@@ -263,6 +268,158 @@ export default function DiagnosticsPage() {
                 description: `${negDamaged.length} سجل عناصر تالفة بقيمة خسارة سالبة.`,
                 count: negDamaged.length,
                 details: negDamaged.map(d => `${d.productName} | خسارة: ${d.totalLoss.toFixed(0)}`),
+            });
+        }
+
+        // ── 9. Purchase invoices with unpaid amounts ──
+        const purchaseInvoices = getPurchaseInvoices();
+        const unpaidInvoices = purchaseInvoices.filter(inv => 
+            inv.status !== 'paid' && inv.status !== 'confirmed' && (inv.remaining ?? 0) > 0
+        );
+        if (unpaidInvoices.length > 0) {
+            result.push({
+                id: 'unpaid_invoices',
+                severity: 'warning',
+                title: 'فواتير شراء غير مدفوعة',
+                description: `${unpaidInvoices.length} فاتورة شراء بها باقي مبلغ.`,
+                count: unpaidInvoices.length,
+                details: unpaidInvoices.slice(0, 10).map(inv => 
+                    `${inv.invoiceNumber} | ${inv.supplierName} | باقي: ${(inv.remaining ?? 0).toFixed(0)} ج.م`
+                ),
+            });
+        }
+
+        // ── 10. Suppliers with overdue payments ──
+        const suppliers = getSuppliers();
+        const suppliersWithDebt = suppliers.filter(s => (s.balance ?? 0) < -1000);
+        if (suppliersWithDebt.length > 0) {
+            result.push({
+                id: 'supplier_debts',
+                severity: 'warning',
+                title: 'موردين دائنين',
+                description: `${suppliersWithDebt.length} مورد له رصيد سالب (مستحق لهم).`,
+                count: suppliersWithDebt.length,
+                details: suppliersWithDebt.slice(0, 10).map(s => 
+                    `${s.name} | مستحق: ${Math.abs(s.balance ?? 0).toFixed(0)} ج.م`
+                ),
+            });
+        }
+
+        // ── 11. Customers with duplicate phone ──
+        const customers = getCustomers();
+        const phoneMap = new Map<string, string[]>();
+        customers.forEach(c => {
+            if (c.phone) {
+                const existing = phoneMap.get(c.phone) || [];
+                existing.push(c.name);
+                phoneMap.set(c.phone, existing);
+            }
+        });
+        const duplicatePhones = [...phoneMap.entries()].filter(([_, names]) => names.length > 1);
+        if (duplicatePhones.length > 0) {
+            result.push({
+                id: 'duplicate_phones',
+                severity: 'info',
+                title: 'عملاء برقم هاتف مكرر',
+                description: `${duplicatePhones.length} رقم هاتف مستخدم من أكثر من عميل.`,
+                count: duplicatePhones.length,
+                details: duplicatePhones.slice(0, 10).map(([phone, names]) => 
+                    `${phone} → ${names.join(', ')}`
+                ),
+            });
+        }
+
+        // ── 12. Blacklist items without IMEI ──
+        const blacklist = getBlacklist();
+        const invalidBlacklist = blacklist.filter(b => !b.imei || b.imei.length < 15);
+        if (invalidBlacklist.length > 0) {
+            result.push({
+                id: 'invalid_blacklist',
+                severity: 'warning',
+                title: 'قائمة سوداء ب IMEI غير صالح',
+                description: `${invalidBlacklist.length} سجل في القائمة السوداء بدون IMEI صحيح.`,
+                count: invalidBlacklist.length,
+                details: invalidBlacklist.slice(0, 10).map(b => `${b.name || 'غير محدد'} | IMEI: ${b.imei || 'فارغ'}`),
+            });
+        }
+
+        // ── 13. Employees with missing salary ──
+        const employees = getEmployees();
+        const noSalaryEmployees = employees.filter(e => !e.salary || e.salary <= 0);
+        if (noSalaryEmployees.length > 0 && employees.length > 0) {
+            result.push({
+                id: 'no_salary_employees',
+                severity: 'warning',
+                title: 'موظفين بدون راتب',
+                description: `${noSalaryEmployees.length} موظف بدون راتب محدد.`,
+                count: noSalaryEmployees.length,
+                details: noSalaryEmployees.slice(0, 10).map(e => e.name),
+            });
+        }
+
+        // ── 14. Returns validation ──
+        const returns = getAllSales().filter(s => s.items?.some(i => i.lineDiscount > 0 && i.qty > 0));
+        const suspiciousReturns = returns.filter(s => {
+            // Check if return amount is suspiciously high (> 50% of sale)
+            const totalDiscount = s.items?.reduce((sum, i) => sum + (i.lineDiscount || 0), 0) || 0;
+            return totalDiscount > s.total * 0.5;
+        });
+        if (suspiciousReturns.length > 0) {
+            result.push({
+                id: 'suspicious_returns',
+                severity: 'info',
+                title: 'إرجاعات بخصم كبير',
+                description: `${suspiciousReturns.length} فاتورة خصم فيها أكثر من 50%.`,
+                count: suspiciousReturns.length,
+            });
+        }
+
+        // ── 15. Inventory cost vs sale price validation ──
+        const allProducts = [
+            ...getMobiles(),
+            ...getComputers(),
+            ...getDevices(),
+        ];
+        const underpricedProducts = allProducts.filter(p => 
+            (p.sellingPrice ?? 0) < (p.costPrice ?? 0)
+        );
+        if (underpricedProducts.length > 0) {
+            result.push({
+                id: 'underpriced_products',
+                severity: 'error',
+                title: 'منتجات بسعر بيع أقل من التكلفة',
+                description: `${underpricedProducts.length} منتج بسعر بيع أقل من سعر التكلفة.`,
+                count: underpricedProducts.length,
+                details: underpricedProducts.slice(0, 10).map(p => 
+                    `${p.name} | تكلفة: ${p.costPrice} | بيع: ${p.sellingPrice}`
+                ),
+            });
+        }
+
+        // ── 16. Batch inventory sync check ──
+        const productsWithBatches = allProducts.filter(p => p.quantity > 0).slice(0, 50);
+        // This would require checking batch data - simplified check
+        const totalProductQty = allProducts.reduce((sum, p) => sum + (p.quantity || 0), 0);
+        if (totalProductQty === 0 && allProducts.length > 0) {
+            result.push({
+                id: 'empty_inventory',
+                severity: 'warning',
+                title: 'المخزون فارغ',
+                description: 'لا توجد منتجات في المخزون.',
+            });
+        }
+
+        // ── 17. Check for old data (more than 2 years) ──
+        const twoYearsAgo = new Date();
+        twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+        const oldSales = allSales.filter(s => new Date(s.date) < twoYearsAgo);
+        if (oldSales.length > 100) {
+            result.push({
+                id: 'old_sales_data',
+                severity: 'info',
+                title: 'بيانات مبيعات قديمة',
+                description: `${oldSales.length} فاتورة أقدم من سنتين. يُنصح بالأرشفة.`,
+                count: oldSales.length,
             });
         }
 

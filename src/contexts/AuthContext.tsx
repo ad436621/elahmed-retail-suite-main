@@ -41,10 +41,18 @@ interface AuthContextType {
 const SESSION_KEY = STORAGE_KEYS.AUTH_USER;
 const SESSION_TIMEOUT_MS = 8 * 60 * 60 * 1000; // #22: 8 hours
 const SESSION_TS_KEY = 'gx_session_ts';
+const SESSION_REFRESH_DEBOUNCE_MS = 30 * 1000;
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 function getSessionStore(): Storage {
   return window.sessionStorage;
+}
+
+function clearLegacyAuthStorage(): void {
+  localStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem(SESSION_TS_KEY);
+  localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
+  localStorage.removeItem(STORAGE_KEYS.AUTH_USER);
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -63,6 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (elapsed > SESSION_TIMEOUT_MS) {
           store.removeItem(SESSION_KEY);
           store.removeItem(SESSION_TS_KEY);
+          clearLegacyAuthStorage();
           return null;
         }
       }
@@ -71,6 +80,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const live = getUserById(parsed.id);
       if (!live || !live.active) {
         store.removeItem(SESSION_KEY);
+        store.removeItem(SESSION_TS_KEY);
+        clearLegacyAuthStorage();
         return null;
       }
       return {
@@ -83,6 +94,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       };
     } catch {
       getSessionStore().removeItem(SESSION_KEY);
+      getSessionStore().removeItem(SESSION_TS_KEY);
+      clearLegacyAuthStorage();
       return null;
     }
   });
@@ -91,10 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // Clear old persistent auth so it only uses sessionStorage
   useEffect(() => {
-    localStorage.removeItem(SESSION_KEY);
-    localStorage.removeItem(SESSION_TS_KEY);
-    localStorage.removeItem(STORAGE_KEYS.AUTH_TOKEN);
-    localStorage.removeItem(STORAGE_KEYS.AUTH_USER);
+    clearLegacyAuthStorage();
   }, []);
 
   useEffect(() => {
@@ -107,6 +117,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       store.removeItem(SESSION_TS_KEY);
     }
   }, [user]);
+
+  const refreshSessionTimestamp = useCallback(() => {
+    if (!user) return;
+
+    const store = getSessionStore();
+    const now = Date.now();
+    const lastSeen = Number(store.getItem(SESSION_TS_KEY) ?? 0);
+
+    if (lastSeen && now - lastSeen < SESSION_REFRESH_DEBOUNCE_MS) {
+      return;
+    }
+
+    store.setItem(SESSION_TS_KEY, String(now));
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    const touchSession = () => {
+      const store = getSessionStore();
+      const lastSeen = Number(store.getItem(SESSION_TS_KEY) ?? 0);
+
+      if (lastSeen && Date.now() - lastSeen > SESSION_TIMEOUT_MS) {
+        setUser(null);
+        store.removeItem(SESSION_KEY);
+        store.removeItem(SESSION_TS_KEY);
+        clearLegacyAuthStorage();
+        return;
+      }
+
+      refreshSessionTimestamp();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        touchSession();
+      }
+    };
+
+    const events: Array<keyof WindowEventMap> = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll', 'focus'];
+    events.forEach((eventName) => window.addEventListener(eventName, touchSession, { passive: true }));
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      events.forEach((eventName) => window.removeEventListener(eventName, touchSession));
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [refreshSessionTimestamp, user]);
 
   const login = useCallback(async (username: string, password: string) => {
     const found = findUserByUsername(username);
@@ -158,6 +216,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     setUser(null);
+    clearLegacyAuthStorage();
   }, []);
 
   const hasPermission = useCallback((page: Permission) => {

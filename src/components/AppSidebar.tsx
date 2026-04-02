@@ -84,6 +84,7 @@ const NAV_GROUPS: NavGroup[] = [
       { to: '/', icon: LayoutDashboard, label: 'لوحة التحكم', perm: 'dashboard' },
       { to: '/pos', icon: ShoppingCart, label: 'نقطة البيع', perm: 'pos' },
       { to: '/maintenance', icon: Wrench, label: 'الصيانة', perm: 'maintenance' },
+      { to: '/maintenance/parts', icon: Wrench, label: 'قطع الصيانة', perm: 'maintenance' },
       { to: '/reports', icon: BarChart3, label: 'التقارير', perm: 'dashboard' },
     ],
   },
@@ -97,10 +98,9 @@ const NAV_GROUPS: NavGroup[] = [
       { to: '/computers', icon: Monitor, label: 'الكمبيوترات', perm: 'computers' },
       { to: '/devices', icon: Tv, label: 'الأجهزة', perm: 'devices' },
       { to: '/cars', icon: Car, label: 'السيارات', perm: 'cars' },
-
-
+      { to: '/used-inventory', icon: PackageSearch, label: 'الأجهزة المستعملة', perm: 'used' },
+      { to: '/stocktake', icon: ClipboardCheck, label: 'الجرد', perm: 'stocktake' },
       { to: '/warehouse', icon: Warehouse, label: 'المستودع', perm: 'warehouse' },
-
       { to: '/barcodes', icon: Barcode, label: 'طباعة الباركود', perm: 'inventory' },
     ],
   },

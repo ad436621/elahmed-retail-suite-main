@@ -183,6 +183,17 @@ function matchesStatusFilter(ticket: RepairTicket, filter: string): boolean {
     return ticket.status === filter;
 }
 
+function getTicketDeviceLabel(ticket: Partial<RepairTicket>): string {
+    const brand = String(ticket.device_brand ?? '').trim();
+    const model = String(ticket.device_model ?? ticket.device_type ?? '').trim();
+
+    if (!brand) return model || '—';
+    if (!model) return brand;
+    if (model.toLowerCase().startsWith(brand.toLowerCase())) return model;
+
+    return `${brand} ${model}`.trim();
+}
+
 export default function Maintenance() {
     const { toast } = useToast();
     const [tickets, setTickets] = useState<RepairTicket[]>([]);
@@ -403,7 +414,7 @@ export default function Maintenance() {
           <tr><th>العميل</th><td>${ticket.customer_name}</td></tr>
           <tr><th>الجوال</th><td>${ticket.customer_phone || '—'}</td></tr>
           <tr><th>التاريخ</th><td>${new Date(ticket.createdAt || ticket.created_at || '').toLocaleDateString('ar-EG')}</td></tr>
-          <tr><th>الجهاز</th><td>${ticket.device_model ?? ticket.device_type ?? '—'}</td></tr>
+          <tr><th>الجهاز</th><td>${getTicketDeviceLabel(ticket)}</td></tr>
           <tr><th>الرقم التسلسلي</th><td>${ticket.imei_or_serial ?? ticket.serial_number ?? '—'}</td></tr>
           <tr><th>الملحقات</th><td>${ticket.accessories_received ?? ticket.accessories ?? 'لا يوجد'}</td></tr>
           <tr><th>العطل</th><td>${ticket.issue_description ?? ticket.problem_desc ?? '—'}</td></tr>
@@ -565,7 +576,7 @@ export default function Maintenance() {
                                         <div className="text-xs font-medium text-muted-foreground mt-0.5">{ticket.customer_phone || '---'}</div>
                                     </td>
                                     <td className="px-4 py-3 align-top">
-                                        <div className="font-bold text-foreground">{ticket.device_model ?? ticket.device_type ?? '—'}</div>
+                                        <div className="font-bold text-foreground">{getTicketDeviceLabel(ticket)}</div>
                                         <div className="text-xs text-muted-foreground mt-0.5">{ticket.device_category} - {ticket.imei_or_serial ?? ticket.serial_number ?? '---'}</div>
                                     </td>
                                     <td className="px-4 py-3 align-top max-w-[220px]">
@@ -726,7 +737,7 @@ export default function Maintenance() {
                             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-red-100 dark:bg-red-500/10 shadow-inner"><Trash2 className="h-8 w-8 text-red-600" /></div>
                             <div><h3 className="text-xl font-black text-foreground">تأكيد الحذف</h3><p className="text-sm text-muted-foreground mt-1">هل أنت متأكد من حذف أمر الصيانة هذا؟</p></div>
                         </div>
-                        <div className="bg-muted p-3 rounded-xl mb-6 text-center"><p className="text-sm font-bold text-foreground">{deleteTarget.customer_name}</p><p className="text-xs text-muted-foreground">{deleteTarget.device_model || deleteTarget.device_type}</p></div>
+                        <div className="bg-muted p-3 rounded-xl mb-6 text-center"><p className="text-sm font-bold text-foreground">{deleteTarget.customer_name}</p><p className="text-xs text-muted-foreground">{getTicketDeviceLabel(deleteTarget)}</p></div>
                         <div className="flex gap-3">
                             <button onClick={() => void handleDelete()} className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-red-600 hover:bg-red-700 py-3 text-sm font-bold text-white transition-all">احذف</button>
                             <button onClick={() => setDeleteTarget(null)} className="flex-1 rounded-xl border border-border bg-card hover:bg-muted py-3 text-sm font-bold transition-all">تراجع</button>

@@ -2,6 +2,7 @@ import { useState, useRef, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Plus, Trash2, Pencil, X, Check, Archive, Search, ImagePlus, ImageOff, Smartphone, Laptop, Monitor, Layers, CheckCircle2, AlignLeft } from 'lucide-react';
 
+import { STORAGE_KEYS } from '@/config';
 import { UsedDevice, UsedDeviceType } from '@/domain/types';
 import { getUsedDevices, addUsedDevice, updateUsedDevice, deleteUsedDevice } from '@/data/usedDevicesData';
 import { useToast } from '@/hooks/use-toast';
@@ -65,7 +66,7 @@ function ImageUpload({ value, onChange }: { value?: string; onChange: (v: string
 export default function UsedInventory() {
     const { toast } = useToast();
     const { confirm } = useConfirm();
-    const items = useInventoryData(getUsedDevices, ['gx_used_devices']);
+    const items = useInventoryData(getUsedDevices, [STORAGE_KEYS.USED_DEVICES]);
     const [showForm, setShowForm] = useState(false);
     const [editId, setEditId] = useState<string | null>(null);
     const [form, setForm] = useState(emptyForm);
@@ -93,7 +94,7 @@ export default function UsedInventory() {
     );
 
     return (
-        <div className="space-y-5 animate-fade-in" dir="rtl">
+        <div className="space-y-5 animate-fade-in" dir="rtl" data-testid="used-inventory-page">
             {/* Header */}
             <div className="flex items-center justify-between flex-wrap gap-3">
                 <div className="flex items-center gap-3">
@@ -110,7 +111,7 @@ export default function UsedInventory() {
                         <button onClick={() => setViewMode('grid')} className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${viewMode === 'grid' ? 'bg-card shadow text-primary border border-border' : 'text-muted-foreground hover:text-foreground'}`}>شبكة</button>
                         <button onClick={() => setViewMode('table')} className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${viewMode === 'table' ? 'bg-card shadow text-primary border border-border' : 'text-muted-foreground hover:text-foreground'}`}>جدول</button>
                     </div>
-                    <button onClick={() => { setShowForm(true); setEditId(null); setForm(emptyForm); }}
+                    <button data-testid="used-inventory-add" onClick={() => { setShowForm(true); setEditId(null); setForm(emptyForm); }}
                         className="flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-all shadow-md">
                         <Plus className="h-4 w-4" /> إضافة جهاز مستعمل
                     </button>
@@ -120,13 +121,13 @@ export default function UsedInventory() {
             {/* Search */}
             <div className="relative">
                 <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <input value={search} onChange={e => setSearch(e.target.value)} placeholder="بحث بالاسم أو الموديل أو السيريال..." className={`${IC} pr-9`} />
+                <input data-testid="used-inventory-search" value={search} onChange={e => setSearch(e.target.value)} placeholder="بحث بالاسم أو الموديل أو السيريال..." className={`${IC} pr-9`} />
             </div>
 
             {/* Form Modal */}
             {showForm && createPortal(
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm overflow-y-auto py-6 px-4" onClick={() => { setShowForm(false); setEditId(null); }}>
-                    <div className="w-full max-w-xl mx-auto rounded-3xl border border-border bg-background shadow-2xl animate-scale-in flex flex-col" onClick={e => e.stopPropagation()}>
+                    <div data-testid="used-inventory-form-modal" className="w-full max-w-xl mx-auto rounded-3xl border border-border bg-background shadow-2xl animate-scale-in flex flex-col" onClick={e => e.stopPropagation()}>
 
                         {/* ── Modal Body ── */}
                         <div className="p-6 space-y-5 max-h-[80vh] overflow-y-auto w-full">
@@ -136,7 +137,7 @@ export default function UsedInventory() {
 
                             <div>
                                 <label className="mb-2 block text-[11px] font-bold text-muted-foreground text-right">اسم الجهاز <span className="text-destructive">*</span></label>
-                                <input data-validation="text-only" value={form.name}
+                                <input data-testid="used-inventory-name" data-validation="text-only" value={form.name}
                                     onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
                                     placeholder="مثال: iPhone 13" 
                                     className={`${IC} transition-colors hover:border-primary/50 focus:border-primary focus:ring-1 focus:ring-primary`} autoFocus />
@@ -173,7 +174,7 @@ export default function UsedInventory() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="mb-2 block text-[11px] font-bold text-muted-foreground text-right">الموديل</label>
-                                    <input value={form.model} onChange={e => setForm(f => ({ ...f, model: e.target.value }))} className={`${IC} transition-colors hover:border-primary/50 focus:border-primary focus:ring-1 focus:ring-primary`} />
+                                    <input data-testid="used-inventory-model" value={form.model} onChange={e => setForm(f => ({ ...f, model: e.target.value }))} className={`${IC} transition-colors hover:border-primary/50 focus:border-primary focus:ring-1 focus:ring-primary`} />
                                 </div>
                                 <div>
                                     <label className="mb-2 block text-[11px] font-bold text-muted-foreground text-right">السيريال</label>
@@ -208,13 +209,13 @@ export default function UsedInventory() {
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="mb-2 block text-[11px] font-bold text-muted-foreground text-right">سعر الشراء (ج.م)</label>
-                                    <input type="number" min={0} value={form.purchasePrice}
+                                    <input data-testid="used-inventory-purchase-price" type="number" min={0} value={form.purchasePrice}
                                         onChange={e => setForm(f => ({ ...f, purchasePrice: +e.target.value }))}
                                         className={`${IC} transition-colors hover:border-primary/50 focus:border-primary focus:ring-1 focus:ring-primary text-center font-bold`} placeholder="0" />
                                 </div>
                                 <div>
                                     <label className="mb-2 block text-[11px] font-bold text-muted-foreground text-right">سعر البيع (ج.م)</label>
-                                    <input type="number" min={0} value={form.salePrice}
+                                    <input data-testid="used-inventory-sale-price" type="number" min={0} value={form.salePrice}
                                         onChange={e => setForm(f => ({ ...f, salePrice: +e.target.value }))}
                                         className={`${IC} transition-colors hover:border-primary/50 focus:border-primary focus:ring-1 focus:ring-primary text-center font-bold text-primary`} placeholder="0" />
                                 </div>
@@ -227,7 +228,7 @@ export default function UsedInventory() {
                                 className="flex-1 rounded-xl border border-border bg-background py-3.5 text-sm font-bold text-muted-foreground hover:bg-muted/50 transition-colors">
                                 إلغاء
                             </button>
-                            <button onClick={handleSubmit}
+                            <button data-testid="used-inventory-save" onClick={handleSubmit}
                                 className="flex-1 rounded-xl bg-violet-600 py-3.5 text-sm font-bold text-white shadow-lg shadow-violet-600/20 hover:bg-violet-700 hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">
                                 <CheckCircle2 className="h-5 w-5" /> {editId ? 'حفظ التعديلات' : 'إضافة الجهاز'}
                             </button>
@@ -247,7 +248,7 @@ export default function UsedInventory() {
                             <p>لا توجد أجهزة مستعملة</p>
                         </div>
                     ) : filtered.map((item: UsedDevice) => (
-                        <div key={item.id} className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-soft hover:shadow-lg hover:-translate-y-0.5 transition-all">
+                        <div key={item.id} data-testid={`used-inventory-item-${item.id}`} className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-soft hover:shadow-lg hover:-translate-y-0.5 transition-all">
                             {/* Image */}
                             <div className="relative h-44 w-full bg-muted/30 overflow-hidden">
                                 {item.image ? (

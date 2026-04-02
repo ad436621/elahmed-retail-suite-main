@@ -42,8 +42,14 @@ function getPersistedInvoiceSequence(): number {
       return Number.isFinite(Number(sequence)) ? Number(sequence) : 0;
     }
 
-    const rawSales = localStorage.getItem(STORAGE_KEYS.SALES_LEGACY);
-    const sales = rawSales ? JSON.parse(rawSales) as Array<{ invoiceNumber?: string }> : [];
+    const salesKeys = [STORAGE_KEYS.SALES, STORAGE_KEYS.SALES_LEGACY];
+    const sales = salesKeys.flatMap((key) => {
+      const rawSales = localStorage.getItem(key);
+      if (!rawSales) return [];
+
+      const parsed = JSON.parse(rawSales) as Array<{ invoiceNumber?: string }>;
+      return Array.isArray(parsed) ? parsed : [];
+    });
     return sales.reduce((max, sale) => Math.max(max, extractInvoiceSequence(String(sale.invoiceNumber ?? ''))), 0);
   } catch (e) {
     if (import.meta.env.DEV) {

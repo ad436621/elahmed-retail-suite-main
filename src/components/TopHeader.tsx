@@ -52,6 +52,10 @@ const ROUTE_TITLES: Record<string, string> = {
     '/diagnostics': 'تشخيص النظام',
 };
 
+ROUTE_TITLES['/used-inventory'] = 'الأجهزة المستعملة';
+ROUTE_TITLES['/maintenance/parts'] = 'قطع الصيانة';
+ROUTE_TITLES['/stocktake'] = 'الجرد';
+
 function getBreadcrumbs(pathname: string) {
     const parts = pathname.split('/').filter(Boolean);
     if (parts.length === 0) return [{ path: '/', title: ROUTE_TITLES['/'] }];
